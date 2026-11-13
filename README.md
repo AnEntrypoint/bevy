@@ -31,13 +31,14 @@ scripts/verify.sh
 
 ## Measured
 
-One 12-core Linux container, native CPU target, Avian defaults (6 substeps), always-awake bodies, 300 measured ticks after 30 warm-up ticks.
+Both engines measured back-to-back on one 12-core Linux container: jayzee on Node 24.22.0 (single-threaded wasm kernel), this project native with Avian defaults (6 substeps) and parallel solving. Same scene, always-awake bodies, 300 measured ticks after 30 warm-up ticks. At 500 bodies the two are within run-to-run noise (repeat runs: jayzee 0.419 to 0.452 ms, this project 0.397 to 0.411 ms).
 
-| Bodies | mean ms | p50 ms | p95 ms | p99 ms | ticks/s | jayzee mean |
-|---|---|---|---|---|---|---|
-| 500 | 0.40 | 0.39 | 0.48 | 0.64 | 2499 | 0.42 |
-| 2000 | 1.11 | 1.10 | 1.30 | 1.56 | 899 | 3.1 |
-| 5000 | 1.96 | 1.95 | 2.29 | 2.45 | 510 | 10 |
+| Bodies | jayzee mean ms | bevy mean ms | speedup | bevy p50 | bevy p95 |
+|---|---|---|---|---|---|
+| 500 | 0.43 | 0.40 | 1.07x | 0.39 | 0.49 |
+| 2000 | 2.78 | 1.04 | 2.7x | 1.02 | 1.19 |
+| 5000 | 8.96 | 1.88 | 4.8x | 1.86 | 2.20 |
+| 10000 | 28.12 | 3.56 | 7.9x | 3.55 | 4.13 |
 
 `det` gives the same hash for two runs at every size. The networking witness reports one predicted player whose predicted position at confirmed tick 353 is [14.4995, 1.1, 0.0], the confirmed position is the same to six decimals, and the error is 0.000000 m.
 
