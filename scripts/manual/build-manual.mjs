@@ -5,10 +5,15 @@ import path from 'node:path'
 
 const LF = String.fromCharCode(10)
 const TAB = String.fromCharCode(9)
-const root = path.resolve(process.argv[2] || '.')
+const rootArg = process.argv[2]
+if (!rootArg) {
+  console.error('build-manual.mjs: pass the repository root, for example node scripts/manual/build-manual.mjs .')
+  process.exit(1)
+}
+const root = path.resolve(rootArg)
 const site = path.join(root, 'site')
 const siteTitle = path.basename(root) + ' Manual'
-const excludedDirs = new Set(['.git', '.playwriter', 'runs', 'site', 'node_modules', 'sources'])
+const excludedDirs = new Set(['.git', '.playwriter', 'runs', 'site', 'node_modules', 'sources', 'target'])
 const withheldPrefixes = (process.argv.find((arg) => arg.startsWith('--withhold='))?.slice('--withhold='.length) || '').split(',').filter(Boolean)
 
 function escapeHtml(value) {
