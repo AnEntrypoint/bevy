@@ -7,4 +7,4 @@
 - Status with Bearer: 200 (6999 bytes)
 - Status without auth: 401, body `{"error":"Missing authorization header","signup":"https://www.spawn.co/api/agent/v1/signup","docs":"https://www.spawn.co/llms.txt"}`
 - Top-level keys (200): actorClass, avatarUrl, budget, characterModelUrl, doors, face, handle, linked, linkedTo, looks, name, note, profileUrl, readFirst, userId, username, worlds
-- doors object: 60 entries, catalogued in CATALOG.md. readFirst keys: docs, why.
+- doors object: 60 entries. readFirst keys: docs, why.
