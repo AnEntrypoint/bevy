@@ -7,7 +7,8 @@ globe:
   seed: 24301
   chunkSpan: 0.35
   streamRadius: 40
-  subdivisions: 8
+  subdivisions: 16
   bodyAltitude: 0.5
+  dropHeight: 6
   bodies:
     - { latitude: 0, longitude: 0 }

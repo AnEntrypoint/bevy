@@ -18,6 +18,7 @@ pub struct GlobeWorld {
     pub stream_radius: f32,
     pub subdivisions: u32,
     pub body_altitude: f32,
+    pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
 }
 
@@ -35,6 +36,7 @@ impl Default for GlobeWorld {
             stream_radius: 40.0,
             subdivisions: 8,
             body_altitude: 0.5,
+            drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
         }
     }
@@ -78,6 +80,8 @@ pub struct GlobeSummary {
     pub seed: u64,
     pub radius: f32,
     pub altitude: f32,
+    pub body_radius: f32,
+    pub gravity_at_body: Vec3,
     pub focus: Vec3,
 }
 
@@ -101,7 +105,7 @@ impl GlobeWorld {
         let Some(object) = value.as_object() else { return; };
         if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
         if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
-        for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude)] {
+        for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
             if let Some(value) = object.get(field).and_then(Value::as_f64) { *target = value as f32; }
         }
         if let Some(value) = object.get("seed").and_then(Value::as_u64) { self.seed = value; }
@@ -251,10 +255,10 @@ impl GlobeWorld {
         json!({
             "name": self.name, "center": vec_json(self.center), "radius": self.radius,
             "seaLevel": self.sea_level, "amplitude": self.amplitude, "seed": self.seed,
-            "chunkSpan": self.chunk_span, "gravity": self.gravity, "streamRadius": self.stream_radius,
-            "subdivisions": self.subdivisions, "bodyAltitude": self.body_altitude,
+            "chunkSpan": self.chunk_span.to_degrees(), "gravity": self.gravity, "streamRadius": self.stream_radius,
+            "subdivisions": self.subdivisions, "bodyAltitude": self.body_altitude, "dropHeight": self.drop_height,
             "chunks": summary.chunks, "bodies": summary.bodies, "vertices": summary.vertices,
-            "maxElevation": summary.max_elevation, "altitude": summary.altitude, "focus": vec_json(summary.focus),
+            "maxElevation": summary.max_elevation, "altitude": summary.altitude, "bodyRadius": summary.body_radius, "gravityAtBody": vec_json(summary.gravity_at_body), "focus": vec_json(summary.focus),
             "native": ["Mesh", "StandardMaterial", "Collider::trimesh", "RigidBody", "Transform", "GlobalTransform", "Time", "Component", "Resource", "FixedUpdate"]
         })
     }
@@ -297,10 +301,11 @@ pub fn register(app: &mut App) {
 
 fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>, mut registry: ResMut<GlobeRegistry>) {
     for &(latitude, longitude) in &globe.bodies {
-        let surface = globe.surface_position(latitude, longitude, globe.body_altitude);
+        let spawn_altitude = globe.body_altitude + globe.drop_height;
+        let surface = globe.surface_position(latitude, longitude, spawn_altitude);
         let rotation = globe.orientation(latitude, longitude, 0.0);
         let entity = commands.spawn((
-            GlobeBody { latitude, longitude, altitude: globe.body_altitude, speed: 0.0 },
+            GlobeBody { latitude, longitude, altitude: spawn_altitude, speed: 0.0 },
             GlobeOrientation::default(),
             RigidBody::Dynamic,
             Collider::sphere(0.5),
@@ -432,6 +437,7 @@ fn read_summary(
     focus: Res<GlobeFocus>,
     chunks: Query<&GlobeChunk>,
     bodies: Query<&GlobeBody>,
+    positions: Query<&Position, With<GlobeBody>>,
     mut summary: ResMut<GlobeSummary>,
 ) {
     summary.chunks = registry.chunks.len();
@@ -439,6 +445,8 @@ fn read_summary(
     summary.vertices = chunks.iter().map(|chunk| chunk.vertices).sum();
     summary.max_elevation = chunks.iter().map(|chunk| chunk.max_elevation).fold(0.0_f32, f32::max);
     summary.altitude = bodies.iter().next().map(|body| body.altitude).unwrap_or(0.0);
+    summary.body_radius = positions.iter().next().map(|p| p.0.distance(globe.center)).unwrap_or(0.0);
+    summary.gravity_at_body = positions.iter().next().map(|p| globe.gravity_vector(p.0)).unwrap_or(Vec3::ZERO);
     summary.focus = focus.0;
     summary.seed = globe.seed;
     summary.radius = globe.radius;
