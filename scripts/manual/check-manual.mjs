@@ -4,14 +4,20 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { buildEndpointsPage } from './endpoints.mjs'
 
-const root = path.resolve(process.argv[2] || '.')
+const args = process.argv.slice(2)
+const workflowArg = args.find((arg) => arg.startsWith('--workflow-file='))
+const root = path.resolve(args.find((arg) => !arg.startsWith('--')) || '.')
+const workflowFile = path.resolve(root, '.github', 'workflows', workflowArg ? workflowArg.slice('--workflow-file='.length) : 'publish-libfx.yml')
+if (!existsSync(workflowFile)) {
+  console.error('check-manual.mjs: workflow file not found at ' + workflowFile + '. Pass --workflow-file=<name or path> to choose another workflow.')
+  process.exit(1)
+}
 const site = path.join(root, 'site')
 const failures = []
 const manifest = JSON.parse(readFileSync(path.join(site, 'manifest.json'), 'utf8'))
 const index = readFileSync(path.join(site, 'index.html'), 'utf8')
 const startTag = '<pre>'
-const withheldPrefixes = (process.argv.find((arg) => arg.startsWith('--withhold='))?.slice('--withhold='.length) || '').split(',').filter(Boolean)
-const workflowFile = process.argv.find((arg) => arg.startsWith('--workflow-file='))?.slice('--workflow-file='.length) || path.join('.github', 'workflows', 'publish.yml')
+const withheldPrefixes = (args.find((arg) => arg.startsWith('--withhold='))?.slice('--withhold='.length) || '').split(',').filter(Boolean)
 
 function decodeEntities(text) {
   const map = { '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': String.fromCharCode(39), '&amp;': '&' }
@@ -77,14 +83,9 @@ for (const htmlFile of htmlFiles) {
 }
 
 if (!existsSync(path.join(site, '.nojekyll'))) failures.push('missing .nojekyll')
-const workflowPath = path.join(root, workflowFile)
-if (existsSync(workflowPath)) {
-  const workflow = readFileSync(workflowPath, 'utf8')
-  for (const marker of ['push:', 'workflow_dispatch:', 'node scripts/manual/build-manual.mjs .', 'node scripts/manual/check-manual.mjs .', 'configure-pages@v5', 'upload-pages-artifact@v3', 'deploy-pages@v5']) {
-    if (!workflow.includes(marker)) failures.push('missing workflow marker ' + marker)
-  }
-} else {
-  failures.push('missing workflow file ' + workflowFile)
+const workflow = readFileSync(workflowFile, 'utf8')
+for (const marker of ['push:', 'workflow_dispatch:', 'node scripts/manual/build-manual.mjs .', 'node scripts/manual/check-manual.mjs .', 'configure-pages@v5', 'upload-pages-artifact@v3', 'deploy-pages@v5']) {
+  if (!workflow.includes(marker)) failures.push('missing workflow marker ' + marker)
 }
 if (manifest.textCount + manifest.binaryCount !== manifest.files.length) failures.push('manifest kind count mismatch')
 let head = ''

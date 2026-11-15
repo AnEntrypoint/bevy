@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -86,7 +86,15 @@ export function buildEndpointsPage(root, specFile = path.join(root, 'openapi.jso
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (invoked) {
-  const root = path.resolve(process.argv[2] || '.')
-  writeFileSync(path.join(root, 'ENDPOINTS.md'), buildEndpointsPage(root), 'utf8')
-  console.log(JSON.stringify({ named: namedEndpoints(root).length, written: 'ENDPOINTS.md' }))
+  const args = process.argv.slice(2)
+  const specArg = args.find((arg) => arg.startsWith('--spec='))
+  const root = path.resolve(args.find((arg) => !arg.startsWith('--')) || '.')
+  const spec = specArg ? path.resolve(specArg.slice('--spec='.length)) : path.join(root, 'openapi.json')
+  if (existsSync(spec)) {
+    writeFileSync(path.join(root, 'ENDPOINTS.md'), buildEndpointsPage(root, spec), 'utf8')
+    console.log(JSON.stringify({ named: namedEndpoints(root).length, written: 'ENDPOINTS.md' }))
+  } else {
+    console.error('endpoints.mjs: OpenAPI spec not found at ' + spec + '. Pass --spec=<path> to an openapi.json to use another file.')
+    process.exitCode = 1
+  }
 }

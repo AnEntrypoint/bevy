@@ -1,10 +1,17 @@
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-const root = path.resolve(process.argv[2] || '.')
-const option = (name, fallback) => process.argv.find((arg) => arg.startsWith('--' + name + '='))?.slice(name.length + 3) || fallback
-const workflow = option('workflow', 'publish.yml')
+const args = process.argv.slice(2)
+const root = path.resolve(args.find((arg) => !arg.startsWith('--')) || '.')
+const option = (name, fallback) => args.find((arg) => arg.startsWith('--' + name + '='))?.slice(name.length + 3) || fallback
+const workflow = option('workflow', 'publish-libfx.yml')
 const branch = option('branch', 'main')
+const workflowFile = path.resolve(root, '.github', 'workflows', workflow)
+if (!existsSync(workflowFile)) {
+  console.error('verify-publish.mjs: workflow file not found at ' + workflowFile + '. Pass --workflow=<name or path> to choose another workflow.')
+  process.exit(1)
+}
 const run = (args) => execFileSync(args[0], args.slice(1), { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 
 const head = run(['git', 'rev-parse', 'HEAD'])
