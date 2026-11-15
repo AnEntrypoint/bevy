@@ -4,6 +4,7 @@ mod glb;
 mod globe;
 mod gltf_check;
 mod png_check;
+mod basisu;
 mod bench;
 mod client;
 mod protocol;
