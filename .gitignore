@@ -1,3 +1,6 @@
 /target
 /runs/
 /sources/
+/web/wasm/
+/web/status.json
+/web/status-test.json

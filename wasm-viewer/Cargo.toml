@@ -1,0 +1,54 @@
+[workspace]
+
+[package]
+name = "bevy-jayzee-wasm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+bevy = { version = "0.20.1", default-features = false, features = [
+    "bevy_log",
+    "bevy_state",
+    "bevy_asset",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_ui",
+    "bevy_ui_render",
+    "bevy_window",
+    "bevy_winit",
+    "bevy_gizmos_render",
+    "default_font",
+    "png",
+    "std",
+    "async_executor",
+    "web",
+    "webgpu",
+    "tonemapping_luts",
+    "zstd_rust",
+] }
+wasm-bindgen = "=0.2.129"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = ["Document", "Element", "HtmlCanvasElement", "HtmlElement", "Window", "console"] }
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+incremental = false
+strip = "symbols"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3

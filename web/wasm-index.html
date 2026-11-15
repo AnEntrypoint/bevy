@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>bevy-jayzee WebGPU WASM</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #050b12; color: #e8f1ff; min-height: 100vh; }
+    header { padding: 14px 20px; border-bottom: 1px solid #203040; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    h1 { margin: 0; font-size: 17px; letter-spacing: .02em; }
+    #app-status { color: #fde68a; font-size: 13px; padding: 6px 10px; border: 1px solid #52627a; border-radius: 999px; }
+    #app-status[data-app-ready="true"] { color: #86efac; border-color: #22c55e; }
+    #inspector-toggle { border: 1px solid #3b82f6; background: #0b2035; color: #bfdbfe; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+    #stage { position: relative; width: min(100vw, 1280px); height: min(72vh, 720px); margin: 16px auto; border: 1px solid #1c2d3f; border-radius: 12px; overflow: hidden; background: #07111c; }
+    #bevy-canvas { display: block; width: 100%; height: 100%; outline: none; }
+    #boot-error { position: absolute; inset: 20px; display: none; white-space: pre-wrap; overflow: auto; background: rgba(8,15,25,.94); border: 1px solid #7f1d1d; color: #fecaca; padding: 18px; border-radius: 10px; font: 13px/1.5 ui-monospace, monospace; }
+    #render-inspector { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20; display: none; background: rgba(4,9,16,.96); border: 1px solid #27405a; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.65); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color: #dbeafe; }
+    #render-inspector[data-inspector="open"] { display: block; }
+    #render-inspector[data-collapsed="true"] .inspector-body, #render-inspector[data-collapsed="true"] .tabs { display: none; }
+    .inspector-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #1b3148; flex-wrap: wrap; }
+    .strip { display: flex; gap: 7px; flex: 1; min-width: 720px; }
+    .bucket { min-width: 82px; padding: 3px 6px; border: 1px solid #20354a; border-radius: 6px; background: #081522; }
+    .bucket b { color: #fff; font-size: 12px; } .bucket span { color: #7dd3fc; }
+    .spark { width: 82px; height: 14px; vertical-align: middle; }
+    .inspector-actions button { border: 1px solid #36516c; background: #0d1b2a; color: #cfe6ff; border-radius: 6px; cursor: pointer; padding: 3px 7px; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 6px 8px; border-bottom: 1px solid #1b3148; }
+    .tabs button { border: 1px solid #24364a; background: #081522; color: #93a9c0; border-radius: 999px; padding: 4px 8px; cursor: pointer; white-space: nowrap; }
+    .tabs button[aria-selected="true"] { color: #06111d; background: #7dd3fc; border-color: #7dd3fc; }
+    .inspector-body { display: grid; grid-template-columns: 1.2fr .8fr; gap: 10px; max-height: 42vh; overflow: auto; padding: 9px; }
+    .panel { border: 1px solid #1b3148; border-radius: 8px; padding: 8px; background: #07111f; }
+    .panel h3 { margin: 0 0 7px; color: #93c5fd; font-size: 12px; text-transform: uppercase; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(110px, 1fr)); gap: 6px; }
+    .metric { border: 1px solid #1c3246; border-radius: 6px; padding: 5px; background: #091827; }
+    .metric b { display: block; color: #f8fafc; font-size: 13px; } .metric small { color: #7f9dbb; }
+    .bars div { display: grid; grid-template-columns: 150px 1fr 80px; gap: 6px; align-items: center; margin: 3px 0; }
+    .bar { height: 8px; background: #14253a; border-radius: 4px; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg,#22d3ee,#a3e635); }
+    .unavailable { color: #fca5a5; }
+    #inspector-json { max-height: 100px; overflow: auto; white-space: pre-wrap; color: #8fb3d9; }
+    main { width: min(100vw, 1280px); margin: 0 auto 28px; padding: 0 12px; }
+    details { background: #0c1723; border: 1px solid #1c2d3f; border-radius: 10px; padding: 12px 16px; } pre { overflow: auto; color: #b6c7dc; font-size: 12px; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body data-app="bevy-jayzee-webgpu-wasm">
+  <header>
+    <h1>bevy-jayzee • real Bevy WebGPU WASM</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="inspector-toggle" type="button" title="Toggle inspector (I)">Inspector: I</button>
+      <span id="app-status" data-app-ready="false" data-webgpu="pending">checking WebGPU…</span>
+    </div>
+  </header>
+  <section id="render-inspector" data-inspector="closed" data-collapsed="false" aria-label="Bevy Render Inspector">
+    <div class="inspector-head">
+      <strong>Render Inspector</strong>
+      <div class="strip" id="inspector-strip"></div>
+      <div class="inspector-actions"><button id="inspector-collapse" type="button">_</button><button id="inspector-close" type="button">×</button></div>
+    </div>
+    <nav class="tabs" id="inspector-tabs" role="tablist"></nav>
+    <div class="inspector-body">
+      <div class="panel"><h3 id="inspector-tab-title">Performance</h3><div class="metrics" id="inspector-metrics"></div><p id="inspector-note">Waiting for DiagnosticsStore…</p><pre id="inspector-json">{}</pre></div>
+      <div class="panel"><h3>QUALITY LADDER / GMS BUDGET</h3><div class="bars" id="inspector-bars"></div><p id="inspector-source">Source: Bevy DiagnosticsStore</p></div>
+    </div>
+    <pre id="inspector-data" hidden></pre>
+  </section>
+  <div id="stage">
+    <canvas id="bevy-canvas" width="960" height="540" tabindex="0"></canvas>
+    <pre id="boot-error"></pre>
+  </div>
+  <main><details><summary>World status / fallback report</summary><pre id="status-json">Loading status.json…</pre><p>Open with <code>?inspector=1</code> or press <kbd>I</kbd>. The report is diagnostic fallback, not the renderer.</p></details></main>
+  <script type="module" src="./wasm-boot.js"></script>
+  <script type="module" src="./inspector.js"></script>
+</body>
+</html>
