@@ -2,6 +2,7 @@ mod features;
 mod features_ecs;
 mod globe;
 mod gltf_check;
+mod png_check;
 mod bench;
 mod client;
 mod protocol;
@@ -38,8 +39,9 @@ fn main() {
             }
         }
         Some("gltf-check") => {
-            let directory = args.get(1).map(String::as_str).unwrap_or("/workspace/neon-syndicates");
-            if !gltf_check::run(directory) {
+            let directory = args.get(1).map(String::as_str).unwrap_or("/workspace/neon-syndicates/assets/cdn");
+            let project = args.get(2).map(String::as_str);
+            if !gltf_check::run(directory, project) {
                 std::process::exit(1);
             }
         }
@@ -69,7 +71,7 @@ fn main() {
             println!("{{\"kind\":\"web-report\",\"path\":\"{}\"}}", report);
         }
         _ => {
-            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | gltf-check <dir> | server | client>");
+            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | gltf-check <dir> [project] | server | client>");
             std::process::exit(2);
         }
     }

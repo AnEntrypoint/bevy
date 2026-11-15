@@ -677,6 +677,7 @@ dependencies = [
  "leafwing-input-manager",
  "lightyear",
  "noise",
+ "png",
  "rquickjs",
  "serde",
  "serde_json",
