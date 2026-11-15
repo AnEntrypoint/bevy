@@ -1,0 +1,51 @@
+import * as math from 'builtin/math';
+import * as vec from 'builtin/vec';
+import * as vec3 from 'builtin/vec3';
+import * as easing from 'builtin/easing';
+import * as noise from 'builtin/noise';
+import * as path from 'builtin/path';
+import * as ballistics from 'builtin/ballistics';
+import * as physics from 'builtin/physics';
+import * as tween from 'builtin/tween';
+import * as spline from 'builtin/spline';
+import * as nav from 'builtin/nav';
+import * as routing from 'builtin/room-routing';
+import * as terrain from 'builtin/terrain';
+import * as voxels from 'builtin/voxels';
+import * as vibe from 'builtin/vibe';
+import * as fx from 'builtin/fx';
+import * as three from 'builtin/three';
+import * as tsl from 'builtin/tsl';
+import * as lighting from 'builtin/lighting';
+import * as water from 'builtin/water';
+import * as env from 'builtin/env';
+import * as postfx from 'builtin/postfx';
+
+const names = (module) => Object.keys(module);
+
+export function onJayzee(ctx) {
+  const checks = {};
+  checks.math = [math.clamp(2, 0, 1), math.lerp(0, 10, 0.5), math.shortestArc(350, 10), math.stepAngle(0, 90, 0.1)];
+  checks.vec = [vec.add([1, 2, 3], [1, 1, 1]).x, vec.normalize([0, 3, 0]).y, vec.rotationFromEuler({ yaw: 90 }), vec.eulerFromRotation(vec.rotationFromEuler({ yaw: 45 })).yaw];
+  checks.vec3 = [vec3.distance([0, 0, 0], [1, 0, 0]), vec3.dot([1, 0, 0], [0, 1, 0])];
+  checks.easing = names(easing).map((name) => typeof easing[name] === 'function' && Number.isFinite(easing[name](0.5)));
+  checks.noise = [noise.simplex2({ x: 1, z: 2 }), noise.fbm2({ x: 1, z: 2 }), noise.ridged({ x: 1, z: 2 }), noise.voronoi2({ x: 1, z: 2 }).f1, noise.white2({ x: 1, z: 2 }), noise.makeSeededRng('a').next()];
+  checks.path = path.createPath([[0, 0], [1, 0]]).at(0.5);
+  checks.ballistics = [ballistics.elevation(10, 9.81, 5, 0), ballistics.solveShot({ x: 0, y: 0, z: 0 }, { x: 5, y: 0, z: 0 }, 10, 9.81).time];
+  checks.physics = [physics.raycast(ctx, { x: 0, y: 2, z: 0 }, { x: 0, y: -1, z: 0 }, { distance: 5 })?.id, physics.getInputRay(ctx)];
+  checks.tween = typeof tween.animate;
+  checks.spline = [spline.splineLength(ctx, 'rail'), spline.sampleSpline(ctx, 'rail', 0.5)?.position.x];
+  checks.nav = nav.findPath(ctx, { x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }).points.length;
+  checks.routing = [routing.roomFor('a b'), routing.nextRoomName([{ id: 'room-1' }]), routing.firstOpenRoom({ rooms: [] })];
+  checks.terrain = terrain.shore(-1, 0);
+  checks.voxels = voxels.part().set({ x: 0, y: 0, z: 0, material: 'a' }).serialize().voxels.length;
+  checks.vibe = [vibe.s('bd').gain(0.5).__pattern, vibe.stack(vibe.s('bd'), vibe.note(60)).events.length, vibe.chord('minor', 4).length, vibe.mini`bd sn`.events.length];
+  checks.fx = [fx.rgb(1, 0, 0).kind, fx.when({}, 1).__when, fx.vec3(1, 2, 3).add(fx.vec3(0, 1, 0)).kind, fx.sprite({}).kind];
+  checks.three = ['MeshStandardNodeMaterial', 'PointsNodeMaterial', 'AdditiveBlending', 'DoubleSide'].map((name) => name in three);
+  checks.tsl = [tsl.vec3(1, 2, 3).__node, tsl.uv().__node, tsl.Fn(() => 1)().__node, tsl.instancedArray(4).element(0).__node];
+  checks.lighting = [lighting.sunDirection.y, typeof lighting.sunRadiance.x, typeof lighting.fogColor({ x: 0, y: 1, z: 0 })];
+  checks.water = names(water).length;
+  checks.env = env.envAt({ x: 0, y: 0, z: 0 });
+  checks.postfx = ['grade', 'vignette', 'grain', 'film', 'tint', 'scanlines', 'dotScreen', 'chromaticAberration', 'dof', 'pixelate', 'blur', 'bloom'].map((name) => postfx[name]({ __postfx: 'x' }, 0.1).__postfx);
+  ctx.log('spec-surface-ok', checks);
+}

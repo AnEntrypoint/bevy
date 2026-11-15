@@ -1,0 +1,14 @@
+mode: 3d
+gravity: { x: 0, y: -9.81, z: 0 }
+terrain:
+  kind: heightmap
+  fields:
+    terrain:
+      grid: { min: { x: -20, y: 0, z: -20 }, max: { x: 20, y: 0, z: 20 }, cell: 2 }
+      cells: [0,0,0,0,0,0,0,0,0,0,0]
+  marks:
+    sea:
+      kind: sea
+      level: -1
+policy:
+  onArrive: scripts/spec-test.js

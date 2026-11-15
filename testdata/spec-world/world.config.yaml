@@ -1,0 +1,10 @@
+defaultPlace: test
+inputs:
+  actions:
+    jump:
+      keys: [space]
+  axes:
+    moveX:
+      keys: a/d
+camera:
+  kind: custom

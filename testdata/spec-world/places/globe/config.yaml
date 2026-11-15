@@ -1,0 +1,13 @@
+mode: 3d
+gravity: { x: 0, y: 0, z: 0 }
+globe:
+  name: test-globe
+  radius: 64
+  amplitude: 3
+  seed: 24301
+  chunkSpan: 0.35
+  streamRadius: 40
+  subdivisions: 8
+  bodyAltitude: 0.5
+  bodies:
+    - { latitude: 0, longitude: 0 }

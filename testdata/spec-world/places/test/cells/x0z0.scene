@@ -1,0 +1,46 @@
+# jayzee-scene v2 yaml x0z0
+ground:
+  id: ground
+  primitive: { kind: box, width: 40, height: 1, depth: 40 }
+  feetPosition: { x: 0, y: -1, z: 0 }
+  physics: static
+  tags: [world]
+anchor:
+  id: anchor
+  primitive: { kind: box, width: 1, height: 1, depth: 1 }
+  feetPosition: { x: 0, y: 0, z: 4 }
+  physics: static
+ball:
+  id: ball
+  primitive: { kind: sphere, radius: 0.5 }
+  feetPosition: { x: 0, y: 3, z: 0 }
+  physics: dynamic
+  behavior: [scripts/spec-test.js, scripts/feature-audit.js]
+  state: { clip: idle, count: 0 }
+  tags: [actor]
+player:
+  id: player
+  tags: [player]
+  feetPosition: { x: 0, y: 0, z: 2 }
+  physics: character
+  behavior: [scripts/debug.js, scripts/move.js]
+sensor:
+  id: sensor
+  primitive: { kind: box, width: 2, height: 2, depth: 2 }
+  feetPosition: { x: 4, y: 0, z: 0 }
+  physics: { body: static, trigger: true }
+surface:
+  id: surface
+  primitive: { kind: box, width: 0.2, height: 0.2, depth: 0.2 }
+  feetPosition: { x: -8, y: 0, z: 8 }
+  behavior: scripts/surface.js
+rail:
+  id: rail
+  path:
+    points: [[-6, 0, -6], [0, 2, -6], [6, 0, -6]]
+  primitive: { kind: sphere, radius: 0.1 }
+geo:
+  id: geo
+  primitive: { kind: scripted, script: scripts/geo.js, params: { size: 1 } }
+  feetPosition: { x: -4, y: 0, z: 0 }
+  physics: static

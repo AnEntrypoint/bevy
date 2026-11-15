@@ -1,0 +1,578 @@
+use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
+use bevy::asset::RenderAssetUsages;
+use bevy::mesh::{Indices, PrimitiveTopology};
+use bevy::prelude::*;
+use serde_json::{Map, Value, json};
+use std::collections::BTreeMap;
+
+#[derive(Resource, Clone, Debug)]
+pub struct GlobeWorld {
+    pub name: String,
+    pub center: Vec3,
+    pub radius: f32,
+    pub sea_level: f32,
+    pub amplitude: f32,
+    pub seed: u64,
+    pub chunk_span: f32,
+    pub gravity: f32,
+    pub stream_radius: f32,
+    pub subdivisions: u32,
+    pub body_altitude: f32,
+    pub bodies: Vec<(f32, f32)>,
+}
+
+impl Default for GlobeWorld {
+    fn default() -> Self {
+        Self {
+            name: "globe".into(),
+            center: Vec3::ZERO,
+            radius: 64.0,
+            sea_level: 0.0,
+            amplitude: 3.0,
+            seed: 0x5eed_1234,
+            chunk_span: 0.35,
+            gravity: 9.81,
+            stream_radius: 40.0,
+            subdivisions: 8,
+            body_altitude: 0.5,
+            bodies: vec![(0.0, 0.0)],
+        }
+    }
+}
+
+#[derive(Component, Clone, Debug)]
+pub struct GlobeChunk {
+    pub vertices: usize,
+    pub max_elevation: f32,
+}
+
+#[derive(Component, Clone, Debug, Default)]
+pub struct GlobeOrientation {
+    pub up: Vec3,
+    pub heading: Vec3,
+}
+
+#[derive(Component, Clone, Debug, Default)]
+pub struct GlobeBody {
+    pub latitude: f32,
+    pub longitude: f32,
+    pub altitude: f32,
+    pub speed: f32,
+}
+
+#[derive(Resource, Clone, Debug, Default)]
+pub struct GlobeRegistry {
+    pub chunks: BTreeMap<(i32, i32), Entity>,
+    pub bodies: Vec<Entity>,
+}
+
+#[derive(Resource, Clone, Debug, Default)]
+pub struct GlobeFocus(pub Vec3);
+
+#[derive(Resource, Clone, Debug, Default)]
+pub struct GlobeSummary {
+    pub chunks: usize,
+    pub bodies: usize,
+    pub vertices: usize,
+    pub max_elevation: f32,
+    pub seed: u64,
+    pub radius: f32,
+    pub altitude: f32,
+    pub focus: Vec3,
+}
+
+struct ChunkGeometry {
+    positions: Vec<Vec3>,
+    colors: Vec<[f32; 4]>,
+    indices: Vec<[u32; 3]>,
+    max_elevation: f32,
+}
+
+impl GlobeWorld {
+    pub fn from_value(value: Option<&Value>) -> Self {
+        let mut globe = Self::default();
+        if let Some(value) = value {
+            globe.from_json(value);
+        }
+        globe
+    }
+
+    pub fn from_json(&mut self, value: &Value) {
+        let Some(object) = value.as_object() else { return; };
+        if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
+        if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
+        for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude)] {
+            if let Some(value) = object.get(field).and_then(Value::as_f64) { *target = value as f32; }
+        }
+        if let Some(value) = object.get("seed").and_then(Value::as_u64) { self.seed = value; }
+        if let Some(value) = object.get("subdivisions").and_then(Value::as_u64) { self.subdivisions = value.clamp(1, 64) as u32; }
+        if let Some(bodies) = object.get("bodies").and_then(Value::as_array) {
+            self.bodies = bodies.iter().map(|body| {
+                (number(body.get("latitude"), 0.0), self.wrap_lon(number(body.get("longitude"), 0.0)))
+            }).collect();
+        }
+        self.radius = self.radius.max(1.0);
+        self.stream_radius = self.stream_radius.max(self.radius * self.chunk_span);
+        self.chunk_span = self.chunk_span.clamp(0.02, std::f32::consts::PI);
+    }
+
+    pub fn lat_lon_to_unit(&self, latitude: f32, longitude: f32) -> Vec3 {
+        let (lat, lon) = (latitude.to_radians(), longitude.to_radians());
+        Vec3::new(lat.cos() * lon.sin(), lat.sin(), lat.cos() * lon.cos())
+    }
+
+    pub fn unit_to_lat_lon(&self, direction: Vec3) -> (f32, f32) {
+        let unit = direction.normalize_or_zero();
+        (unit.y.asin().to_degrees(), unit.x.atan2(unit.z).to_degrees())
+    }
+
+    pub fn wrap_lon(&self, longitude: f32) -> f32 {
+        ((longitude + 180.0) % 360.0 + 360.0) % 360.0 - 180.0
+    }
+
+    pub fn hash(&self, x: i64, y: i64, z: i64) -> f32 {
+        let mut state = self.seed ^ (x as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ (y as u64).wrapping_mul(0xbf58_476d_1ce4_e5b9) ^ (z as u64).wrapping_mul(0x94d0_49bb_1331_11eb);
+        state ^= state >> 30;
+        state = state.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        state ^= state >> 27;
+        (state >> 11) as f32 / (1u64 << 53) as f32
+    }
+
+    pub fn elevation(&self, latitude: f32, longitude: f32) -> f32 {
+        self.spherical_noise(self.lat_lon_to_unit(latitude, longitude), 4)
+    }
+
+    fn spherical_noise(&self, unit: Vec3, octaves: u32) -> f32 {
+        let mut total = 0.0;
+        let mut amplitude = self.amplitude;
+        for octave in 0..octaves {
+            let p = unit * (2.0_f32).powi(octave as i32);
+            let (x, y, z) = (p.x.floor() as i64, p.y.floor() as i64, p.z.floor() as i64);
+            let smooth = |t: f32| t * t * (3.0 - 2.0 * t);
+            let (sx, sy, sz) = (smooth(p.x.fract()), smooth(p.y.fract()), smooth(p.z.fract()));
+            let corner = |dx: i64, dy: i64, dz: i64| self.hash(x + dx + octave as i64 * 17, y + dy, z + dz) * 2.0 - 1.0;
+            let lerp = |a: f32, b: f32, t: f32| a * (1.0 - t) + b * t;
+            let a = lerp(corner(0, 0, 0), corner(1, 0, 0), sx);
+            let b = lerp(corner(0, 1, 0), corner(1, 1, 0), sx);
+            let c = lerp(corner(0, 0, 1), corner(1, 0, 1), sx);
+            let d = lerp(corner(0, 1, 1), corner(1, 1, 1), sx);
+            total += lerp(lerp(a, b, sy), lerp(c, d, sy), sz) * amplitude;
+            amplitude *= 0.5;
+        }
+        total.max(self.sea_level)
+    }
+
+    pub fn surface_position(&self, latitude: f32, longitude: f32, altitude: f32) -> Vec3 {
+        let unit = self.lat_lon_to_unit(latitude, longitude);
+        self.center + unit * (self.radius + self.elevation(latitude, longitude) + altitude)
+    }
+
+    pub fn gravity_vector(&self, position: Vec3) -> Vec3 {
+        let toward = self.center - position;
+        if toward.length_squared() < 1e-6 { return Vec3::ZERO; }
+        toward.normalize() * self.gravity
+    }
+
+    pub fn orientation(&self, latitude: f32, longitude: f32, heading: f32) -> Quat {
+        let (lat, lon) = (latitude.to_radians(), longitude.to_radians());
+        let up = self.lat_lon_to_unit(latitude, longitude);
+        let east = Vec3::new(lon.cos(), 0.0, -lon.sin());
+        let north = Vec3::new(-lat.sin() * lon.sin(), lat.cos(), -lat.sin() * lon.cos());
+        let forward = north * heading.to_radians().cos() + east * heading.to_radians().sin();
+        let back = -forward;
+        let right = up.cross(back);
+        Quat::from_mat3(&Mat3::from_cols(right, up, back)).normalize()
+    }
+
+    fn grid(&self) -> (i32, i32) {
+        let span = self.chunk_span.to_degrees();
+        ((180.0 / span).ceil() as i32, (360.0 / span).ceil() as i32)
+    }
+
+    fn cell_bounds(&self, row: i32, column: i32) -> (f32, f32, f32, f32) {
+        let span = self.chunk_span.to_degrees();
+        let lat0 = -90.0 + row as f32 * span;
+        let lon0 = -180.0 + column as f32 * span;
+        (lat0, (lat0 + span).min(90.0), lon0, (lon0 + span).min(180.0))
+    }
+
+    fn chunk_geometry(&self, bounds: (f32, f32, f32, f32)) -> ChunkGeometry {
+        let (lat0, lat1, lon0, lon1) = bounds;
+        let n = self.subdivisions as usize;
+        let mut positions = Vec::with_capacity((n + 1) * (n + 1));
+        let mut colors = Vec::with_capacity((n + 1) * (n + 1));
+        let mut max_elevation = 0.0_f32;
+        for i in 0..=n {
+            for j in 0..=n {
+                let lat = lat0 + (lat1 - lat0) * i as f32 / n as f32;
+                let lon = lon0 + (lon1 - lon0) * j as f32 / n as f32;
+                let elevation = self.elevation(lat, lon);
+                max_elevation = max_elevation.max(elevation);
+                positions.push(self.center + self.lat_lon_to_unit(lat, lon) * (self.radius + elevation));
+                colors.push(biome_color(elevation / self.amplitude.max(1e-3), elevation <= self.sea_level));
+            }
+        }
+        let mut indices = Vec::with_capacity(n * n * 2);
+        for i in 0..n {
+            for j in 0..n {
+                let a = (i * (n + 1) + j) as u32;
+                let b = a + (n + 1) as u32;
+                let c = a + 1;
+                let d = b + 1;
+                for mut triangle in [[a, b, d], [a, d, c]] {
+                    let p0 = positions[triangle[0] as usize];
+                    let edge = positions[triangle[1] as usize] - p0;
+                    let other = positions[triangle[2] as usize] - p0;
+                    if edge.cross(other).dot(p0 - self.center) < 0.0 { triangle.swap(1, 2); }
+                    indices.push(triangle);
+                }
+            }
+        }
+        ChunkGeometry { positions, colors, indices, max_elevation }
+    }
+
+    pub fn chunk(&self, lat: i32, lon: i32) -> Map<String, Value> {
+        let span = self.chunk_span.to_degrees();
+        let latitude = (lat as f32 * span).clamp(-90.0, 90.0);
+        let longitude = self.wrap_lon(lon as f32 * span);
+        let elevation = self.elevation(latitude, longitude);
+        let center = self.surface_position(latitude, longitude, 0.0);
+        json!({
+            "lat": lat, "lon": lon, "latitude": latitude, "longitude": longitude,
+            "latitudeRange": [latitude - span * 0.5, latitude + span * 0.5],
+            "longitudeRange": [longitude - span * 0.5, longitude + span * 0.5],
+            "center": vec_json(center), "up": vec_json((center - self.center).normalize_or_zero()),
+            "elevation": elevation, "radius": self.radius + elevation,
+            "vertices": (self.subdivisions as usize + 1).pow(2), "wrap": lon.abs() as f32 * span > 180.0
+        }).as_object().cloned().unwrap_or_default()
+    }
+
+    pub fn report(&self, summary: &GlobeSummary) -> Value {
+        json!({
+            "name": self.name, "center": vec_json(self.center), "radius": self.radius,
+            "seaLevel": self.sea_level, "amplitude": self.amplitude, "seed": self.seed,
+            "chunkSpan": self.chunk_span, "gravity": self.gravity, "streamRadius": self.stream_radius,
+            "subdivisions": self.subdivisions, "bodyAltitude": self.body_altitude,
+            "chunks": summary.chunks, "bodies": summary.bodies, "vertices": summary.vertices,
+            "maxElevation": summary.max_elevation, "altitude": summary.altitude, "focus": vec_json(summary.focus),
+            "native": ["Mesh", "StandardMaterial", "Collider::trimesh", "RigidBody", "Transform", "GlobalTransform", "Time", "Component", "Resource", "FixedUpdate"]
+        })
+    }
+}
+
+fn biome_color(relative: f32, water: bool) -> [f32; 4] {
+    let color = if water {
+        Vec3::new(0.10, 0.25, 0.55)
+    } else if relative < 0.25 {
+        Vec3::new(0.80, 0.74, 0.50)
+    } else if relative < 0.6 {
+        Vec3::new(0.25, 0.55, 0.22)
+    } else if relative < 0.85 {
+        Vec3::new(0.45, 0.40, 0.35)
+    } else {
+        Vec3::new(0.95, 0.95, 0.97)
+    };
+    [color.x, color.y, color.z, 1.0]
+}
+
+pub fn vec_json(value: Vec3) -> Value { json!({ "x": value.x, "y": value.y, "z": value.z }) }
+pub fn quat_json(value: Quat) -> Value { json!({ "x": value.x, "y": value.y, "z": value.z, "w": value.w }) }
+pub fn json_vec3(value: Option<&Value>) -> Vec3 { crate::spec::vec3(value) }
+pub fn number(value: Option<&Value>, fallback: f32) -> f32 { value.and_then(Value::as_f64).map(|v| v as f32).unwrap_or(fallback) }
+
+pub fn register(app: &mut App) {
+    let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
+    let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
+    app.init_resource::<GlobeWorld>()
+        .init_resource::<GlobeRegistry>()
+        .init_resource::<GlobeSummary>()
+        .insert_resource(focus)
+        .add_systems(Startup, spawn_bodies)
+        .add_systems(FixedUpdate, update_focus.before(sync_chunks).before(crate::script::run_scripts))
+        .add_systems(FixedUpdate, sync_chunks.before(crate::script::run_scripts))
+        .add_systems(FixedUpdate, apply_spherical_gravity.before(crate::script::run_scripts))
+        .add_systems(FixedUpdate, read_summary.after(sync_chunks).before(crate::script::run_scripts))
+        .add_systems(FixedPostUpdate, settle_bodies.after(PhysicsSystems::StepSimulation).before(PhysicsSystems::Writeback));
+}
+
+fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>, mut registry: ResMut<GlobeRegistry>) {
+    for &(latitude, longitude) in &globe.bodies {
+        let surface = globe.surface_position(latitude, longitude, globe.body_altitude);
+        let rotation = globe.orientation(latitude, longitude, 0.0);
+        let entity = commands.spawn((
+            GlobeBody { latitude, longitude, altitude: globe.body_altitude, speed: 0.0 },
+            GlobeOrientation::default(),
+            RigidBody::Dynamic,
+            Collider::sphere(0.5),
+            GravityScale(0.0),
+            LinearVelocity::default(),
+            Position(surface),
+            Rotation(rotation),
+            Transform::from_translation(surface).with_rotation(rotation),
+        )).id();
+        registry.bodies.push(entity);
+    }
+}
+
+pub fn orbit_globe_camera(time: Res<Time>, globe: Res<GlobeWorld>, mut cameras: Query<&mut Transform, With<Camera3d>>) {
+    let angle = time.elapsed_secs() * 0.12;
+    let eye = globe.center + Vec3::new(angle.sin(), 0.45, angle.cos()).normalize() * globe.radius * 2.4;
+    for mut transform in &mut cameras {
+        *transform = Transform::from_translation(eye).looking_at(globe.center, Vec3::Y);
+    }
+}
+
+fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<GlobeFocus>) {
+    if let Some(position) = bodies.iter().next() {
+        focus.0 = position.0;
+    }
+}
+
+fn sync_chunks(
+    mut commands: Commands,
+    globe: Res<GlobeWorld>,
+    focus: Res<GlobeFocus>,
+    mut registry: ResMut<GlobeRegistry>,
+    mut last_focus: Local<Option<Vec3>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
+    mut materials: Option<ResMut<Assets<StandardMaterial>>>,
+    mut material: Local<Option<Handle<StandardMaterial>>>,
+) {
+    let step = globe.radius * globe.chunk_span;
+    if !registry.chunks.is_empty() && last_focus.is_some_and(|previous| previous.distance(focus.0) < step * 0.5) {
+        return;
+    }
+    *last_focus = Some(focus.0);
+    let (rows, columns) = globe.grid();
+    for row in 0..rows {
+        for column in 0..columns {
+            let key = (row, column);
+            let bounds = globe.cell_bounds(row, column);
+            let center = globe.surface_position((bounds.0 + bounds.1) * 0.5, (bounds.2 + bounds.3) * 0.5, 0.0);
+            let inside = center.distance(focus.0) <= globe.stream_radius;
+            match (inside, registry.chunks.get(&key).copied()) {
+                (true, None) => {
+                    let geometry = globe.chunk_geometry(bounds);
+                    let vertices = geometry.positions.len();
+                    let normals: Vec<[f32; 3]> = geometry.positions.iter().map(|p| (*p - globe.center).normalize_or_zero().to_array()).collect();
+                    let positions: Vec<[f32; 3]> = geometry.positions.iter().map(|p| p.to_array()).collect();
+                    let mut entity = commands.spawn((
+                        GlobeChunk { vertices, max_elevation: geometry.max_elevation },
+                        RigidBody::Static,
+                        Collider::trimesh(geometry.positions.clone(), geometry.indices.clone()),
+                        Transform::default(),
+                        GlobalTransform::default(),
+                    ));
+                    if let Some(meshes) = meshes.as_mut() {
+                        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+                        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+                        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+                        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, geometry.colors.clone());
+                        mesh.insert_indices(Indices::U32(geometry.indices.iter().flatten().copied().collect()));
+                        entity.insert(Mesh3d(meshes.add(mesh)));
+                    }
+                    if let Some(materials) = materials.as_mut() {
+                        let handle = material.get_or_insert_with(|| materials.add(StandardMaterial { base_color: Color::WHITE, perceptual_roughness: 0.95, ..default() })).clone();
+                        entity.insert(MeshMaterial3d(handle));
+                    }
+                    registry.chunks.insert(key, entity.id());
+                }
+                (false, Some(entity)) => {
+                    commands.entity(entity).despawn();
+                    registry.chunks.remove(&key);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+fn apply_spherical_gravity(
+    globe: Res<GlobeWorld>,
+    time: Res<Time<Fixed>>,
+    mut bodies: Query<(&Position, &mut LinearVelocity), With<GlobeBody>>,
+) {
+    let dt = time.delta_secs();
+    for (position, mut velocity) in &mut bodies {
+        velocity.0 += globe.gravity_vector(position.0) * dt;
+    }
+}
+
+fn settle_bodies(
+    globe: Res<GlobeWorld>,
+    mut bodies: Query<(&mut GlobeBody, &mut GlobeOrientation, &mut Position, &mut Rotation, &mut Transform, &mut LinearVelocity)>,
+) {
+    for (mut body, mut orientation, mut position, mut rotation, mut transform, mut velocity) in &mut bodies {
+        let offset = position.0 - globe.center;
+        let unit = offset.normalize_or_zero();
+        let (latitude, longitude) = globe.unit_to_lat_lon(unit);
+        let floor = globe.surface_position(latitude, longitude, globe.body_altitude);
+        if offset.length() < (floor - globe.center).length() {
+            position.0 = floor;
+            let radial = velocity.0.dot(unit);
+            if radial < 0.0 { velocity.0 -= unit * radial; }
+        }
+        let q = globe.orientation(latitude, longitude, 0.0);
+        let altitude = (position.0 - globe.center).length() - globe.radius - globe.elevation(latitude, longitude);
+        body.latitude = latitude;
+        body.longitude = longitude;
+        body.altitude = altitude;
+        body.speed = velocity.0.length();
+        orientation.up = unit;
+        orientation.heading = q * Vec3::NEG_Z;
+        rotation.0 = q;
+        transform.rotation = q;
+        transform.translation = position.0;
+    }
+}
+
+fn read_summary(
+    globe: Res<GlobeWorld>,
+    registry: Res<GlobeRegistry>,
+    focus: Res<GlobeFocus>,
+    chunks: Query<&GlobeChunk>,
+    bodies: Query<&GlobeBody>,
+    mut summary: ResMut<GlobeSummary>,
+) {
+    summary.chunks = registry.chunks.len();
+    summary.bodies = bodies.iter().count();
+    summary.vertices = chunks.iter().map(|chunk| chunk.vertices).sum();
+    summary.max_elevation = chunks.iter().map(|chunk| chunk.max_elevation).fold(0.0_f32, f32::max);
+    summary.altitude = bodies.iter().next().map(|body| body.altitude).unwrap_or(0.0);
+    summary.focus = focus.0;
+    summary.seed = globe.seed;
+    summary.radius = globe.radius;
+}
+
+pub fn dispatch(globe: &mut GlobeWorld, registry: &GlobeRegistry, op: &str, payload: &Map<String, Value>) -> Value {
+    match op {
+        "configure" => {
+            globe.from_json(&Value::Object(payload.clone()));
+            json!({ "ok": true, "name": globe.name, "radius": globe.radius, "seed": globe.seed })
+        }
+        "info" => globe.report(&GlobeSummary::default()),
+        "toCartesian" => {
+            let lat = number(payload.get("latitude").or_else(|| payload.get("lat")), 0.0);
+            let lon = globe.wrap_lon(number(payload.get("longitude").or_else(|| payload.get("lon")), 0.0));
+            let altitude = number(payload.get("altitude"), 0.0);
+            let position = globe.surface_position(lat, lon, altitude);
+            json!({ "x": position.x, "y": position.y, "z": position.z, "latitude": lat, "longitude": lon, "altitude": altitude, "radius": position.distance(globe.center) })
+        }
+        "toSpherical" => {
+            let position = json_vec3(payload.get("position"));
+            let offset = position - globe.center;
+            let (latitude, longitude) = globe.unit_to_lat_lon(offset);
+            let distance = offset.length();
+            json!({ "latitude": latitude, "longitude": longitude, "altitude": distance - globe.radius - globe.elevation(latitude, longitude), "radius": distance })
+        }
+        "elevation" | "terrainHeight" => {
+            let lat = number(payload.get("latitude").or_else(|| payload.get("lat")).or_else(|| payload.get("z")), 0.0);
+            let lon = number(payload.get("longitude").or_else(|| payload.get("lon")).or_else(|| payload.get("x")), 0.0);
+            json!({ "height": globe.elevation(lat, lon), "latitude": lat, "longitude": globe.wrap_lon(lon) })
+        }
+        "chunk" => {
+            let lat = payload.get("lat").and_then(Value::as_i64).unwrap_or(0) as i32;
+            let lon = payload.get("lon").and_then(Value::as_i64).unwrap_or(0) as i32;
+            Value::Object(globe.chunk(lat, lon))
+        }
+        "chunks" => {
+            let limit = payload.get("limit").and_then(Value::as_u64).unwrap_or(16).min(256) as i32;
+            let values: Vec<Value> = (-limit / 2..limit / 2).map(|i| Value::Object(globe.chunk(0, i))).collect();
+            json!({ "count": registry.chunks.len(), "sample": values })
+        }
+        "gravity" => {
+            let position = json_vec3(payload.get("position"));
+            vec_json(globe.gravity_vector(position))
+        }
+        "orientation" => {
+            let lat = number(payload.get("latitude").or_else(|| payload.get("lat")), 0.0);
+            let lon = number(payload.get("longitude").or_else(|| payload.get("lon")), 0.0);
+            let heading = number(payload.get("heading"), 0.0);
+            let q = globe.orientation(lat, lon, heading);
+            let mut value = quat_json(q).as_object().cloned().unwrap_or_default();
+            value.insert("up".into(), vec_json(globe.lat_lon_to_unit(lat, lon)));
+            value.insert("forward".into(), vec_json(q * Vec3::NEG_Z));
+            Value::Object(value)
+        }
+        "navigation" | "navigate" | "wrap" => {
+            let from_lat = number(payload.get("fromLatitude").or_else(|| payload.get("fromLat")), 0.0);
+            let from_lon = number(payload.get("fromLongitude").or_else(|| payload.get("fromLon")), 0.0);
+            let to_lat = number(payload.get("toLatitude").or_else(|| payload.get("toLat")), 0.0);
+            let to_lon = globe.wrap_lon(number(payload.get("toLongitude").or_else(|| payload.get("toLon")), 0.0));
+            let a = globe.lat_lon_to_unit(from_lat, from_lon);
+            let b = globe.lat_lon_to_unit(to_lat, to_lon);
+            let angle = a.dot(b).clamp(-1.0, 1.0).acos();
+            let direction = (b - a * a.dot(b)).normalize_or_zero();
+            json!({ "from": [from_lat, globe.wrap_lon(from_lon)], "to": [to_lat, to_lon], "distance": angle * globe.radius, "angle": angle.to_degrees(), "direction": vec_json(direction), "wrapped": to_lon })
+        }
+        _ => Value::Null,
+    }
+}
+
+pub fn provenance() -> BTreeMap<&'static str, &'static str> {
+    BTreeMap::from([
+        ("globeConfigure", "Bevy ECS GlobeWorld resource"),
+        ("globeInfo", "Bevy ECS GlobeWorld/GlobeSummary"),
+        ("globeToCartesian", "Bevy math Vec3/Quat spherical conversion"),
+        ("globeToSpherical", "Bevy math Vec3 spherical conversion"),
+        ("globeElevation", "Bevy ECS deterministic spherical noise"),
+        ("globeChunk", "Bevy ECS procedural GlobeChunk entities with Bevy Mesh and Avian trimesh"),
+        ("globeChunks", "Bevy ECS procedural GlobeChunk entities"),
+        ("globeGravity", "Bevy ECS radial gravity system"),
+        ("globeOrientation", "Bevy math Quat/Transform"),
+        ("globeNavigation", "Bevy math Vec3 great-circle wraparound"),
+    ])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn globe() -> GlobeWorld {
+        GlobeWorld::default()
+    }
+
+    #[test]
+    fn elevation_is_deterministic_and_bounded() {
+        let g = globe();
+        for i in 0..50 {
+            let lat = -80.0 + i as f32 * 3.1;
+            let lon = -170.0 + i as f32 * 6.7;
+            assert_eq!(g.elevation(lat, lon).to_bits(), globe().elevation(lat, lon).to_bits());
+            assert!(g.elevation(lat, lon) <= g.amplitude);
+        }
+    }
+
+    #[test]
+    fn gravity_points_to_centre() {
+        let g = globe();
+        let position = g.surface_position(30.0, 45.0, 2.0);
+        let pull = g.gravity_vector(position);
+        assert!((pull.length() - g.gravity).abs() < 1e-4);
+        assert!(pull.normalize().dot((g.center - position).normalize()) > 0.9999);
+    }
+
+    #[test]
+    fn orientation_is_orthonormal_and_up_matches_normal() {
+        let g = globe();
+        let q = g.orientation(-20.0, 100.0, 35.0);
+        assert!((q.length() - 1.0).abs() < 1e-5);
+        let up = q * Vec3::Y;
+        assert!(up.dot(g.lat_lon_to_unit(-20.0, 100.0)) > 0.9999);
+        assert!((q * Vec3::NEG_Z).dot(up).abs() < 1e-4);
+    }
+
+    #[test]
+    fn chunk_grid_covers_sphere_and_geometry_faces_outward() {
+        let g = globe();
+        let (rows, columns) = g.grid();
+        assert!(rows >= 2 && columns >= 2);
+        let geometry = g.chunk_geometry(g.cell_bounds(rows / 2, columns / 2));
+        assert_eq!(geometry.positions.len(), (g.subdivisions as usize + 1).pow(2));
+        for triangle in &geometry.indices {
+            let p0 = geometry.positions[triangle[0] as usize];
+            let normal = (geometry.positions[triangle[1] as usize] - p0).cross(geometry.positions[triangle[2] as usize] - p0);
+            assert!(normal.dot(p0 - g.center) >= 0.0);
+        }
+    }
+}
