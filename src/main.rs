@@ -1,5 +1,6 @@
 mod features;
 mod features_ecs;
+mod glb;
 mod globe;
 mod gltf_check;
 mod png_check;
