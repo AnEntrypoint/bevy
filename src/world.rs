@@ -58,6 +58,16 @@ pub struct WorldData(pub Place);
 pub struct WorldRoot(pub std::path::PathBuf);
 
 pub fn run(directory: &str, place_name: Option<&str>, ticks: usize) -> Result<(), String> {
+    let (mut app, place) = prepare(directory, place_name)?;
+    for _ in 0..ticks {
+        app.update();
+    }
+    report(&mut app, Path::new(directory), &place, ticks);
+    crate::script::shutdown();
+    Ok(())
+}
+
+pub fn prepare(directory: &str, place_name: Option<&str>) -> Result<(App, Place), String> {
     let tree = WorldTree::load(Path::new(directory))?;
     let name = place_name
         .map(str::to_string)
@@ -132,12 +142,7 @@ pub fn run(directory: &str, place_name: Option<&str>, ticks: usize) -> Result<()
     app.add_systems(FixedUpdate, crate::script::run_scripts);
     app.finish();
     app.cleanup();
-    for _ in 0..ticks {
-        app.update();
-    }
-    report(&mut app, Path::new(directory), &place, ticks);
-    crate::script::shutdown();
-    Ok(())
+    Ok((app, place))
 }
 
 fn spawn_place(world: &mut World) {

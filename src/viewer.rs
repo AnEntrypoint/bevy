@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
-use crate::ui_html::{HtmlUiPlugin, HtmlUiSource};
+use crate::ui_html::{HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
 use crate::{script, world};
 
 #[derive(Resource, Clone, Debug)]
@@ -42,7 +42,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         .get(&name)
         .cloned()
         .ok_or_else(|| format!("{directory}: no place {name}"))?;
-    let ui_html = world_ui_html(directory, &name, &tree)?;
+    let runner = world_runner(directory, &name, &tree)?;
     let title = format!("bevy-jayzee viewer — {name}");
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -65,8 +65,8 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         camera: Vec3::new(12.0, 10.0, 18.0),
     })
     .insert_resource(ViewerObjects(place_def.objects))
-    .insert_resource(ViewerBrowserReport::default())
-    .insert_resource(HtmlUiSource::new(ui_html))
+    .insert_resource(ViewerBrowserReport { path: browser_report_path(directory, place) })
+    .init_resource::<HtmlUiSource>()
     .add_plugins(HtmlUiPlugin)
     .add_systems(Startup, spawn_viewer)
     .add_systems(Update, (update_overlay, primary_window_title, write_browser_report));
@@ -77,8 +77,31 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     } else {
         app.add_systems(Update, orbit_camera);
     }
+    if let Some(runner) = runner {
+        app.insert_non_send(runner).add_systems(Update, (tick_world, feed_ui_html).chain());
+    }
     app.run();
+    crate::script::shutdown();
     Ok(())
+}
+
+struct WorldRunner(App);
+
+fn world_runner(directory: &str, place: &str, tree: &WorldTree) -> Result<Option<WorldRunner>, String> {
+    let has_render = tree.config.ui.get("render").is_some_and(|render| render.is_string());
+    if !has_render {
+        return Ok(None);
+    }
+    let (app, _) = world::prepare(directory, Some(place))?;
+    Ok(Some(WorldRunner(app)))
+}
+
+fn tick_world(mut runner: NonSendMut<WorldRunner>) {
+    runner.0.update();
+}
+
+fn feed_ui_html(mut source: ResMut<HtmlUiSource>) {
+    source.update(&script::last_ui_html());
 }
 
 #[derive(Component)]
@@ -86,15 +109,6 @@ struct ViewerOverlay;
 
 #[derive(Resource, Clone, Debug, Default)]
 struct ViewerObjects(Vec<ObjectSpec>);
-
-fn world_ui_html(directory: &str, place: &str, tree: &WorldTree) -> Result<String, String> {
-    let has_render = tree.config.ui.get("render").is_some_and(|render| render.is_string());
-    if !has_render {
-        return Ok(String::new());
-    }
-    world::run(directory, Some(place), 2)?;
-    Ok(script::last_ui_html())
-}
 
 fn spawn_viewer(
     mut commands: Commands,
@@ -199,7 +213,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>) {
     if report.path.is_empty() {
         return;
     }
@@ -215,6 +229,8 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "lights": scene.lights,
         "camera": [scene.camera.x, scene.camera.y, scene.camera.z],
         "visibleIds": ids,
+        "uiNodes": ui.nodes,
+        "uiWarnings": ui.warnings,
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());

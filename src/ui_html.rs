@@ -18,20 +18,35 @@ pub struct HtmlUiSource {
 }
 
 impl HtmlUiSource {
-    pub fn new(html: String) -> Self {
-        Self { html, applied: None }
+    pub fn update(&mut self, html: &str) {
+        if self.html != html {
+            self.html = html.to_string();
+        }
     }
+}
+
+#[derive(Resource, Default, Clone, Debug)]
+pub struct HtmlUiStatus {
+    pub nodes: usize,
+    pub warnings: Vec<String>,
 }
 
 pub struct HtmlUiPlugin;
 
 impl Plugin for HtmlUiPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<HtmlUiSource>().add_systems(Update, sync_html_ui);
+        app.init_resource::<HtmlUiSource>()
+            .init_resource::<HtmlUiStatus>()
+            .add_systems(Update, sync_html_ui);
     }
 }
 
-fn sync_html_ui(mut commands: Commands, mut source: ResMut<HtmlUiSource>, roots: Query<Entity, With<HtmlUiRoot>>) {
+fn sync_html_ui(
+    mut commands: Commands,
+    mut source: ResMut<HtmlUiSource>,
+    mut status: ResMut<HtmlUiStatus>,
+    roots: Query<Entity, With<HtmlUiRoot>>,
+) {
     if source.applied.as_deref() == Some(source.html.as_str()) {
         return;
     }
@@ -39,11 +54,14 @@ fn sync_html_ui(mut commands: Commands, mut source: ResMut<HtmlUiSource>, roots:
         commands.entity(root).despawn();
     }
     source.applied = Some(source.html.clone());
+    *status = HtmlUiStatus::default();
     if source.html.trim().is_empty() {
         return;
     }
-    let spec = build(&source.html);
-    let root = spawn(&mut commands, None, &spec);
+    let built = build(&source.html);
+    status.nodes = built.spec.count();
+    status.warnings = built.warnings;
+    let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
 }
 
@@ -54,7 +72,6 @@ pub enum UiSpec {
 }
 
 impl UiSpec {
-    #[cfg(test)]
     pub fn count(&self) -> usize {
         match self {
             UiSpec::Box { children, .. } => 1 + children.iter().map(UiSpec::count).sum::<usize>(),
@@ -149,12 +166,22 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
     id
 }
 
-pub fn build(html: &str) -> UiSpec {
+pub struct Built {
+    pub spec: UiSpec,
+    pub warnings: Vec<String>,
+}
+
+pub fn build(html: &str) -> Built {
     let (dom, css) = parse(html);
     let rules = parse_css(&css);
     let inherit = Inherit { vars: BTreeMap::new(), color: Some(Color::WHITE), font_size: 16.0 };
-    let children = convert(&dom, &mut Vec::new(), &inherit, &rules);
-    UiSpec::Box { style: BoxStyle::root(), children }
+    let mut dropped = BTreeMap::new();
+    let children = convert(&dom, &mut Vec::new(), &inherit, &rules, &mut dropped);
+    let warnings = dropped
+        .into_iter()
+        .map(|(tag, count)| format!("unsupported element <{tag}> dropped ({count})"))
+        .collect();
+    Built { spec: UiSpec::Box { style: BoxStyle::root(), children }, warnings }
 }
 
 #[derive(Clone, Debug)]
@@ -744,7 +771,7 @@ fn flush_run(run: &mut String, out: &mut Vec<UiSpec>, inherit: &Inherit) {
     out.push(UiSpec::Text { text, color: inherit.color, size: inherit.font_size });
 }
 
-fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule]) -> Vec<UiSpec> {
+fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule], dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
     let mut out = Vec::new();
     let mut run = String::new();
     for node in nodes {
@@ -752,6 +779,7 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
             Dom::Text(text) => run.push_str(text),
             Dom::Element { tag, attrs, children } => {
                 if SKIPPED.contains(&tag.as_str()) {
+                    *dropped.entry(tag.clone()).or_insert(0) += 1;
                     continue;
                 }
                 if tag == "br" {
@@ -766,7 +794,7 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     continue;
                 }
                 if scope.props.is_empty() && INLINE.contains(&tag.as_str()) {
-                    for spec in convert(children, path, &scope.inherit, rules) {
+                    for spec in convert(children, path, &scope.inherit, rules, dropped) {
                         match spec {
                             UiSpec::Text { text, .. } => run.push_str(&text),
                             other => {
@@ -778,7 +806,7 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                 } else {
                     flush_run(&mut run, &mut out, inherit);
                     let style = box_style(&scope);
-                    let inner = convert(children, path, &scope.inherit, rules);
+                    let inner = convert(children, path, &scope.inherit, rules, dropped);
                     out.push(UiSpec::Box { style, children: inner });
                 }
                 path.pop();
@@ -797,13 +825,18 @@ mod tests {
 
     #[test]
     fn nametag_sample_maps_to_expected_node_count() {
-        let spec = build(NAMETAG);
+        let spec = build(NAMETAG).spec;
         assert_eq!(spec.count(), 13);
     }
 
     #[test]
+    fn nametag_sample_has_no_warnings() {
+        assert!(build(NAMETAG).warnings.is_empty());
+    }
+
+    #[test]
     fn spawned_nodes_match_spec_count() {
-        let spec = build(NAMETAG);
+        let spec = build(NAMETAG).spec;
         let expected = spec.count();
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
@@ -818,7 +851,7 @@ mod tests {
 
     #[test]
     fn nametag_text_and_styles_are_mapped() {
-        let spec = build(NAMETAG);
+        let spec = build(NAMETAG).spec;
         let mut texts = Vec::new();
         collect_texts(&spec, &mut texts);
         assert!(texts.iter().any(|text| text == "Mira"));
@@ -831,8 +864,38 @@ mod tests {
 
     #[test]
     fn display_none_and_unsupported_elements_are_dropped() {
-        let spec = build("<style>.gone{display:none}</style><div class=gone>x</div><svg><rect/></svg><div>y</div>");
+        let spec = build("<style>.gone{display:none}</style><div class=gone>x</div><svg><rect/></svg><div>y</div>").spec;
         assert_eq!(spec.count(), 3);
+    }
+
+    #[test]
+    fn unsupported_elements_are_reported_not_silent() {
+        let built = build("<svg><rect/></svg><svg></svg><img src=x><div>y</div>");
+        assert_eq!(built.warnings, vec!["unsupported element <img> dropped (1)".to_string(), "unsupported element <svg> dropped (2)".to_string()]);
+    }
+
+    #[test]
+    fn flex_and_inline_style_are_mapped() {
+        let built = build(r#"<div id="bar" style="display:flex;gap:4px;padding:2px 6px;width:50%"><span>a</span><span>b</span></div>"#);
+        let UiSpec::Box { children, .. } = &built.spec else { panic!("root is a box") };
+        let UiSpec::Box { style, children } = &children[0] else { panic!("bar is a box") };
+        assert!(style.row);
+        assert_eq!(style.column_gap, 4.0);
+        assert_eq!(style.padding, [2.0, 6.0, 2.0, 6.0]);
+        assert_eq!(style.width, Val::Percent(50.0));
+        assert_eq!(children.len(), 1);
+    }
+
+    #[test]
+    fn source_update_only_changes_on_new_html() {
+        let mut source = HtmlUiSource::default();
+        source.update("<div>a</div>");
+        assert_eq!(source.html, "<div>a</div>");
+        source.applied = Some("<div>a</div>".to_string());
+        source.update("<div>a</div>");
+        assert_eq!(source.applied.as_deref(), Some("<div>a</div>"));
+        source.update("<div>b</div>");
+        assert_eq!(source.html, "<div>b</div>");
     }
 
     fn collect_texts(spec: &UiSpec, out: &mut Vec<String>) {
