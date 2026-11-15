@@ -1,7 +1,9 @@
+use crate::glb::{self, Decoded};
 use crate::png_check;
 use bevy::asset::{AssetPlugin, LoadState};
 use bevy::gltf::{Gltf, GltfPlugin};
-use bevy::image::ImagePlugin;
+use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats, Image, ImagePlugin};
+use bevy::mesh::MeshPlugin;
 use bevy::prelude::*;
 use bevy::world_serialization::WorldSerializationPlugin;
 use serde_json::{Value, json};
@@ -15,6 +17,13 @@ const GLB_VERSION: u32 = 2;
 const CHUNK_JSON: u32 = 0x4E4F_534A;
 const CHUNK_BIN: u32 = 0x004E_4942;
 const REFERENCE_DIRS: [&str; 3] = ["pages", "world", "values"];
+const CACHE_DIR: &str = "target/gltf-cache";
+
+struct BevyLoad {
+    outcome: Result<(), String>,
+    images: usize,
+    ktx2_images: usize,
+}
 
 pub fn run(directory: &str, project: Option<&str>) -> bool {
     let root = match std::fs::canonicalize(directory) {
@@ -32,26 +41,73 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
     });
     let glb_files = collect_sorted(&root, &|path: &Path| has_extension(path, "glb"));
     let png_files = collect_sorted(&root, &|path: &Path| has_extension(path, "png"));
-    let bevy_status = load_with_bevy(&root, &glb_files);
+    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(CACHE_DIR);
+    let _ = std::fs::remove_dir_all(&cache);
+    let decodes = decode_to_cache(&root, &cache, &glb_files);
+    let bevy_loads = load_with_bevy(&cache, &decodes);
 
+    let glb_total = glb_files.len();
+    let mut glb_parse_pass = 0usize;
     let mut glb_pass = 0usize;
+    let mut decoded_ok = 0usize;
+    let mut meshopt_views = 0usize;
+    let mut basisu_textures = 0usize;
     let mut bevy_loaded = 0usize;
+    let mut ktx2_images = 0usize;
+    let mut bevy_failed_names = Vec::new();
     for path in &glb_files {
         let relative = relative_name(&root, path);
-        let result = std::fs::read(path)
+        let parse = std::fs::read(path)
             .map_err(|error| error.to_string())
             .and_then(|bytes| parse_glb(&bytes));
-        let (ok, mut line) = report("gltf-load", &relative, result);
-        let bevy = match bevy_status.get(&relative) {
-            Some(Ok(())) => {
-                bevy_loaded += 1;
-                json!("loaded")
+        let (parse_ok, mut line) = report("gltf-load", &relative, parse);
+        glb_parse_pass += usize::from(parse_ok);
+
+        let decode_ok = match decodes.get(&relative) {
+            Some(Ok(decoded)) => {
+                decoded_ok += 1;
+                meshopt_views += decoded.meshopt_views;
+                basisu_textures += decoded.basisu_textures;
+                line["decode"] = json!({
+                    "ok": true,
+                    "meshopt_views": decoded.meshopt_views,
+                    "basisu_textures": decoded.basisu_textures,
+                    "ktx2_textures": decoded.ktx2_textures.len(),
+                });
+                true
             }
-            Some(Err(error)) => json!({ "failed": error }),
-            None => json!("not-attempted"),
+            Some(Err(error)) => {
+                line["decode"] = json!({ "ok": false, "error": error });
+                false
+            }
+            None => {
+                line["decode"] = json!({ "ok": false, "error": "not decoded" });
+                false
+            }
         };
-        line["bevy"] = bevy;
-        glb_pass += usize::from(ok);
+
+        let bevy_ok = match bevy_loads.get(&relative) {
+            Some(load) => match &load.outcome {
+                Ok(()) => {
+                    bevy_loaded += 1;
+                    ktx2_images += load.ktx2_images;
+                    line["bevy"] = json!({ "loaded": true, "images": load.images, "ktx2_images": load.ktx2_images });
+                    true
+                }
+                Err(error) => {
+                    line["bevy"] = json!({ "loaded": false, "failed": error });
+                    false
+                }
+            },
+            None => {
+                line["bevy"] = json!({ "loaded": false, "failed": "not attempted" });
+                false
+            }
+        };
+        if !bevy_ok {
+            bevy_failed_names.push(relative.clone());
+        }
+        glb_pass += usize::from(parse_ok && decode_ok && bevy_ok);
         println!("{line}");
     }
 
@@ -69,8 +125,8 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
     })
     .iter()
     .filter_map(|path| path.file_name())
-        .map(|name| name.to_string_lossy().into_owned())
-        .collect();
+    .map(|name| name.to_string_lossy().into_owned())
+    .collect();
     let referenced = referenced_names(&project);
     let referenced_glb = referenced.iter().filter(|name| name.ends_with(".glb")).count();
     let referenced_png = referenced.len() - referenced_glb;
@@ -87,20 +143,28 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
         println!("{}", json!({ "kind": "missing", "type": kind, "name": name }));
     }
 
-    let glb_fail = glb_files.len() - glb_pass;
     let png_fail = png_files.len() - png_pass;
+    let bevy_failed = bevy_failed_names.len();
     let summary = json!({
         "kind": "gltf-summary",
         "root": root.display().to_string(),
         "project": project.display().to_string(),
+        "cache": cache.display().to_string(),
         "glb": {
-            "total": glb_files.len(),
+            "total": glb_total,
             "pass": glb_pass,
-            "fail": glb_fail,
+            "fail": glb_total - glb_pass,
+            "parse_pass": glb_parse_pass,
+            "decoded": decoded_ok,
+            "decode_failed": glb_total - decoded_ok,
+            "meshopt_views": meshopt_views,
+            "basisu_textures": basisu_textures,
             "referenced": referenced_glb,
             "missing": missing_glb,
             "bevy_loaded": bevy_loaded,
-            "bevy_failed": glb_files.len() - bevy_loaded,
+            "bevy_failed": bevy_failed,
+            "bevy_failed_names": bevy_failed_names,
+            "ktx2_images": ktx2_images,
         },
         "png": {
             "total": png_files.len(),
@@ -111,7 +175,33 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
         },
     });
     println!("{summary}");
-    glb_fail == 0 && png_fail == 0 && !(glb_files.is_empty() && png_files.is_empty())
+    glb_pass == glb_total && png_fail == 0 && !(glb_files.is_empty() && png_files.is_empty())
+}
+
+fn decode_to_cache(
+    root: &Path,
+    cache: &Path,
+    files: &[PathBuf],
+) -> BTreeMap<String, Result<Decoded, String>> {
+    files
+        .iter()
+        .map(|path| {
+            let relative = relative_name(root, path);
+            let decoded = std::fs::read(path)
+                .map_err(|error| error.to_string())
+                .and_then(|bytes| glb::decode(&bytes))
+                .and_then(|decoded| write_cached(cache, &relative, &decoded.bytes).map(|()| decoded));
+            (relative, decoded)
+        })
+        .collect()
+}
+
+fn write_cached(cache: &Path, relative: &str, bytes: &[u8]) -> Result<(), String> {
+    let target = cache.join(relative);
+    if let Some(parent) = target.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    std::fs::write(&target, bytes).map_err(|error| error.to_string())
 }
 
 pub fn parse_glb(bytes: &[u8]) -> Result<Value, String> {
@@ -216,33 +306,37 @@ fn report(kind: &str, relative: &str, result: Result<Value, String>) -> (bool, V
     (ok, line)
 }
 
-fn load_with_bevy(root: &Path, files: &[PathBuf]) -> BTreeMap<String, Result<(), String>> {
+fn load_with_bevy(
+    cache: &Path,
+    decodes: &BTreeMap<String, Result<Decoded, String>>,
+) -> BTreeMap<String, BevyLoad> {
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
         AssetPlugin {
-            file_path: root.to_string_lossy().into_owned(),
+            file_path: cache.to_string_lossy().into_owned(),
             ..default()
         },
         ImagePlugin::default(),
+        MeshPlugin,
         WorldSerializationPlugin,
         GltfPlugin::default(),
+    ));
+    app.insert_resource(CompressedImageFormatSupport(
+        CompressedImageFormats::BC | CompressedImageFormats::ETC2 | CompressedImageFormats::ASTC_LDR,
     ));
     app.finish();
     app.cleanup();
     let asset_server = app.world().resource::<AssetServer>().clone();
-    let handles: Vec<(String, UntypedHandle)> = files
+    let handles: BTreeMap<String, Handle<Gltf>> = decodes
         .iter()
-        .map(|path| {
-            let relative = relative_name(root, path);
-            let handle: Handle<Gltf> = asset_server.load(relative.clone());
-            (relative, handle.untyped())
-        })
+        .filter(|(_, decoded)| decoded.is_ok())
+        .map(|(relative, _)| (relative.clone(), asset_server.load(relative.clone())))
         .collect();
     let deadline = Instant::now() + SETTLE_TIMEOUT;
     loop {
         app.update();
-        let settled = handles.iter().all(|(_, handle)| {
+        let settled = handles.values().all(|handle| {
             !matches!(
                 asset_server.get_load_state(handle.id()),
                 Some(LoadState::Loading) | Some(LoadState::NotLoaded) | None
@@ -253,17 +347,63 @@ fn load_with_bevy(root: &Path, files: &[PathBuf]) -> BTreeMap<String, Result<(),
         }
         std::thread::sleep(Duration::from_millis(5));
     }
-    handles
-        .into_iter()
-        .map(|(relative, handle)| {
-            let status = match asset_server.get_load_state(handle.id()) {
-                Some(LoadState::Loaded) => Ok(()),
-                Some(LoadState::Failed(error)) => Err(error.to_string()),
-                other => Err(format!("not settled: {other:?}")),
+    let counts = image_counts(&app, &asset_server, decodes);
+    decodes
+        .iter()
+        .map(|(relative, decoded)| {
+            let (images, ktx2_images) = counts.get(relative).copied().unwrap_or_default();
+            let outcome = match decoded {
+                Err(error) => Err(format!("decode: {error}")),
+                Ok(_) => handles.get(relative).map_or_else(
+                    || Err("not attempted".to_string()),
+                    |handle| gltf_outcome(&asset_server, handle),
+                ),
             };
-            (relative, status)
+            (relative.clone(), BevyLoad { outcome, images, ktx2_images })
         })
         .collect()
+}
+
+fn gltf_outcome(asset_server: &AssetServer, handle: &Handle<Gltf>) -> Result<(), String> {
+    match asset_server.get_load_state(handle.id()) {
+        Some(LoadState::Loaded) => Ok(()),
+        Some(LoadState::Failed(error)) => Err(error.to_string()),
+        other => Err(format!("not settled: {other:?}")),
+    }
+}
+
+fn image_counts(
+    app: &App,
+    asset_server: &AssetServer,
+    decodes: &BTreeMap<String, Result<Decoded, String>>,
+) -> BTreeMap<String, (usize, usize)> {
+    let mut counts: BTreeMap<String, (usize, usize)> = BTreeMap::new();
+    for id in app.world().resource::<Assets<Image>>().ids() {
+        let Some(path) = asset_server.get_path(id) else {
+            continue;
+        };
+        let text = path.to_string();
+        let Some((file, label)) = text.split_once('#') else {
+            continue;
+        };
+        let Some(index) = label
+            .strip_prefix("Texture")
+            .and_then(|digits| digits.parse::<usize>().ok())
+        else {
+            continue;
+        };
+        if !matches!(asset_server.get_load_state(id), Some(LoadState::Loaded)) {
+            continue;
+        }
+        let entry = counts.entry(file.to_string()).or_default();
+        entry.0 += 1;
+        if let Some(Ok(decoded)) = decodes.get(file) {
+            if decoded.ktx2_textures.contains(&index) {
+                entry.1 += 1;
+            }
+        }
+    }
+    counts
 }
 
 fn referenced_names(project: &Path) -> BTreeSet<String> {

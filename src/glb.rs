@@ -1,3 +1,4 @@
+use crate::basisu;
 use meshopt::ffi;
 use serde_json::{json, Map, Value};
 use std::ffi::c_void;
@@ -7,6 +8,7 @@ const GLB_VERSION: u32 = 2;
 const JSON_CHUNK: u32 = 0x4E4F_534A;
 const BIN_CHUNK: u32 = 0x004E_4942;
 const EXTENSION: &str = "EXT_meshopt_compression";
+const MESH_QUANTIZATION: &str = "KHR_mesh_quantization";
 const MAX_VIEW_BYTES: usize = 1 << 30;
 const MAX_VERTEX_STRIDE: usize = 256;
 
@@ -15,13 +17,48 @@ struct Container {
     bin: Option<Vec<u8>>,
 }
 
-pub fn decode(bytes: &[u8]) -> Result<Vec<u8>, String> {
+pub struct Decoded {
+    pub bytes: Vec<u8>,
+    pub meshopt_views: usize,
+    pub basisu_textures: usize,
+    pub ktx2_textures: Vec<usize>,
+}
+
+pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
     let container = read_container(bytes)?;
-    if !uses_extension(&container.json) {
-        return Ok(bytes.to_vec());
-    }
-    let (json, bin) = unwrap_meshopt(container)?;
-    write_container(&json, bin)
+    let meshopt = uses_extension(&container.json);
+    let (mut json, bin, meshopt_views) = if meshopt {
+        unwrap_meshopt(container)?
+    } else {
+        (container.json, container.bin.unwrap_or_default(), 0)
+    };
+    let basisu_textures = basisu::promote(&mut json);
+    let quantization_retired = retire_extension(&mut json, MESH_QUANTIZATION);
+    let ktx2_textures = ktx2_texture_indices(&json);
+    let bytes = if meshopt || basisu_textures > 0 || quantization_retired {
+        write_container(&json, bin)?
+    } else {
+        bytes.to_vec()
+    };
+    Ok(Decoded { bytes, meshopt_views, basisu_textures, ktx2_textures })
+}
+
+fn ktx2_texture_indices(json: &Value) -> Vec<usize> {
+    let images = array_field(json, "images");
+    array_field(json, "textures")
+        .iter()
+        .enumerate()
+        .filter(|(_, texture)| {
+            texture
+                .get("source")
+                .and_then(Value::as_u64)
+                .and_then(|source| images.get(source as usize))
+                .and_then(|image| image.get("mimeType"))
+                .and_then(Value::as_str)
+                == Some("image/ktx2")
+        })
+        .map(|(index, _)| index)
+        .collect()
 }
 
 fn read_container(bytes: &[u8]) -> Result<Container, String> {
@@ -102,6 +139,10 @@ fn push_chunk(out: &mut Vec<u8>, kind: u32, data: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
+fn is_packed(view: &Value) -> bool {
+    view.get("extensions").and_then(|ext| ext.get(EXTENSION)).is_some()
+}
+
 fn uses_extension(json: &Value) -> bool {
     let listed = ["extensionsUsed", "extensionsRequired"].iter().any(|key| {
         json.get(key)
@@ -114,18 +155,19 @@ fn uses_extension(json: &Value) -> bool {
         .is_some_and(|views| {
             views
                 .iter()
-                .any(|view| view.get("extensions").and_then(|ext| ext.get(EXTENSION)).is_some())
+                .any(is_packed)
         });
     listed || packed_view
 }
 
-fn unwrap_meshopt(container: Container) -> Result<(Value, Vec<u8>), String> {
+fn unwrap_meshopt(container: Container) -> Result<(Value, Vec<u8>, usize), String> {
     let Container { mut json, bin } = container;
     let buffers = array_field(&json, "buffers");
     if buffers.first().and_then(|buffer| buffer.get("uri")).is_some() {
         return Err("buffer 0 is external and is not handled".to_string());
     }
     let views = array_field(&json, "bufferViews");
+    let meshopt_views = views.iter().filter(|view| is_packed(view)).count();
     let mut plain_bin = Vec::new();
     let mut plain_views = Vec::with_capacity(views.len());
     for (index, view) in views.iter().enumerate() {
@@ -149,9 +191,9 @@ fn unwrap_meshopt(container: Container) -> Result<(Value, Vec<u8>), String> {
         buffer.insert("byteLength".into(), json!(plain_bin.len()));
         root.insert("buffers".into(), Value::Array(vec![Value::Object(buffer)]));
     }
-    remove_extension_name(root, "extensionsUsed");
-    remove_extension_name(root, "extensionsRequired");
-    Ok((json, plain_bin))
+    remove_extension_name(root, "extensionsUsed", EXTENSION);
+    remove_extension_name(root, "extensionsRequired", EXTENSION);
+    Ok((json, plain_bin, meshopt_views))
 }
 
 fn array_field(json: &Value, key: &str) -> Vec<Value> {
@@ -161,17 +203,28 @@ fn array_field(json: &Value, key: &str) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-fn remove_extension_name(root: &mut Map<String, Value>, key: &str) {
-    let emptied = match root.get_mut(key).and_then(Value::as_array_mut) {
+fn retire_extension(json: &mut Value, extension: &str) -> bool {
+    let Some(root) = json.as_object_mut() else {
+        return false;
+    };
+    let used = remove_extension_name(root, "extensionsUsed", extension);
+    let required = remove_extension_name(root, "extensionsRequired", extension);
+    used || required
+}
+
+fn remove_extension_name(root: &mut Map<String, Value>, key: &str, extension: &str) -> bool {
+    let (removed, emptied) = match root.get_mut(key).and_then(Value::as_array_mut) {
         Some(names) => {
-            names.retain(|name| name.as_str() != Some(EXTENSION));
-            names.is_empty()
+            let before = names.len();
+            names.retain(|name| name.as_str() != Some(extension));
+            (names.len() != before, names.is_empty())
         }
-        None => false,
+        None => (false, false),
     };
     if emptied {
         root.remove(key);
     }
+    removed
 }
 
 fn plain_view(
@@ -400,8 +453,9 @@ mod tests {
     use std::path::PathBuf;
 
     const CDN: &str = "/workspace/neon-syndicates/assets/cdn";
+    const BASISU_EXTENSION: &str = "KHR_texture_basisu";
 
-    fn smallest_meshopt_glb() -> (PathBuf, Vec<u8>) {
+    fn smallest_glb_using(extension: &str) -> (PathBuf, Vec<u8>) {
         std::fs::read_dir(CDN)
             .expect("cdn directory is readable")
             .filter_map(Result::ok)
@@ -410,11 +464,11 @@ mod tests {
             .filter_map(|path| std::fs::read(&path).ok().map(|bytes| (path, bytes)))
             .filter(|(_, bytes)| {
                 bytes
-                    .windows(EXTENSION.len())
-                    .any(|window| window == EXTENSION.as_bytes())
+                    .windows(extension.len())
+                    .any(|window| window == extension.as_bytes())
             })
             .min_by_key(|(_, bytes)| bytes.len())
-            .expect("no EXT_meshopt_compression GLB in the cdn directory")
+            .expect("no GLB in the cdn directory uses the requested extension")
     }
 
     fn float_components(type_name: &str) -> Option<usize> {
@@ -429,8 +483,8 @@ mod tests {
 
     #[test]
     fn decodes_smallest_meshopt_glb_into_plain_glb() {
-        let (path, input) = smallest_meshopt_glb();
-        let output = decode(&input).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let (path, input) = smallest_glb_using(EXTENSION);
+        let output = decode(&input).unwrap_or_else(|error| panic!("{}: {error}", path.display())).bytes;
         let source = read_container(&input).expect("input parses");
         let source_views = source.json["bufferViews"].as_array().expect("views").len();
 
@@ -496,12 +550,25 @@ mod tests {
     #[test]
     fn plain_glb_is_returned_unchanged() {
         let plain = write_container(&json!({ "asset": { "version": "2.0" } }), Vec::new()).expect("writes");
-        assert_eq!(decode(&plain).expect("decodes"), plain);
+        assert_eq!(decode(&plain).expect("decodes").bytes, plain);
+    }
+
+    #[test]
+    fn basisu_glb_decodes_to_plain_glb_with_ktx2_images() {
+        let (path, input) = smallest_glb_using(BASISU_EXTENSION);
+        let decoded = decode(&input).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        assert!(decoded.basisu_textures > 0, "no KHR_texture_basisu texture was promoted");
+        assert!(!decoded.ktx2_textures.is_empty(), "no promoted texture resolves to image/ktx2");
+        let container = read_container(&decoded.bytes).expect("decoded GLB parses");
+        assert!(!container.json.to_string().contains(BASISU_EXTENSION), "decoded GLB still names the extension");
+        assert!(!container.json.to_string().contains(MESH_QUANTIZATION), "decoded GLB still requires mesh quantization");
+        let images = container.json["images"].as_array().expect("images kept");
+        assert!(images.iter().any(|image| image["mimeType"] == "image/ktx2"));
     }
 
     #[test]
     fn malformed_input_is_rejected_without_panicking() {
-        let (_, input) = smallest_meshopt_glb();
+        let (_, input) = smallest_glb_using(EXTENSION);
         assert!(decode(b"not a glb at all").is_err());
         assert!(decode(&input[..input.len() / 2]).is_err());
         for step in 1..64 {
