@@ -4,6 +4,7 @@ Non-obvious facts for automated edits. Architecture and measured costs live in R
 
 ## Rules
 
+- Agent operating routine, git workflow, checks and secrets handling: `docs/AGENT-INTERFACE.md`.
 - Source files carry no comments. Put a fact the code cannot express here, after checking it is still true.
 - Bench and determinism runs use `TimeUpdateStrategy::ManualDuration` with the exact 64 Hz tick, so one `App::update` is one fixed tick on every machine.
 - The benchmark disables `PhysicsTransformPlugin`, `PhysicsInterpolationPlugin` and `IslandSleepingPlugin`. Transform sync is not part of the solver, interpolation is display-only, and sleeping would make fast benchmarks incomparable with jayzee, which never sleeps.
