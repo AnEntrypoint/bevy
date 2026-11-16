@@ -1293,7 +1293,11 @@ fn path_segments(d: &str) -> Option<Vec<(char, Vec<f32>)>> {
     let mut index = 0;
     while index < bytes.len() {
         let byte = bytes[index];
-        if byte.is_ascii_alphabetic() {
+        let arc_flag = segments.last().is_some_and(|(command, args)| command.to_ascii_uppercase() == 'A' && matches!(args.len() % 7, 3 | 4));
+        if arc_flag && (byte == b'0' || byte == b'1') {
+            segments.last_mut()?.1.push(f32::from(byte - b'0'));
+            index += 1;
+        } else if byte.is_ascii_alphabetic() {
             segments.push((byte as char, Vec::new()));
             index += 1;
         } else if byte.is_ascii_whitespace() || byte == b',' {
@@ -1454,6 +1458,16 @@ mod tests {
             assert!(built.warnings.is_empty(), "{d}");
             assert!(built.spec.count() > 2, "{d}");
         }
+    }
+
+    #[test]
+    fn compact_arc_flags_parse_as_single_digits() {
+        let compact = path_segments("M0 0a1 1 0 011 1a1 1 0 100 1").expect("compact");
+        let spaced = path_segments("M0 0 a1 1 0 0 1 1 1 a1 1 0 1 0 0 1").expect("spaced");
+        assert_eq!(compact, spaced);
+        assert_eq!(compact[1], ('a', vec![1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0]));
+        assert_eq!(compact[2], ('a', vec![1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0]));
+        assert_eq!(path_subpaths("M0 0a1 1 0 011 1").expect("compact arc"), path_subpaths("M0 0 a1 1 0 0 1 1 1").expect("spaced arc"));
     }
 
     #[test]
