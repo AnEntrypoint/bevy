@@ -27,15 +27,16 @@ pub struct Decoded {
 pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
     let container = read_container(bytes)?;
     let meshopt = uses_extension(&container.json);
-    let (mut json, bin, meshopt_views) = if meshopt {
+    let (mut json, mut bin, meshopt_views) = if meshopt {
         unwrap_meshopt(container)?
     } else {
         (container.json, container.bin.unwrap_or_default(), 0)
     };
     let basisu_textures = basisu::promote(&mut json);
+    let basislz_images = basisu::transcode_basislz_images(&mut json, &mut bin)?;
     let quantization_retired = retire_extension(&mut json, MESH_QUANTIZATION);
     let ktx2_textures = ktx2_texture_indices(&json);
-    let bytes = if meshopt || basisu_textures > 0 || quantization_retired {
+    let bytes = if meshopt || basisu_textures > 0 || basislz_images > 0 || quantization_retired {
         write_container(&json, bin)?
     } else {
         bytes.to_vec()

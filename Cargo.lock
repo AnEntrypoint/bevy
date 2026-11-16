@@ -694,6 +694,7 @@ version = "0.1.0"
 dependencies = [
  "avian3d",
  "bevy",
+ "cc",
  "leafwing-input-manager",
  "lightyear",
  "meshopt",
