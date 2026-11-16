@@ -86,3 +86,46 @@ Each row names a committed change, the file it touches, and the witness that pro
 - `cargo test --bin bevy-jayzee`: `test result: ok. 37 passed; 0 failed`.
 - Parallelism: the bin rebuilds took 31 to 35 minutes and 1 minute 22 seconds when cached. The `jobs = 4` cap in `/config/.cargo/config.toml` is still unconfirmed by sampling.
 - Open: neon terrain (`terrains:0`, needs the generator run), and scripted-primitive size (rendered at default size).
+
+## Round 6 (build speed and disk, Phase A and Phase B)
+
+Measurements use `cargo build --timings` through the cargo slot shim. Host load came from other workloads on the same 12-core host (oscraft probe, fx test, rust-lld, Chromium); it is recorded per row, and CPU seconds are the load-insensitive figure.
+
+| Measurement | Config | Wall | CPU user+sys | Host load |
+|---|---|---|---|---|
+| A cold, fresh target dir | deps opt 3, full debuginfo | 1092 s | not recorded | not recorded |
+| A warm no-op | same | 8 s | not recorded | not recorded |
+| A warm touch of src/main.rs | same | 158 s | not recorded | not recorded |
+| A warm touch, CPU timed | same | 252 s | 105 s | 28 |
+| B cold after switching deps to opt 1 | deps opt 1, full debuginfo | 1862 s | not recorded | not recorded |
+| B first touch after the switch | same | 880 s | not recorded | not recorded |
+| B warm touch, second | same | 520 s | not recorded | 30 |
+| B warm touch, CPU timed | same | 365 s | 98 s | 31 to 46 |
+| C cold | deps opt 3, `debug = "line-tables-only"` | 1468 s | 5450 s | 41 to 15 |
+| C warm touch 1 | same | 12 s | 24 s | 12 |
+| C warm touch 2 | same | 18 s | 23 s | 12 to 18 |
+| C warm touch 3 | same | 23 s | 21 s | 17 |
+
+Decision: keep C. Deps at opt 1 (B) gave no CPU gain on the warm rebuild (98 s against 105 s) and a slower cold build, so it is not kept. Line-table debuginfo cut the warm rebuild's CPU from about 105 s to about 22 s and the bin from 2.4 GB to 945 MB. The C viewer witness shows the build is still playable: `objects:50`, `modelsLoaded:9`, 58 fps.
+
+Rustc concurrency: 1876 host-wide samples during the cold build gave a maximum of 5 and a mean of 1.9. These counts include other users' compilers, so the `jobs = 4` cap is still not isolated.
+
+| Change | File | Witness | Result |
+|---|---|---|---|
+| `debug = "line-tables-only"` in the dev profile | Cargo.toml | warm touch 12 to 23 s wall, 21 to 24 CPU s; viewer `objects:50` | measured |
+| Reject an empty place argument with a message that names it | src/world.rs | `target/debug/bevy-jayzee world /workspace/neon-syndicates/world "" 120` prints `the place argument is empty; name a place or leave it out` and exits 1 | measured |
+
+Target directory: 82 GB at the start of the session, 96 GB before pruning, 19 GB after pruning (`target/debug` 16 GB, `target/wasm-viewer` 3.5 GB kept for the wasm build, `gltf-cache` and `viewer-cache` kept). Removed: `target/release` (4.0 GB, stale profile) and 5,910 stale dependency files and 2,291 stale fingerprint directories not referenced by the current configuration.
+
+Prune mistake: the first prune also removed fingerprint or artifact files the current build still used. The verification no-op then recompiled 274 crates in 25 min 32 s. Rebuilding restored the state, and a later no-op build took 2 s with 0 crates compiled. The prune rule was: keep only artifacts whose hash appears in the `filenames` of the `--message-format=json` no-op build. That rule did not cover build-script run units. Do not repeat the prune without including those units.
+
+Also: a stale, empty `.git/index.lock` (2 hours old, no git process in this repo) blocked the commit and was removed.
+
+Phase B results (final binary with the line-table setting and the patch):
+
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world "" 120`: exit 1, stderr `the place argument is empty; name a place or leave it out`.
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world main 120`: exit 0, `"objects":58`, `"errors":0`, hash `0x1c2b1833`.
+- `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: GLB `"bevy_loaded":64`, `"bevy_failed":0`. Exit 1 is the two PNG textures `texture-concrete-panels.png` and `texture-weathered-wood-planks.png`, outside this work.
+- `node scripts/check-game16-api.cjs`: exit 0, `"ok": true`.
+- `VIEWER_FOCUS_KIND=model /tmp/ns-viewer/run.sh`: `objects:50`, `modelsLoaded:9`, `modelsMissing:[]`, `uiNodes:718`, no panic.
+- The unit tests were not run in this round: they would have been another cargo build, and the owner asked for one build.
