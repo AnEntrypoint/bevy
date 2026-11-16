@@ -11,6 +11,10 @@ const EXTENSION: &str = "EXT_meshopt_compression";
 const MESH_QUANTIZATION: &str = "KHR_mesh_quantization";
 const MAX_VIEW_BYTES: usize = 1 << 30;
 const MAX_VERTEX_STRIDE: usize = 256;
+const SHORT_COMPONENT: u64 = 5122;
+const FLOAT_COMPONENT: u64 = 5126;
+const SHORT_VEC4_BYTES: usize = 8;
+const SNORM_MAX: f32 = 32767.0;
 
 struct Container {
     json: Value,
@@ -35,8 +39,9 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
     let basisu_textures = basisu::promote(&mut json);
     let basislz_images = basisu::transcode_basislz_images(&mut json, &mut bin)?;
     let quantization_retired = retire_extension(&mut json, MESH_QUANTIZATION);
+    let floated_tangents = float_tangents(&mut json, &mut bin)?;
     let ktx2_textures = ktx2_texture_indices(&json);
-    let bytes = if meshopt || basisu_textures > 0 || basislz_images > 0 || quantization_retired {
+    let bytes = if meshopt || basisu_textures > 0 || basislz_images > 0 || quantization_retired || floated_tangents > 0 {
         write_container(&json, bin)?
     } else {
         bytes.to_vec()
@@ -226,6 +231,86 @@ fn remove_extension_name(root: &mut Map<String, Value>, key: &str, extension: &s
         root.remove(key);
     }
     removed
+}
+
+fn is_snorm_tangent(accessor: &Value) -> bool {
+    accessor.get("componentType").and_then(Value::as_u64) == Some(SHORT_COMPONENT)
+        && accessor.get("normalized").and_then(Value::as_bool) == Some(true)
+        && accessor.get("type").and_then(Value::as_str) == Some("VEC4")
+        && accessor.get("sparse").is_none()
+}
+
+fn float_tangents(json: &mut Value, bin: &mut Vec<u8>) -> Result<usize, String> {
+    let accessors = array_field(json, "accessors");
+    let views = array_field(json, "bufferViews");
+    let buffers = array_field(json, "buffers");
+    let mut targets: Vec<usize> = array_field(json, "meshes")
+        .iter()
+        .flat_map(|mesh| array_field(mesh, "primitives"))
+        .filter_map(|primitive| primitive.get("attributes")?.get("TANGENT")?.as_u64())
+        .filter_map(|index| usize::try_from(index).ok())
+        .filter(|index| accessors.get(*index).is_some_and(is_snorm_tangent))
+        .collect();
+    targets.sort_unstable();
+    targets.dedup();
+    let mut new_views = Vec::with_capacity(targets.len());
+    let mut patched = Vec::with_capacity(targets.len());
+    for index in targets {
+        let accessor = accessors[index].as_object().ok_or("accessor is not an object")?;
+        let count = usize_field(accessor, "count")?;
+        let view_index = usize_field(accessor, "bufferView")?;
+        let view = views
+            .get(view_index)
+            .and_then(Value::as_object)
+            .ok_or_else(|| format!("bufferView {view_index} is missing"))?;
+        let stride = if view.contains_key("byteStride") {
+            usize_field(view, "byteStride")?
+        } else {
+            SHORT_VEC4_BYTES
+        };
+        if stride < SHORT_VEC4_BYTES {
+            return Err(format!("accessor {index} stride {stride} is smaller than a SHORT VEC4"));
+        }
+        let source = buffer_bytes(&buffers, Some(bin.as_slice()), usize_field(view, "buffer")?)?;
+        let start = optional_usize(view, "byteOffset")?
+            .checked_add(optional_usize(accessor, "byteOffset")?)
+            .ok_or("tangent offset overflows")?;
+        let length = count.checked_mul(stride).ok_or("tangent length overflows")?;
+        let mut floats = Vec::with_capacity(count * 16);
+        for element in slice_at(source, start, length)?.chunks_exact(stride) {
+            let short = |lane: usize| i16::from_le_bytes([element[2 * lane], element[2 * lane + 1]]);
+            for lane in 0..3 {
+                floats.extend((f32::from(short(lane)) / SNORM_MAX).max(-1.0).to_le_bytes());
+            }
+            floats.extend((if short(3) < 0 { -1.0_f32 } else { 1.0 }).to_le_bytes());
+        }
+        let offset = append_aligned(bin, &floats);
+        new_views.push(json!({"buffer": 0, "byteOffset": offset, "byteLength": floats.len()}));
+        patched.push((index, views.len() + new_views.len() - 1));
+    }
+    if patched.is_empty() {
+        return Ok(0);
+    }
+    let root = json.as_object_mut().ok_or("glTF root is not an object")?;
+    root.entry("bufferViews")
+        .or_insert_with(|| json!([]))
+        .as_array_mut()
+        .ok_or("bufferViews is not an array")?
+        .extend(new_views);
+    let accessor_list = root
+        .get_mut("accessors")
+        .and_then(Value::as_array_mut)
+        .ok_or("accessors is not an array")?;
+    for (index, view) in &patched {
+        let accessor = accessor_list[*index].as_object_mut().ok_or("accessor is not an object")?;
+        accessor.insert("bufferView".into(), json!(view));
+        accessor.insert("byteOffset".into(), json!(0));
+        accessor.insert("componentType".into(), json!(FLOAT_COMPONENT));
+        accessor.remove("normalized");
+        accessor.remove("min");
+        accessor.remove("max");
+    }
+    Ok(patched.len())
 }
 
 fn plain_view(
@@ -546,6 +631,106 @@ mod tests {
             checked += 1;
         }
         assert!(checked > 0, "no float accessor with bounds was checked");
+    }
+
+    fn tangent_document(stride: Option<usize>, accessors: Value, bin_len: usize) -> Value {
+        let mut view = json!({"buffer": 0, "byteOffset": 0, "byteLength": bin_len});
+        if let Some(stride) = stride {
+            view["byteStride"] = json!(stride);
+        }
+        json!({
+            "asset": {"version": "2.0"},
+            "buffers": [{"byteLength": bin_len}],
+            "bufferViews": [view],
+            "accessors": accessors,
+            "meshes": [{"primitives": [{"attributes": {"TANGENT": 0}}]}]
+        })
+    }
+
+    fn snorm_accessor(count: usize) -> Value {
+        json!({"bufferView": 0, "componentType": SHORT_COMPONENT, "normalized": true, "count": count, "type": "VEC4"})
+    }
+
+    fn shorts(values: &[[i16; 4]], stride: usize) -> Vec<u8> {
+        values
+            .iter()
+            .flat_map(|element| {
+                let mut bytes = element.iter().flat_map(|value| value.to_le_bytes()).collect::<Vec<u8>>();
+                bytes.resize(stride, 0x7f);
+                bytes
+            })
+            .collect()
+    }
+
+    fn floats_at(bin: &[u8], offset: usize, count: usize) -> Vec<f32> {
+        bin[offset..offset + count * 4]
+            .chunks_exact(4)
+            .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+            .collect()
+    }
+
+    #[test]
+    fn snorm_tangents_become_float_vec4() {
+        let mut bin = shorts(&[[32767, -32767, 16384, -1], [-32768, 0, 0, 1]], SHORT_VEC4_BYTES);
+        let bin_len = bin.len();
+        let mut document = tangent_document(None, json!([snorm_accessor(2)]), bin_len);
+
+        let converted = float_tangents(&mut document, &mut bin).expect("tangents convert");
+
+        assert_eq!(converted, 1);
+        let accessor = &document["accessors"][0];
+        assert_eq!(accessor["componentType"], json!(FLOAT_COMPONENT));
+        assert_eq!(accessor["bufferView"], json!(1));
+        assert_eq!(accessor["byteOffset"], json!(0));
+        assert!(accessor.get("normalized").is_none());
+        let view = &document["bufferViews"][1];
+        assert_eq!(view["byteLength"], json!(32));
+        let offset = view["byteOffset"].as_u64().expect("offset") as usize;
+        assert_eq!(offset, bin_len);
+        let values = floats_at(&bin, offset, 8);
+        let expected = [1.0, -1.0, 16384.0 / 32767.0, -1.0, -1.0, 0.0, 0.0, 1.0];
+        for (value, want) in values.iter().zip(expected) {
+            assert!((value - want).abs() < 1e-6, "{value} != {want}");
+        }
+    }
+
+    #[test]
+    fn snorm_tangents_honour_stride_and_offset() {
+        let mut bin = vec![0xaa_u8; 4];
+        bin.extend(shorts(&[[16384, 0, 32767, 1]], 12));
+        bin.extend(shorts(&[[0, -16384, 0, -1]], 12));
+        let bin_len = bin.len();
+        let mut document = tangent_document(Some(12), json!([snorm_accessor(2)]), bin_len);
+        document["accessors"][0]["byteOffset"] = json!(0);
+        document["bufferViews"][0]["byteOffset"] = json!(4);
+        document["bufferViews"][0]["byteLength"] = json!(bin_len - 4);
+
+        let converted = float_tangents(&mut document, &mut bin).expect("tangents convert");
+
+        assert_eq!(converted, 1);
+        let offset = document["bufferViews"][1]["byteOffset"].as_u64().expect("offset") as usize;
+        let values = floats_at(&bin, offset, 8);
+        let expected = [16384.0 / 32767.0, 0.0, 1.0, 1.0, 0.0, -16384.0 / 32767.0, 0.0, -1.0];
+        for (value, want) in values.iter().zip(expected) {
+            assert!((value - want).abs() < 1e-6, "{value} != {want}");
+        }
+    }
+
+    #[test]
+    fn other_tangent_accessors_are_left_untouched() {
+        let mut bin = shorts(&[[1, 2, 3, 4]], SHORT_VEC4_BYTES);
+        bin.extend(vec![0u8; 16]);
+        let bin_len = bin.len();
+        let accessors = json!([{"bufferView": 0, "componentType": SHORT_COMPONENT, "count": 1, "type": "VEC4"}]);
+        let mut document = tangent_document(None, accessors, bin_len);
+        let before = document.clone();
+        let before_bin = bin.clone();
+
+        let converted = float_tangents(&mut document, &mut bin).expect("tangents pass");
+
+        assert_eq!(converted, 0);
+        assert_eq!(document, before);
+        assert_eq!(bin, before_bin);
     }
 
     #[test]
