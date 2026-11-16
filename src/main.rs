@@ -15,6 +15,7 @@ mod spec;
 mod tree;
 mod ui_html;
 mod viewer;
+mod viewer_world;
 mod world;
 
 fn main() {

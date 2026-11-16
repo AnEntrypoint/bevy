@@ -1,12 +1,12 @@
 use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResolution};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use crate::spec::{ObjectSpec, PrimitiveDesc};
+use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
 use crate::ui_html::{HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
-use crate::{script, world};
+use crate::{script, viewer_world, world};
 
 #[derive(Resource, Clone, Debug)]
 pub struct ViewerScene {
@@ -17,6 +17,13 @@ pub struct ViewerScene {
     pub meshes: usize,
     pub unmirrored: usize,
     pub unmirrored_models: usize,
+    pub marker_ids: Vec<String>,
+    pub models_loaded: usize,
+    pub models_missing: Vec<String>,
+    pub proxies: usize,
+    pub markers: usize,
+    pub models_requested: Vec<String>,
+    pub terrains: usize,
     pub lights: usize,
     pub camera: Vec3,
 }
@@ -47,14 +54,17 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     let runner = world_runner(directory, &name, &tree)?;
     let title = format!("bevy-jayzee viewer — {name}");
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: title.clone(),
-            resolution: WindowResolution::new(1280, 720),
+    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/viewer-cache");
+    app.add_plugins(DefaultPlugins
+        .set(WindowPlugin {
+            primary_window: Some(Window {
+                title: title.clone(),
+                resolution: WindowResolution::new(1280, 720),
+                ..default()
+            }),
             ..default()
-        }),
-        ..default()
-    }))
+        })
+        .set(AssetPlugin { file_path: cache.display().to_string(), ..default() }))
     .add_plugins((FrameTimeDiagnosticsPlugin::default(), EntityCountDiagnosticsPlugin::default(), LogDiagnosticsPlugin::default()))
     .insert_resource(ClearColor(Color::srgb(0.035, 0.045, 0.065)))
     .insert_resource(ViewerScene {
@@ -65,10 +75,18 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         meshes: 0,
         unmirrored: 0,
         unmirrored_models: 0,
+        marker_ids: Vec::new(),
+        models_loaded: 0,
+        models_missing: Vec::new(),
+        proxies: 0,
+        markers: 0,
+        models_requested: Vec::new(),
+        terrains: 0,
         lights: 1,
         camera: Vec3::new(12.0, 10.0, 18.0),
     })
     .insert_resource(ViewerObjects(place_def.objects))
+    .insert_resource(ViewerCache(cache))
     .insert_resource(ViewerBrowserReport { path: browser_report_path(directory, place) })
     .init_resource::<HtmlUiSource>()
     .add_plugins(HtmlUiPlugin)
@@ -82,14 +100,17 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         app.add_systems(Update, orbit_camera);
     }
     if let Some(runner) = runner {
-        app.insert_non_send(runner).add_systems(Update, (tick_world, mirror_world_objects, feed_ui_html).chain());
+        app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, feed_ui_html).chain());
     }
     app.run();
     crate::script::shutdown();
     Ok(())
 }
 
-struct WorldRunner(App);
+pub struct WorldRunner(pub App);
+
+#[derive(Resource, Clone, Debug)]
+pub struct ViewerCache(pub PathBuf);
 
 fn world_runner(directory: &str, place: &str, tree: &WorldTree) -> Result<Option<WorldRunner>, String> {
     let has_render = tree.config.ui.get("render").is_some_and(|render| render.is_string());
@@ -109,93 +130,10 @@ fn feed_ui_html(mut source: ResMut<HtmlUiSource>) {
 }
 
 #[derive(Component)]
-struct WorldMirror(Entity);
-
-fn mirror_world_objects(
-    mut commands: Commands,
-    mut runner: NonSendMut<WorldRunner>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut scene: ResMut<ViewerScene>,
-    objects: Res<ViewerObjects>,
-    mut mirrors: Query<(Entity, &WorldMirror, &mut Transform)>,
-    mut palette: Local<Vec<Handle<StandardMaterial>>>,
-) {
-    let world = runner.0.world_mut();
-    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, Option<&crate::world::PrimitiveInfo>, Option<&crate::world::ModelRef>)>();
-    let mut unmirrored = 0;
-    let mut unmirrored_models = 0;
-    let items: Vec<(Entity, String, Transform, PrimitiveDesc)> = query
-        .iter(world)
-        .filter_map(|(entity, id, transform, primitive, model)| match primitive.and_then(|primitive| primitive.0.clone()) {
-            Some(desc) => Some((entity, id.0.clone(), *transform, desc)),
-            None => {
-                unmirrored += 1;
-                if model.is_some() {
-                    unmirrored_models += 1;
-                }
-                None
-            }
-        })
-        .collect();
-    scene.unmirrored = unmirrored;
-    scene.unmirrored_models = unmirrored_models;
-    if palette.is_empty() {
-        let colors = [
-            Color::srgb(0.24, 0.62, 0.95),
-            Color::srgb(0.95, 0.55, 0.25),
-            Color::srgb(0.42, 0.82, 0.45),
-            Color::srgb(0.78, 0.42, 0.88),
-        ];
-        palette.extend(colors.into_iter().map(|color| materials.add(StandardMaterial { base_color: color, ..default() })));
-    }
-    let by_entity: std::collections::HashMap<Entity, &(Entity, String, Transform, PrimitiveDesc)> = items.iter().map(|item| (item.0, item)).collect();
-    let mut placed = std::collections::HashSet::new();
-    for (viewer, mirror, mut transform) in &mut mirrors {
-        match by_entity.get(&mirror.0) {
-            Some(item) => {
-                *transform = item.2;
-                placed.insert(mirror.0);
-            }
-            None => commands.entity(viewer).despawn(),
-        }
-    }
-    for (entity, id, transform, desc) in &items {
-        if placed.contains(entity) {
-            continue;
-        }
-        let mesh = primitive_mesh(&mut meshes, desc);
-        commands.spawn((
-            Mesh3d(mesh),
-            MeshMaterial3d(palette[entity.to_bits() as usize % palette.len()].clone()),
-            *transform,
-            ViewerObject { id: id.clone(), kind: desc.kind.clone() },
-            WorldMirror(*entity),
-            Name::new(id.clone()),
-        ));
-    }
-    scene.objects = objects.0.len() + items.len();
-    scene.meshes = objects.0.len() + items.len();
-}
-
-fn primitive_mesh(meshes: &mut Assets<Mesh>, desc: &PrimitiveDesc) -> Handle<Mesh> {
-    let kind = desc.kind.as_str();
-    if kind.contains("sphere") || kind.contains("ball") {
-        meshes.add(Sphere::new(desc.radius))
-    } else if kind.contains("capsule") {
-        meshes.add(Capsule3d::new(desc.radius, desc.capsule_half_height * 2.0))
-    } else if kind.contains("cylinder") {
-        meshes.add(Cylinder::new(desc.radius, desc.half_height * 2.0))
-    } else {
-        meshes.add(Cuboid::new(desc.size.x, desc.size.y, desc.size.z))
-    }
-}
-
-#[derive(Component)]
 struct ViewerOverlay;
 
 #[derive(Resource, Clone, Debug, Default)]
-struct ViewerObjects(Vec<ObjectSpec>);
+pub struct ViewerObjects(pub Vec<ObjectSpec>);
 
 fn spawn_viewer(
     mut commands: Commands,
@@ -263,12 +201,23 @@ fn spawn_viewer(
     ));
 }
 
-fn orbit_camera(time: Res<Time>, mut query: Query<&mut Transform, With<Camera3d>>, mut scene: ResMut<ViewerScene>) {
+fn orbit_camera(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<Camera3d>>,
+    objects: Query<(&ViewerObject, &Transform), Without<Camera3d>>,
+    mut scene: ResMut<ViewerScene>,
+) {
+    let focus_kind = std::env::var("VIEWER_FOCUS_KIND").unwrap_or_default();
+    let focus = objects
+        .iter()
+        .find(|(object, _)| object.kind == focus_kind)
+        .map(|(_, transform)| transform.translation)
+        .unwrap_or(Vec3::ZERO);
     let angle = time.elapsed_secs() * 0.12;
-    let eye = Vec3::new(angle.sin() * 18.0, 10.0, angle.cos() * 18.0);
+    let eye = focus + Vec3::new(angle.sin() * 18.0, 10.0, angle.cos() * 18.0);
     scene.camera = eye;
     for mut transform in &mut query {
-        *transform = Transform::from_xyz(eye.x, eye.y, eye.z).looking_at(Vec3::ZERO, Vec3::Y);
+        *transform = Transform::from_translation(eye).looking_at(focus, Vec3::Y);
     }
 }
 
@@ -315,6 +264,13 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "meshes": scene.meshes,
         "unmirroredObjects": scene.unmirrored,
         "unmirroredModels": scene.unmirrored_models,
+        "markerIds": scene.marker_ids,
+        "modelsLoaded": scene.models_loaded,
+        "modelsMissing": scene.models_missing,
+        "proxies": scene.proxies,
+        "markers": scene.markers,
+        "modelsRequested": scene.models_requested,
+        "terrains": scene.terrains,
         "lights": scene.lights,
         "camera": [scene.camera.x, scene.camera.y, scene.camera.z],
         "visibleIds": ids,
