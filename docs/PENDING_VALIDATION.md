@@ -243,3 +243,30 @@ Ranked by visible impact on the neon-syndicates viewer and by how much a regress
 9. The `jobs = 4` rustc cap is unconfirmed (host-wide samples include other workloads), and `verify.sh` (release build) has not run in this stretch.
 
 Excluded by the owner: the 115 `ctx.*` figure, which is recorded as unreproduced above.
+
+### Round 9 Phase B results
+
+Defects found and fixed in Phase B:
+
+- Static viewers (no `ui.render` in the world config, such as `testdata/spec-world`) never ran `count_batches`, so the report kept its initial values (`objects` 8, `expectedObjects` 0). The audit now runs in both modes, and `spawn_viewer` seeds the expected set from the place spec.
+- A model whose GLB is missing (`/cdn/neutral-default-avatar.glb`, the `local-player` avatar on `game-16` `hall`) was skipped, so the object was never drawn and the audit reported it missing. It is now drawn as a marker through the shared `spawn_marker` helper, so every object is drawn once.
+- Placeholder colours were picked by list index, so placeholders could not batch by kind. They now use the kind-keyed palette (`palette_slot`), the same as primitives.
+- The batching witness had measured only mirrored objects, so it failed on a static viewer where there are no mirrors. It now measures all object draws (`objectDraws`, `objectBatchKeys`) and applies the mirror bound only when mirrors exist.
+
+Neon `main` has no spec objects (`places/main` has no `cells/`), so placeholder retirement cannot be exercised there. The retirement witness uses `game-16` `hall`, which has both spec objects and a runner, and the static witness uses the fixture.
+
+Witnesses on the final tree:
+
+- `/config/.local/bin/cargo build --timings`: `rc=0`, 51 s, no warnings.
+- Full unit suite `/config/.local/bin/cargo test --bin bevy-jayzee`: `test result: ok. 42 passed; 0 failed`, 57 s wall including the test-binary compile (0.45 s of test time). This is the longest step.
+- Neon `main` viewer: `objects 50`, `expectedObjects 50`, `duplicateObjects 0`, `missingObjects []`, `objectDraws 41`, `objectBatchKeys 3`, `modelsLoaded 9`, `uiNodes 718`. `check-viewer-objects.cjs` and `check-viewer-batching.cjs` both `"ok": true`.
+- `game-16` `hall` viewer (mirror mode, both spec objects and a runner): `objects 222`, `expectedObjects 222`, `duplicateObjects 0`, `missingObjects []`, `placeholdersRetired 147`, `placeholders 0`, `mirrorEntities 222`, `objectBatchKeys 6`. Both checkers `"ok": true`. The avatar model is still missing (`modelsMissing`), and its object is drawn as a marker.
+- Fixture `testdata/spec-world` `test` viewer (static mode): `objects 8`, `expectedObjects 8`, `duplicateObjects 0`, `placeholders 8`, `objectBatchKeys 3`. Both checkers `"ok": true`.
+- `node scripts/check-game16-api.cjs`: `"ok": true`.
+- `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: `bevy_loaded:64`, `bevy_failed:0`. Exit 1 is the two PNG textures `texture-concrete-panels.png` and `texture-weathered-wood-planks.png`, outside this work.
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world "" 120`: exit 1, `the place argument is empty; name a place or leave it out`.
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world main 120`: exit 0, `objects:58`, `errors:0`, hash `0x1c2b1833`.
+
+Not measured: the old duplicate count. The old code spawned a placeholder and a mirror for each spec object that had a world item, so the old report would show one duplicate per such object. The `game-16` `hall` run has 147 retired placeholders, which is the number of such objects. The old binary was not run, so this is by construction, not a measurement.
+
+Environment note: `/tmp/ns-viewer/run.sh` now takes `WORLD` and `PLACE` from the environment (defaults unchanged). It deletes its own untracked `web/status-<place>.json` on exit, so a previously generated `web/status-test.json` was removed by the fixture run. The file is gitignored and regenerated on every viewer run.
