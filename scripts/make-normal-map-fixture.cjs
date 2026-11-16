@@ -60,12 +60,6 @@ function floatBytes(values) {
     return buffer;
 }
 
-function int16Bytes(values) {
-    const buffer = Buffer.alloc(values.length * 2);
-    values.forEach((value, index) => buffer.writeInt16LE(value, index * 2));
-    return buffer;
-}
-
 function uint16Bytes(values) {
     const buffer = Buffer.alloc(values.length * 2);
     values.forEach((value, index) => buffer.writeUInt16LE(value, index * 2));
@@ -75,7 +69,7 @@ function uint16Bytes(values) {
 const positions = [-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0];
 const normals = [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1];
 const uvs = [0, 1, 1, 1, 1, 0, 0, 0];
-const tangents = [32767, 0, 0, 32767, 32767, 0, 0, 32767, 32767, 0, 0, 32767, 32767, 0, 0, 32767];
+const tangents = [1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1];
 const indices = [0, 1, 2, 0, 2, 3];
 
 const pad4 = (length) => (4 - (length % 4)) % 4;
@@ -93,7 +87,7 @@ function addView(data, target) {
 const positionView = addView(floatBytes(positions), 34962);
 const normalView = addView(floatBytes(normals), 34962);
 const uvView = addView(floatBytes(uvs), 34962);
-const tangentView = addView(int16Bytes(tangents), 34962);
+const tangentView = addView(floatBytes(tangents), 34962);
 const indexView = addView(uint16Bytes(indices), 34963);
 const imageView = addView(png(size, size, bumpMapRows()), undefined);
 bin = Buffer.concat([bin, Buffer.alloc(pad4(bin.length))]);
@@ -102,7 +96,7 @@ const accessors = [
     { bufferView: positionView, componentType: 5126, count: 4, type: 'VEC3', min: [-0.5, -0.5, 0], max: [0.5, 0.5, 0] },
     { bufferView: normalView, componentType: 5126, count: 4, type: 'VEC3' },
     { bufferView: uvView, componentType: 5126, count: 4, type: 'VEC2' },
-    { bufferView: tangentView, componentType: 5122, normalized: true, count: 4, type: 'VEC4' },
+    { bufferView: tangentView, componentType: 5126, count: 4, type: 'VEC4' },
     { bufferView: indexView, componentType: 5123, count: 6, type: 'SCALAR' },
 ];
 
