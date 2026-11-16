@@ -330,3 +330,17 @@ Open for the owner:
 - **Compact arc flags** (`a1 1 0 011 1`) are not parsed; the tokenizer reads them as one number.
 - **gm MCP server** failed to connect this session, so invariant 1 was not followed. playwriter was used directly, as the owner instructed.
 - **Release profile** is unchanged (acd52c8 settings kept).
+
+## Round 11 Phase A changes
+
+Nothing in Phase A was built, tested or run. Each row is one local commit by lanmower with no trailers.
+
+| Item | Commit | Change | Phase B witness |
+| --- | --- | --- | --- |
+| 1 Scripted sphere, cylinder and capsule | 1cfa4b0 | Adds the `shapes` place to `testdata/spec-world`: three scripted objects `shape-sphere`, `shape-cylinder` and `shape-capsule`, each with `scripts/shapes.js` returning the matching collider. Adds `ui.render` (`scripts/ui.js`) to the fixture world, because the viewer draws mirrors only when a world has a render script. | `WORLD=testdata/spec-world PLACE=shapes` through `run.sh`: `objects 3 = expectedObjects 3`, `duplicateObjects 0`, `markers 0`, and `objectKinds` contains `scripted-sphere`, `scripted-cylinder` and `scripted-capsule` with count 1 each. |
+| 1 Object-kind status | 8feee8e | The viewer status reports `objectKinds`, a count of every drawn object's `kind`, so shape kinds can be witnessed from the status file. | Same run as above. |
+| 2 SVG compact arc flags | d75c869 | `path_segments` reads the large-arc and sweep flags of `A`/`a` as single `0`/`1` characters, so `a1 1 0 011 1` parses. Test `compact_arc_flags_parse_as_single_digits` compares compact and spaced forms. | `cargo test --bin bevy-jayzee ui_html`. |
+| 3 Normal-map fixture | 57fc47b | `scripts/make-normal-map-fixture.cjs` writes `testdata/normal-map/normal-map.glb`: one quad with SHORT normalized TANGENT and a `normalTexture` embedded PNG. Neon's 12 GLBs with this tangent format use meshopt and KTX2 textures, which the browser build can't decode, so they can't be used for the browser comparison. | Phase B runs the script, commits the GLB, and runs `gltf-check` on `testdata/normal-map`, which writes the decoded copy to `target/gltf-cache`. |
+| 3 Browser loader | 6c4e927 | `wasm-viewer` loads a glTF scene when the page has `?model=<url>`, with `bevy_gltf` features added to its Cargo.toml. The default demo scene is unchanged. `scripts/check-normal-map-visual.cjs` opens the raw and decoded GLB through playwriter on `:1` and saves a screenshot for each. | `scripts/check-normal-map-visual.cjs`. The raw variant should show TANGENT warnings; the decoded one should show none. |
+
+Phase B also needs the `wasm-viewer/Cargo.lock` update, because the new features bring crates the lock doesn't have. The Phase B witness for item 3 is a visual check, not a number: no before-value exists in the status, so the screenshots are compared by eye, and the paths are recorded in the Phase B section.
