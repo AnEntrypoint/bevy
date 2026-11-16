@@ -79,6 +79,9 @@ pub fn mirror_world(
     let object_ids: HashMap<Entity, String> = world.query::<(Entity, &ObjectId)>().iter(world).map(|(entity, id)| (entity, id.0.clone())).collect();
     let mut query = world.query::<(Entity, &ObjectId, &Transform, Option<&PrimitiveInfo>, Option<&ModelRef>, Option<&Collider>)>();
     for (entity, id, transform, primitive, model, collider) in query.iter(world) {
+        if scripted.contains(&entity) {
+            continue;
+        }
         if let Some(desc) = primitive.and_then(|primitive| primitive.0.clone()) {
             items.push(Item { entity, id: id.0.clone(), transform: *transform, drawn: Drawn::Primitive(desc) });
         } else if let Some(name) = model.and_then(|model| model_name(&model.0)) {
@@ -114,6 +117,16 @@ pub fn mirror_world(
         let id = if number == 0 { parent } else { format!("{parent}#{number}") };
         items.push(Item { entity, id, transform, drawn });
         proxies += 1;
+    }
+    for body in &scripted {
+        if children_per_body.contains_key(body) {
+            continue;
+        }
+        let transform = world.get::<Transform>(*body).copied().unwrap_or_default();
+        let id = object_ids.get(body).cloned().unwrap_or_else(|| format!("scripted-{}", body.to_bits()));
+        marker_ids.push(id.clone());
+        items.push(Item { entity: *body, id, transform, drawn: Drawn::Marker });
+        markers_fallback += 1;
     }
     let live: HashSet<Entity> = items.iter().map(|item| item.entity).collect();
     let by_entity: HashMap<Entity, &Item> = items.iter().map(|item| (item.entity, item)).collect();
@@ -392,7 +405,7 @@ fn spawn_marker(
         Mesh3d(mesh),
         MeshMaterial3d(material),
         item.transform,
-        ViewerObject { id: item.id.clone(), kind: "scripted-marker".to_string() },
+        ViewerObject { id: item.id.clone(), kind: "marker".to_string() },
         WorldMirror(item.entity),
         Name::new(item.id.clone()),
     ));
