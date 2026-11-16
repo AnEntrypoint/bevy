@@ -288,3 +288,45 @@ Each row lists the commit and the Phase B witness that must pass before the chan
 | 8 jobs cap and verify.sh | (Phase B) | No repo change planned. `/config/.cargo/config.toml` sets `[build] jobs = 4`. Phase B confirms the cap with `cargo config get build.jobs` and samples concurrent rustc processes during one build, then runs `verify.sh` once. | `cargo config get build.jobs` prints `4`; `verify.sh` exits 0 with its checks. |
 
 The Phase A work used six forked agents, one per item, each committing only its own files with no trailers; the lead added the `client.rs` and `check-network.cjs` fixes in 6c8c795 and f44a6da.
+
+## Round 10 Phase B results
+
+Contention: swap-out was 0 KB/s and 5.7 GB free before Phase B, with no cargo running. One cargo invocation ran at a time. The unit suite never overlapped a build.
+
+Longest step: `/config/.local/bin/cargo build --release` at 17 m 35 s. Sampled concurrent `rustc` processes peaked at 4 across 523 samples, which matches `jobs = 4` in `/config/.cargo/config.toml`. `cargo config get` is unavailable on this toolchain, so the cap is confirmed from the file plus the observed peak.
+
+Defects found in Phase B and fixed:
+
+- **Viewer attribute lookup (359e0ac).** The HTML tag reader lowercases attribute names, but `attr` looked up `viewBox` case-sensitively, so every SVG `viewBox` was ignored and HUD percentages never applied. `attr` now compares names case-insensitively.
+- **Terrain drawn twice (1a29c4a).** The baked heightfield collider was also drawn as a proxy, beside the terrain mirror, so neon reported `objects 52` against `expectedObjects 51`. Heightfield colliders are now skipped in the proxy branch.
+- **Despawn warnings every tick (3d75dcc).** `sync_feature_entities` despawned each feature entity twice, once from the registry vector and once from the marker query. The registry loop is removed, and the query covers every feature entity because each registry vector has a matching marker type. The warnings were `Encountered an error in command ... Entity despawned`, about 14,000 per run with feature scripts on. They're now 0 on neon and on the fixture.
+- **Network check remote count (ada7931).** The checker assumed `remote == 0`, but the report counts every `Remote` entity, including the replicated floor and the confirmed copy of the player (2 on this run). The check now requires `remote >= 2`.
+- **Network check null errorM (f44a6da).** A `null` errorM satisfies `null <= 0.05` in JavaScript, so the check now requires a number.
+- **WebGPU witness (b24b950).** The script saved the whole "Session N created" message as the session id, ran `-e` with the default 10 s timeout while waiting up to 90 s, and read `-e` output without the `[log] ` prefix. All three are fixed.
+
+Witnesses on the final tree:
+
+- Release build: `Finished release profile`, 17 m 35 s. `verify.sh`: rc 0, 7 s wall.
+  - Bench 500 bodies `0.4307 ms`, 2000 `0.9275 ms`, 5000 `1.3169 ms`; determinism `pass: true`.
+  - Client report: `players 1`, `predicted 1`, `controlled 1`, `remote 2`, `errorM 0`, `predictionHistory 21`, `confirmedHistory 17`, moved 14.5 m along x.
+  - `check-network.cjs`: `ok: true`.
+- `gltf-check /workspace/neon-syndicates/assets/cdn`: rc 0 (was rc 1, the two PNG textures), `bevy_loaded 64`, `bevy_failed 0`, stderr 0 lines. The two textures were WebP content under `.png` names. They're now real PNG, and the WebP originals are kept beside them as `.webp`. Neon isn't under git, so this is a data change, not a repo commit.
+- `bake-terrain /workspace/neon-syndicates/world main`: rc 0, writes `places/main/terrain-fields.json`.
+- Neon `main` viewer: `objects 51`, `expectedObjects 51`, `duplicateObjects 0`, `missingObjects []`, `terrains 1`, `modelsLoaded 9`, `markers 12`, `uiNodes 718`, `uiWarnings []`, 0 despawn warnings. Both checkers `ok: true`.
+- Scratch fixture in mirror mode (a copy of `testdata/spec-world` under `/tmp` with `ui.render` added, the place policy and the `ball`'s `spec-test.js` removed, so the place stays `test`): `objects 9`, `expectedObjects 9`, `duplicateObjects 0`, `missingObjects []`, `placeholdersRetired 8`, `markers 0`, 0 despawn warnings. The scripted parent `geo` no longer draws as a marker; it draws through its cuboid child. Shape kinds sphere, cylinder and capsule are covered by the unit test only, not by a live witness.
+- `world /workspace/neon-syndicates/world main 120`: rc 0, `errors 0`, `objects 59`, hash `0xa33a35c4`. **This changes the baseline** from `objects 58` and hash `0x1c2b1833`. The cause is the new static ground heightfield from the terrain bake, which is now a physics body. It's a deliberate sim change, and the owner needs to accept the new baseline.
+- Empty place: rc 1, `the place argument is empty; name a place or leave it out`.
+- `node scripts/check-game16-api.cjs`: `ok: true`.
+- `cargo test --bin bevy-jayzee`: 47 passed, 0 failed, 0.12 s test time (about 5 s wall with the incremental test-binary compile). Includes `scripted_colliders_keep_their_shape_kind`.
+- Wasm: `WASM_PROFILE=release scripts/build-wasm.sh` rc 0. The `wasm-viewer` crate was already built and does not depend on the root crate, so this rebuild was quick (4 s). Output: 28 MB `.wasm` under `web/wasm/`.
+- Playwriter witness (`node scripts/check-wasm-webgpu.cjs`): `ok: true`, `navigatorGpu: true`, `appReady: true`, `bevyReady: true`, adapter `BrowserWebGpu` on `NVIDIA GeForce RTX 3060 Laptop GPU`. Chromium ran on `:1` with the adapter flags. The only logged error is `404` for `/favicon.ico`, which the page doesn't declare. The server and browser were stopped by PID.
+
+Open for the owner:
+
+- **Hash baseline (above).** The `world main` hash moved because terrain now exists, so the old `0x1c2b1833` no longer applies. Accept `0xa33a35c4` or ask for the terrain to be left out of the sim.
+- **Sphere, cylinder and capsule scripted shapes** are covered by the unit test only. The fixture's `geo` is a cuboid.
+- **Normal-map shading** is fixed at the data level. Authored tangents are now kept, but I haven't compared shading on screen.
+- **HUD warnings baseline.** `uiWarnings` is empty on neon now. I didn't capture a before-value, so I can't say how many path or defs drops disappeared.
+- **Compact arc flags** (`a1 1 0 011 1`) are not parsed; the tokenizer reads them as one number.
+- **gm MCP server** failed to connect this session, so invariant 1 was not followed. playwriter was used directly, as the owner instructed.
+- **Release profile** is unchanged (acd52c8 settings kept).
