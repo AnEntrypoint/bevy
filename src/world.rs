@@ -68,6 +68,9 @@ pub fn run(directory: &str, place_name: Option<&str>, ticks: usize) -> Result<()
 }
 
 pub fn prepare(directory: &str, place_name: Option<&str>) -> Result<(App, Place), String> {
+    if place_name == Some("") {
+        return Err(format!("{directory}: the place argument is empty; name a place or leave it out"));
+    }
     let tree = WorldTree::load(Path::new(directory))?;
     let name = place_name
         .map(str::to_string)
