@@ -209,3 +209,37 @@ Witnesses on the final tree:
 - `target/debug/bevy-jayzee world /workspace/neon-syndicates/world main 120`: exit 0, `objects:58`, `errors:0`, hash `0x1c2b1833`.
 
 Not measured: the report has no pre-change baseline binary. The "before" for the mesh count is the request count: the old code created one asset per request, so before this change `meshes` would equal `meshRequests`, here 49 against 3 now.
+
+## Round 9 (placeholder retirement, Phase A: code, docs and tests, not yet built)
+
+Decision: each object is drawn once. `spawn_viewer` placeholders carry a `ViewerPlaceholder` id and are despawned once a mirror with the same id exists. The report now counts drawn `ViewerObject` entities against the expected set (world items, place-spec objects and terrains) and lists missing and duplicate ids.
+
+| Change | File and row | Witness | Result |
+|---|---|---|---|
+| `ViewerPlaceholder` component carries the object id on each placeholder | src/viewer.rs:56-57, 213 | `scripts/check-viewer-objects.cjs` (`noPlaceholderOverlap`) | pending Phase B |
+| One `object_id` for both spawn paths, so placeholder and mirror ids match exactly | src/viewer.rs:59-61; used at 196 and in src/viewer_world.rs:226 | `scripts/check-viewer-objects.cjs` (`noMissing`) | pending Phase B |
+| Placeholders with a repeated place-spec id are not spawned twice | src/viewer.rs:194-198 | `scripts/check-viewer-objects.cjs` (`noDuplicates`) | pending Phase B |
+| `retire_placeholders` system despawns placeholders whose mirror exists; chained after `mirror_world` | src/viewer_world.rs:234-248; src/viewer.rs:137 | `scripts/check-viewer-objects.cjs` (`countMatchesExpected`), `placeholdersRetired` > 0 | pending Phase B |
+| Pure `placeholders_to_retire<T>` and `duplicate_count` helpers | src/viewer_world.rs:250-256 | `cargo test --bin bevy-jayzee` (full suite, Phase B) | pending Phase B |
+| Expected set: world items, place-spec ids and terrain ids, sorted | src/viewer_world.rs:224-232 (end of `mirror_world`) | `expectedObjects` in the viewer report equals `objects` | pending Phase B |
+| `objects` now counts drawn `ViewerObject` entities; `expectedObjects`, `duplicateObjects`, `missingObjects`, `placeholders`, `placeholdersRetired` added to the report | src/viewer_world.rs:338-349 (`count_batches`); src/viewer.rs:ViewerScene and JSON | `scripts/check-viewer-objects.cjs` exit 0 | pending Phase B |
+| Removed `scene.objects = place objects + items`, which double-counted | src/viewer_world.rs (old line 205) | `objects` equals the drawn count | pending Phase B |
+| Object-count witness script | scripts/check-viewer-objects.cjs | `node scripts/check-viewer-objects.cjs /tmp/ns-viewer/viewer-status-main.json` exit 0 | pending Phase B |
+
+Phase B also runs the full viewer unit-test suite (`cargo test --bin bevy-jayzee`, not only the helpers) and records its wall time.
+
+## Ranked remaining work for bevy
+
+Ranked by visible impact on the neon-syndicates viewer and by how much a regression would hide.
+
+1. Neon terrain is not drawn (`terrains:0`). The terrain comes from `scripts/flat-starter-terrain.js`, which the Bevy host does not execute, so the ground is the largest visible gap.
+2. HUD SVG drops path curves (`C`, `Q`, `A`) and `<defs>` (`uiWarnings` shows `path` and `defs` dropped). The HUD is the only text-bearing surface the owner checks, and the gap is visible.
+3. Two PNG textures fail every gltf-check run (`texture-concrete-panels.png`, `texture-weathered-wood-planks.png`). Exit 1 is a permanent red witness, so a new asset failure would hide inside it.
+4. GLB vertex format warnings from `bevy_gltf` (`TANGENT` is `Snorm16x4` where `Float32x4` is expected, and unsupported accessor formats) on the 9 loaded models. Normal-map shading may be wrong on those models; not checked by eye.
+5. Scripted primitives are drawn at the default size (`guide-*`), because their real geometry is a render shim in the script. Visible size error on 12 objects.
+6. `bevy/dynamic_linking` does not link (BasisLZ `basist::` symbols). The warm rebuild is already 6 to 8 s, so the payoff is small, but the option is dead.
+7. Browser path (`wasm-viewer`, WebGPU) has not been built or witnessed since the viewer changes. A breakage would be silent.
+8. Lightyear network scene (client prediction and server replication) has no witness in the current stretch.
+9. The `jobs = 4` rustc cap is unconfirmed (host-wide samples include other workloads), and `verify.sh` (release build) has not run in this stretch.
+
+Excluded by the owner: the 115 `ctx.*` figure, which is recorded as unreproduced above.
