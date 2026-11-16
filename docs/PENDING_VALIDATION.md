@@ -187,3 +187,25 @@ Not changed: the placeholder objects that `spawn_viewer` draws from the place sp
 GLB models already share one scene asset per name (`load_model`), so their meshes were already shared; the report counts them through the `Mesh3d` query.
 
 Phase B witnesses: `VIEWER_FOCUS_KIND=model /tmp/ns-viewer/run.sh`, then `node scripts/check-viewer-batching.cjs /tmp/ns-viewer/viewer-status-main.json`, `node scripts/check-game16-api.cjs`, `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`, and `target/debug/bevy-jayzee world /workspace/neon-syndicates/world "" 120` (exit 1, empty-place message). The longest step's wall time is recorded in Phase B.
+
+### Round 8 Phase B results
+
+Defects found and fixed in Phase B:
+
+- `MeshShape` was private but used in the signature of the `pub(crate)` system `mirror_world`, so the build failed (E0446 class). Fixed by making the enum `pub(crate)`.
+- `spawn_viewer` took `ResMut<ViewerScene>` but no longer wrote to it, which warned as an unused `mut`. Changed to `Res`.
+- The first batching check counted every `Mesh3d` entity, which includes the internal meshes and materials of the GLB models. It reported 19 batch keys and failed a bound of 16. The owner's goal is the object draws, so the count was split: `batchKeys` and `meshes` still cover the whole scene, and `mirrorEntities` and `mirrorBatchKeys` cover the mirrored objects. The checker tests the mirror population against `shapesCreated * 4 + 1`, the palette size plus the proxy material.
+
+Witnesses on the final tree:
+
+- `/config/.local/bin/cargo build --timings`: `rc=0`, 107 s (the longest step), no warnings.
+- `/config/.local/bin/cargo test --bin bevy-jayzee viewer_world`: `3 passed; 0 failed`.
+- `VIEWER_FOCUS_KIND=model /tmp/ns-viewer/run.sh`: `objects:50`, `markers:12`, `proxies:0`, `modelsLoaded:9`, `modelsMissing:[]`, `uiNodes:718`, no panic.
+- Viewer report counts: `meshRequests:49`, `shapesCreated:3`, `meshEntities:64`, `meshes:19` (unique mesh assets), `uniqueMaterials:19`, `batchKeys:19`, `mirrorEntities:41`, `mirrorBatchKeys:3`.
+- `node scripts/check-viewer-batching.cjs /tmp/ns-viewer/viewer-status-main.json`: `"ok": true`; `mirrorBatchKeys 3` against a bound of 13, `shapesCreated 3` against `meshRequests 49`.
+- `node scripts/check-game16-api.cjs`: `"ok": true`.
+- `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: `bevy_loaded:64`, `bevy_failed:0`, 2 s. Exit 1 is the two PNG textures `texture-concrete-panels.png` and `texture-weathered-wood-planks.png`, outside this work.
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world "" 120`: exit 1, `the place argument is empty; name a place or leave it out`.
+- `target/debug/bevy-jayzee world /workspace/neon-syndicates/world main 120`: exit 0, `objects:58`, `errors:0`, hash `0x1c2b1833`.
+
+Not measured: the report has no pre-change baseline binary. The "before" for the mesh count is the request count: the old code created one asset per request, so before this change `meshes` would equal `meshRequests`, here 49 against 3 now.

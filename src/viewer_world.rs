@@ -261,7 +261,7 @@ fn load_model(
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum MeshShape {
+pub(crate) enum MeshShape {
     Sphere(u32),
     Capsule(u32, u32),
     Cylinder(u32, u32),
@@ -302,7 +302,11 @@ fn palette_slot(kind: &str, slots: usize) -> usize {
     kind.bytes().fold(0usize, |hash, byte| hash.wrapping_mul(31).wrapping_add(byte as usize)) % slots
 }
 
-pub fn count_batches(draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>, mut scene: ResMut<ViewerScene>) {
+pub fn count_batches(
+    draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>,
+    mirrored: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>), With<WorldMirror>>,
+    mut scene: ResMut<ViewerScene>,
+) {
     let mut meshes = HashSet::new();
     let mut materials = HashSet::new();
     let mut batches = HashSet::new();
@@ -313,10 +317,18 @@ pub fn count_batches(draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>,
         materials.insert(material.0.id());
         batches.insert((mesh.0.id(), material.0.id()));
     }
+    let mut mirror_batches = HashSet::new();
+    let mut mirror_entities = 0;
+    for (mesh, material) in &mirrored {
+        mirror_entities += 1;
+        mirror_batches.insert((mesh.0.id(), material.0.id()));
+    }
     scene.mesh_entities = entities;
     scene.meshes = meshes.len();
     scene.unique_materials = materials.len();
     scene.batch_keys = batches.len();
+    scene.mirror_entities = mirror_entities;
+    scene.mirror_batch_keys = mirror_batches.len();
 }
 
 fn terrain_mesh(field: &FieldGrid) -> Mesh {
