@@ -31,7 +31,7 @@ const checks = {
     onePlayer: report.players === 1,
     onePredicted: report.predicted === 1,
     oneControlled: report.controlled === 1,
-    noRemote: report.remote === 0,
+    remoteIncludesFloorAndConfirmed: report.remote >= 2,
     predictionHistory: report.predictionHistory > 0,
     confirmedHistory: report.confirmedHistory > 0,
     confirmedTick: report.confirmedTick > 0,
