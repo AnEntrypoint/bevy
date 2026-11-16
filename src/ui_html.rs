@@ -862,6 +862,7 @@ fn flush_run(run: &mut String, out: &mut Vec<UiSpec>, inherit: &Inherit) {
 #[derive(Clone, Copy)]
 struct Canvas {
     size: Option<(f32, f32)>,
+    offset: (f32, f32),
 }
 
 impl Canvas {
@@ -878,13 +879,21 @@ impl Canvas {
             None => Val::Px(value),
         }
     }
+
+    fn left(&self, value: f32) -> Val {
+        self.x(value + self.offset.0)
+    }
+
+    fn top(&self, value: f32) -> Val {
+        self.y(value + self.offset.1)
+    }
 }
 
 fn canvas(attrs: &[(String, String)]) -> Canvas {
     let view: Vec<f32> = attr(attrs, "viewBox").unwrap_or("").split(|c: char| c == ' ' || c == ',').filter_map(|part| part.parse::<f32>().ok()).collect();
     match view.as_slice() {
-        [_, _, width, height] if *width > 0.0 && *height > 0.0 => Canvas { size: Some((*width, *height)) },
-        _ => Canvas { size: None },
+        [_, _, width, height] if *width > 0.0 && *height > 0.0 => Canvas { size: Some((*width, *height)), offset: (0.0, 0.0) },
+        _ => Canvas { size: None, offset: (0.0, 0.0) },
     }
 }
 
@@ -908,7 +917,32 @@ fn paint(attrs: &[(String, String)], name: &str, default: Option<&str>) -> Optio
     Some(with_opacity(color, opacity))
 }
 
-fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
+const MAX_USE_DEPTH: usize = 4;
+
+struct SvgScope<'a> {
+    ids: BTreeMap<&'a str, &'a Dom>,
+    depth: usize,
+}
+
+impl<'a> SvgScope<'a> {
+    fn new(nodes: &'a [Dom]) -> Self {
+        let mut ids = BTreeMap::new();
+        collect_ids(nodes, &mut ids);
+        Self { ids, depth: 0 }
+    }
+}
+
+fn collect_ids<'a>(nodes: &'a [Dom], ids: &mut BTreeMap<&'a str, &'a Dom>) {
+    for node in nodes {
+        let Dom::Element { attrs, children, .. } = node else { continue };
+        if let Some(id) = attr(attrs, "id") {
+            ids.insert(id, node);
+        }
+        collect_ids(children, ids);
+    }
+}
+
+fn svg_shapes<'a>(nodes: &'a [Dom], canvas: Canvas, scope: &SvgScope<'a>, dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
     let mut out = Vec::new();
     for node in nodes {
         let Dom::Element { tag, attrs, children } = node else { continue };
@@ -919,8 +953,8 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
             "circle" => {
                 let (cx, cy, radius) = (number(attrs, "cx", 0.0), number(attrs, "cy", 0.0), number(attrs, "r", 0.0));
                 vec![ShapeStyle {
-                    left: canvas.x(cx - radius),
-                    top: canvas.y(cy - radius),
+                    left: canvas.left(cx - radius),
+                    top: canvas.top(cy - radius),
                     width: canvas.x(2.0 * radius),
                     height: canvas.y(2.0 * radius),
                     rotation: 0.0,
@@ -931,8 +965,8 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
                 }]
             }
             "rect" => vec![ShapeStyle {
-                left: canvas.x(number(attrs, "x", 0.0)),
-                top: canvas.y(number(attrs, "y", 0.0)),
+                left: canvas.left(number(attrs, "x", 0.0)),
+                top: canvas.top(number(attrs, "y", 0.0)),
                 width: canvas.x(number(attrs, "width", 0.0)),
                 height: canvas.y(number(attrs, "height", 0.0)),
                 rotation: 0.0,
@@ -958,7 +992,26 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
                 }
             },
             "g" => {
-                out.extend(svg_shapes(children, canvas, dropped));
+                out.extend(svg_shapes(children, canvas, scope, dropped));
+                continue;
+            }
+            "defs" => continue,
+            "use" => {
+                let target = attr(attrs, "href")
+                    .or_else(|| attr(attrs, "xlink:href"))
+                    .and_then(|href| href.strip_prefix('#'))
+                    .and_then(|id| scope.ids.get(id).copied());
+                match target {
+                    Some(target) if scope.depth < MAX_USE_DEPTH => {
+                        let nested = Canvas {
+                            size: canvas.size,
+                            offset: (canvas.offset.0 + number(attrs, "x", 0.0), canvas.offset.1 + number(attrs, "y", 0.0)),
+                        };
+                        let nested_scope = SvgScope { ids: scope.ids.clone(), depth: scope.depth + 1 };
+                        out.extend(svg_shapes(std::slice::from_ref(target), nested, &nested_scope, dropped));
+                    }
+                    _ => *dropped.entry(tag.clone()).or_insert(0) += 1,
+                }
                 continue;
             }
             other => {
@@ -976,8 +1029,8 @@ fn line_shape(canvas: Canvas, start: (f32, f32), end: (f32, f32), width: f32, co
     let length = (dx * dx + dy * dy).sqrt();
     let (mid_x, mid_y) = (start.0 + dx / 2.0, start.1 + dy / 2.0);
     ShapeStyle {
-        left: canvas.x(mid_x - length / 2.0),
-        top: canvas.y(mid_y - width / 2.0),
+        left: canvas.left(mid_x - length / 2.0),
+        top: canvas.top(mid_y - width / 2.0),
         width: canvas.x(length),
         height: canvas.y(width),
         rotation: dy.atan2(dx),
@@ -1017,8 +1070,8 @@ fn polygon_shapes(canvas: Canvas, subpaths: &[(Vec<(f32, f32)>, bool)], fill: Op
                 crossings.sort_by(|a, b| a.total_cmp(b));
                 for span in crossings.chunks_exact(2) {
                     shapes.push(ShapeStyle {
-                        left: canvas.x(span[0]),
-                        top: canvas.y(top),
+                        left: canvas.left(span[0]),
+                        top: canvas.top(top),
                         width: canvas.x(span[1] - span[0]),
                         height: canvas.y(step),
                         rotation: 0.0,
@@ -1049,7 +1102,11 @@ fn path_subpaths(d: &str) -> Option<Vec<(Vec<(f32, f32)>, bool)>> {
     let mut points: Vec<(f32, f32)> = Vec::new();
     let mut current = (0.0_f32, 0.0_f32);
     let mut start = (0.0_f32, 0.0_f32);
+    let mut last_cubic: Option<(f32, f32)> = None;
+    let mut last_quad: Option<(f32, f32)> = None;
     for (command, args) in &segments {
+        let prev_cubic = last_cubic.take();
+        let prev_quad = last_quad.take();
         let relative = command.is_ascii_lowercase();
         let base = |current: (f32, f32), x: f32, y: f32| if relative { (current.0 + x, current.1 + y) } else { (x, y) };
         match command.to_ascii_uppercase() {
@@ -1068,11 +1125,60 @@ fn path_subpaths(d: &str) -> Option<Vec<(Vec<(f32, f32)>, bool)>> {
                     current = point;
                 }
             }
-            'L' | 'T' => {
+            'L' => {
                 for pair in args.chunks_exact(2) {
                     let point = base(current, pair[0], pair[1]);
                     points.push(point);
                     current = point;
+                }
+            }
+            'C' => {
+                for chunk in args.chunks_exact(6) {
+                    let first = base(current, chunk[0], chunk[1]);
+                    let second = base(current, chunk[2], chunk[3]);
+                    let end = base(current, chunk[4], chunk[5]);
+                    points.extend(cubic_points(current, first, second, end));
+                    current = end;
+                    last_cubic = Some(second);
+                }
+            }
+            'S' => {
+                let mut reflected = prev_cubic;
+                for chunk in args.chunks_exact(4) {
+                    let first = reflected.map_or(current, |previous| (2.0 * current.0 - previous.0, 2.0 * current.1 - previous.1));
+                    let second = base(current, chunk[0], chunk[1]);
+                    let end = base(current, chunk[2], chunk[3]);
+                    points.extend(cubic_points(current, first, second, end));
+                    current = end;
+                    reflected = Some(second);
+                }
+                last_cubic = reflected;
+            }
+            'Q' => {
+                for chunk in args.chunks_exact(4) {
+                    let control = base(current, chunk[0], chunk[1]);
+                    let end = base(current, chunk[2], chunk[3]);
+                    points.extend(quad_points(current, control, end));
+                    current = end;
+                    last_quad = Some(control);
+                }
+            }
+            'T' => {
+                let mut reflected = prev_quad;
+                for chunk in args.chunks_exact(2) {
+                    let control = reflected.map_or(current, |previous| (2.0 * current.0 - previous.0, 2.0 * current.1 - previous.1));
+                    let end = base(current, chunk[0], chunk[1]);
+                    points.extend(quad_points(current, control, end));
+                    current = end;
+                    reflected = Some(control);
+                }
+                last_quad = reflected;
+            }
+            'A' => {
+                for chunk in args.chunks_exact(7) {
+                    let end = base(current, chunk[5], chunk[6]);
+                    points.extend(arc_points(current, (chunk[0], chunk[1]), chunk[2], chunk[3] != 0.0, chunk[4] != 0.0, end));
+                    current = end;
                 }
             }
             'H' => {
@@ -1103,6 +1209,82 @@ fn path_subpaths(d: &str) -> Option<Vec<(Vec<(f32, f32)>, bool)>> {
         subpaths.push((points, false));
     }
     (!subpaths.is_empty()).then_some(subpaths)
+}
+
+const CURVE_STEPS: usize = 12;
+
+fn blend(weights: &[f32], points: &[(f32, f32)]) -> (f32, f32) {
+    points.iter().zip(weights).fold((0.0, 0.0), |(x, y), (point, weight)| (x + weight * point.0, y + weight * point.1))
+}
+
+fn cubic_points(start: (f32, f32), first: (f32, f32), second: (f32, f32), end: (f32, f32)) -> Vec<(f32, f32)> {
+    (1..=CURVE_STEPS)
+        .map(|step| {
+            let t = step as f32 / CURVE_STEPS as f32;
+            let u = 1.0 - t;
+            blend(&[u * u * u, 3.0 * u * u * t, 3.0 * u * t * t, t * t * t], &[start, first, second, end])
+        })
+        .collect()
+}
+
+fn quad_points(start: (f32, f32), control: (f32, f32), end: (f32, f32)) -> Vec<(f32, f32)> {
+    (1..=CURVE_STEPS)
+        .map(|step| {
+            let t = step as f32 / CURVE_STEPS as f32;
+            let u = 1.0 - t;
+            blend(&[u * u, 2.0 * u * t, t * t], &[start, control, end])
+        })
+        .collect()
+}
+
+fn angle_between(u: (f32, f32), v: (f32, f32)) -> f32 {
+    let dot = u.0 * v.0 + u.1 * v.1;
+    let length = (u.0 * u.0 + u.1 * u.1).sqrt() * (v.0 * v.0 + v.1 * v.1).sqrt();
+    let angle = (dot / length).clamp(-1.0, 1.0).acos();
+    if u.0 * v.1 - u.1 * v.0 < 0.0 { -angle } else { angle }
+}
+
+fn arc_points(start: (f32, f32), radii: (f32, f32), rotation: f32, large: bool, sweep: bool, end: (f32, f32)) -> Vec<(f32, f32)> {
+    if start == end {
+        return Vec::new();
+    }
+    let (mut rx, mut ry) = (radii.0.abs(), radii.1.abs());
+    if rx == 0.0 || ry == 0.0 {
+        return vec![end];
+    }
+    let (sin, cos) = rotation.to_radians().sin_cos();
+    let half = ((start.0 - end.0) / 2.0, (start.1 - end.1) / 2.0);
+    let (x1, y1) = (cos * half.0 + sin * half.1, -sin * half.0 + cos * half.1);
+    let lambda = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry);
+    if lambda > 1.0 {
+        rx *= lambda.sqrt();
+        ry *= lambda.sqrt();
+    }
+    let (rx2, ry2) = (rx * rx, ry * ry);
+    let numerator = rx2 * ry2 - rx2 * y1 * y1 - ry2 * x1 * x1;
+    let denominator = rx2 * y1 * y1 + ry2 * x1 * x1;
+    let root = if denominator == 0.0 { 0.0 } else { (numerator / denominator).max(0.0).sqrt() };
+    let sign = if large == sweep { -1.0 } else { 1.0 };
+    let (cx1, cy1) = (sign * root * rx * y1 / ry, sign * root * -ry * x1 / rx);
+    let center = (cos * cx1 - sin * cy1 + (start.0 + end.0) / 2.0, sin * cx1 + cos * cy1 + (start.1 + end.1) / 2.0);
+    let u = ((x1 - cx1) / rx, (y1 - cy1) / ry);
+    let v = ((-x1 - cx1) / rx, (-y1 - cy1) / ry);
+    let theta = angle_between((1.0, 0.0), u);
+    let mut delta = angle_between(u, v);
+    if !sweep && delta > 0.0 {
+        delta -= std::f32::consts::TAU;
+    }
+    if sweep && delta < 0.0 {
+        delta += std::f32::consts::TAU;
+    }
+    let steps = ((delta.abs() / (std::f32::consts::PI / 16.0)).ceil() as usize).max(4);
+    (1..=steps)
+        .map(|step| {
+            let angle = theta + delta * step as f32 / steps as f32;
+            let (sin_a, cos_a) = angle.sin_cos();
+            (center.0 + rx * cos_a * cos - ry * sin_a * sin, center.1 + rx * cos_a * sin + ry * sin_a * cos)
+        })
+        .collect()
 }
 
 fn path_segments(d: &str) -> Option<Vec<(char, Vec<f32>)>> {
@@ -1177,7 +1359,8 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     let mut style = box_style(&scope);
                     let inner = if tag == "svg" {
                         fit_svg(&mut style, attrs);
-                        svg_shapes(children, canvas(attrs), dropped)
+                        let scope = SvgScope::new(children);
+                        svg_shapes(children, canvas(attrs), &scope, dropped)
                     } else {
                         convert(children, path, &scope.inherit, rules, dropped)
                     };
@@ -1265,9 +1448,24 @@ mod tests {
     }
 
     #[test]
-    fn svg_path_with_curves_is_reported() {
-        let built = build(r#"<svg><path d="M0 0 C1 1 2 2 3 3"/></svg>"#);
-        assert_eq!(built.warnings, vec!["unsupported element <path> dropped (1)".to_string()]);
+    fn svg_path_with_curves_is_drawn() {
+        for d in ["M1 1 C2 0 4 0 5 1 Z", "M1 1 Q3 0 5 1 Z", "M1 1 A2 2 0 0 1 5 1 Z", "M1 1 S3 0 5 1 T7 1 Z"] {
+            let built = build(&format!(r##"<svg viewBox="0 0 10 10"><path d="{d}" fill="#ff0000"/></svg>"##));
+            assert!(built.warnings.is_empty(), "{d}");
+            assert!(built.spec.count() > 2, "{d}");
+        }
+    }
+
+    #[test]
+    fn svg_defs_are_not_drawn_and_use_draws_them_translated() {
+        let built = build(r##"<svg viewBox="0 0 4 4"><defs><circle id="dot" cx="0" cy="0" r="1" fill="#ff0000"/></defs><use href="#dot" x="2" y="1"/></svg>"##);
+        assert!(built.warnings.is_empty());
+        let UiSpec::Box { children, .. } = &built.spec else { panic!("root is a box") };
+        let UiSpec::Box { children, .. } = &children[0] else { panic!("svg is a box") };
+        assert_eq!(children.len(), 1);
+        let UiSpec::Shape { style } = &children[0] else { panic!("use draws one shape") };
+        assert_eq!(style.left, Val::Percent(25.0));
+        assert_eq!(style.top, Val::Percent(0.0));
     }
 
     #[test]
