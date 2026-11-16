@@ -120,11 +120,11 @@ fn mirror_world_objects(
     mut palette: Local<Vec<Handle<StandardMaterial>>>,
 ) {
     let world = runner.0.world_mut();
-    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, &crate::world::PrimitiveInfo)>();
+    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, Option<&crate::world::PrimitiveInfo>)>();
     let mut unmirrored = 0;
     let items: Vec<(Entity, String, Transform, PrimitiveDesc)> = query
         .iter(world)
-        .filter_map(|(entity, id, transform, primitive)| match primitive.0.clone() {
+        .filter_map(|(entity, id, transform, primitive)| match primitive.and_then(|primitive| primitive.0.clone()) {
             Some(desc) => Some((entity, id.0.clone(), *transform, desc)),
             None => {
                 unmirrored += 1;
