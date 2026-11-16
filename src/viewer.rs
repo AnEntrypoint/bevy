@@ -150,7 +150,7 @@ fn mirror_world_objects(
         let mesh = primitive_mesh(&mut meshes, desc);
         commands.spawn((
             Mesh3d(mesh),
-            MeshMaterial3d(palette[entity.index() as usize % palette.len()].clone()),
+            MeshMaterial3d(palette[entity.to_bits() as usize % palette.len()].clone()),
             *transform,
             ViewerObject { id: id.clone(), kind: desc.kind.clone() },
             WorldMirror(*entity),
