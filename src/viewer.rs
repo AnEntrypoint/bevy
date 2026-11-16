@@ -1,7 +1,7 @@
 use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResolution};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
@@ -25,6 +25,7 @@ pub struct ViewerScene {
     pub mirror_batch_keys: usize,
     pub object_draws: usize,
     pub object_batch_keys: usize,
+    pub object_kinds: BTreeMap<String, usize>,
     pub expected_objects: usize,
     pub expected_ids: Vec<String>,
     pub duplicate_objects: usize,
@@ -105,6 +106,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         mirror_batch_keys: 0,
         object_draws: 0,
         object_batch_keys: 0,
+        object_kinds: BTreeMap::new(),
         expected_objects: 0,
         expected_ids: Vec::new(),
         duplicate_objects: 0,
@@ -325,6 +327,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "mirrorBatchKeys": scene.mirror_batch_keys,
         "objectDraws": scene.object_draws,
         "objectBatchKeys": scene.object_batch_keys,
+        "objectKinds": scene.object_kinds,
         "unmirroredObjects": scene.unmirrored,
         "unmirroredModels": scene.unmirrored_models,
         "markerIds": scene.marker_ids,

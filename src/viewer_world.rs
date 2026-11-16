@@ -4,7 +4,7 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::world_serialization::{WorldAsset, WorldAssetRoot};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::runtime::{FieldGrid, TerrainData};
@@ -417,7 +417,15 @@ pub fn count_batches(
     }
     scene.object_draws = object_draws;
     scene.object_batch_keys = object_batches.len();
-    let drawn: Vec<String> = drawn_objects.iter().map(|object| object.id.clone()).collect();
+    let mut kinds: BTreeMap<String, usize> = BTreeMap::new();
+    let drawn: Vec<String> = drawn_objects
+        .iter()
+        .map(|object| {
+            *kinds.entry(object.kind.clone()).or_insert(0) += 1;
+            object.id.clone()
+        })
+        .collect();
+    scene.object_kinds = kinds;
     let drawn_set: HashSet<String> = drawn.iter().cloned().collect();
     let missing: Vec<String> = scene.expected_ids.iter().filter(|id| !drawn_set.contains(*id)).cloned().collect();
     scene.objects = drawn.len();
