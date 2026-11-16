@@ -35,7 +35,7 @@ const checks = {
     predictionHistory: report.predictionHistory > 0,
     confirmedHistory: report.confirmedHistory > 0,
     confirmedTick: report.confirmedTick > 0,
-    predictionMatchesConfirmed: report.errorM <= ERROR_LIMIT,
+    predictionMatchesConfirmed: typeof report.errorM === "number" && report.errorM <= ERROR_LIMIT,
     playerMoved: moved >= MIN_MOVE,
     serverSawClient: states.some((state) => state.clients >= 1 && state.players?.length >= 1),
 };
