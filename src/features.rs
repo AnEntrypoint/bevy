@@ -457,3 +457,32 @@ fn num(value: Option<&Value>, fallback: f32) -> f32 {
 fn string_array(value: Option<&Value>) -> Vec<String> {
     value.and_then(Value::as_array).map(|items| items.iter().filter_map(Value::as_str).map(str::to_string).collect()).unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::FeatureState;
+
+    #[test]
+    fn seeded_random_sequence_repeats_per_seed() {
+        let first: Vec<f64> = {
+            let mut state = FeatureState::seeded(7);
+            (0..4).map(|_| state.random()).collect()
+        };
+        let again: Vec<f64> = {
+            let mut state = FeatureState::seeded(7);
+            (0..4).map(|_| state.random()).collect()
+        };
+        let other: Vec<f64> = {
+            let mut state = FeatureState::seeded(8);
+            (0..4).map(|_| state.random()).collect()
+        };
+        assert_eq!(first, again);
+        assert_ne!(first, other);
+    }
+
+    #[test]
+    fn feature_report_is_a_json_object() {
+        let report = FeatureState::seeded(1).report();
+        assert!(report.is_object());
+    }
+}
