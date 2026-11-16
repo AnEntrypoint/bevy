@@ -15,6 +15,7 @@ pub struct ViewerScene {
     pub place: String,
     pub objects: usize,
     pub meshes: usize,
+    pub unmirrored: usize,
     pub lights: usize,
     pub camera: Vec3,
 }
@@ -61,6 +62,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         place: name.clone(),
         objects: place_def.objects.len(),
         meshes: 0,
+        unmirrored: 0,
         lights: 1,
         camera: Vec3::new(12.0, 10.0, 18.0),
     })
@@ -119,10 +121,18 @@ fn mirror_world_objects(
 ) {
     let world = runner.0.world_mut();
     let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, &crate::world::PrimitiveInfo)>();
+    let mut unmirrored = 0;
     let items: Vec<(Entity, String, Transform, PrimitiveDesc)> = query
         .iter(world)
-        .filter_map(|(entity, id, transform, primitive)| primitive.0.clone().map(|desc| (entity, id.0.clone(), *transform, desc)))
+        .filter_map(|(entity, id, transform, primitive)| match primitive.0.clone() {
+            Some(desc) => Some((entity, id.0.clone(), *transform, desc)),
+            None => {
+                unmirrored += 1;
+                None
+            }
+        })
         .collect();
+    scene.unmirrored = unmirrored;
     if palette.is_empty() {
         let colors = [
             Color::srgb(0.24, 0.62, 0.95),
@@ -296,6 +306,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "place": scene.place,
         "objects": scene.objects,
         "meshes": scene.meshes,
+        "unmirroredObjects": scene.unmirrored,
         "lights": scene.lights,
         "camera": [scene.camera.x, scene.camera.y, scene.camera.z],
         "visibleIds": ids,
