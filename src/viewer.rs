@@ -16,6 +16,7 @@ pub struct ViewerScene {
     pub objects: usize,
     pub meshes: usize,
     pub unmirrored: usize,
+    pub unmirrored_models: usize,
     pub lights: usize,
     pub camera: Vec3,
 }
@@ -63,6 +64,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         objects: place_def.objects.len(),
         meshes: 0,
         unmirrored: 0,
+        unmirrored_models: 0,
         lights: 1,
         camera: Vec3::new(12.0, 10.0, 18.0),
     })
@@ -120,19 +122,24 @@ fn mirror_world_objects(
     mut palette: Local<Vec<Handle<StandardMaterial>>>,
 ) {
     let world = runner.0.world_mut();
-    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, Option<&crate::world::PrimitiveInfo>)>();
+    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, Option<&crate::world::PrimitiveInfo>, Option<&crate::world::ModelRef>)>();
     let mut unmirrored = 0;
+    let mut unmirrored_models = 0;
     let items: Vec<(Entity, String, Transform, PrimitiveDesc)> = query
         .iter(world)
-        .filter_map(|(entity, id, transform, primitive)| match primitive.and_then(|primitive| primitive.0.clone()) {
+        .filter_map(|(entity, id, transform, primitive, model)| match primitive.and_then(|primitive| primitive.0.clone()) {
             Some(desc) => Some((entity, id.0.clone(), *transform, desc)),
             None => {
                 unmirrored += 1;
+                if model.is_some() {
+                    unmirrored_models += 1;
+                }
                 None
             }
         })
         .collect();
     scene.unmirrored = unmirrored;
+    scene.unmirrored_models = unmirrored_models;
     if palette.is_empty() {
         let colors = [
             Color::srgb(0.24, 0.62, 0.95),
@@ -307,6 +314,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "objects": scene.objects,
         "meshes": scene.meshes,
         "unmirroredObjects": scene.unmirrored,
+        "unmirroredModels": scene.unmirrored_models,
         "lights": scene.lights,
         "camera": [scene.camera.x, scene.camera.y, scene.camera.z],
         "visibleIds": ids,
