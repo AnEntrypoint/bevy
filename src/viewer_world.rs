@@ -84,6 +84,9 @@ pub fn mirror_world(
         } else if let Some(name) = model.and_then(|model| model_name(&model.0)) {
             items.push(Item { entity, id: id.0.clone(), transform: *transform, drawn: Drawn::Model(name) });
         } else if let Some(collider) = collider {
+            if collider.shape_scaled().as_heightfield().is_some() {
+                continue;
+            }
             let aabb = collider.shape_scaled().compute_local_aabb();
             let size = Vec3::from(aabb.maxs) - Vec3::from(aabb.mins);
             let offset = Vec3::from(aabb.mins + aabb.maxs) * 0.5;
