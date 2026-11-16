@@ -82,8 +82,11 @@ const results = [];
 for (const variant of variants) {
   state.logs = [];
   const page = await context.newPage();
-  page.on('console', (message) => state.logs.push(message.type() + ': ' + message.text()));
+  state.failures = [];
+  page.on('console', (message) => state.logs.push(message.type() + ': ' + message.text() + ' @ ' + (message.location().url || '(no url)')));
   page.on('pageerror', (error) => state.logs.push('pageerror: ' + error.message));
+  page.on('response', (response) => { if (response.status() >= 400) state.failures.push({ url: response.url(), status: response.status() }); });
+  page.on('requestfailed', (request) => state.failures.push({ url: request.url(), status: 'failed: ' + (request.failure()?.errorText ?? 'unknown') }));
   await page.goto(pageBase + '?model=' + encodeURIComponent(variant.model), { waitUntil: 'domcontentloaded' });
   const deadline = Date.now() + 120000;
   let status = { ready: false, modelState: null };
@@ -104,6 +107,7 @@ for (const variant of variants) {
     adapter: state.logs.filter((line) => /BrowserWebGpu/.test(line)),
     tangentWarnings: state.logs.filter((line) => /TANGENT/.test(line)),
     errors: state.logs.filter((line) => /^error|^pageerror/.test(line)).slice(-10),
+    failedRequests: state.failures,
     screenshot: variant.screenshot,
   });
   await page.close();
@@ -150,7 +154,7 @@ async function main() {
         const output = execFileSync(playwriter, ['-s', session, '--timeout', '420000', '-e', snippet], { encoding: 'utf8', timeout: 420000, maxBuffer: 64 * 1024 * 1024 });
         const line = output.trim().split('\n').reverse().map((text) => text.replace(/^\[log\] /, '').trim()).find((text) => text.startsWith('['));
         result.variants = JSON.parse(line);
-        result.ok = result.variants.length === variants.length && result.variants.every((variant) => variant.ready && variant.modelState === 'loaded' && variant.adapter.length > 0 && fs.existsSync(variant.screenshot));
+        result.ok = result.variants.length === variants.length && result.variants.every((variant) => variant.ready && variant.modelState === 'loaded' && variant.adapter.length > 0 && variant.tangentWarnings.length === 0 && variant.failedRequests.length === 0 && fs.existsSync(variant.screenshot));
         return result;
     } catch (error) {
         result.error = String(error.stderr || error.message || error);
