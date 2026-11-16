@@ -149,6 +149,7 @@ pub fn mirror_world(
                 let Some(handle) = handle else {
                     unmirrored += 1;
                     unmirrored_models += 1;
+                    spawn_marker(&mut commands, &mut meshes, &mut shapes, &mut scene, item, proxy.clone());
                     continue;
                 };
                 commands.spawn((
@@ -159,18 +160,7 @@ pub fn mirror_world(
                     Name::new(item.id.clone()),
                 ));
             }
-            Drawn::Marker => {
-                let mesh = shared_mesh(&mut meshes, &mut shapes, MeshShape::Sphere(MARKER_RADIUS.to_bits()));
-                scene.mesh_requests += 1;
-                commands.spawn((
-                    Mesh3d(mesh),
-                    MeshMaterial3d(proxy.clone()),
-                    item.transform,
-                    ViewerObject { id: item.id.clone(), kind: "scripted-marker".to_string() },
-                    WorldMirror(item.entity),
-                    Name::new(item.id.clone()),
-                ));
-            }
+            Drawn::Marker => spawn_marker(&mut commands, &mut meshes, &mut shapes, &mut scene, item, proxy.clone()),
             Drawn::Proxy(size) => {
                 let shape = MeshShape::Cuboid(size.x.max(0.05).to_bits(), size.y.max(0.05).to_bits(), size.z.max(0.05).to_bits());
                 let mesh = shared_mesh(&mut meshes, &mut shapes, shape);
@@ -327,7 +317,27 @@ fn shared_mesh(meshes: &mut Assets<Mesh>, shapes: &mut HashMap<MeshShape, Handle
     shapes.entry(shape).or_insert_with(|| meshes.add(shape.mesh())).clone()
 }
 
-fn palette_slot(kind: &str, slots: usize) -> usize {
+fn spawn_marker(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    shapes: &mut HashMap<MeshShape, Handle<Mesh>>,
+    scene: &mut ViewerScene,
+    item: &Item,
+    material: Handle<StandardMaterial>,
+) {
+    let mesh = shared_mesh(meshes, shapes, MeshShape::Sphere(MARKER_RADIUS.to_bits()));
+    scene.mesh_requests += 1;
+    commands.spawn((
+        Mesh3d(mesh),
+        MeshMaterial3d(material),
+        item.transform,
+        ViewerObject { id: item.id.clone(), kind: "scripted-marker".to_string() },
+        WorldMirror(item.entity),
+        Name::new(item.id.clone()),
+    ));
+}
+
+pub(crate) fn palette_slot(kind: &str, slots: usize) -> usize {
     kind.bytes().fold(0usize, |hash, byte| hash.wrapping_mul(31).wrapping_add(byte as usize)) % slots
 }
 
@@ -335,8 +345,17 @@ pub fn count_batches(
     draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>,
     mirrored: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>), With<WorldMirror>>,
     drawn_objects: Query<&ViewerObject>,
+    objects: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>), With<ViewerObject>>,
     mut scene: ResMut<ViewerScene>,
 ) {
+    let mut object_batches = HashSet::new();
+    let mut object_draws = 0;
+    for (mesh, material) in &objects {
+        object_draws += 1;
+        object_batches.insert((mesh.0.id(), material.0.id()));
+    }
+    scene.object_draws = object_draws;
+    scene.object_batch_keys = object_batches.len();
     let drawn: Vec<String> = drawn_objects.iter().map(|object| object.id.clone()).collect();
     let drawn_set: HashSet<String> = drawn.iter().cloned().collect();
     let missing: Vec<String> = scene.expected_ids.iter().filter(|id| !drawn_set.contains(*id)).cloned().collect();

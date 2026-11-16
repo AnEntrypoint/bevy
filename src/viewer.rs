@@ -23,6 +23,8 @@ pub struct ViewerScene {
     pub batch_keys: usize,
     pub mirror_entities: usize,
     pub mirror_batch_keys: usize,
+    pub object_draws: usize,
+    pub object_batch_keys: usize,
     pub expected_objects: usize,
     pub expected_ids: Vec<String>,
     pub duplicate_objects: usize,
@@ -101,6 +103,8 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         batch_keys: 0,
         mirror_entities: 0,
         mirror_batch_keys: 0,
+        object_draws: 0,
+        object_batch_keys: 0,
         expected_objects: 0,
         expected_ids: Vec::new(),
         duplicate_objects: 0,
@@ -135,6 +139,8 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     }
     if let Some(runner) = runner {
         app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, viewer_world::retire_placeholders, viewer_world::count_batches, feed_ui_html).chain());
+    } else {
+        app.add_systems(Update, (viewer_world::retire_placeholders, viewer_world::count_batches).chain());
     }
     app.run();
     crate::script::shutdown();
@@ -174,7 +180,7 @@ fn spawn_viewer(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     objects: Res<ViewerObjects>,
-    scene: Res<ViewerScene>,
+    mut scene: ResMut<ViewerScene>,
     globe: Option<Res<crate::globe::GlobeWorld>>,
 ) {
     if globe.is_none() {
@@ -191,6 +197,10 @@ fn spawn_viewer(
         Color::srgb(0.78, 0.42, 0.88),
     ];
     let palette: Vec<Handle<StandardMaterial>> = colors.iter().map(|color| materials.add(StandardMaterial { base_color: *color, ..default() })).collect();
+    let mut expected: Vec<String> = objects.0.iter().enumerate().map(|(index, object)| object_id(object, index)).collect();
+    expected.sort();
+    expected.dedup();
+    scene.expected_ids = expected;
     let mut spawned_ids = HashSet::new();
     for (index, object) in objects.0.iter().enumerate() {
         let id = object_id(object, index);
@@ -204,7 +214,7 @@ fn spawn_viewer(
         } else {
             (cube.clone(), Vec3::new(1.2, 1.2, 1.2))
         };
-        let material = palette[index % palette.len()].clone();
+        let material = palette[viewer_world::palette_slot(&kind, palette.len())].clone();
         commands.spawn((
             Mesh3d(mesh),
             MeshMaterial3d(material),
@@ -313,6 +323,8 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "batchKeys": scene.batch_keys,
         "mirrorEntities": scene.mirror_entities,
         "mirrorBatchKeys": scene.mirror_batch_keys,
+        "objectDraws": scene.object_draws,
+        "objectBatchKeys": scene.object_batch_keys,
         "unmirroredObjects": scene.unmirrored,
         "unmirroredModels": scene.unmirrored_models,
         "markerIds": scene.marker_ids,
