@@ -37,6 +37,7 @@ strip = "symbols"
 
 [profile.dev]
 opt-level = 1
+debug = "line-tables-only"
 
 [profile.dev.package."*"]
 opt-level = 3
