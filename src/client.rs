@@ -143,14 +143,14 @@ fn report_and_exit(
             confirmed_value = value.0;
         }
     }
+    let error_json = if error.is_finite() { format!("{error:.6}") } else { "null".to_string() };
     println!(
-        "{{\"kind\":\"client-report\",\"players\":{},\"predicted\":{},\"controlled\":{},\"remote\":{},\"confirmedTick\":{},\"errorM\":{:.6},\"current\":[{:.4},{:.4},{:.4}],\"predictedPos\":[{:.4},{:.4},{:.4}],\"confirmedPos\":[{:.4},{:.4},{:.4}],\"predictionHistory\":{},\"confirmedHistory\":{}}}",
+        "{{\"kind\":\"client-report\",\"players\":{},\"predicted\":{},\"controlled\":{},\"remote\":{},\"confirmedTick\":{},\"errorM\":{error_json},\"current\":[{:.4},{:.4},{:.4}],\"predictedPos\":[{:.4},{:.4},{:.4}],\"confirmedPos\":[{:.4},{:.4},{:.4}],\"predictionHistory\":{},\"confirmedHistory\":{}}}",
         players.iter().count(),
         predicted.iter().count(),
         controlled.iter().count(),
         remote.iter().count(),
         confirmed_tick,
-        error,
         current.x,
         current.y,
         current.z,
