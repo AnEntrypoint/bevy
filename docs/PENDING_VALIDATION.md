@@ -344,3 +344,30 @@ Nothing in Phase A was built, tested or run. Each row is one local commit by lan
 | 3 Browser loader | 6c4e927 | `wasm-viewer` loads a glTF scene when the page has `?model=<url>`, with `bevy_gltf` features added to its Cargo.toml. The default demo scene is unchanged. `scripts/check-normal-map-visual.cjs` opens the raw and decoded GLB through playwriter on `:1` and saves a screenshot for each. | `scripts/check-normal-map-visual.cjs`. The raw variant should show TANGENT warnings; the decoded one should show none. |
 
 Phase B also needs the `wasm-viewer/Cargo.lock` update, because the new features bring crates the lock doesn't have. The Phase B witness for item 3 is a visual check, not a number: no before-value exists in the status, so the screenshots are compared by eye, and the paths are recorded in the Phase B section.
+
+## Round 11 Phase B results
+
+Contention: swap-out was 0 and 10 GB was free before Phase B, with no cargo running. One cargo invocation ran at a time, and the full unit suite ran alone after the builds.
+
+Longest step: the release wasm build (`WASM_PROFILE=release scripts/build-wasm.sh`) at 217 s, which compiled `bevy_gltf`. The dev binary build was 18 to 21 s, and the unit suite ran 14 s wall.
+
+Defect found and fixed in Phase B (e521a6d): the spec fixture's `shapes` place drew each scripted parent twice. The first copy was the parent's own `PrimitiveInfo` with kind `scripted`, drawn at default size. This is the defect from the Round 10 queue, and the Phase A children change did not stop it, because the primitive branch ran first. Scripted entities are now skipped in the item loop. A scripted parent with no collider children gets a marker after the children loop. The marker kind is now `marker`, not `scripted-marker`, because `local-player` is a marker too.
+
+Witnesses on the final tree:
+
+- Item 1, fixture shapes place (`WORLD=testdata/spec-world PLACE=shapes`): `objects 4 = expectedObjects 4`, `duplicateObjects 0`, `missingObjects []`, `objectKinds` = `{"marker":1,"scripted-capsule":1,"scripted-cylinder":1,"scripted-sphere":1}`, 0 despawn warnings. `local-player` is the marker, spawned by the world because the place has no player object. `check-viewer-objects.cjs` `ok: true`.
+- Item 2, compact arc flags: `cargo test --bin bevy-jayzee` passes `compact_arc_flags_parse_as_single_digits`.
+- Unit suite after the builds: `test result: ok. 48 passed; 0 failed`, 0.65 s of test time, 14 s wall.
+- Item 3, on-screen normal-map comparison (`node scripts/check-normal-map-visual.cjs`, playwriter, display `:1`, adapter flags):
+  - Raw `/testdata/normal-map/normal-map.glb`: `modelState loaded`, warning `Vertex attribute TANGENT has format Snorm16x4 but expected Float32x4`. Screenshot `target/witness/normal-map-raw.png`.
+  - Decoded `/target/gltf-cache/normal-map.glb`: `modelState loaded`, no TANGENT warnings. Screenshot `target/witness/normal-map-decoded.png`.
+  - Both use the BrowserWebGpu adapter, NVIDIA GeForce RTX 3060 Laptop GPU. The 404 lines match the favicon request seen in the earlier WebGPU witness, but I did not re-check them for this run.
+  - **Visual check, not a number.** No before-value exists in the status, so the two screenshots were compared by eye. Both show the same bump pattern with no clear difference, and the bumps look recessed rather than raised. The sign convention of the generated normal map is therefore unverified.
+  - The fixture is generated, not a neon asset. Neon's 12 GLBs with the same tangent format use meshopt and KTX2 textures, which the browser build can't decode.
+- `gltf-check testdata/normal-map`: rc 0, `bevy.loaded: true`. The decoded copy has a FLOAT32 VEC4 TANGENT (componentType 5126), and the raw one keeps SHORT normalized (5122).
+- Neon `main` viewer: `ok: true`, `objects 51 = expectedObjects 51`, `terrains 1`.
+- `world /workspace/neon-syndicates/world main 120`: rc 0, `errors 0`, `objects 59`, hash `0xa33a35c4`. This is the accepted baseline.
+- `gltf-check /workspace/neon-syndicates/assets/cdn`: rc 0, `bevy_loaded 64`, `bevy_failed 0`.
+- `world testdata/spec-world test 120` ends at `objects 2`, because `spec-test.js` in the `ball` behaviour calls `enterPlace('two')`. That behaviour predates this round, and the `shapes` place has no such script.
+
+Process check: no browser, server or build process started by this round remains running. The Xvfb on `:1` (PID 404) predates this session and was left running.
