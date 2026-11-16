@@ -371,3 +371,13 @@ Witnesses on the final tree:
 - `world testdata/spec-world test 120` ends at `objects 2`, because `spec-test.js` in the `ball` behaviour calls `enterPlace('two')`. That behaviour predates this round, and the `shapes` place has no such script.
 
 Process check: no browser, server or build process started by this round remains running. The Xvfb on `:1` (PID 404) predates this session and was left running.
+
+## Round 12 Phase A changes
+
+Nothing in Phase A was built, tested or run. Each row is one local commit by lanmower with no trailers.
+
+| Item | Commit | Change | Phase B witness |
+| --- | --- | --- | --- |
+| 1 Fixture ends at `objects 2` | eee60c1 | The place switch (`enterPlace` to `two`) moved out of the `ball` object's `spec-test.js` into `places/test/sim.js`, a place program. It fires on the sixth run of its one-second cadence, so the 120-tick witness never reaches it. `places/two/sim.js` returns to `test` after one more second. The switch runs only once per place visit, because the counter lives in `ctx.place.state`. | `world testdata/spec-world test 120` ends in place `test` with `objects 8`. A viewer run on `test` ends with the expected object count. |
+| 2 Normal-map sign | 85c28c1 | `ny` changes from `-dy * strength` to `dy * strength`. The dome heights are raised, and image rows increase downward, so G must be high on the upper slope. The bump maths moves to `scripts/lib/normal-map-bumps.cjs`, which the generator requires. | Regenerate `testdata/normal-map/normal-map.glb`, then `node scripts/check-normal-map-sign.cjs` with `ok: true`. |
+| 2 Numeric sign witness | 2d60ac8 | `scripts/check-normal-map-sign.cjs` decodes the GLB's embedded PNG and checks three things: every pixel matches the reference normal within ±2; on dome slopes the R and G signs point away from the dome centre; and vertex UVs follow positions (u grows with x, v grows downward). It exits non-zero on failure. | The checker must fail on the committed GLB before regeneration and pass after. |
