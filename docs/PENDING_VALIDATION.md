@@ -19,3 +19,4 @@ Each row names a committed change, the file it touches, and the witness that pro
 | Enable Bevy's default font feature | Cargo.toml | viewer screenshot shows the overlay text (`/tmp/ns-viewer/viewer-*.png`) | pending Phase B |
 | Bound globe elevation by amplitude | src/globe.rs | `cargo test --bin bevy-jayzee elevation_is_deterministic` passes | pending Phase B |
 | Mirror primitive world entities into the viewer | src/viewer.rs | `viewer_status` `objects` equals the headless `objects` count of primitive-backed entities | pending Phase B |
+| Palette index fix for mirrored objects | src/viewer.rs | build passes with no errors | pending Phase B |
