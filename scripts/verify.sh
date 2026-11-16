@@ -20,5 +20,4 @@ tail -n 3 "$root/target/server.log"
 if [ "$client_status" -ne 0 ]; then
   exit "$client_status"
 fi
-grep -q '"kind":"client-report"' "$root/target/client.log"
-grep -q '"kind":"server-state"' "$root/target/server.log"
+node "$root/scripts/check-network.cjs" "$root/target/client.log" "$root/target/server.log"
