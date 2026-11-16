@@ -154,7 +154,7 @@ impl GlobeWorld {
             let p = unit * (2.0_f32).powi(octave as i32);
             let (x, y, z) = (p.x.floor() as i64, p.y.floor() as i64, p.z.floor() as i64);
             let smooth = |t: f32| t * t * (3.0 - 2.0 * t);
-            let (sx, sy, sz) = (smooth(p.x.fract()), smooth(p.y.fract()), smooth(p.z.fract()));
+            let (sx, sy, sz) = (smooth(p.x - p.x.floor()), smooth(p.y - p.y.floor()), smooth(p.z - p.z.floor()));
             let corner = |dx: i64, dy: i64, dz: i64| self.hash(x + dx + octave as i64 * 17, y + dy, z + dz) * 2.0 - 1.0;
             let lerp = |a: f32, b: f32, t: f32| a * (1.0 - t) + b * t;
             let a = lerp(corner(0, 0, 0), corner(1, 0, 0), sx);
