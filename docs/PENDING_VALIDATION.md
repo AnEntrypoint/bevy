@@ -417,3 +417,35 @@ Nothing in Phase A was built, tested or run. Each row is one local commit by lan
 | --- | --- | --- | --- |
 | 1 Unidentified 404s | 46b7de3 | `scripts/check-normal-map-visual.cjs` now records each console error's URL (`message.location().url`), each response with status 400 or more, and each failed request with its error text, per variant, in `failedRequests`. `ok` now also requires no TANGENT warning and no failed request. | Run the witness, read the `failedRequests` URLs, then fix their cause. |
 | 2 Raw variant TANGENT warning | e079709 | `scripts/make-normal-map-fixture.cjs` writes the TANGENT accessor as FLOAT32 VEC4 (componentType 5126, no `normalized`), with value (1, 0, 0, 1) per vertex. The SHORT normalized form is what bevy_gltf rejects. The unused `int16Bytes` helper is removed. | Regenerate `testdata/normal-map/normal-map.glb`, then confirm the sign checker still passes and the raw variant logs no TANGENT warning. |
+
+## Round 13 Phase B results
+
+Contention: swap-out 0 and 10,585 MB available before the first browser run and before the wasm build. One cargo invocation ran (the wasm release build). The unit suite ran alone after it.
+
+Item 1, the 404s. The first witness run, before the GLB and the viewer changed, logged these failing URLs:
+
+- `http://127.0.0.1:8092/favicon.ico`, on the raw variant only. The page declared no icon, so the browser asked for the default. Last round this was only a guess; now it has its URL.
+- `http://127.0.0.1:8092/testdata/normal-map/normal-map.glb.meta` (raw) and `http://127.0.0.1:8092/target/gltf-cache/normal-map.glb.meta` (decoded). Bevy's asset loader requests a `.meta` sidecar beside every asset, and the wasm viewer used the default `AssetMetaCheck::Always`.
+
+Fixes:
+
+- 318c3b0: `wasm-viewer/src/lib.rs` sets `AssetMetaCheck::Never`. Both fixture assets are plain GLBs with no sidecar, so Bevy's default meta is the intended behaviour.
+- def6cc5: the page declares `<link rel="icon" href="favicon.svg">` in `web/wasm-index.html`, and `web/favicon.svg` is copied by `scripts/build-wasm.sh`. `web/wasm/` is generated and ignored by git, so the change lives in the tracked template.
+
+Item 2, raw TANGENT warning. The raw GLB was regenerated with FLOAT32 tangents (e079709 for the generator, f1175a7 for the GLB). The accessor is now componentType 5126, VEC4, no `normalized`. The raw variant no longer triggers the bevy_gltf `Snorm16x4` warning, and the decoded copy is now the same size as the raw one, because `glb::decode` leaves float tangents unchanged.
+
+Witnesses on the final tree:
+
+- Pre-fix visual run (before the GLB and viewer changes): rc 1, `ok false`. The raw variant still logged `Snorm16x4`, and both variants had the two 404s above.
+- `node scripts/check-normal-map-sign.cjs testdata/normal-map/normal-map.glb`: rc 0, `encodingMismatches 0`, `slopePixels 25408`, `conventionViolations 0`, `geometryViolations 0`, `ok true`. The generator change keeps the sign fix.
+- `target/debug/bevy-jayzee gltf-check testdata/normal-map`: rc 0, `bevy_loaded 1`, `bevy_failed 0`, `ok true`.
+- Wasm release build through the shim (`PATH=/config/.local/bin:$PATH WASM_PROFILE=release bash scripts/build-wasm.sh`): rc 0, 59 s wall, incremental on the Round 11 build. The bundle is 31,059,938 bytes and `web/wasm/favicon.svg` and the favicon link are present.
+- Post-fix visual run, `node scripts/check-normal-map-visual.cjs` on display `:1` with the adapter flags: rc 0, `ok true`. Both variants: `ready true`, `modelState loaded`, one BrowserWebGpu adapter line each, `tangentWarnings []`, `failedRequests []`, and no console error lines. Screenshots: `target/witness/normal-map-raw.png` and `target/witness/normal-map-decoded.png`. The raw screenshot shows the same raised domes as the decoded one. This is a visual check, not a number.
+- The witness's server and browser PIDs (2299012 and 2299016) were gone when checked after the run, and nothing listened on port 8092.
+- Unit suite, alone after the build: `test result: ok. 48 passed; 0 failed`, including `compact_arc_flags_parse_as_single_digits`.
+
+Timing: the longest measured step this round is the wasm release build at 59 s wall. The visual witness was not timed. The Round 11 build at 217 s compiled `bevy_gltf` from scratch, so 59 s is the incremental figure.
+
+Caveat, unchanged: the neon GLBs use the SHORT normalized tangent form and are not fixed by this change. This fixture only covers `testdata/normal-map`. The wasm build still cannot decode the neon assets, which use meshopt and KTX2.
+
+Process check: the witness server and browser PIDs listed above are gone, nothing listens on port 8092, and no cargo, rustc or wasm-bindgen process is running. Playwriter processes under PID 2296782 belong to a gm-core worker that started at 01:19:54, before this round's witness runs, so they were left running.
