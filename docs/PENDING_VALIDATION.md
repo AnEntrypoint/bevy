@@ -408,3 +408,12 @@ Timing: this round had no full rebuild, so the wasm release build from Round 11 
 Process check: the visual witness reported server PID 2295693 and browser PID 2295697; both were gone when checked after the run. No process started this round remains running.
 
 Open: the gm MCP server failed to connect again this session, so the gm browser setup was not used and playwriter was used directly, as the owner instructed. The two unidentified 404s listed above are open.
+
+## Round 13 Phase A changes
+
+Nothing in Phase A was built, tested or run. Each row is one local commit by lanmower with no trailers.
+
+| Item | Commit | Change | Phase B witness |
+| --- | --- | --- | --- |
+| 1 Unidentified 404s | 46b7de3 | `scripts/check-normal-map-visual.cjs` now records each console error's URL (`message.location().url`), each response with status 400 or more, and each failed request with its error text, per variant, in `failedRequests`. `ok` now also requires no TANGENT warning and no failed request. | Run the witness, read the `failedRequests` URLs, then fix their cause. |
+| 2 Raw variant TANGENT warning | e079709 | `scripts/make-normal-map-fixture.cjs` writes the TANGENT accessor as FLOAT32 VEC4 (componentType 5126, no `normalized`), with value (1, 0, 0, 1) per vertex. The SHORT normalized form is what bevy_gltf rejects. The unused `int16Bytes` helper is removed. | Regenerate `testdata/normal-map/normal-map.glb`, then confirm the sign checker still passes and the raw variant logs no TANGENT warning. |
