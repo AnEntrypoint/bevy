@@ -46,6 +46,7 @@ pub fn mirror_world(
     mut palette: Local<Vec<Handle<StandardMaterial>>>,
     mut proxy_material: Local<Option<Handle<StandardMaterial>>>,
     mut models: Local<HashMap<String, Option<Handle<WorldAsset>>>>,
+    mut shapes: Local<HashMap<MeshShape, Handle<Mesh>>>,
 ) {
     let directory = PathBuf::from(&scene.directory);
     let world = runner.0.world_mut();
@@ -129,10 +130,11 @@ pub fn mirror_world(
         }
         match &item.drawn {
             Drawn::Primitive(desc) => {
-                let mesh = primitive_mesh(&mut meshes, desc);
+                let mesh = shared_mesh(&mut meshes, &mut shapes, primitive_shape(desc));
+                scene.mesh_requests += 1;
                 commands.spawn((
                     Mesh3d(mesh),
-                    MeshMaterial3d(palette[item.entity.to_bits() as usize % palette.len()].clone()),
+                    MeshMaterial3d(palette[palette_slot(&desc.kind, palette.len())].clone()),
                     item.transform,
                     ViewerObject { id: item.id.clone(), kind: desc.kind.clone() },
                     WorldMirror(item.entity),
@@ -158,7 +160,8 @@ pub fn mirror_world(
                 ));
             }
             Drawn::Marker => {
-                let mesh = meshes.add(Sphere::new(0.25));
+                let mesh = shared_mesh(&mut meshes, &mut shapes, MeshShape::Sphere(MARKER_RADIUS.to_bits()));
+                scene.mesh_requests += 1;
                 commands.spawn((
                     Mesh3d(mesh),
                     MeshMaterial3d(proxy.clone()),
@@ -169,7 +172,9 @@ pub fn mirror_world(
                 ));
             }
             Drawn::Proxy(size) => {
-                let mesh = meshes.add(Cuboid::new(size.x.max(0.05), size.y.max(0.05), size.z.max(0.05)));
+                let shape = MeshShape::Cuboid(size.x.max(0.05).to_bits(), size.y.max(0.05).to_bits(), size.z.max(0.05).to_bits());
+                let mesh = shared_mesh(&mut meshes, &mut shapes, shape);
+                scene.mesh_requests += 1;
                 commands.spawn((
                     Mesh3d(mesh),
                     MeshMaterial3d(proxy.clone()),
@@ -203,7 +208,7 @@ pub fn mirror_world(
         ));
     }
     scene.objects = objects.0.len() + items.len();
-    scene.meshes = objects.0.len() + items.len();
+    scene.shapes_created = shapes.len();
     scene.unmirrored = unmirrored;
     scene.unmirrored_models = unmirrored_models;
     scene.models_loaded = items
@@ -255,17 +260,63 @@ fn load_model(
     Some(asset_server.load(format!("{file}#Scene0")))
 }
 
-fn primitive_mesh(meshes: &mut Assets<Mesh>, desc: &PrimitiveDesc) -> Handle<Mesh> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum MeshShape {
+    Sphere(u32),
+    Capsule(u32, u32),
+    Cylinder(u32, u32),
+    Cuboid(u32, u32, u32),
+}
+
+impl MeshShape {
+    fn mesh(self) -> Mesh {
+        match self {
+            MeshShape::Sphere(radius) => Sphere::new(f32::from_bits(radius)).into(),
+            MeshShape::Capsule(radius, length) => Capsule3d::new(f32::from_bits(radius), f32::from_bits(length)).into(),
+            MeshShape::Cylinder(radius, height) => Cylinder::new(f32::from_bits(radius), f32::from_bits(height)).into(),
+            MeshShape::Cuboid(x, y, z) => Cuboid::new(f32::from_bits(x), f32::from_bits(y), f32::from_bits(z)).into(),
+        }
+    }
+}
+
+const MARKER_RADIUS: f32 = 0.25;
+
+fn primitive_shape(desc: &PrimitiveDesc) -> MeshShape {
     let kind = desc.kind.as_str();
     if kind.contains("sphere") || kind.contains("ball") {
-        meshes.add(Sphere::new(desc.radius))
+        MeshShape::Sphere(desc.radius.to_bits())
     } else if kind.contains("capsule") {
-        meshes.add(Capsule3d::new(desc.radius, desc.capsule_half_height * 2.0))
+        MeshShape::Capsule(desc.radius.to_bits(), (desc.capsule_half_height * 2.0).to_bits())
     } else if kind.contains("cylinder") {
-        meshes.add(Cylinder::new(desc.radius, desc.half_height * 2.0))
+        MeshShape::Cylinder(desc.radius.to_bits(), (desc.half_height * 2.0).to_bits())
     } else {
-        meshes.add(Cuboid::new(desc.size.x, desc.size.y, desc.size.z))
+        MeshShape::Cuboid(desc.size.x.to_bits(), desc.size.y.to_bits(), desc.size.z.to_bits())
     }
+}
+
+fn shared_mesh(meshes: &mut Assets<Mesh>, shapes: &mut HashMap<MeshShape, Handle<Mesh>>, shape: MeshShape) -> Handle<Mesh> {
+    shapes.entry(shape).or_insert_with(|| meshes.add(shape.mesh())).clone()
+}
+
+fn palette_slot(kind: &str, slots: usize) -> usize {
+    kind.bytes().fold(0usize, |hash, byte| hash.wrapping_mul(31).wrapping_add(byte as usize)) % slots
+}
+
+pub fn count_batches(draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>, mut scene: ResMut<ViewerScene>) {
+    let mut meshes = HashSet::new();
+    let mut materials = HashSet::new();
+    let mut batches = HashSet::new();
+    let mut entities = 0;
+    for (mesh, material) in &draws {
+        entities += 1;
+        meshes.insert(mesh.0.id());
+        materials.insert(material.0.id());
+        batches.insert((mesh.0.id(), material.0.id()));
+    }
+    scene.mesh_entities = entities;
+    scene.meshes = meshes.len();
+    scene.unique_materials = materials.len();
+    scene.batch_keys = batches.len();
 }
 
 fn terrain_mesh(field: &FieldGrid) -> Mesh {
@@ -293,4 +344,37 @@ fn terrain_mesh(field: &FieldGrid) -> Mesh {
         .with_inserted_indices(Indices::U32(indices));
     mesh.compute_smooth_normals();
     mesh
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn primitive(kind: &str, radius: f32) -> PrimitiveDesc {
+        PrimitiveDesc { kind: kind.to_string(), size: Vec3::ONE, half_height: 0.5, radius, capsule_half_height: 0.5 }
+    }
+
+    #[test]
+    fn identical_primitives_map_to_one_shape() {
+        assert_eq!(primitive_shape(&primitive("sphere", 0.5)), primitive_shape(&primitive("sphere", 0.5)));
+        assert_ne!(primitive_shape(&primitive("sphere", 0.5)), primitive_shape(&primitive("sphere", 0.75)));
+    }
+
+    #[test]
+    fn shared_mesh_reuses_one_handle_per_shape() {
+        let mut meshes = Assets::<Mesh>::default();
+        let mut shapes = HashMap::new();
+        let shape = MeshShape::Sphere(MARKER_RADIUS.to_bits());
+        let first = shared_mesh(&mut meshes, &mut shapes, shape);
+        let second = shared_mesh(&mut meshes, &mut shapes, shape);
+        assert_eq!(first, second);
+        assert_eq!(shapes.len(), 1);
+        assert_eq!(meshes.len(), 1);
+    }
+
+    #[test]
+    fn palette_slot_is_stable_and_in_range() {
+        assert_eq!(palette_slot("crate", 4), palette_slot("crate", 4));
+        assert!((0..64).all(|index| palette_slot(&format!("kind-{index}"), 4) < 4));
+    }
 }

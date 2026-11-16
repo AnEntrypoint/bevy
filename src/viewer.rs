@@ -15,6 +15,11 @@ pub struct ViewerScene {
     pub place: String,
     pub objects: usize,
     pub meshes: usize,
+    pub mesh_requests: usize,
+    pub shapes_created: usize,
+    pub mesh_entities: usize,
+    pub unique_materials: usize,
+    pub batch_keys: usize,
     pub unmirrored: usize,
     pub unmirrored_models: usize,
     pub marker_ids: Vec<String>,
@@ -73,6 +78,11 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         place: name.clone(),
         objects: place_def.objects.len(),
         meshes: 0,
+        mesh_requests: 0,
+        shapes_created: 0,
+        mesh_entities: 0,
+        unique_materials: 0,
+        batch_keys: 0,
         unmirrored: 0,
         unmirrored_models: 0,
         marker_ids: Vec::new(),
@@ -100,7 +110,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         app.add_systems(Update, orbit_camera);
     }
     if let Some(runner) = runner {
-        app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, feed_ui_html).chain());
+        app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, viewer_world::count_batches, feed_ui_html).chain());
     }
     app.run();
     crate::script::shutdown();
@@ -156,6 +166,7 @@ fn spawn_viewer(
         Color::srgb(0.42, 0.82, 0.45),
         Color::srgb(0.78, 0.42, 0.88),
     ];
+    let palette: Vec<Handle<StandardMaterial>> = colors.iter().map(|color| materials.add(StandardMaterial { base_color: *color, ..default() })).collect();
     for (index, object) in objects.0.iter().enumerate() {
         let id = object.id.clone().unwrap_or_else(|| format!("object-{index}"));
         let position = object.properties.feet_position.as_ref().map(|value| crate::spec::vec3(Some(value))).unwrap_or(Vec3::ZERO);
@@ -165,7 +176,7 @@ fn spawn_viewer(
         } else {
             (cube.clone(), Vec3::new(1.2, 1.2, 1.2))
         };
-        let material = materials.add(StandardMaterial { base_color: colors[index % colors.len()], ..default() });
+        let material = palette[index % palette.len()].clone();
         commands.spawn((
             Mesh3d(mesh),
             MeshMaterial3d(material),
@@ -173,7 +184,6 @@ fn spawn_viewer(
             ViewerObject { id: id.clone(), kind },
             Name::new(id),
         ));
-        scene.meshes += 1;
     }
     commands.spawn((
         DirectionalLight { illuminance: 2600.0, shadow_maps_enabled: false, contact_shadows_enabled: false, ..default() },
@@ -262,6 +272,11 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "place": scene.place,
         "objects": scene.objects,
         "meshes": scene.meshes,
+        "meshRequests": scene.mesh_requests,
+        "shapesCreated": scene.shapes_created,
+        "meshEntities": scene.mesh_entities,
+        "uniqueMaterials": scene.unique_materials,
+        "batchKeys": scene.batch_keys,
         "unmirroredObjects": scene.unmirrored,
         "unmirroredModels": scene.unmirrored_models,
         "markerIds": scene.marker_ids,
