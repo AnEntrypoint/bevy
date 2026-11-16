@@ -166,7 +166,10 @@ fn spawn_place(world: &mut World) {
             .get::<Tags>(*entities.get(id).unwrap())
             .is_some_and(|tags| tags.0.iter().any(|tag| tag == "player"))
     });
-    if !has_player {
+    let has_player_template = world
+        .get_resource::<WorldState>()
+        .is_some_and(|state| state.extra.contains_key("player"));
+    if !has_player && !has_player_template {
         let feet = place
             .config
             .default_jayzee_point
