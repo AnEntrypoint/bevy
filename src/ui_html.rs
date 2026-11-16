@@ -1,10 +1,11 @@
 use bevy::color::Srgba;
+use bevy::math::Rot2;
 use bevy::prelude::*;
 use std::collections::BTreeMap;
 
 const VOID: &[&str] = &["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"];
 const RAW: &[&str] = &["style", "script"];
-const SKIPPED: &[&str] = &["script", "style", "template", "svg", "img", "head", "title", "noscript", "link", "meta", "input", "canvas", "video", "audio"];
+const SKIPPED: &[&str] = &["script", "style", "template", "img", "head", "title", "noscript", "link", "meta", "input", "canvas", "video", "audio"];
 const INLINE: &[&str] = &["span", "b", "i", "em", "strong", "u", "small", "a", "label", "code", "font", "sub", "sup", "mark"];
 const BREAK: char = '\u{0}';
 
@@ -69,13 +70,14 @@ fn sync_html_ui(
 pub enum UiSpec {
     Box { style: BoxStyle, children: Vec<UiSpec> },
     Text { text: String, color: Option<Color>, size: f32 },
+    Shape { style: ShapeStyle },
 }
 
 impl UiSpec {
     pub fn count(&self) -> usize {
         match self {
             UiSpec::Box { children, .. } => 1 + children.iter().map(UiSpec::count).sum::<usize>(),
-            UiSpec::Text { .. } => 1,
+            UiSpec::Text { .. } | UiSpec::Shape { .. } => 1,
         }
     }
 }
@@ -136,6 +138,34 @@ impl BoxStyle {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct ShapeStyle {
+    left: Val,
+    top: Val,
+    width: Val,
+    height: Val,
+    rotation: f32,
+    round: bool,
+    fill: Option<Color>,
+    stroke: Option<Color>,
+    stroke_width: f32,
+}
+
+impl ShapeStyle {
+    fn node(&self) -> Node {
+        Node {
+            position_type: PositionType::Absolute,
+            left: self.left.clone(),
+            top: self.top.clone(),
+            width: self.width.clone(),
+            height: self.height.clone(),
+            border: UiRect::all(Val::Px(if self.stroke.is_some() { self.stroke_width } else { 0.0 })),
+            border_radius: if self.round { BorderRadius::MAX } else { BorderRadius::default() },
+            ..default()
+        }
+    }
+}
+
 pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> Entity {
     let id = match spec {
         UiSpec::Box { style, children } => {
@@ -150,6 +180,19 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 spawn(commands, Some(id), child);
             }
             id
+        }
+        UiSpec::Shape { style } => {
+            let mut entity = commands.spawn(style.node());
+            if let Some(fill) = style.fill {
+                entity.insert(BackgroundColor(fill));
+            }
+            if let Some(stroke) = style.stroke {
+                entity.insert(BorderColor::all(stroke));
+            }
+            if style.rotation != 0.0 {
+                entity.insert(UiTransform::from_rotation(Rot2::radians(style.rotation)));
+            }
+            entity.id()
         }
         UiSpec::Text { text, color, size } => commands
             .spawn((
@@ -771,6 +814,119 @@ fn flush_run(run: &mut String, out: &mut Vec<UiSpec>, inherit: &Inherit) {
     out.push(UiSpec::Text { text, color: inherit.color, size: inherit.font_size });
 }
 
+#[derive(Clone, Copy)]
+struct Canvas {
+    size: Option<(f32, f32)>,
+}
+
+impl Canvas {
+    fn x(&self, value: f32) -> Val {
+        match self.size {
+            Some((width, _)) => Val::Percent(value / width * 100.0),
+            None => Val::Px(value),
+        }
+    }
+
+    fn y(&self, value: f32) -> Val {
+        match self.size {
+            Some((_, height)) => Val::Percent(value / height * 100.0),
+            None => Val::Px(value),
+        }
+    }
+}
+
+fn canvas(attrs: &[(String, String)]) -> Canvas {
+    let view: Vec<f32> = attr(attrs, "viewBox").unwrap_or("").split(|c: char| c == ' ' || c == ',').filter_map(|part| part.parse::<f32>().ok()).collect();
+    match view.as_slice() {
+        [_, _, width, height] if *width > 0.0 && *height > 0.0 => Canvas { size: Some((*width, *height)) },
+        _ => Canvas { size: None },
+    }
+}
+
+fn fit_svg(style: &mut BoxStyle, attrs: &[(String, String)]) {
+    let length = |name: &str| attr(attrs, name).and_then(|value| value.trim_end_matches("px").parse::<f32>().ok()).map(Val::Px);
+    if matches!(style.width, Val::Auto) {
+        style.width = length("width").unwrap_or(Val::Auto);
+    }
+    if matches!(style.height, Val::Auto) {
+        style.height = length("height").unwrap_or(Val::Auto);
+    }
+}
+
+fn number(attrs: &[(String, String)], name: &str, default: f32) -> f32 {
+    attr(attrs, name).and_then(|value| value.trim_end_matches("px").parse::<f32>().ok()).unwrap_or(default)
+}
+
+fn paint(attrs: &[(String, String)], name: &str, default: Option<&str>) -> Option<Color> {
+    let color = parse_color(attr(attrs, name).or(default)?)?;
+    let opacity = attr(attrs, &format!("{name}-opacity")).and_then(|value| value.parse::<f32>().ok()).unwrap_or(1.0);
+    Some(with_opacity(color, opacity))
+}
+
+fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
+    let mut out = Vec::new();
+    for node in nodes {
+        let Dom::Element { tag, attrs, children } = node else { continue };
+        let stroke_width = number(attrs, "stroke-width", 1.0);
+        let stroke = paint(attrs, "stroke", None);
+        let fill = paint(attrs, "fill", Some("black"));
+        let shape = match tag.as_str() {
+            "circle" => {
+                let (cx, cy, radius) = (number(attrs, "cx", 0.0), number(attrs, "cy", 0.0), number(attrs, "r", 0.0));
+                ShapeStyle {
+                    left: canvas.x(cx - radius),
+                    top: canvas.y(cy - radius),
+                    width: canvas.x(2.0 * radius),
+                    height: canvas.y(2.0 * radius),
+                    rotation: 0.0,
+                    round: true,
+                    fill,
+                    stroke,
+                    stroke_width,
+                }
+            }
+            "rect" => ShapeStyle {
+                left: canvas.x(number(attrs, "x", 0.0)),
+                top: canvas.y(number(attrs, "y", 0.0)),
+                width: canvas.x(number(attrs, "width", 0.0)),
+                height: canvas.y(number(attrs, "height", 0.0)),
+                rotation: 0.0,
+                round: false,
+                fill,
+                stroke,
+                stroke_width,
+            },
+            "line" => {
+                let (x1, y1) = (number(attrs, "x1", 0.0), number(attrs, "y1", 0.0));
+                let (dx, dy) = (number(attrs, "x2", 0.0) - x1, number(attrs, "y2", 0.0) - y1);
+                let length = (dx * dx + dy * dy).sqrt();
+                let (mid_x, mid_y) = (x1 + dx / 2.0, y1 + dy / 2.0);
+                ShapeStyle {
+                    left: canvas.x(mid_x - length / 2.0),
+                    top: canvas.y(mid_y - stroke_width / 2.0),
+                    width: canvas.x(length),
+                    height: canvas.y(stroke_width),
+                    rotation: dy.atan2(dx),
+                    round: false,
+                    fill: stroke,
+                    stroke: None,
+                    stroke_width: 0.0,
+                }
+            }
+            "g" => {
+                out.extend(svg_shapes(children, canvas, dropped));
+                continue;
+            }
+            other => {
+                *dropped.entry(other.to_string()).or_insert(0) += 1;
+                continue;
+            }
+        };
+        out.push(UiSpec::Shape { style: shape });
+    }
+    out
+}
+
 fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule], dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
     let mut out = Vec::new();
     let mut run = String::new();
@@ -805,8 +961,13 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     }
                 } else {
                     flush_run(&mut run, &mut out, inherit);
-                    let style = box_style(&scope);
-                    let inner = convert(children, path, &scope.inherit, rules, dropped);
+                    let mut style = box_style(&scope);
+                    let inner = if tag == "svg" {
+                        fit_svg(&mut style, attrs);
+                        svg_shapes(children, canvas(attrs), dropped)
+                    } else {
+                        convert(children, path, &scope.inherit, rules, dropped)
+                    };
                     out.push(UiSpec::Box { style, children: inner });
                 }
                 path.pop();
@@ -865,13 +1026,27 @@ mod tests {
     #[test]
     fn display_none_and_unsupported_elements_are_dropped() {
         let spec = build("<style>.gone{display:none}</style><div class=gone>x</div><svg><rect/></svg><div>y</div>").spec;
-        assert_eq!(spec.count(), 3);
+        assert_eq!(spec.count(), 5);
+    }
+
+    #[test]
+    fn svg_shapes_map_to_absolute_nodes() {
+        let built = build(r##"<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="#ffffff"/><line x1="0" y1="0" x2="10" y2="0" stroke="#ff0000"/><rect x="1" y="1" width="2" height="2" fill="#00ff00"/></svg>"##);
+        assert!(built.warnings.is_empty());
+        assert_eq!(built.spec.count(), 5);
+    }
+
+    #[test]
+    fn svg_unsupported_children_are_reported() {
+        let built = build(r#"<svg><path d="M0 0"/><g><circle r="1"/></g></svg>"#);
+        assert_eq!(built.warnings, vec!["unsupported element <path> dropped (1)".to_string()]);
+        assert_eq!(built.spec.count(), 3);
     }
 
     #[test]
     fn unsupported_elements_are_reported_not_silent() {
         let built = build("<svg><rect/></svg><svg></svg><img src=x><div>y</div>");
-        assert_eq!(built.warnings, vec!["unsupported element <img> dropped (1)".to_string(), "unsupported element <svg> dropped (2)".to_string()]);
+        assert_eq!(built.warnings, vec!["unsupported element <img> dropped (1)".to_string()]);
     }
 
     #[test]
@@ -902,6 +1077,7 @@ mod tests {
         match spec {
             UiSpec::Box { children, .. } => children.iter().for_each(|child| collect_texts(child, out)),
             UiSpec::Text { text, .. } => out.push(text.clone()),
+            UiSpec::Shape { .. } => {}
         }
     }
 }
