@@ -2218,7 +2218,7 @@ impl Host {
             }
         }
         let mut terrain = TerrainData::default();
-        world::load_terrain(&target, &mut terrain);
+        world::load_terrain(&root, &target, &mut terrain);
         world.insert_resource(terrain);
         world::spawn_terrain_collider_now(world);
         let mut query = world.query::<(Entity, &ObjectId)>();
@@ -2626,6 +2626,33 @@ pub fn shutdown() {
             engine.shutdown();
         }
     });
+}
+
+pub fn sample_terrain(root: &Path, generator: &str, samples: &[(f32, f32)]) -> Result<Vec<f32>, String> {
+    let mut engine = ScriptEngine::new(root)?;
+    let context = engine.context.clone();
+    let heights = context.with(|ctx| -> Result<Vec<f32>, String> {
+        let namespace = engine
+            .module(&ctx, generator)
+            .ok_or_else(|| format!("{generator}: generator did not load"))?;
+        let function: Function = namespace
+            .get("heightAt")
+            .map_err(|error| format!("{generator}: heightAt is missing: {error}"))?;
+        samples
+            .iter()
+            .map(|(x, z)| {
+                let point = Object::new(ctx.clone()).map_err(|error| error.to_string())?;
+                point.set("x", *x).map_err(|error| error.to_string())?;
+                point.set("z", *z).map_err(|error| error.to_string())?;
+                function
+                    .call::<_, f64>((point,))
+                    .map(|height| height as f32)
+                    .map_err(|error| format!("{generator}: heightAt failed at {x},{z}: {error}"))
+            })
+            .collect()
+    });
+    engine.shutdown();
+    heights
 }
 
 struct ScriptEngine {

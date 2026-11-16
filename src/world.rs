@@ -134,7 +134,7 @@ pub fn prepare(directory: &str, place_name: Option<&str>) -> Result<(App, Place)
     app.insert_resource(crate::features::FeatureState::seeded(0x6a09_e667_f3bc_c909));
     {
         let mut terrain = TerrainData::default();
-        load_terrain(&place, &mut terrain);
+        load_terrain(Path::new(directory), &place, &mut terrain);
         app.insert_resource(terrain);
     }
     let _ = tree;
@@ -281,7 +281,57 @@ pub fn spawn_terrain_collider(world: &mut World) {
     }
 }
 
-pub fn load_terrain(place: &Place, terrain: &mut TerrainData) {
+const TERRAIN_FIELDS_FILE: &str = "terrain-fields.json";
+
+fn insert_fields(fields: &serde_json::Map<String, Value>, terrain: &mut TerrainData) {
+    for (name, value) in fields {
+        let Some(field) = value.as_object() else {
+            continue;
+        };
+        let grid = field.get("grid").and_then(Value::as_object);
+        let size = field.get("size").and_then(Value::as_f64).unwrap_or(64.0) as f32;
+        let cell = field
+            .get("cell")
+            .and_then(Value::as_f64)
+            .map(|value| value as f32)
+            .or_else(|| grid.and_then(|grid| grid.get("cell")).and_then(Value::as_f64).map(|value| value as f32))
+            .unwrap_or(1.0);
+        let min = grid
+            .and_then(|grid| grid.get("min"))
+            .map(|value| spec::vec3(Some(value)))
+            .unwrap_or(Vec3::splat(-size * 0.5));
+        let max = grid
+            .and_then(|grid| grid.get("max"))
+            .map(|value| spec::vec3(Some(value)))
+            .unwrap_or(Vec3::splat(size * 0.5));
+        let cols = (((max.x - min.x) / cell).round() as usize + 1).max(2);
+        let rows = (((max.z - min.z) / cell).round() as usize + 1).max(2);
+        let heights = field
+            .get("cells")
+            .or_else(|| field.get("heights"))
+            .and_then(Value::as_array)
+            .map(|cells| cells.iter().map(|value| value.as_f64().unwrap_or(0.0) as f32).collect::<Vec<_>>())
+            .unwrap_or_default();
+        terrain.fields.insert(
+            name.clone(),
+            crate::runtime::FieldGrid {
+                min: Vec2::new(min.x, min.z),
+                max: Vec2::new(max.x, max.z),
+                cell,
+                cols,
+                rows,
+                heights,
+            },
+        );
+    }
+}
+
+fn read_fields_file(root: &Path, place: &str) -> Option<serde_json::Map<String, Value>> {
+    let text = std::fs::read_to_string(root.join("places").join(place).join(TERRAIN_FIELDS_FILE)).ok()?;
+    serde_json::from_str::<Value>(&text).ok()?.as_object().cloned()
+}
+
+pub fn load_terrain(root: &Path, place: &Place, terrain: &mut TerrainData) {
     let Some(value) = &place.config.terrain else {
         return;
     };
@@ -292,46 +342,10 @@ pub fn load_terrain(place: &Place, terrain: &mut TerrainData) {
         return;
     }
     if let Some(fields) = object.get("fields").and_then(Value::as_object) {
-        for (name, value) in fields {
-            let Some(field) = value.as_object() else {
-                continue;
-            };
-            let grid = field.get("grid").and_then(Value::as_object);
-            let size = field.get("size").and_then(Value::as_f64).unwrap_or(64.0) as f32;
-            let cell = field
-                .get("cell")
-                .and_then(Value::as_f64)
-                .map(|value| value as f32)
-                .or_else(|| grid.and_then(|grid| grid.get("cell")).and_then(Value::as_f64).map(|value| value as f32))
-                .unwrap_or(1.0);
-            let min = grid
-                .and_then(|grid| grid.get("min"))
-                .map(|value| spec::vec3(Some(value)))
-                .unwrap_or(Vec3::splat(-size * 0.5));
-            let max = grid
-                .and_then(|grid| grid.get("max"))
-                .map(|value| spec::vec3(Some(value)))
-                .unwrap_or(Vec3::splat(size * 0.5));
-            let cols = (((max.x - min.x) / cell).round() as usize + 1).max(2);
-            let rows = (((max.z - min.z) / cell).round() as usize + 1).max(2);
-            let heights = field
-                .get("cells")
-                .or_else(|| field.get("heights"))
-                .and_then(Value::as_array)
-                .map(|cells| cells.iter().map(|value| value.as_f64().unwrap_or(0.0) as f32).collect::<Vec<_>>())
-                .unwrap_or_default();
-            terrain.fields.insert(
-                name.clone(),
-                crate::runtime::FieldGrid {
-                    min: Vec2::new(min.x, min.z),
-                    max: Vec2::new(max.x, max.z),
-                    cell,
-                    cols,
-                    rows,
-                    heights,
-                },
-            );
-        }
+        insert_fields(fields, terrain);
+    }
+    if let Some(fields) = read_fields_file(root, &place.name) {
+        insert_fields(&fields, terrain);
     }
     if let Some(marks) = object.get("marks").and_then(Value::as_object) {
         for mark in marks.values() {
@@ -370,6 +384,54 @@ pub fn load_terrain(place: &Place, terrain: &mut TerrainData) {
             });
         }
     }
+}
+
+pub fn bake_terrain(directory: &str, place_name: &str) -> Result<std::path::PathBuf, String> {
+    let root = Path::new(directory);
+    let tree = WorldTree::load(root)?;
+    let place = tree
+        .places
+        .get(place_name)
+        .ok_or_else(|| format!("{directory}: no place {place_name}"))?;
+    let terrain = place
+        .config
+        .terrain
+        .as_ref()
+        .and_then(Value::as_object)
+        .ok_or_else(|| format!("{place_name}: no terrain block"))?;
+    let generator = terrain
+        .get("generator")
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{place_name}: terrain has no generator"))?;
+    let grid = terrain.get("grid").and_then(Value::as_object);
+    let min = grid
+        .and_then(|grid| grid.get("min"))
+        .map(|value| spec::vec3(Some(value)))
+        .unwrap_or(Vec3::new(-128.0, 0.0, -128.0));
+    let max = grid
+        .and_then(|grid| grid.get("max"))
+        .map(|value| spec::vec3(Some(value)))
+        .unwrap_or(Vec3::new(128.0, 0.0, 128.0));
+    let cell = grid
+        .and_then(|grid| grid.get("cell"))
+        .and_then(Value::as_f64)
+        .unwrap_or(8.0) as f32;
+    let cols = (((max.x - min.x) / cell).round() as usize + 1).max(2);
+    let rows = (((max.z - min.z) / cell).round() as usize + 1).max(2);
+    let samples: Vec<(f32, f32)> = (0..rows)
+        .flat_map(|z| (0..cols).map(move |x| (min.x + x as f32 * cell, min.z + z as f32 * cell)))
+        .collect();
+    let heights = crate::script::sample_terrain(root, generator, &samples)?;
+    let fields = serde_json::json!({
+        "ground": {
+            "grid": {"min": [min.x, min.y, min.z], "max": [max.x, max.y, max.z], "cell": cell},
+            "cells": heights,
+        }
+    });
+    let path = root.join("places").join(place_name).join(TERRAIN_FIELDS_FILE);
+    let text = serde_json::to_string(&fields).map_err(|error| error.to_string())?;
+    std::fs::write(&path, text).map_err(|error| format!("{}: {error}", path.display()))?;
+    Ok(path)
 }
 
 pub fn spawn_tree(

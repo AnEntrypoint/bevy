@@ -41,6 +41,20 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        Some("bake-terrain") => {
+            let directory = args.get(1).map(String::as_str).unwrap_or(".");
+            let Some(place) = args.get(2).map(String::as_str) else {
+                eprintln!("usage: bevy-jayzee bake-terrain <dir> <place>");
+                std::process::exit(2);
+            };
+            match world::bake_terrain(directory, place) {
+                Ok(path) => println!("{{\"kind\":\"terrain-bake\",\"path\":{:?}}}", path.display().to_string()),
+                Err(error) => {
+                    eprintln!("{error}");
+                    std::process::exit(1);
+                }
+            }
+        }
         Some("gltf-check") => {
             let directory = args.get(1).map(String::as_str).unwrap_or("/workspace/neon-syndicates/assets/cdn");
             let project = args.get(2).map(String::as_str);
@@ -74,7 +88,7 @@ fn main() {
             println!("{{\"kind\":\"web-report\",\"path\":\"{}\"}}", report);
         }
         _ => {
-            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | gltf-check <dir> [project] | server | client>");
+            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | bake-terrain <dir> <place> | gltf-check <dir> [project] | server | client>");
             std::process::exit(2);
         }
     }
