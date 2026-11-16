@@ -1,4 +1,4 @@
-use bevy::asset::{AssetPlugin, LoadState};
+use bevy::asset::{AssetMetaCheck, AssetPlugin, LoadState};
 use bevy::prelude::*;
 use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
@@ -44,7 +44,7 @@ pub fn start() {
     let model = model_request();
     let asset_root = if model.is_some() { "/" } else { "assets" };
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(AssetPlugin { file_path: asset_root.to_string(), ..default() }).set(WindowPlugin {
+    app.add_plugins(DefaultPlugins.set(AssetPlugin { file_path: asset_root.to_string(), meta_check: AssetMetaCheck::Never, ..default() }).set(WindowPlugin {
         primary_window: Some(Window {
             title: "bevy-jayzee WebGPU WASM".to_string(),
             canvas: Some("#bevy-canvas".to_string()),
