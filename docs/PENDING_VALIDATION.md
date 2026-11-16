@@ -381,3 +381,30 @@ Nothing in Phase A was built, tested or run. Each row is one local commit by lan
 | 1 Fixture ends at `objects 2` | eee60c1 | The place switch (`enterPlace` to `two`) moved out of the `ball` object's `spec-test.js` into `places/test/sim.js`, a place program. It fires on the sixth run of its one-second cadence, so the 120-tick witness never reaches it. `places/two/sim.js` returns to `test` after one more second. The switch runs only once per place visit, because the counter lives in `ctx.place.state`. | `world testdata/spec-world test 120` ends in place `test` with `objects 8`. A viewer run on `test` ends with the expected object count. |
 | 2 Normal-map sign | 85c28c1 | `ny` changes from `-dy * strength` to `dy * strength`. The dome heights are raised, and image rows increase downward, so G must be high on the upper slope. The bump maths moves to `scripts/lib/normal-map-bumps.cjs`, which the generator requires. | Regenerate `testdata/normal-map/normal-map.glb`, then `node scripts/check-normal-map-sign.cjs` with `ok: true`. |
 | 2 Numeric sign witness | 2d60ac8 | `scripts/check-normal-map-sign.cjs` decodes the GLB's embedded PNG and checks three things: every pixel matches the reference normal within ±2; on dome slopes the R and G signs point away from the dome centre; and vertex UVs follow positions (u grows with x, v grows downward). It exits non-zero on failure. | The checker must fail on the committed GLB before regeneration and pass after. |
+
+## Round 12 Phase B results
+
+Contention: swap-out 0 and 10,591 MB available before the build and the browser runs. One cargo invocation ran, and it was a no-op (`cargo build --timings`, rc 0, 0 warnings). The unit suite ran alone afterwards.
+
+Defect 1, fixture ends at `objects 2`: fixed in eee60c1. The switch to place `two` now runs from `places/test/sim.js` on the sixth one-second run, and `places/two/sim.js` returns to `test`. The `ball` object's script no longer switches places.
+
+- `world testdata/spec-world test 120`: rc 0, `objects 8`, `errors 0`, every `place` field `test`. The 120-tick window ends before the switch, so this run shows the count on the starting place only.
+- `world testdata/spec-world test 600`: rc 0, `objects 8`, `errors 0`, one `spec-enter` (switch from `test`), one `spec-two`, and the final lines in `test`. The 600-tick run covers the full switch and return.
+
+Defect 2, normal-map sign: fixed in 85c28c1, with the numeric witness in 2d60ac8 and the regenerated GLB in b590c0d. Before the fix the numbers were wrong on almost every pixel, and this check replaces the eye check from Round 11.
+
+- Committed GLB before regeneration, `node scripts/check-normal-map-sign.cjs testdata/normal-map/normal-map.glb`: rc 1, `encodingMismatches 34560`, `slopePixels 25408`, `conventionViolations 24864`, `geometryViolations 0`, `ok false`.
+- Regenerated GLB, same check: rc 0, `encodingMismatches 0`, `slopePixels 25408`, `conventionViolations 0`, `geometryViolations 0`, `ok true`.
+- `gltf-check testdata/normal-map`: rc 0, `bevy.loaded true`, `decode.ok true`, `bevy_loaded 1`. This refreshed `target/gltf-cache/normal-map.glb`, which the decoded variant loads.
+- Visual check, `node scripts/check-normal-map-visual.cjs` on display `:1`, adapter BrowserWebGpu on NVIDIA GeForce RTX 3060 Laptop GPU, rc 0, `ok true`. Raw variant: `modelState loaded`, still logs `Snorm16x4` where `Float32x4` is expected, because the raw file keeps the SHORT tangent. Decoded variant: `modelState loaded`, no TANGENT warning.
+- Screenshots: post-fix `target/witness/normal-map-raw.png` and `target/witness/normal-map-decoded.png`. Pre-fix copies of the decoded screenshot kept at `target/witness/pre-sign-fix/normal-map-decoded.png` (and the raw one alongside it, `target/witness/pre-sign-fix/normal-map-raw.png`).
+- **The screenshots are a visual check, not a number.** The pre-fix image reads as sunken dimples, with dark crescents on the upper rims. The post-fix image reads as raised domes, with the dark edge on the lower side. This is a judgement from a small 870-pixel image. The numeric checker above is the witness for the sign.
+- The two 404 lines per variant are unidentified: the console log doesn't record their URLs. The earlier WebGPU witness showed one favicon 404, so that is a guess and not confirmed. Neither 404 affects `modelState loaded`.
+
+Unit suite after the no-op build: `test result: ok. 48 passed; 0 failed`, including `compact_arc_flags_parse_as_single_digits` and `scripted_colliders_keep_their_shape_kind`.
+
+Timing: this round had no full rebuild, so the wasm release build from Round 11 (217 s) is still the longest measured step. The unit suite took 1 s on the cached build. The browser and fixture runs were not timed.
+
+Process check: the visual witness reported server PID 2295693 and browser PID 2295697; both were gone when checked after the run. No process started this round remains running.
+
+Open: the gm MCP server failed to connect again this session, so the gm browser setup was not used and playwriter was used directly, as the owner instructed. The two unidentified 404s listed above are open.
