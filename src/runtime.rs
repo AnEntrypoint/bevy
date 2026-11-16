@@ -229,19 +229,6 @@ fn sync_feature_entities(
     trades: Query<Entity, With<crate::features_ecs::TradeEntity>>,
     dm: Query<Entity, With<crate::features_ecs::DmMessageEntity>>,
 ) {
-    let clear = |entities: &Vec<Entity>, commands: &mut Commands| {
-        for entity in entities {
-            commands.entity(*entity).despawn();
-        }
-    };
-    clear(&registry.physics_worlds, &mut commands);
-    clear(&registry.physics_bodies, &mut commands);
-    clear(&registry.voxel_parts, &mut commands);
-    clear(&registry.fx, &mut commands);
-    clear(&registry.vibe, &mut commands);
-    clear(&registry.jobs, &mut commands);
-    clear(&registry.trades, &mut commands);
-    clear(&registry.dm, &mut commands);
     for entity in worlds.iter().chain(bodies.iter()).chain(parts.iter()).chain(fx.iter()).chain(vibe.iter()).chain(jobs.iter()).chain(trades.iter()).chain(dm.iter()) {
         commands.entity(entity).despawn();
     }
