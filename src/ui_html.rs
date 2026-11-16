@@ -643,10 +643,55 @@ fn parse_hex(hex: &str) -> Option<Color> {
     Some(Color::srgba(digits[0] as f32 / 255.0, digits[1] as f32 / 255.0, digits[2] as f32 / 255.0, alpha))
 }
 
+fn parse_oklch(args: &str) -> Option<Color> {
+    let (main, alpha) = match args.split_once('/') {
+        Some((main, alpha)) => (main, Some(alpha)),
+        None => (args, None),
+    };
+    let values: Vec<&str> = main.split(|c: char| c.is_whitespace() || c == ',').filter(|part| !part.is_empty()).collect();
+    if values.len() < 3 {
+        return None;
+    }
+    let lightness = match values[0].strip_suffix('%') {
+        Some(percent) => percent.parse::<f32>().ok()? / 100.0,
+        None => values[0].parse::<f32>().ok()?,
+    };
+    let chroma: f32 = values[1].parse().ok()?;
+    let hue = values[2].trim_end_matches("deg").parse::<f32>().ok()?.to_radians();
+    let alpha = match alpha {
+        Some(text) => match text.trim().strip_suffix('%') {
+            Some(percent) => percent.parse::<f32>().ok()? / 100.0,
+            None => text.trim().parse::<f32>().ok()?,
+        },
+        None => 1.0,
+    };
+    let (a, b) = (chroma * hue.cos(), chroma * hue.sin());
+    let l = (lightness + 0.396_337_78 * a + 0.215_803_76 * b).powi(3);
+    let m = (lightness - 0.105_561_346 * a - 0.063_854_17 * b).powi(3);
+    let s = (lightness - 0.089_484_18 * a - 1.291_485_5 * b).powi(3);
+    let linear = [
+        4.076_741_7 * l - 3.307_711_6 * m + 0.230_969_93 * s,
+        -1.268_438 * l + 2.609_757_4 * m - 0.341_319_4 * s,
+        -0.004_196_086_3 * l - 0.703_418_6 * m + 1.707_614_7 * s,
+    ];
+    let encode = |channel: f32| {
+        let channel = channel.clamp(0.0, 1.0);
+        if channel <= 0.003_130_8 {
+            12.92 * channel
+        } else {
+            1.055 * channel.powf(1.0 / 2.4) - 0.055
+        }
+    };
+    Some(Color::srgba(encode(linear[0]), encode(linear[1]), encode(linear[2]), alpha.clamp(0.0, 1.0)))
+}
+
 fn parse_color(value: &str) -> Option<Color> {
     let value = value.trim().to_ascii_lowercase();
     if let Some(hex) = value.strip_prefix('#') {
         return parse_hex(hex);
+    }
+    if let Some(args) = value.strip_prefix("oklch(").and_then(|args| args.strip_suffix(')')) {
+        return parse_oklch(args);
     }
     if let Some(args) = value.strip_prefix("rgba(").or_else(|| value.strip_prefix("rgb(")).and_then(|args| args.strip_suffix(')')) {
         let parts: Vec<&str> = args.split(|c: char| c == ',' || c == '/' || c.is_whitespace()).filter(|part| !part.is_empty()).collect();
@@ -870,10 +915,10 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
         let stroke_width = number(attrs, "stroke-width", 1.0);
         let stroke = paint(attrs, "stroke", None);
         let fill = paint(attrs, "fill", Some("black"));
-        let shape = match tag.as_str() {
+        let shapes = match tag.as_str() {
             "circle" => {
                 let (cx, cy, radius) = (number(attrs, "cx", 0.0), number(attrs, "cy", 0.0), number(attrs, "r", 0.0));
-                ShapeStyle {
+                vec![ShapeStyle {
                     left: canvas.x(cx - radius),
                     top: canvas.y(cy - radius),
                     width: canvas.x(2.0 * radius),
@@ -883,9 +928,9 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
                     fill,
                     stroke,
                     stroke_width,
-                }
+                }]
             }
-            "rect" => ShapeStyle {
+            "rect" => vec![ShapeStyle {
                 left: canvas.x(number(attrs, "x", 0.0)),
                 top: canvas.y(number(attrs, "y", 0.0)),
                 width: canvas.x(number(attrs, "width", 0.0)),
@@ -895,24 +940,23 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
                 fill,
                 stroke,
                 stroke_width,
-            },
+            }],
             "line" => {
                 let (x1, y1) = (number(attrs, "x1", 0.0), number(attrs, "y1", 0.0));
-                let (dx, dy) = (number(attrs, "x2", 0.0) - x1, number(attrs, "y2", 0.0) - y1);
-                let length = (dx * dx + dy * dy).sqrt();
-                let (mid_x, mid_y) = (x1 + dx / 2.0, y1 + dy / 2.0);
-                ShapeStyle {
-                    left: canvas.x(mid_x - length / 2.0),
-                    top: canvas.y(mid_y - stroke_width / 2.0),
-                    width: canvas.x(length),
-                    height: canvas.y(stroke_width),
-                    rotation: dy.atan2(dx),
-                    round: false,
-                    fill: stroke,
-                    stroke: None,
-                    stroke_width: 0.0,
-                }
+                let end = (number(attrs, "x2", 0.0), number(attrs, "y2", 0.0));
+                vec![line_shape(canvas, (x1, y1), end, stroke_width, stroke)]
             }
+            "polygon" => {
+                let points = point_list(&attr(attrs, "points").unwrap_or("").replace(',', " "));
+                polygon_shapes(canvas, &[(points, true)], fill, stroke, stroke_width)
+            }
+            "path" => match attr(attrs, "d").and_then(path_subpaths) {
+                Some(subpaths) => polygon_shapes(canvas, &subpaths, fill, stroke, stroke_width),
+                None => {
+                    *dropped.entry(tag.clone()).or_insert(0) += 1;
+                    continue;
+                }
+            },
             "g" => {
                 out.extend(svg_shapes(children, canvas, dropped));
                 continue;
@@ -922,9 +966,178 @@ fn svg_shapes(nodes: &[Dom], canvas: Canvas, dropped: &mut BTreeMap<String, usiz
                 continue;
             }
         };
-        out.push(UiSpec::Shape { style: shape });
+        out.extend(shapes.into_iter().map(|style| UiSpec::Shape { style }));
     }
     out
+}
+
+fn line_shape(canvas: Canvas, start: (f32, f32), end: (f32, f32), width: f32, color: Option<Color>) -> ShapeStyle {
+    let (dx, dy) = (end.0 - start.0, end.1 - start.1);
+    let length = (dx * dx + dy * dy).sqrt();
+    let (mid_x, mid_y) = (start.0 + dx / 2.0, start.1 + dy / 2.0);
+    ShapeStyle {
+        left: canvas.x(mid_x - length / 2.0),
+        top: canvas.y(mid_y - width / 2.0),
+        width: canvas.x(length),
+        height: canvas.y(width),
+        rotation: dy.atan2(dx),
+        round: false,
+        fill: color,
+        stroke: None,
+        stroke_width: 0.0,
+    }
+}
+
+fn point_list(text: &str) -> Vec<(f32, f32)> {
+    let numbers: Vec<f32> = text.split_whitespace().filter_map(|part| part.parse::<f32>().ok()).collect();
+    numbers.chunks_exact(2).map(|pair| (pair[0], pair[1])).collect()
+}
+
+fn polygon_shapes(canvas: Canvas, subpaths: &[(Vec<(f32, f32)>, bool)], fill: Option<Color>, stroke: Option<Color>, width: f32) -> Vec<ShapeStyle> {
+    let mut shapes = Vec::new();
+    if let Some(color) = fill {
+        let closed: Vec<&Vec<(f32, f32)>> = subpaths.iter().filter(|(points, closed)| *closed && points.len() > 2).map(|(points, _)| points).collect();
+        let ys = closed.iter().flat_map(|points| points.iter().map(|point| point.1));
+        let (min_y, max_y) = ys.fold((f32::INFINITY, f32::NEG_INFINITY), |(low, high), y| (low.min(y), high.max(y)));
+        if max_y > min_y {
+            let rows = (max_y - min_y).ceil().clamp(1.0, 64.0) as usize;
+            let step = (max_y - min_y) / rows as f32;
+            for row in 0..rows {
+                let top = min_y + row as f32 * step;
+                let y = top + step / 2.0;
+                let mut crossings: Vec<f32> = Vec::new();
+                for points in &closed {
+                    for index in 0..points.len() {
+                        let (a, b) = (points[index], points[(index + 1) % points.len()]);
+                        if (a.1 <= y && b.1 > y) || (b.1 <= y && a.1 > y) {
+                            crossings.push(a.0 + (y - a.1) * (b.0 - a.0) / (b.1 - a.1));
+                        }
+                    }
+                }
+                crossings.sort_by(|a, b| a.total_cmp(b));
+                for span in crossings.chunks_exact(2) {
+                    shapes.push(ShapeStyle {
+                        left: canvas.x(span[0]),
+                        top: canvas.y(top),
+                        width: canvas.x(span[1] - span[0]),
+                        height: canvas.y(step),
+                        rotation: 0.0,
+                        round: false,
+                        fill: Some(color),
+                        stroke: None,
+                        stroke_width: 0.0,
+                    });
+                }
+            }
+        }
+    }
+    if let Some(color) = stroke {
+        for (points, closed) in subpaths {
+            let count = points.len();
+            let edges = if *closed { count } else { count.saturating_sub(1) };
+            for index in 0..edges {
+                shapes.push(line_shape(canvas, points[index], points[(index + 1) % count], width, Some(color)));
+            }
+        }
+    }
+    shapes
+}
+
+fn path_subpaths(d: &str) -> Option<Vec<(Vec<(f32, f32)>, bool)>> {
+    let segments = path_segments(d)?;
+    let mut subpaths: Vec<(Vec<(f32, f32)>, bool)> = Vec::new();
+    let mut points: Vec<(f32, f32)> = Vec::new();
+    let mut current = (0.0_f32, 0.0_f32);
+    let mut start = (0.0_f32, 0.0_f32);
+    for (command, args) in &segments {
+        let relative = command.is_ascii_lowercase();
+        let base = |current: (f32, f32), x: f32, y: f32| if relative { (current.0 + x, current.1 + y) } else { (x, y) };
+        match command.to_ascii_uppercase() {
+            'M' => {
+                for (index, pair) in args.chunks_exact(2).enumerate() {
+                    let point = base(current, pair[0], pair[1]);
+                    if index == 0 {
+                        if points.len() > 1 {
+                            subpaths.push((std::mem::take(&mut points), false));
+                        }
+                        points = vec![point];
+                        start = point;
+                    } else {
+                        points.push(point);
+                    }
+                    current = point;
+                }
+            }
+            'L' | 'T' => {
+                for pair in args.chunks_exact(2) {
+                    let point = base(current, pair[0], pair[1]);
+                    points.push(point);
+                    current = point;
+                }
+            }
+            'H' => {
+                for value in args {
+                    let x = if relative { current.0 + value } else { *value };
+                    current = (x, current.1);
+                    points.push(current);
+                }
+            }
+            'V' => {
+                for value in args {
+                    let y = if relative { current.1 + value } else { *value };
+                    current = (current.0, y);
+                    points.push(current);
+                }
+            }
+            'Z' => {
+                if points.len() > 1 {
+                    subpaths.push((std::mem::take(&mut points), true));
+                }
+                points = vec![start];
+                current = start;
+            }
+            _ => return None,
+        }
+    }
+    if points.len() > 1 {
+        subpaths.push((points, false));
+    }
+    (!subpaths.is_empty()).then_some(subpaths)
+}
+
+fn path_segments(d: &str) -> Option<Vec<(char, Vec<f32>)>> {
+    let mut segments: Vec<(char, Vec<f32>)> = Vec::new();
+    let bytes = d.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if byte.is_ascii_alphabetic() {
+            segments.push((byte as char, Vec::new()));
+            index += 1;
+        } else if byte.is_ascii_whitespace() || byte == b',' {
+            index += 1;
+        } else {
+            let start = index;
+            if byte == b'-' || byte == b'+' {
+                index += 1;
+            }
+            while index < bytes.len() && (bytes[index].is_ascii_digit() || bytes[index] == b'.') {
+                index += 1;
+            }
+            if index < bytes.len() && (bytes[index] == b'e' || bytes[index] == b'E') {
+                index += 1;
+                if index < bytes.len() && (bytes[index] == b'-' || bytes[index] == b'+') {
+                    index += 1;
+                }
+                while index < bytes.len() && bytes[index].is_ascii_digit() {
+                    index += 1;
+                }
+            }
+            let value: f32 = d.get(start..index)?.parse().ok()?;
+            segments.last_mut()?.1.push(value);
+        }
+    }
+    Some(segments)
 }
 
 fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule], dropped: &mut BTreeMap<String, usize>) -> Vec<UiSpec> {
@@ -1034,6 +1247,27 @@ mod tests {
         let built = build(r##"<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="#ffffff"/><line x1="0" y1="0" x2="10" y2="0" stroke="#ff0000"/><rect x="1" y="1" width="2" height="2" fill="#00ff00"/></svg>"##);
         assert!(built.warnings.is_empty());
         assert_eq!(built.spec.count(), 5);
+    }
+
+    #[test]
+    fn oklch_colors_convert_to_srgb() {
+        let white = parse_color("oklch(1 0 0)").expect("white").to_srgba();
+        assert!((white.red - 1.0).abs() < 0.01 && (white.green - 1.0).abs() < 0.01 && (white.blue - 1.0).abs() < 0.01);
+        assert!(parse_color("oklch(0.78 0.17 200 / .55)").is_some());
+        assert!(parse_color("oklch(bogus)").is_none());
+    }
+
+    #[test]
+    fn svg_polygon_and_path_are_drawn_not_dropped() {
+        let built = build(r##"<svg viewBox="0 0 10 10"><polygon points="0,0 10,0 5,10" fill="oklch(0.6 0.12 200)" fill-opacity=".16" stroke="#00ff00"/><path d="M5 1l2 2h-4z" fill="#ff0000"/></svg>"##);
+        assert!(built.warnings.is_empty());
+        assert!(built.spec.count() > 6);
+    }
+
+    #[test]
+    fn svg_path_with_curves_is_reported() {
+        let built = build(r#"<svg><path d="M0 0 C1 1 2 2 3 3"/></svg>"#);
+        assert_eq!(built.warnings, vec!["unsupported element <path> dropped (1)".to_string()]);
     }
 
     #[test]
