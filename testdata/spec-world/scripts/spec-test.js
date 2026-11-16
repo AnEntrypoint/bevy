@@ -90,11 +90,6 @@ export function update(ctx, dt) {
   if (state.ticks === 20) ctx.log('spec-destroy', { spawned: ctx.getObject('spawned'), child: Boolean(ctx.getObject('child')) });
   if (state.ticks === 22) ctx.destroy('child');
   if (state.ticks === 24) ctx.log('spec-destroyed-child', { child: ctx.getObject('child') });
-  if (state.ticks === 30) {
-    const landed = ctx.enterPlace({ place: 'two' });
-    ctx.log('spec-enter', { landed, world: ctx.world.defaultPlace, mode: ctx.world.mode, placeMode: ctx.place.mode });
-  }
-  if (state.ticks === 35) ctx.log('spec-two', { objects: ctx.query({ place: 'two' }).length, stone: ctx.getObject('stone')?.tags, gravity: ctx.place.gravity.y });
   if (state.ticks === 40) {
     ctx.log('spec-final', { ticks: state.ticks, pos: ctx.self.feetPosition, joints: ctx.self.joints, mode: ctx.place.mode });
   }
