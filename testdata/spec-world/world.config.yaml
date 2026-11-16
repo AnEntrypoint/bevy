@@ -8,3 +8,5 @@ inputs:
       keys: a/d
 camera:
   kind: custom
+ui:
+  render: scripts/ui.js
