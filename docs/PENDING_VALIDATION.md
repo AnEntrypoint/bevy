@@ -20,3 +20,5 @@ Each row names a committed change, the file it touches, and the witness that pro
 | Bound globe elevation by amplitude | src/globe.rs | `cargo test --bin bevy-jayzee elevation_is_deterministic` passes | pending Phase B |
 | Mirror primitive world entities into the viewer | src/viewer.rs | `viewer_status` `objects` equals the headless `objects` count of primitive-backed entities | pending Phase B |
 | Palette index fix for mirrored objects | src/viewer.rs | build passes with no errors | pending Phase B |
+| Globe noise uses the non-negative fraction | src/globe.rs | `cargo test --bin bevy-jayzee globe::` passes | pending Phase B |
+| Viewer reports unmirrored objects | src/viewer.rs | `viewer-status` `unmirroredObjects` plus mirrored `objects` equals the headless `objects` count | pending Phase B |
