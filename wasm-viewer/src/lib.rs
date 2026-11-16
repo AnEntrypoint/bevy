@@ -1,9 +1,11 @@
+use bevy::asset::{AssetPlugin, LoadState};
 use bevy::prelude::*;
 use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
     LogDiagnosticsPlugin,
 };
 use bevy::window::{PrimaryWindow, WindowResolution};
+use bevy::world_serialization::{WorldAsset, WorldAssetRoot};
 use wasm_bindgen::prelude::*;
 
 #[derive(Component)]
@@ -14,6 +16,15 @@ struct Spinner;
 
 #[derive(Resource)]
 struct ReadySent(bool);
+
+#[derive(Resource)]
+struct ModelRequest(Option<String>);
+
+#[derive(Resource)]
+struct ModelHandle(Handle<WorldAsset>);
+
+#[derive(Resource, Default)]
+struct ModelReported(bool);
 
 #[derive(Resource)]
 struct InspectorState {
@@ -30,8 +41,10 @@ pub fn start() {
     .ok()
     .and_then(|value| value.as_bool())
     .unwrap_or(false);
+    let model = model_request();
+    let asset_root = if model.is_some() { "/" } else { "assets" };
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+    app.add_plugins(DefaultPlugins.set(AssetPlugin { file_path: asset_root.to_string(), ..default() }).set(WindowPlugin {
         primary_window: Some(Window {
             title: "bevy-jayzee WebGPU WASM".to_string(),
             canvas: Some("#bevy-canvas".to_string()),
@@ -48,9 +61,11 @@ pub fn start() {
     ))
     .insert_resource(ClearColor(Color::srgb(0.025, 0.04, 0.07)))
     .insert_resource(ReadySent(false))
+    .insert_resource(ModelRequest(model))
+    .insert_resource(ModelReported(false))
     .insert_resource(InspectorState { enabled: inspector_enabled, last_update: 0.0 })
-    .add_systems(Startup, setup)
-    .add_systems(Update, (orbit, spin, mark_ready, publish_diagnostics));
+    .add_systems(Startup, (setup, spawn_model))
+    .add_systems(Update, (orbit, spin, mark_ready, report_model, publish_diagnostics));
     app.run();
 }
 
@@ -123,6 +138,66 @@ fn setup(
         Node { position_type: PositionType::Absolute, left: Val::Px(18.0), top: Val::Px(16.0), ..default() },
         Name::new("wasm-overlay"),
     ));
+}
+
+fn model_request() -> Option<String> {
+    let search = web_sys::window()?.location().search().ok()?;
+    let model = web_sys::UrlSearchParams::new_with_str(&search).ok()?.get("model")?;
+    let path = model.trim_start_matches('/').to_string();
+    (!path.is_empty() && !path.split('/').any(|part| part == "..")).then_some(path)
+}
+
+fn spawn_model(mut commands: Commands, asset_server: Res<AssetServer>, request: Res<ModelRequest>) {
+    let Some(path) = request.0.as_deref() else {
+        return;
+    };
+    let handle = asset_server.load::<WorldAsset>(format!("{path}#Scene0"));
+    commands.spawn((
+        WorldAssetRoot(handle.clone()),
+        Transform::from_xyz(0.0, 1.0, 3.0).with_scale(Vec3::splat(3.0)),
+        Name::new("wasm-model"),
+    ));
+    commands.insert_resource(ModelHandle(handle));
+}
+
+fn report_model(
+    asset_server: Res<AssetServer>,
+    model: Option<Res<ModelHandle>>,
+    request: Res<ModelRequest>,
+    mut reported: ResMut<ModelReported>,
+) {
+    let Some(model) = model else {
+        return;
+    };
+    if reported.0 {
+        return;
+    }
+    let id = model.0.id();
+    let path = request.0.clone().unwrap_or_default();
+    match asset_server.load_state(id) {
+        LoadState::Failed(error) => {
+            reported.0 = true;
+            publish_model_state("failed", &format!("{path}: {error}"));
+        }
+        _ if asset_server.is_loaded_with_dependencies(id) => {
+            reported.0 = true;
+            publish_model_state("loaded", &path);
+        }
+        _ => {}
+    }
+}
+
+fn publish_model_state(state: &str, detail: &str) {
+    let window = web_sys::window().expect("window");
+    if let Some(element) = window.document().expect("document").get_element_by_id("app-status") {
+        let _ = element.set_attribute("data-model-state", state);
+    }
+    let line = JsValue::from_str(&format!("bevy-jayzee model {state}: {detail}"));
+    if state == "loaded" {
+        web_sys::console::log_1(&line);
+    } else {
+        web_sys::console::error_1(&line);
+    }
 }
 
 fn orbit(time: Res<Time>, mut cameras: Query<&mut Transform, With<OrbitCamera>>) {
