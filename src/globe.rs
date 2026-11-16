@@ -148,7 +148,8 @@ impl GlobeWorld {
 
     fn spherical_noise(&self, unit: Vec3, octaves: u32) -> f32 {
         let mut total = 0.0;
-        let mut amplitude = self.amplitude;
+        let mut weight = 1.0;
+        let mut norm = 0.0;
         for octave in 0..octaves {
             let p = unit * (2.0_f32).powi(octave as i32);
             let (x, y, z) = (p.x.floor() as i64, p.y.floor() as i64, p.z.floor() as i64);
@@ -160,10 +161,11 @@ impl GlobeWorld {
             let b = lerp(corner(0, 1, 0), corner(1, 1, 0), sx);
             let c = lerp(corner(0, 0, 1), corner(1, 0, 1), sx);
             let d = lerp(corner(0, 1, 1), corner(1, 1, 1), sx);
-            total += lerp(lerp(a, b, sy), lerp(c, d, sy), sz) * amplitude;
-            amplitude *= 0.5;
+            total += lerp(lerp(a, b, sy), lerp(c, d, sy), sz) * weight;
+            norm += weight;
+            weight *= 0.5;
         }
-        total.max(self.sea_level)
+        (total / norm * self.amplitude).max(self.sea_level)
     }
 
     pub fn surface_position(&self, latitude: f32, longitude: f32, altitude: f32) -> Vec3 {
