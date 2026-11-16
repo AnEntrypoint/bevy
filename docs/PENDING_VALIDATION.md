@@ -129,3 +129,37 @@ Phase B results (final binary with the line-table setting and the patch):
 - `node scripts/check-game16-api.cjs`: exit 0, `"ok": true`.
 - `VIEWER_FOCUS_KIND=model /tmp/ns-viewer/run.sh`: `objects:50`, `modelsLoaded:9`, `modelsMissing:[]`, `uiNodes:718`, no panic.
 - The unit tests were not run in this round: they would have been another cargo build, and the owner asked for one build.
+
+## Round 7 (dev build candidates: fresh cold builds)
+
+Each candidate is one `cargo build --timings` from a fresh, empty target directory through the cargo slot shim, run sequentially with no other build of this repo running. Then two warm rebuilds after `touch src/main.rs`. CPU seconds are user plus sys for the cargo process tree. Host load is the 1-minute average at start and end of the build, from other workloads on the same 12-core host; load moved during every run, so wall time is noisy and CPU seconds are the stronger figure.
+
+| Candidate | Config change | Cold wall | Cold CPU | Load start to end | Warm 1 (wall / CPU) | Warm 2 (wall / CPU) | Witnesses |
+|---|---|---|---|---|---|---|---|
+| Baseline (committed config) | none | 1619 s | 6000 s | 5 to 21 | 11 s / 21 s | 9 s / 22 s | all pass |
+| Baseline, repeat | none | 1788 s | 6089 s | 26 to 19 | 8 s / 15 s | 5 s / 13 s | all pass |
+| (a) dependency `debug = 0` | `[profile.dev.package."*"] debug = 0` | 1159 s | 4483 s | 20 to 15 | 7 s / 10 s | 6 s / 10 s | all pass |
+| (a), repeat | same | 1214 s | 4451 s | 20 to 11 | 8 s / 11 s | 9 s / 9 s | all pass |
+| (b) `split-debuginfo = "unpacked"` | env `CARGO_PROFILE_DEV_SPLIT_DEBUGINFO=unpacked` | 1413 s | 5445 s | 15 to 11 | 10 s / 17 s | 5 s / 12 s | all pass |
+| (c) `bevy/dynamic_linking` | `--features bevy/dynamic_linking` | 1898 s, then link failure | 6868 s | 12 to 19 | not run | not run | link fails |
+| (a) with (b) | both | 1687 s | 5440 s | 8 to 33 | 30 s / 19 s | 10 s / 12 s | all pass |
+| (d) sccache or cranelift | none | not installed | not installed | not installed | not run | not run | not tested |
+
+Decision: keep (a), `[profile.dev.package."*"] debug = 0`. Two cold runs gave 1159 s and 1214 s wall, against 1619 s and 1788 s for the baseline, and 4451 and 4483 CPU-s against 6000 and 6089 CPU-s. The warm rebuild is 6 to 8 s and about 10 CPU-s, against 9 to 11 s and 13 to 22 CPU-s. (b) helped the cold build on its own but was not kept, because it is slower than (a) and combining it with (a) gave no further gain. The kept configuration passes every witness.
+
+Candidate details:
+
+- (c) `dynamic_linking`: every crate compiled, then the final link failed. `native/basislz_ktx2.cpp` calls `basist::` symbols that the bin's link line does not provide once `bevy_dylib` is used, so the link needs a build change. Not adopted. Open, if the dynamic loop is wanted.
+- (d) sccache and cranelift: neither is installed on this host (no `sccache` binary on the PATH or in `/workspace` and `/usr`, no `rustc-codegen-cranelift` component in the stable, nightly, or 1.99.0 toolchains). Nothing was installed, since sudo is blocked. Not tested.
+
+Witnesses for the kept configuration, on the in-place `target/debug/bevy-jayzee`:
+
+- `world … "" 120`: exit 1, stderr `the place argument is empty; name a place or leave it out`.
+- `world … main 120`: exit 0, `"objects":58`, `"errors":0`, hash `0x1c2b1833`.
+- `check-game16-api.cjs`: `"ok": true`.
+- `gltf-check`: `"bevy_loaded":64`, `"bevy_failed":0`. Exit 1 is the two PNG textures outside this work.
+- `VIEWER_FOCUS_KIND=model run.sh`: `objects:50`, `modelsLoaded:9`, `modelsMissing:[]`, `uiNodes:718`, no panic.
+
+In-place switch: the kept candidate's `debug` directory was moved into `target/` in place of the old line-tables artifacts, and a no-op build then compiled 0 crates (0.46 s). The first warm rebuild after the move cost 149 CPU-s, which looks like a one-time incremental cache rebuild after the move. Steady warm rebuilds after that: 5 to 10 s, 9 to 10 CPU-s. The `target/` directory is 6.7 GB, down from 19 GB.
+
+Scratch: the candidate directories under `/workspace/.bevy-perf/` (about 40 GB) were removed after their numbers were recorded. None of them is used by the current build.
