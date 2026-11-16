@@ -1,6 +1,7 @@
 use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResolution};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
@@ -22,6 +23,12 @@ pub struct ViewerScene {
     pub batch_keys: usize,
     pub mirror_entities: usize,
     pub mirror_batch_keys: usize,
+    pub expected_objects: usize,
+    pub expected_ids: Vec<String>,
+    pub duplicate_objects: usize,
+    pub missing_objects: Vec<String>,
+    pub placeholders: usize,
+    pub placeholders_retired: usize,
     pub unmirrored: usize,
     pub unmirrored_models: usize,
     pub marker_ids: Vec<String>,
@@ -44,6 +51,13 @@ pub struct ViewerBrowserReport {
 pub struct ViewerObject {
     pub id: String,
     pub kind: String,
+}
+
+#[derive(Component, Clone, Debug)]
+pub struct ViewerPlaceholder(pub String);
+
+pub fn object_id(object: &ObjectSpec, index: usize) -> String {
+    object.id.clone().unwrap_or_else(|| format!("object-{index}"))
 }
 
 pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
@@ -87,6 +101,12 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         batch_keys: 0,
         mirror_entities: 0,
         mirror_batch_keys: 0,
+        expected_objects: 0,
+        expected_ids: Vec::new(),
+        duplicate_objects: 0,
+        missing_objects: Vec::new(),
+        placeholders: 0,
+        placeholders_retired: 0,
         unmirrored: 0,
         unmirrored_models: 0,
         marker_ids: Vec::new(),
@@ -114,7 +134,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         app.add_systems(Update, orbit_camera);
     }
     if let Some(runner) = runner {
-        app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, viewer_world::count_batches, feed_ui_html).chain());
+        app.insert_non_send(runner).add_systems(Update, (tick_world, viewer_world::mirror_world, viewer_world::retire_placeholders, viewer_world::count_batches, feed_ui_html).chain());
     }
     app.run();
     crate::script::shutdown();
@@ -171,8 +191,12 @@ fn spawn_viewer(
         Color::srgb(0.78, 0.42, 0.88),
     ];
     let palette: Vec<Handle<StandardMaterial>> = colors.iter().map(|color| materials.add(StandardMaterial { base_color: *color, ..default() })).collect();
+    let mut spawned_ids = HashSet::new();
     for (index, object) in objects.0.iter().enumerate() {
-        let id = object.id.clone().unwrap_or_else(|| format!("object-{index}"));
+        let id = object_id(object, index);
+        if !spawned_ids.insert(id.clone()) {
+            continue;
+        }
         let position = object.properties.feet_position.as_ref().map(|value| crate::spec::vec3(Some(value))).unwrap_or(Vec3::ZERO);
         let kind = object.properties.primitive.as_ref().and_then(|value| value.get("kind")).and_then(|value| value.as_str()).unwrap_or("entity").to_string();
         let (mesh, size) = if kind.contains("sphere") || kind.contains("ball") {
@@ -186,6 +210,7 @@ fn spawn_viewer(
             MeshMaterial3d(material),
             Transform::from_translation(position + Vec3::Y * 0.6).with_scale(size),
             ViewerObject { id: id.clone(), kind },
+            ViewerPlaceholder(id.clone()),
             Name::new(id),
         ));
     }
@@ -276,6 +301,11 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "place": scene.place,
         "objects": scene.objects,
         "meshes": scene.meshes,
+        "expectedObjects": scene.expected_objects,
+        "duplicateObjects": scene.duplicate_objects,
+        "missingObjects": scene.missing_objects,
+        "placeholders": scene.placeholders,
+        "placeholdersRetired": scene.placeholders_retired,
         "meshRequests": scene.mesh_requests,
         "shapesCreated": scene.shapes_created,
         "meshEntities": scene.mesh_entities,

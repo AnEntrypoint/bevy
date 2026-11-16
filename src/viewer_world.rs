@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::runtime::{FieldGrid, TerrainData};
 use crate::spec::PrimitiveDesc;
-use crate::viewer::{ViewerCache, ViewerObject, ViewerObjects, ViewerScene, WorldRunner};
+use crate::viewer::{object_id, ViewerCache, ViewerObject, ViewerObjects, ViewerPlaceholder, ViewerScene, WorldRunner};
 use crate::world::{ModelRef, ObjectId, PrimitiveInfo, ScriptedPrimitive};
 
 #[derive(Component)]
@@ -207,7 +207,6 @@ pub fn mirror_world(
             Name::new(format!("terrain/{name}")),
         ));
     }
-    scene.objects = objects.0.len() + items.len();
     scene.shapes_created = shapes.len();
     scene.unmirrored = unmirrored;
     scene.unmirrored_models = unmirrored_models;
@@ -223,7 +222,37 @@ pub fn mirror_world(
     scene.models_requested = models.keys().cloned().collect::<Vec<String>>();
     scene.models_requested.sort();
     scene.marker_ids = marker_ids;
+    let mut expected: HashSet<String> = items.iter().map(|item| item.id.clone()).collect();
+    expected.extend(objects.0.iter().enumerate().map(|(index, object)| object_id(object, index)));
+    expected.extend(spawned_terrains.iter().map(|name| format!("terrain/{name}")));
+    let mut expected_ids: Vec<String> = expected.into_iter().collect();
+    expected_ids.sort();
+    scene.expected_ids = expected_ids;
     scene.terrains = spawned_terrains.len();
+}
+
+pub fn retire_placeholders(
+    mut commands: Commands,
+    placeholders: Query<(Entity, &ViewerPlaceholder)>,
+    mirrors: Query<&ViewerObject, With<WorldMirror>>,
+    mut scene: ResMut<ViewerScene>,
+) {
+    let mirrored: HashSet<String> = mirrors.iter().map(|object| object.id.clone()).collect();
+    let entries: Vec<(Entity, String)> = placeholders.iter().map(|(entity, placeholder)| (entity, placeholder.0.clone())).collect();
+    let retired = placeholders_to_retire(&entries, &mirrored);
+    for entity in &retired {
+        commands.entity(*entity).despawn();
+    }
+    scene.placeholders_retired += retired.len();
+    scene.placeholders = entries.len() - retired.len();
+}
+
+pub fn placeholders_to_retire<T: Copy>(placeholders: &[(T, String)], mirrored: &HashSet<String>) -> Vec<T> {
+    placeholders.iter().filter(|(_, id)| mirrored.contains(id)).map(|(entity, _)| *entity).collect()
+}
+
+pub fn duplicate_count(ids: &[String]) -> usize {
+    ids.len() - ids.iter().collect::<HashSet<_>>().len()
 }
 
 fn model_name(value: &Value) -> Option<String> {
@@ -305,8 +334,16 @@ fn palette_slot(kind: &str, slots: usize) -> usize {
 pub fn count_batches(
     draws: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>)>,
     mirrored: Query<(&Mesh3d, &MeshMaterial3d<StandardMaterial>), With<WorldMirror>>,
+    drawn_objects: Query<&ViewerObject>,
     mut scene: ResMut<ViewerScene>,
 ) {
+    let drawn: Vec<String> = drawn_objects.iter().map(|object| object.id.clone()).collect();
+    let drawn_set: HashSet<String> = drawn.iter().cloned().collect();
+    let missing: Vec<String> = scene.expected_ids.iter().filter(|id| !drawn_set.contains(*id)).cloned().collect();
+    scene.objects = drawn.len();
+    scene.duplicate_objects = duplicate_count(&drawn);
+    scene.expected_objects = scene.expected_ids.len();
+    scene.missing_objects = missing;
     let mut meshes = HashSet::new();
     let mut materials = HashSet::new();
     let mut batches = HashSet::new();
@@ -361,6 +398,19 @@ fn terrain_mesh(field: &FieldGrid) -> Mesh {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn placeholders_retire_only_when_mirrored() {
+        let mirrored = HashSet::from(["a".to_string()]);
+        let placeholders = [(1, "a".to_string()), (2, "b".to_string())];
+        assert_eq!(placeholders_to_retire(&placeholders, &mirrored), vec![1]);
+    }
+
+    #[test]
+    fn duplicate_count_counts_repeated_ids() {
+        assert_eq!(duplicate_count(&["a".to_string(), "b".to_string(), "a".to_string()]), 1);
+        assert_eq!(duplicate_count(&["a".to_string(), "b".to_string()]), 0);
+    }
 
     fn primitive(kind: &str, radius: f32) -> PrimitiveDesc {
         PrimitiveDesc { kind: kind.to_string(), size: Vec3::ONE, half_height: 0.5, radius, capsule_half_height: 0.5 }
