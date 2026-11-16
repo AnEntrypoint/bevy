@@ -22,6 +22,7 @@ enum Drawn {
     Primitive(PrimitiveDesc),
     Model(String),
     Proxy(Vec3),
+    Shape(MeshShape, &'static str),
     Marker,
 }
 
@@ -61,6 +62,21 @@ pub fn mirror_world(
     let mut marker_ids = Vec::new();
     let mut proxies_by_collider = 0;
     let mut markers_fallback = 0;
+    let mut collider_query = world.query::<(Entity, &Transform, &ColliderOf, &Collider)>();
+    let mut scripted_children: Vec<(Entity, Entity, Transform, Drawn)> = Vec::new();
+    for (entity, transform, collider_of, collider) in collider_query.iter(world) {
+        if !scripted.contains(&collider_of.body) {
+            continue;
+        }
+        let (transform, drawn) = scripted_geometry(transform, collider);
+        scripted_children.push((collider_of.body, entity, transform, drawn));
+    }
+    scripted_children.sort_by_key(|(body, entity, _, _)| (body.to_bits(), entity.to_bits()));
+    let mut children_per_body: HashMap<Entity, usize> = HashMap::new();
+    for (body, _, _, _) in &scripted_children {
+        *children_per_body.entry(*body).or_default() += 1;
+    }
+    let object_ids: HashMap<Entity, String> = world.query::<(Entity, &ObjectId)>().iter(world).map(|(entity, id)| (entity, id.0.clone())).collect();
     let mut query = world.query::<(Entity, &ObjectId, &Transform, Option<&PrimitiveInfo>, Option<&ModelRef>, Option<&Collider>)>();
     for (entity, id, transform, primitive, model, collider) in query.iter(world) {
         if let Some(desc) = primitive.and_then(|primitive| primitive.0.clone()) {
@@ -75,7 +91,7 @@ pub fn mirror_world(
             shape_transform.translation += transform.rotation * (offset * transform.scale);
             items.push(Item { entity, id: id.0.clone(), transform: shape_transform, drawn: Drawn::Proxy(size * transform.scale) });
             proxies_by_collider += 1;
-        } else {
+        } else if !children_per_body.contains_key(&entity) {
             if model.is_some() {
                 unmirrored_models += 1;
             }
@@ -84,18 +100,16 @@ pub fn mirror_world(
             markers_fallback += 1;
         }
     }
-    let mut collider_query = world.query::<(Entity, &Transform, &ColliderOf, &Collider)>();
+    let own_items: HashSet<Entity> = items.iter().map(|item| item.entity).collect();
     let mut proxies = proxies_by_collider;
-    for (entity, transform, collider_of, collider) in collider_query.iter(world) {
-        if !scripted.contains(&collider_of.body) {
-            continue;
-        }
-        let aabb = collider.shape_scaled().compute_local_aabb();
-        let size = Vec3::from(aabb.maxs) - Vec3::from(aabb.mins);
-        let offset = Vec3::from(aabb.mins + aabb.maxs) * 0.5;
-        let mut transform = *transform;
-        transform.translation += transform.rotation * (offset * transform.scale);
-        items.push(Item { entity, id: format!("scripted-collider-{}", entity.to_bits()), transform, drawn: Drawn::Proxy(size * transform.scale) });
+    let mut numbered: HashMap<Entity, usize> = HashMap::new();
+    for (body, entity, transform, drawn) in scripted_children {
+        let index = numbered.entry(body).or_default();
+        let number = *index + usize::from(own_items.contains(&body));
+        *index += 1;
+        let parent = object_ids.get(&body).cloned().unwrap_or_else(|| format!("scripted-{}", body.to_bits()));
+        let id = if number == 0 { parent } else { format!("{parent}#{number}") };
+        items.push(Item { entity, id, transform, drawn });
         proxies += 1;
     }
     let live: HashSet<Entity> = items.iter().map(|item| item.entity).collect();
@@ -161,6 +175,18 @@ pub fn mirror_world(
                 ));
             }
             Drawn::Marker => spawn_marker(&mut commands, &mut meshes, &mut shapes, &mut scene, item, proxy.clone()),
+            Drawn::Shape(shape, kind) => {
+                let mesh = shared_mesh(&mut meshes, &mut shapes, *shape);
+                scene.mesh_requests += 1;
+                commands.spawn((
+                    Mesh3d(mesh),
+                    MeshMaterial3d(proxy.clone()),
+                    item.transform,
+                    ViewerObject { id: item.id.clone(), kind: kind.to_string() },
+                    WorldMirror(item.entity),
+                    Name::new(item.id.clone()),
+                ));
+            }
             Drawn::Proxy(size) => {
                 let shape = MeshShape::Cuboid(size.x.max(0.05).to_bits(), size.y.max(0.05).to_bits(), size.z.max(0.05).to_bits());
                 let mesh = shared_mesh(&mut meshes, &mut shapes, shape);
@@ -317,6 +343,38 @@ fn shared_mesh(meshes: &mut Assets<Mesh>, shapes: &mut HashMap<MeshShape, Handle
     shapes.entry(shape).or_insert_with(|| meshes.add(shape.mesh())).clone()
 }
 
+fn scripted_geometry(transform: &Transform, collider: &Collider) -> (Transform, Drawn) {
+    let aabb = collider.shape_scaled().compute_local_aabb();
+    let offset = Vec3::from(aabb.mins + aabb.maxs) * 0.5;
+    let mut shape_transform = *transform;
+    shape_transform.translation += transform.rotation * (offset * transform.scale);
+    let drawn = match real_shape(collider, transform.scale) {
+        Some((shape, kind)) => Drawn::Shape(shape, kind),
+        None => Drawn::Proxy((Vec3::from(aabb.maxs) - Vec3::from(aabb.mins)) * transform.scale),
+    };
+    (shape_transform, drawn)
+}
+
+fn real_shape(collider: &Collider, scale: Vec3) -> Option<(MeshShape, &'static str)> {
+    let shape = collider.shape_scaled();
+    let planar = scale.x.max(scale.z);
+    if let Some(ball) = shape.as_ball() {
+        return Some((MeshShape::Sphere((ball.radius * scale.max_element()).to_bits()), "scripted-sphere"));
+    }
+    if let Some(cylinder) = shape.as_cylinder() {
+        let height = cylinder.half_height * 2.0 * scale.y;
+        return Some((MeshShape::Cylinder((cylinder.radius * planar).to_bits(), height.to_bits()), "scripted-cylinder"));
+    }
+    if let Some(capsule) = shape.as_capsule() {
+        let length = (Vec3::from(capsule.segment.b) - Vec3::from(capsule.segment.a)).length() * scale.y;
+        return Some((MeshShape::Capsule((capsule.radius * planar).to_bits(), length.to_bits()), "scripted-capsule"));
+    }
+    shape.as_cuboid().map(|cuboid| {
+        let size = Vec3::from(cuboid.half_extents) * 2.0 * scale;
+        (MeshShape::Cuboid(size.x.max(0.05).to_bits(), size.y.max(0.05).to_bits(), size.z.max(0.05).to_bits()), "scripted-cuboid")
+    })
+}
+
 fn spawn_marker(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -451,6 +509,19 @@ mod tests {
         assert_eq!(first, second);
         assert_eq!(shapes.len(), 1);
         assert_eq!(meshes.len(), 1);
+    }
+
+    #[test]
+    fn scripted_colliders_keep_their_shape_kind() {
+        let (shape, kind) = real_shape(&Collider::sphere(0.5), Vec3::splat(2.0)).unwrap();
+        assert_eq!((shape, kind), (MeshShape::Sphere(1.0_f32.to_bits()), "scripted-sphere"));
+        let (shape, kind) = real_shape(&Collider::cylinder(0.5, 2.0), Vec3::ONE).unwrap();
+        assert_eq!((shape, kind), (MeshShape::Cylinder(0.5_f32.to_bits(), 2.0_f32.to_bits()), "scripted-cylinder"));
+        let (shape, kind) = real_shape(&Collider::capsule(0.25, 1.0), Vec3::ONE).unwrap();
+        assert!(matches!(shape, MeshShape::Capsule(radius, _) if f32::from_bits(radius) == 0.25));
+        assert_eq!(kind, "scripted-capsule");
+        let (shape, kind) = real_shape(&Collider::cuboid(1.0, 2.0, 3.0), Vec3::ONE).unwrap();
+        assert_eq!((shape, kind), (MeshShape::Cuboid(1.0_f32.to_bits(), 2.0_f32.to_bits(), 3.0_f32.to_bits()), "scripted-cuboid"));
     }
 
     #[test]
