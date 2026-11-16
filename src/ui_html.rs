@@ -380,7 +380,7 @@ fn decode(text: &str) -> String {
 }
 
 fn attr<'a>(attrs: &'a [(String, String)], name: &str) -> Option<&'a str> {
-    attrs.iter().find(|(key, _)| key == name).map(|(_, value)| value.as_str())
+    attrs.iter().find(|(key, _)| key.eq_ignore_ascii_case(name)).map(|(_, value)| value.as_str())
 }
 
 struct Compound {
