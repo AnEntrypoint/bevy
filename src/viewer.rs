@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResolution};
 use std::path::Path;
 
-use crate::spec::ObjectSpec;
+use crate::spec::{ObjectSpec, PrimitiveDesc};
 use crate::tree::WorldTree;
 use crate::ui_html::{HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
 use crate::{script, world};
@@ -78,7 +78,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         app.add_systems(Update, orbit_camera);
     }
     if let Some(runner) = runner {
-        app.insert_non_send(runner).add_systems(Update, (tick_world, feed_ui_html).chain());
+        app.insert_non_send(runner).add_systems(Update, (tick_world, mirror_world_objects, feed_ui_html).chain());
     }
     app.run();
     crate::script::shutdown();
@@ -102,6 +102,76 @@ fn tick_world(mut runner: NonSendMut<WorldRunner>) {
 
 fn feed_ui_html(mut source: ResMut<HtmlUiSource>) {
     source.update(&script::last_ui_html());
+}
+
+#[derive(Component)]
+struct WorldMirror(Entity);
+
+fn mirror_world_objects(
+    mut commands: Commands,
+    mut runner: NonSendMut<WorldRunner>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut scene: ResMut<ViewerScene>,
+    objects: Res<ViewerObjects>,
+    mut mirrors: Query<(Entity, &WorldMirror, &mut Transform)>,
+    mut palette: Local<Vec<Handle<StandardMaterial>>>,
+) {
+    let world = runner.0.world_mut();
+    let mut query = world.query::<(Entity, &crate::world::ObjectId, &Transform, &crate::world::PrimitiveInfo)>();
+    let items: Vec<(Entity, String, Transform, PrimitiveDesc)> = query
+        .iter(world)
+        .filter_map(|(entity, id, transform, primitive)| primitive.0.clone().map(|desc| (entity, id.0.clone(), *transform, desc)))
+        .collect();
+    if palette.is_empty() {
+        let colors = [
+            Color::srgb(0.24, 0.62, 0.95),
+            Color::srgb(0.95, 0.55, 0.25),
+            Color::srgb(0.42, 0.82, 0.45),
+            Color::srgb(0.78, 0.42, 0.88),
+        ];
+        palette.extend(colors.into_iter().map(|color| materials.add(StandardMaterial { base_color: color, ..default() })));
+    }
+    let by_entity: std::collections::HashMap<Entity, &(Entity, String, Transform, PrimitiveDesc)> = items.iter().map(|item| (item.0, item)).collect();
+    let mut placed = std::collections::HashSet::new();
+    for (viewer, mirror, mut transform) in &mut mirrors {
+        match by_entity.get(&mirror.0) {
+            Some(item) => {
+                *transform = item.2;
+                placed.insert(mirror.0);
+            }
+            None => commands.entity(viewer).despawn(),
+        }
+    }
+    for (entity, id, transform, desc) in &items {
+        if placed.contains(entity) {
+            continue;
+        }
+        let mesh = primitive_mesh(&mut meshes, desc);
+        commands.spawn((
+            Mesh3d(mesh),
+            MeshMaterial3d(palette[entity.index() as usize % palette.len()].clone()),
+            *transform,
+            ViewerObject { id: id.clone(), kind: desc.kind.clone() },
+            WorldMirror(*entity),
+            Name::new(id.clone()),
+        ));
+    }
+    scene.objects = objects.0.len() + items.len();
+    scene.meshes = objects.0.len() + items.len();
+}
+
+fn primitive_mesh(meshes: &mut Assets<Mesh>, desc: &PrimitiveDesc) -> Handle<Mesh> {
+    let kind = desc.kind.as_str();
+    if kind.contains("sphere") || kind.contains("ball") {
+        meshes.add(Sphere::new(desc.radius))
+    } else if kind.contains("capsule") {
+        meshes.add(Capsule3d::new(desc.radius, desc.capsule_half_height * 2.0))
+    } else if kind.contains("cylinder") {
+        meshes.add(Cylinder::new(desc.radius, desc.half_height * 2.0))
+    } else {
+        meshes.add(Cuboid::new(desc.size.x, desc.size.y, desc.size.z))
+    }
 }
 
 #[derive(Component)]
