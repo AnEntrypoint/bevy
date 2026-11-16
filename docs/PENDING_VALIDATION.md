@@ -46,3 +46,17 @@ Each row names a committed change, the file it touches, and the witness that pro
 - `node scripts/check-game16-api.cjs`: exit 0, `"ok": true`.
 - HUD: `uiNodes:102`, warnings now `defs(1)`, `path(1)`, `polygon(9)`.
 - Parallelism: `/config/.cargo/config.toml` sets `jobs = 4`. The bin-only rebuild showed one rustc process at each 5-second sample, because only this crate was compiling. The cap of 4 is not confirmed from this build, only the configured value.
+
+## Round 4 (Phase A, committed locally)
+
+| Commit change | File | Witness | Result |
+|---|---|---|---|
+| Count unmirrored viewer objects that are model references | src/viewer.rs | `viewer-status` `unmirroredModels` `9` with `unmirroredObjects` `21`, and headless `models` `9`, `scripted` `11` | measured in Phase B |
+
+## Round 4 Phase B results
+
+- `cargo test --bin bevy-jayzee`: `test result: ok. 34 passed; 0 failed`.
+- `gltf-check`: `"bevy_failed":0`, `"bevy_loaded":64`. Exit 1 is the two PNG failures outside this work.
+- `world … main 120`: exit 0, `"objects":58`, `"missingApiCount":0`.
+- `check-game16-api.cjs`: exit 0, `"ok": true`.
+- HUD `viewer-status`: `"unmirroredModels":9`, `"unmirroredObjects":21`.
