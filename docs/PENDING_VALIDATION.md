@@ -37,3 +37,12 @@ Each row names a committed change, the file it touches, and the witness that pro
 | Commit change | File | Witness | Result |
 |---|---|---|---|
 | Draw the HUD's SVG circles, lines and rects as absolute nodes | src/ui_html.rs | `cargo test --bin bevy-jayzee ui_html` passes (10 tests); HUD `uiNodes` rises from 60 to 102 and `unsupported element <svg>` is gone | pending Phase B |
+
+## Round 3 Phase B results
+
+- `cargo test --bin bevy-jayzee`: `test result: ok. 34 passed; 0 failed`.
+- `bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: `"bevy_failed":0`, `"bevy_loaded":64`. Exit 1 is the two PNG failures outside this work.
+- `bevy-jayzee world /workspace/neon-syndicates/world main 120`: exit 0, `"objects":58`, `"missingApiCount":0`, hash `0x1c2b1833`.
+- `node scripts/check-game16-api.cjs`: exit 0, `"ok": true`.
+- HUD: `uiNodes:102`, warnings now `defs(1)`, `path(1)`, `polygon(9)`.
+- Parallelism: `/config/.cargo/config.toml` sets `jobs = 4`. The bin-only rebuild showed one rustc process at each 5-second sample, because only this crate was compiling. The cap of 4 is not confirmed from this build, only the configured value.
