@@ -19,19 +19,19 @@ const __host = (op, payload) => {
   return text === '' ? undefined : JSON.parse(text);
 };
 const __sync = (target, path, key) => __set_json(path, key, __json(target));
-function __wrap(path, key, value, syncKey = key) {
+function __wrap(path, key, value, parentSync) {
   if (value === null || value === undefined || typeof value !== 'object') return value;
-  if (Array.isArray(value)) {
-    const target = value;
-    const sync = () => __set_json(path, syncKey, __json(target));
+  const target = value;
+  const sync = parentSync ?? (() => __set_json(path, key, __json(target)));
+  if (Array.isArray(target)) {
     return new Proxy(target, {
       get(t, prop) {
         if (prop === 'length') return t.length;
-        if (typeof prop === 'string' && /^\d+$/.test(prop)) return __wrap(path, syncKey, t[prop], syncKey);
+        if (typeof prop === 'string' && /^\d+$/.test(prop)) return __wrap(path, key, t[prop], sync);
         if (prop === 'push' || prop === 'pop' || prop === 'shift' || prop === 'unshift' || prop === 'splice' || prop === 'sort' || prop === 'reverse' || prop === 'fill') {
           return (...args) => { const result = t[prop](...args); sync(); return result; };
         }
-        if (prop === Symbol.iterator) return function* () { for (const item of t) yield __wrap(path, syncKey, item, syncKey); };
+        if (prop === Symbol.iterator) return function* () { for (const item of t) yield __wrap(path, key, item, sync); };
         return t[prop];
       },
       set(t, prop, next) { t[prop] = next; sync(); return true; },
@@ -41,10 +41,8 @@ function __wrap(path, key, value, syncKey = key) {
       getOwnPropertyDescriptor(t, prop) { return { value: t[prop], writable: true, enumerable: true, configurable: true }; },
     });
   }
-  const target = value;
-  const sync = () => __set_json(path, syncKey, __json(target));
   return new Proxy(target, {
-    get(t, prop) { if (prop in t) return __wrap(path, syncKey, t[prop], syncKey); return undefined; },
+    get(t, prop) { if (prop in t) return __wrap(path, key, t[prop], sync); return undefined; },
     set(t, prop, next) { t[prop] = next; sync(); return true; },
     deleteProperty(t, prop) { delete t[prop]; sync(); return true; },
     has(t, prop) { return prop in t; },
@@ -1090,7 +1088,7 @@ globalThis.__builtins.tsl = (() => {
     mx_noise_float: math('noise'), mx_fractal_noise_float: math('fractal'), mx_worley_noise_float: math('worley'), mx_noise_vec3: math('noise3'),
     hash: math('hash'), rand: math('rand'), oscSine: math('oscSine'), oscTriangle: math('oscTriangle'), oscSquare: math('oscSquare'), oscSawtooth: math('oscSawtooth'),
     uv: () => n(0), positionLocal: n(0), positionMorphed: n(0), positionWorld: n(0), positionView: n(0), normalLocal: n(0), normalWorld: n(0),
-    cameraPosition: n(0), screenUV: n(0), screenSize: n(0), time: n(0), vertexColor: () => n(0), attribute: () => n(0), instanceIndex: n(0), vertexIndex: n(0),
+    cameraPosition: n(0), cameraViewMatrix: n(0), screenUV: n(0), screenSize: n(0), time: n(0), vertexColor: () => n(0), attribute: () => n(0), instanceIndex: n(0), vertexIndex: n(0), exp2: math('exp2'),
     frontFacing: n(0), sceneDepth: n(0), sceneDepthAt: () => n(0), depthFade: () => n(0), viewportSharedTexture: () => n(0),
     materialColor: n(0), materialOpacity: n(0), materialEmissive: n(0), audioLevel: n(0), audioSpectrum: () => n(0),
     billboarding: () => n(0), Fn: (fn) => (...args) => { try { return fn(args); } catch { return n(0); } },
@@ -1295,6 +1293,14 @@ function __make_ctx(selfId, placeName) {
       }
       return __jayzee('', __json(first ?? {}));
     },
+    spawn: (first, second) => (typeof first === 'string' ? __jayzee(first, __json(second ?? {})) : __jayzee('', __json(first ?? {}))),
+    uvProjection: null,
+    __feelRaw: null,
+    __glass: 0,
+    __safeDestroy: false,
+    __soundGun: null,
+    __soundQ: null,
+    __soundRaw: null,
     destroy: (value, options) => {
       if (Array.isArray(value)) value.forEach((id) => __destroy(__json(id)));
       else __destroy(value === undefined ? __json(selfId) : __json(typeof value === 'string' ? value : value?.id));
@@ -1442,8 +1448,15 @@ function __make_ctx(selfId, placeName) {
 }
 globalThis.__make_ctx = __make_ctx;
 globalThis.__make = __make;
-globalThis.__invoke0 = (fn, a) => { try { fn(a); return ''; } catch (error) { return String(error && error.stack ? error.stack : error); } };
-globalThis.__invoke1 = (fn, a, b) => { try { fn(a, b); return ''; } catch (error) { return String(error && error.stack ? error.stack : error); } };
-globalThis.__invoke2 = (fn, a, b, c) => { try { fn(a, b, c); return ''; } catch (error) { return String(error && error.stack ? error.stack : error); } };
+const __place_ctxs = {};
+function __place_ctx(placeName) {
+  const ctx = (__place_ctxs[placeName] ??= __make_ctx('', placeName));
+  ctx.dtMs = __num(globalThis.__dt_ms?.(), 0);
+  return ctx;
+}
+globalThis.__place_ctx = __place_ctx;
+globalThis.__invoke0 = (fn, a) => { try { fn(a); return ''; } catch (error) { return String(error && error.stack ? String(error) + '\n' + error.stack : error); } };
+globalThis.__invoke1 = (fn, a, b) => { try { fn(a, b); return ''; } catch (error) { return String(error && error.stack ? String(error) + '\n' + error.stack : error); } };
+globalThis.__invoke2 = (fn, a, b, c) => { try { fn(a, b, c); return ''; } catch (error) { return String(error && error.stack ? String(error) + '\n' + error.stack : error); } };
 globalThis.__call1 = (fn, a, b) => { try { return fn(a, b); } catch (error) { return '__error:' + String(error && error.stack ? error.stack : error); } };
 globalThis.__builtins.postfx.ctx = globalThis.__builtins.postfx;

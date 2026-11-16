@@ -119,6 +119,8 @@ struct Host {
     state_before: HashMap<String, Json>,
     changed_log: Vec<Json>,
     pending_leave: Option<(String, String, String)>,
+    place_program_due: HashMap<String, f64>,
+    player_ready: bool,
 }
 
 impl Host {
@@ -165,6 +167,8 @@ impl Host {
             state_before: HashMap::new(),
             changed_log: Vec::new(),
             pending_leave: None,
+            place_program_due: HashMap::new(),
+            player_ready: false,
         }
     }
 
@@ -2459,6 +2463,17 @@ pub fn api_report() -> String {
     })
 }
 
+fn cadence_ms(text: &str) -> f64 {
+    let text = text.trim();
+    if let Some(ms) = text.strip_suffix("ms") {
+        return ms.trim().parse().unwrap_or(0.0);
+    }
+    if let Some(seconds) = text.strip_suffix('s') {
+        return seconds.trim().parse::<f64>().map(|value| value * 1000.0).unwrap_or(0.0);
+    }
+    0.0
+}
+
 fn install_bridge_names() -> BTreeSet<String> {
     [
         "__after", "__attach", "__cancel", "__changed_json", "__children_json", "__cross", "__del", "__destroy", "__dt_ms", "__emit", "__exists", "__get_json", "__has", "__host", "__id", "__iterate_json", "__jayzee", "__keys_json", "__log", "__now", "__off", "__on_id", "__params_json", "__parent", "__place_objects_json", "__players_json", "__query_json", "__random", "__replace_state", "__set_json", "__sleep", "__target", "__timers_json",
@@ -2696,8 +2711,95 @@ impl ScriptEngine {
         self.host.borrow_mut().world = std::ptr::null_mut();
     }
 
+    fn run_place_program(&self, ctx: &Ctx<'_>) {
+        let (place, now, program) = {
+            let host = self.host.borrow();
+            (host.place.clone(), host.now_ms, format!("places/{}/sim.js", host.place))
+        };
+        if place.is_empty() || !self.host.borrow().root.join(&program).is_file() {
+            return;
+        }
+        let Some(namespace) = self.module(ctx, &program) else {
+            return;
+        };
+        let interval = namespace
+            .get::<_, String>("cadence")
+            .map(|text| cadence_ms(&text))
+            .unwrap_or(0.0);
+        {
+            let mut host = self.host.borrow_mut();
+            let due = host.place_program_due.get(&place).copied().unwrap_or(0.0);
+            if now < due {
+                return;
+            }
+            host.place_program_due.insert(place.clone(), now + interval);
+        }
+        let Ok(value) = namespace.get::<_, Value>("tick") else {
+            return;
+        };
+        let Some(function) = value.as_function().cloned() else {
+            return;
+        };
+        let globals = ctx.globals();
+        let Ok(make) = globals.get::<_, Function>("__place_ctx") else {
+            return;
+        };
+        let Ok(place_ctx) = make.call::<_, Value>((place.clone(),)) else {
+            return;
+        };
+        let Ok(invoke) = globals.get::<_, Function>("__invoke0") else {
+            return;
+        };
+        self.host.borrow_mut().hooks_called += 1;
+        let result = invoke.call::<_, String>((function, place_ctx)).unwrap_or_default();
+        if !result.is_empty() {
+            self.host.borrow_mut().errors += 1;
+            println!(
+                "{{\"kind\":\"script-hook-error\",\"script\":{},\"hook\":\"tick\",\"error\":{}}}",
+                quote(&program),
+                quote(&result)
+            );
+        }
+    }
+
+    fn ensure_player(&self, ctx: &Ctx<'_>) {
+        let template = {
+            let mut host = self.host.borrow_mut();
+            if host.player_ready {
+                return;
+            }
+            host.player_ready = true;
+            host.world_mut()
+                .get_resource::<WorldState>()
+                .and_then(|state| state.extra.get("player").and_then(Json::as_str).map(str::to_string))
+        };
+        let Some(template) = template else {
+            return;
+        };
+        let (file, export) = template.split_once('#').unwrap_or((template.as_str(), "player"));
+        let Some(namespace) = self.module(ctx, file) else {
+            return;
+        };
+        let Ok(value) = namespace.get::<_, Value>(export) else {
+            return;
+        };
+        let stringify = ctx
+            .globals()
+            .get::<_, Object>("JSON")
+            .and_then(|json| json.get::<_, Function>("stringify"));
+        let Ok(stringify) = stringify else {
+            return;
+        };
+        let Ok(text) = stringify.call::<_, String>((value,)) else {
+            return;
+        };
+        self.host.borrow_mut().jayzee("local-player", &text);
+    }
+
     fn run_tick(&self, ctx: &Ctx<'_>, dt: f64) -> Result<(), String> {
+        self.ensure_player(ctx);
         self.run_policy(ctx);
+        self.run_place_program(ctx);
         self.dispatch_destroyed(ctx);
         self.render_ui(ctx);
         {
@@ -3831,7 +3933,7 @@ fn builtin_exports(key: &str) -> &'static [&'static str] {
         "water" => &["waterRippleSlope", "waterFoam", "waterFoamField", "waterFoamFieldLod", "waterFoamCoverage", "waterTransmittance", "waterMedium", "waterUnderwaterDistortion", "waterRayBoxDistance", "waterCaustics", "waterCausticsAt", "waterCausticsRefracted", "waterFresnel"],
         "env" => &["envAt", "wind", "rain", "light", "charge", "water", "cloud"],
         "three" => &["MeshStandardNodeMaterial", "MeshPhysicalNodeMaterial", "MeshSSSNodeMaterial", "MeshBasicNodeMaterial", "MeshPhongNodeMaterial", "MeshLambertNodeMaterial", "MeshToonNodeMaterial", "MeshMatcapNodeMaterial", "LineBasicNodeMaterial", "Line2NodeMaterial", "SpriteNodeMaterial", "PointsNodeMaterial", "FrontSide", "BackSide", "DoubleSide", "NoBlending", "NormalBlending", "AdditiveBlending", "SubtractiveBlending", "MultiplyBlending", "CustomBlending", "AddEquation", "SubtractEquation", "ReverseSubtractEquation", "MinEquation", "MaxEquation", "ZeroFactor", "OneFactor", "SrcColorFactor", "OneMinusSrcColorFactor", "SrcAlphaFactor", "OneMinusSrcAlphaFactor", "DstColorFactor", "OneMinusDstColorFactor", "DstAlphaFactor", "OneMinusDstAlphaFactor", "SrcAlphaSaturateFactor", "NeverDepth", "AlwaysDepth", "LessDepth", "LessEqualDepth", "EqualDepth", "GreaterEqualDepth", "GreaterDepth", "NotEqualDepth", "Plane", "RepeatWrapping", "ClampToEdgeWrapping", "MirroredRepeatWrapping", "NearestFilter", "LinearFilter", "NearestMipmapNearestFilter", "NearestMipmapLinearFilter", "LinearMipmapNearestFilter", "LinearMipmapLinearFilter", "NoColorSpace", "SRGBColorSpace", "RGBAFormat", "RGFormat", "RedFormat", "RGBAIntegerFormat", "RGIntegerFormat", "RedIntegerFormat", "UnsignedByteType", "HalfFloatType", "FloatType", "UnsignedIntType", "Color", "Vector2", "Vector3", "Vector4", "StorageTexture", "Storage3DTexture", "DataTexture", "Data3DTexture"],
-        "tsl" => &["float", "vec2", "vec3", "vec4", "color", "int", "mix", "smoothstep", "step", "clamp", "min", "max", "abs", "floor", "ceil", "fract", "sign", "mod", "negate", "pow", "sqrt", "exp", "log", "sin", "cos", "tan", "atan", "atan2", "length", "distance", "dot", "cross", "normalize", "reflect", "refract", "oneMinus", "saturate", "remap", "remapClamp", "mx_noise_float", "mx_fractal_noise_float", "mx_worley_noise_float", "mx_noise_vec3", "hash", "rand", "oscSine", "oscTriangle", "oscSquare", "oscSawtooth", "uv", "positionLocal", "positionMorphed", "positionWorld", "positionView", "normalLocal", "normalWorld", "cameraPosition", "screenUV", "screenSize", "time", "vertexColor", "attribute", "instanceIndex", "vertexIndex", "frontFacing", "sceneDepth", "sceneDepthAt", "depthFade", "viewportSharedTexture", "materialColor", "materialOpacity", "materialEmissive", "audioLevel", "audioSpectrum", "billboarding", "Fn", "select", "If", "Loop", "texture", "textureSize", "textureLoad", "textureLevel", "texture3D", "convertToTexture", "PI", "PI2", "EPSILON", "wgslFn", "instancedArray", "deltaTime", "textureStore", "minFilter", "workgroupArray", "workgroupBarrier", "invocationLocalIndex", "workgroupId", "localId", "atomicAdd", "atomicSub", "atomicMax", "atomicMin", "atomicAnd", "atomicOr", "atomicXor", "atomicStore", "atomicLoad", "objectWorldMatrix", "objectPosition", "objectScale", "objectDirection"],
+        "tsl" => &["float", "vec2", "vec3", "vec4", "color", "int", "mix", "exp2", "cameraViewMatrix", "smoothstep", "step", "clamp", "min", "max", "abs", "floor", "ceil", "fract", "sign", "mod", "negate", "pow", "sqrt", "exp", "log", "sin", "cos", "tan", "atan", "atan2", "length", "distance", "dot", "cross", "normalize", "reflect", "refract", "oneMinus", "saturate", "remap", "remapClamp", "mx_noise_float", "mx_fractal_noise_float", "mx_worley_noise_float", "mx_noise_vec3", "hash", "rand", "oscSine", "oscTriangle", "oscSquare", "oscSawtooth", "uv", "positionLocal", "positionMorphed", "positionWorld", "positionView", "normalLocal", "normalWorld", "cameraPosition", "screenUV", "screenSize", "time", "vertexColor", "attribute", "instanceIndex", "vertexIndex", "frontFacing", "sceneDepth", "sceneDepthAt", "depthFade", "viewportSharedTexture", "materialColor", "materialOpacity", "materialEmissive", "audioLevel", "audioSpectrum", "billboarding", "Fn", "select", "If", "Loop", "texture", "textureSize", "textureLoad", "textureLevel", "texture3D", "convertToTexture", "PI", "PI2", "EPSILON", "wgslFn", "instancedArray", "deltaTime", "textureStore", "minFilter", "workgroupArray", "workgroupBarrier", "invocationLocalIndex", "workgroupId", "localId", "atomicAdd", "atomicSub", "atomicMax", "atomicMin", "atomicAnd", "atomicOr", "atomicXor", "atomicStore", "atomicLoad", "objectWorldMatrix", "objectPosition", "objectScale", "objectDirection"],
         "block-shape" => &["block", "shape"],
         "authoring" => &["define", "tool"],
         "globe" | "planet" | "spherical" => &["configure", "info", "toCartesian", "toSpherical", "elevation", "terrainHeight", "chunk", "chunks", "gravity", "orientation", "navigation", "navigate", "wrap"],
@@ -3942,6 +4044,59 @@ fn json_to_js<'js>(ctx: &Ctx<'js>, value: &Json) -> rquickjs::Result<Value<'js>>
                 object.set(key.as_str(), json_to_js(ctx, value)?)?;
             }
             Ok(object.into_value())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cadence_parses_milliseconds_and_seconds() {
+        assert_eq!(cadence_ms("100ms"), 100.0);
+        assert_eq!(cadence_ms(" 250ms "), 250.0);
+        assert_eq!(cadence_ms("1s"), 1000.0);
+        assert_eq!(cadence_ms("0.5s"), 500.0);
+        assert_eq!(cadence_ms(""), 0.0);
+        assert_eq!(cadence_ms("soon"), 0.0);
+    }
+
+    #[test]
+    fn neon_syndicates_ctx_keys_are_provided() {
+        let keys = prelude_ctx_keys();
+        for key in [
+            "spawn",
+            "uvProjection",
+            "__feelRaw",
+            "__glass",
+            "__safeDestroy",
+            "__soundGun",
+            "__soundQ",
+            "__soundRaw",
+        ] {
+            assert!(keys.contains(key), "ctx.{key} is missing from __make_ctx");
+        }
+    }
+
+    #[test]
+    fn builtin_exports_have_no_duplicates() {
+        for key in [
+            "math", "vec3", "easing", "noise", "path", "ballistics", "physics", "tween", "spline", "nav",
+            "room_routing", "terrain", "voxels", "vibe", "fx", "postfx", "lighting", "water", "env", "three",
+            "tsl", "block-shape", "authoring", "globe",
+        ] {
+            let exports = builtin_exports(key);
+            let unique = exports.iter().collect::<BTreeSet<_>>();
+            assert_eq!(unique.len(), exports.len(), "duplicate export in builtin/{key}");
+        }
+    }
+
+    #[test]
+    fn tsl_builtin_lists_the_names_neon_syndicates_imports() {
+        let exports = builtin_exports("tsl");
+        for name in ["cameraViewMatrix", "exp2", "positionLocal", "vertexColor"] {
+            assert!(exports.contains(&name), "builtin/tsl does not export {name}");
         }
     }
 }
