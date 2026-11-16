@@ -88,7 +88,7 @@ await state.page.screenshot({ path: ${JSON.stringify(path.join(work, 'viewer.png
 const adapter = state.logs.filter((line) => /BrowserWebGpu/.test(line));
 const errors = state.logs.filter((line) => /^error|^pageerror/.test(line));
 await state.page.close();
-JSON.stringify({ ready, gpu, adapter, errors: errors.slice(-10), logCount: state.logs.length });
+console.log(JSON.stringify({ ready, gpu, adapter, errors: errors.slice(-10), logCount: state.logs.length }));
 `;
 
 async function main() {
@@ -122,10 +122,12 @@ async function main() {
             result.error = `Chromium on ${display} did not expose ${versionUrl} within 30 s`;
             return result;
         }
-        session = execFileSync(playwriter, ['session', 'new', '--direct', wsUrl, '--tab-group', 'wasm'], { encoding: 'utf8', timeout: 30000 }).trim().split('\n').pop();
+        const created = execFileSync(playwriter, ['session', 'new', '--direct', wsUrl, '--tab-group', 'wasm'], { encoding: 'utf8', timeout: 30000 });
+        session = /Session (\d+) created/.exec(created)?.[1];
+        if (!session) throw new Error(`no session id in: ${created.trim()}`);
         result.session = session;
-        const output = execFileSync(playwriter, ['-s', session, '-e', snippet], { encoding: 'utf8', timeout: 150000, maxBuffer: 16 * 1024 * 1024 });
-        const line = output.trim().split('\n').reverse().find((text) => text.trim().startsWith('{'));
+        const output = execFileSync(playwriter, ['-s', session, '--timeout', '150000', '-e', snippet], { encoding: 'utf8', timeout: 150000, maxBuffer: 16 * 1024 * 1024 });
+        const line = output.trim().split('\n').reverse().map((text) => text.replace(/^\[log\] /, '').trim()).find((text) => text.startsWith('{'));
         const evidence = JSON.parse(line);
         result.ready = evidence.ready;
         result.navigatorGpu = evidence.gpu.present;
