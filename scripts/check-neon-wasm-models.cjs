@@ -6,19 +6,25 @@ const { withGateWitness } = require('./lib/playwriter-witness.cjs');
 const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
-const cache = path.join(repo, 'target', 'gltf-cache');
+const texture = process.env.NEON_TEXTURE === 'bc7' ? 'bc7' : 'rgba8';
+const cacheDir = texture === 'bc7' ? 'gltf-cache-bc7' : 'gltf-cache';
+const cache = path.join(repo, 'target', cacheDir);
 const witnessDir = path.join(repo, 'target', 'witness');
-const witnessPath = path.join(witnessDir, 'neon-wasm-witness.json');
-const rowsPath = path.join(witnessDir, 'neon-rows.json');
+const witnessPath = path.join(witnessDir, `neon-wasm-witness-${texture}.json`);
+const rowsPath = path.join(witnessDir, `neon-rows-${texture}.json`);
+const shotDir = path.join(witnessDir, `neon-shots-${texture}`);
 const callTimeoutMs = Number(process.env.CALL_TIMEOUT_MS || 1200000);
 
-function snippet(pageBase, models, outPath) {
+function snippet(pageBase, models, outPath, shots) {
     return `
 return await (async () => {
 const fs = require('node:fs');
 const models = ${JSON.stringify(models)};
 const pageBase = ${JSON.stringify(pageBase)};
 const outPath = ${JSON.stringify(outPath)};
+const cacheDir = ${JSON.stringify(cacheDir)};
+const shotDir = ${JSON.stringify(shots)};
+fs.mkdirSync(shotDir, { recursive: true });
 const rows = [];
 const page = await context.newPage();
 page.on('console', (message) => state.logs.push(message.type() + ': ' + message.text() + ' @ ' + (message.location().url || '(no url)')));
@@ -26,7 +32,7 @@ page.on('pageerror', (error) => state.logs.push('pageerror: ' + error.message));
 page.on('response', (response) => { if (response.status() >= 400) state.failures.push({ url: response.url(), status: response.status() }); });
 page.on('requestfailed', (request) => state.failures.push({ url: request.url(), status: 'failed: ' + (request.failure()?.errorText ?? 'unknown') }));
 for (const name of models) {
-  const model = '/target/gltf-cache/' + name;
+  const model = '/target/' + cacheDir + '/' + name;
   state.logs = [];
   state.failures = [];
   const started = Date.now();
@@ -47,8 +53,10 @@ for (const name of models) {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   await new Promise((resolve) => setTimeout(resolve, 1500));
+  const screenshot = shotDir + '/' + name + '.png';
+  await page.screenshot({ path: screenshot }).catch(() => null);
   const resources = await page.evaluate(() => performance.getEntriesByType('resource').map((entry) => ({ name: decodeURIComponent(entry.name), transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize })));
-  const glb = resources.find((entry) => entry.name.endsWith('/target/gltf-cache/' + name));
+  const glb = resources.find((entry) => entry.name.endsWith('/target/' + cacheDir + '/' + name));
   const wasm = resources.filter((entry) => /\.wasm$/.test(entry.name)).map((entry) => ({ name: entry.name.split('/').pop(), transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize }));
   rows.push({
     name,
@@ -62,6 +70,7 @@ for (const name of models) {
     failedRequests: state.failures,
     glb: glb ? { transferSize: glb.transferSize, encodedBodySize: glb.encodedBodySize, decodedBodySize: glb.decodedBodySize } : null,
     wasm,
+    screenshot: fs.existsSync(screenshot) ? screenshot : null,
   });
   fs.writeFileSync(outPath, JSON.stringify(rows));
 }
@@ -96,14 +105,14 @@ async function main() {
     const result = { ok: false, total: names.length, cdn };
     const missing = names.filter((name) => !fs.existsSync(path.join(cache, name)));
     if (missing.length) {
-        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first: ${missing.slice(0, 5).join(', ')}`;
+        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first${texture === 'bc7' ? ' with the bc7 target' : ''}: ${missing.slice(0, 5).join(', ')}`;
         return result;
     }
     fs.mkdirSync(witnessDir, { recursive: true });
     try {
         const { value, browser, gate } = await withGateWitness({ repo, port }, async ({ pageBase, run }) => {
             const started = Date.now();
-            run(snippet(pageBase, names, rowsPath), callTimeoutMs);
+            run(snippet(pageBase, names, rowsPath, shotDir), callTimeoutMs);
             result.wallMs = Date.now() - started;
             return JSON.parse(fs.readFileSync(rowsPath, 'utf8'));
         });
