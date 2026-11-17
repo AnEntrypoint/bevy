@@ -449,3 +449,39 @@ Timing: the longest measured step this round is the wasm release build at 59 s w
 Caveat, unchanged: the neon GLBs use the SHORT normalized tangent form and are not fixed by this change. This fixture only covers `testdata/normal-map`. The wasm build still cannot decode the neon assets, which use meshopt and KTX2.
 
 Process check: the witness server and browser PIDs listed above are gone, nothing listens on port 8092, and no cargo, rustc or wasm-bindgen process is running. Playwriter processes under PID 2296782 belong to a gm-core worker that started at 01:19:54, before this round's witness runs, so they were left running.
+
+## Round 14 Phase A changes
+
+Nothing in Phase A was built, tested or run. Each row is one local commit by lanmower with no trailers.
+
+Gate for this run: gm connected after the dispatcher restart. Run 2026-11-17-00-09-35-1a554e, relay.log `started 2310604:28740314`, `skill://gm/SKILL.md` read, gm tools answered.
+
+Neon models that need decoding. The scan read all 64 GLBs under `/workspace/neon-syndicates/assets/cdn`. 61 need decoding (EXT_meshopt_compression, KHR_texture_basisu or KTX2). The 12 below also use SHORT normalized TANGENT, and all carry meshopt, basisu and KTX2 together. Those 12 cannot load in the wasm viewer, because it has no basis transcoder:
+
+- value.17c7bd864f7f18268fe20172cd1286704b1c555b18e231e818b259c091f2f09b.glb
+- value.212b71b2975cb231665b84b7497be5ed35a01d2d9c2e1465c5e056433976cc12.glb
+- value.23187122d2f90dd03e7e7fe0e934d25c43958afbd123479c83dea47d3664ed31.glb
+- value.260c985144718b8764c86ef6a7b6f6fdb32e07d104aebcadfafe10e86ae846ee.glb
+- value.279b3bbd1aa256bce199b415843ae598ec1e5800a121edcabad594ff33b6f856.glb
+- value.3edb0af0d4d0c70b9abeac56a41817781bdea320d91435f0f99a7e4d6588c296.glb
+- value.600eb5a37029506ef1b65af5c4e4876484e98b9fbd7ec912ba32fe33ea20622f.glb
+- value.970e5de4acda1b16df5bd0f1af737af75ead94b39722ae0eaee2474a428be5b5.glb
+- value.98155df60a8033bcbd60d362fd6051b690da3149ef4b39b5810416929b7ded36.glb
+- value.c6e98cac813bc144e718d109d8d0415afa1a0956c847854f2c9429589c4b4e03.glb
+- value.d056bb42933f2de0008cb52a064446e053072ab7853281d05866236d0c3cbc89.glb
+- value.d50992a799663b0660d89ce9114cb89ea3052e357f8afd743dadf243d4ef7365.glb
+
+Cause. `promote` turns KHR_texture_basisu into a plain KTX2 image reference. Only BasisLZ images were rewritten to RGBA8, so the UASTC images with Zstandard supercompression reached the browser unchanged. The wasm build enables Bevy `ktx2` in the native build but not `basis-universal`, so UASTC KTX2 cannot be transcoded in the browser. The 49 meshopt-only models have no basis images but still need decoding, because Bevy 0.20.1 does not read EXT_meshopt_compression.
+
+| Item | Commit | Change | Phase B witness |
+| --- | --- | --- | --- |
+| 2 Route decoded copies, transcode basis images | 64a7f5a | `src/basisu.rs` renames `transcode_basislz_images` to `transcode_basis_images`, and `is_basislz` to `is_basis_ktx2`. The predicate is now any KTX2 image with vkFormat undefined (basis-encoded: BasisLZ, UASTC, Zstandard or ZLIB supercompressed), and it ignores the supercompression scheme. Images with a real vkFormat are untouched. The unit test is rewritten to check vkFormat. `src/glb.rs` uses the renamed function. | `cargo test --bin bevy-jayzee` passes basis_detection_reads_the_vk_format and images_that_are_not_basis_keep_their_buffer_view. A decode of the 12 names produces no image with a basis vkFormat. |
+| 2 Keep the cache across runs | ca8cba3 | `src/gltf_check.rs` no longer calls `remove_dir_all` on `target/gltf-cache`. Before, each `gltf-check <dir>` deleted every other directory's decoded copies, so `normal-map.glb` was lost after the neon run and the reverse. | After `gltf-check` on the neon directory and on `testdata/normal-map`, both sets of copies exist in `target/gltf-cache`. |
+| 2 Wasm KTX2 loader | 66ab7dd | `wasm-viewer/Cargo.toml` enables Bevy `ktx2`. `basis-universal` stays off, so the browser build needs no basis transcoder, because the decoded copies hold no basis images. Cargo.lock is not yet updated for `ktx2`; the Phase B `cargo fetch` does that before the locked wasm build. | The wasm release build passes with `--locked` after the lock is updated. |
+| 2 Documentation | 15ab1ef | `AGENTS.md` now describes the basis transcoding rule and the cache rule. | none |
+
+Phase B witnesses still to run:
+- `gltf-check` on `/workspace/neon-syndicates/assets/cdn`: all 64 decoded, 0 failures, each of the 12 has no basis-encoded image afterwards.
+- The wasm viewer on each of the 64 decoded copies, at `?model=target/gltf-cache/<name>`: `modelState loaded`, no console error, no failed request, no TANGENT warning, for every name.
+- Neon `main` on the native viewer: `objects 51 = expectedObjects 51`.
+- The unit suite, once after the build.
