@@ -76,7 +76,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         .cloned()
         .ok_or_else(|| format!("{directory}: no place {name}"))?;
     let runner = world_runner(directory, &name, &tree)?;
-    let title = format!("bevy-jayzee viewer — {name}");
+    let title = format!("bevy-jayzee viewer - {name}");
     let mut app = App::new();
     let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/viewer-cache");
     app.add_plugins(DefaultPlugins
