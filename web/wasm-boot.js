@@ -29,15 +29,21 @@ if (!hasWebGpu) {
   statusEl.textContent = 'navigator.gpu unavailable: fallback status shown';
   showError('navigator.gpu unavailable', 'Chromium requires WebGPU; try --enable-unsafe-webgpu --enable-features=Vulkan,UseSkiaRenderer --use-angle=vulkan');
 } else {
-  statusEl.textContent = 'WebGPU detected; loading Bevy WASM…';
-  try {
-    const module = await import('./bevy-jayzee-wasm.js');
-    await module.default();
-    if (typeof module.start !== 'function') throw new Error('wasm-bindgen glue did not export start()');
-    module.start();
-    console.log('[bevy-wasm] start() returned');
-  } catch (error) {
-    showError('wasm boot failed', error);
+  statusEl.textContent = 'WebGPU detected; checking for a GPU adapter…';
+  const adapter = await navigator.gpu.requestAdapter().catch(() => null);
+  if (!adapter) {
+    showError('no WebGPU adapter', 'navigator.gpu.requestAdapter returned no adapter, so Bevy cannot start its renderer (it would panic with "Unable to find a GPU"). Check the browser GPU settings or the adapter selector in the URL, then reload.');
+  } else {
+    statusEl.textContent = 'WebGPU detected; loading Bevy WASM…';
+    try {
+      const module = await import('./bevy-jayzee-wasm.js');
+      await module.default();
+      if (typeof module.start !== 'function') throw new Error('wasm-bindgen glue did not export start()');
+      module.start();
+      console.log('[bevy-wasm] start() returned');
+    } catch (error) {
+      showError('wasm boot failed', error);
+    }
   }
 }
 
