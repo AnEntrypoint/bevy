@@ -21,6 +21,7 @@ serde_yaml = "0.9"
 noise = "0.9"
 png = "0.18"
 rquickjs = { version = "0.14", features = ["loader", "macro"] }
+ruzstd = "0.9"
 
 [build-dependencies]
 cc = "1.11"

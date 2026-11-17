@@ -69,7 +69,11 @@ const KTX2_IDENTIFIER: [u8; 12] = [0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xB
 const KTX2_HEADER_LEN: usize = 80;
 const KTX2_LEVEL_ENTRY_LEN: usize = 24;
 const KTX2_VK_FORMAT_OFFSET: usize = 12;
+const KTX2_LEVEL_COUNT_OFFSET: usize = 40;
+const KTX2_SUPERCOMPRESSION_OFFSET: usize = 44;
+const KTX2_SGD_LENGTH_OFFSET: usize = 72;
 const VK_FORMAT_UNDEFINED: u32 = 0;
+const SUPERCOMPRESSION_ZSTD: u32 = 2;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 
 unsafe extern "C" {
@@ -157,7 +161,9 @@ fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
         .map(u32::from_le_bytes)
 }
 
-pub fn transcode_basis(bytes: &[u8]) -> Result<Vec<u8>, String> {
+pub fn transcode_basis(input: &[u8]) -> Result<Vec<u8>, String> {
+    let inflated = inflate_zstd_levels(input)?;
+    let bytes = inflated.as_deref().unwrap_or(input);
     let size = u32::try_from(bytes.len()).map_err(|_| "KTX2 texture is larger than 4 GiB".to_string())?;
     let (mut width, mut height, mut levels, mut layers, mut faces) = (0u32, 0u32, 0u32, 0u32, 0u32);
     let status = unsafe {
@@ -184,6 +190,67 @@ pub fn transcode_basis(bytes: &[u8]) -> Result<Vec<u8>, String> {
         pixels.push(buffer);
     }
     Ok(rgba8_ktx2_bytes(width, height, &pixels))
+}
+
+fn inflate_zstd_levels(bytes: &[u8]) -> Result<Option<Vec<u8>>, String> {
+    if read_u32(bytes, KTX2_SUPERCOMPRESSION_OFFSET) != Some(SUPERCOMPRESSION_ZSTD) {
+        return Ok(None);
+    }
+    if read_u64(bytes, KTX2_SGD_LENGTH_OFFSET) != Some(0) {
+        return Err(String::from("Zstandard KTX2 with supercompression global data is not supported"));
+    }
+    let levels = read_u32(bytes, KTX2_LEVEL_COUNT_OFFSET).ok_or_else(|| String::from("KTX2 header is truncated"))?.max(1) as usize;
+    let index_end = KTX2_HEADER_LEN + KTX2_LEVEL_ENTRY_LEN * levels;
+    let mut entries = Vec::with_capacity(levels);
+    for level in 0..levels {
+        let at = KTX2_HEADER_LEN + KTX2_LEVEL_ENTRY_LEN * level;
+        let truncated = || String::from("KTX2 level index is truncated");
+        let offset = read_u64(bytes, at).ok_or_else(truncated)? as usize;
+        let length = read_u64(bytes, at + 8).ok_or_else(truncated)? as usize;
+        let uncompressed = read_u64(bytes, at + 16).ok_or_else(truncated)? as usize;
+        entries.push((offset, length, uncompressed));
+    }
+    let first = entries.iter().map(|entry| entry.0).min().unwrap_or(index_end).max(index_end);
+    let middle = bytes.get(index_end..first).ok_or_else(|| String::from("KTX2 level data starts inside the level index"))?;
+    let mut plain = Vec::with_capacity(levels);
+    for (level, &(offset, length, uncompressed)) in entries.iter().enumerate() {
+        let source = bytes.get(offset..offset + length).ok_or_else(|| format!("Zstandard level {level} runs past the file"))?;
+        let mut output = vec![0u8; uncompressed];
+        let written = ruzstd::decoding::FrameDecoder::new()
+            .decode_all(source, &mut output)
+            .map_err(|error| format!("Zstandard level {level}: {error}"))?;
+        if written != uncompressed {
+            return Err(format!("Zstandard level {level} decoded to {written} bytes, expected {uncompressed}"));
+        }
+        plain.push(output);
+    }
+    let mut cursor = index_end + middle.len();
+    let mut offsets = Vec::with_capacity(levels);
+    for level in &plain {
+        cursor = cursor.next_multiple_of(8);
+        offsets.push(cursor);
+        cursor += level.len();
+    }
+    let mut out = bytes[..KTX2_HEADER_LEN].to_vec();
+    out[KTX2_SUPERCOMPRESSION_OFFSET..KTX2_SUPERCOMPRESSION_OFFSET + 4].copy_from_slice(&0u32.to_le_bytes());
+    for (offset, data) in offsets.iter().zip(&plain) {
+        out.extend_from_slice(&(*offset as u64).to_le_bytes());
+        out.extend_from_slice(&(data.len() as u64).to_le_bytes());
+        out.extend_from_slice(&(data.len() as u64).to_le_bytes());
+    }
+    out.extend_from_slice(middle);
+    for (offset, data) in offsets.iter().zip(&plain) {
+        out.resize(*offset, 0);
+        out.extend_from_slice(data);
+    }
+    Ok(Some(out))
+}
+
+fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
+    bytes
+        .get(offset..offset + 8)
+        .and_then(|slice| <[u8; 8]>::try_from(slice).ok())
+        .map(u64::from_le_bytes)
 }
 
 pub fn rgba8_ktx2_bytes(width: u32, height: u32, levels: &[Vec<u8>]) -> Vec<u8> {
@@ -275,6 +342,49 @@ mod tests {
         assert_eq!(&bytes[level0..level0 + 32], &[7u8; 32]);
         assert_eq!(&bytes[level1..level1 + 8], &[9u8; 8]);
         assert!(level1 < level0);
+    }
+
+    fn zstd_raw_frame(data: &[u8]) -> Vec<u8> {
+        let mut frame = vec![0x28, 0xB5, 0x2F, 0xFD, 0x20, data.len() as u8];
+        frame.extend_from_slice(&((((data.len() as u32) << 3) | 1).to_le_bytes())[..3]);
+        frame.extend_from_slice(data);
+        frame
+    }
+
+    #[test]
+    fn zstd_levels_are_inflated_and_the_scheme_is_cleared() {
+        let levels: [Vec<u8>; 2] = [(0u8..64).collect(), vec![7u8; 16]];
+        let mut file = vec![0u8; 80];
+        file[..12].copy_from_slice(&[0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n']);
+        file[40..44].copy_from_slice(&2u32.to_le_bytes());
+        file[44..48].copy_from_slice(&2u32.to_le_bytes());
+        let mut cursor = 80 + 24 * levels.len();
+        let mut index = Vec::new();
+        let mut data = Vec::new();
+        for level in &levels {
+            let frame = zstd_raw_frame(level);
+            let frame_len = frame.len();
+            cursor = cursor.next_multiple_of(8);
+            index.extend_from_slice(&(cursor as u64).to_le_bytes());
+            index.extend_from_slice(&(frame_len as u64).to_le_bytes());
+            index.extend_from_slice(&(level.len() as u64).to_le_bytes());
+            data.push((cursor, frame));
+            cursor += frame_len;
+        }
+        file.extend_from_slice(&index);
+        for (offset, frame) in &data {
+            file.resize(*offset, 0);
+            file.extend_from_slice(frame);
+        }
+        let inflated = super::inflate_zstd_levels(&file).expect("inflates").expect("zstd scheme");
+        assert_eq!(super::read_u32(&inflated, 44), Some(0));
+        for (position, level) in levels.iter().enumerate() {
+            let at = 80 + 24 * position;
+            let offset = super::read_u64(&inflated, at).expect("offset") as usize;
+            let length = super::read_u64(&inflated, at + 8).expect("length") as usize;
+            assert_eq!(&inflated[offset..offset + length], level.as_slice());
+        }
+        assert!(super::inflate_zstd_levels(&inflated).expect("plain").is_none());
     }
 
     #[test]
