@@ -1510,3 +1510,24 @@ Screenshots: docs/ui-layout/page-before-1024x768.png, page-after-1024x768.png, p
 
 - scripts/check-inspector.cjs with CDP_URL=http://127.0.0.1:10232: exit 0, ok true, failures []. Output screenshot: docs/ui-layout/check-inspector-r31.png.
 - scripts/check-hud-overlap.sh with DISPLAY=:1.0: exit 0, uiLabels 23, uiLabelOverlaps 0.
+
+## Round 32 Phase A: slack in the mirror batching bound
+
+Owner decision: allow slack in the mirror batching bound. The floor (MIRROR_SLOTS 1, MIRROR_PROXY 0) fails a new object kind that puts a second material on an existing shape. The slack must be measured, and it must not exceed what one second material needs.
+
+The mechanism, read from the code and not yet measured: each primitive takes its material from `palette[palette_slot(desc.kind)]`, a hash of the primitive kind name modulo 4 (src/viewer_world.rs:422), and its mesh from `primitive_shape`, which for any kind that is not sphere, capsule or cylinder is the cuboid of its size (src/viewer_world.rs:353). An unknown primitive name takes the spec's default arm with size 1 (src/spec.rs:311), so it shares the unit cuboid with `cube` at size 1. The palette slots, from the same hash: `cube` 1, `boxy` 2, `pad` 3. So:
+
+- Case A, a second material on one shape: `cube` x3 and `boxy` x1 (`testdata/spec-world/places/batch-second-material`). Expected by the formula: one shape, two batch keys. Floor bound 1, so it fails; with one slack, bound 2, so it passes.
+- Case B, one shape split across three materials: `cube` x2, `boxy` x2 and `pad` x2 (`testdata/spec-world/places/batch-split-shape`). Expected: one shape, three keys. Floor bound 1 and slack-1 bound 2, so it fails at both.
+
+Slack value: 1. A second material on an existing shape adds exactly one (shape, material) pair, so one extra key is the most that case needs. A larger slack would let case B pass.
+
+Changes, each a local commit by lanmower with no trailers; no build, test, gate or witness ran in Phase A:
+
+| Change | Commit | Files |
+| --- | --- | --- |
+| `scripts/check-viewer-batching.cjs`: `slack` = `MIRROR_SLACK` (default 1) added to the bound; the bound is `shapesCreated x MIRROR_SLOTS + MIRROR_PROXY + MIRROR_SLACK`; `slack` is reported at the top level and in each result | b68be2f | `scripts/check-viewer-batching.cjs` |
+| Two batching case places under the spec-world fixture: `batch-second-material` (case A) and `batch-split-shape` (case B), each with `config.yaml` (mode 3d, gravity) and `cells/x0z0.scene` (static cuboid objects) | 40e2511 | `testdata/spec-world/places/batch-second-material/`, `testdata/spec-world/places/batch-split-shape/` |
+| AGENTS.md: the bound line states `MIRROR_SLACK` 1 and the one-extra-pair meaning | (this round, see the Phase A commit list) | `AGENTS.md` |
+
+Phase B plan: run `target/debug/bevy-jayzee viewer` on `testdata/spec-world` for `batch-second-material`, `batch-split-shape`, `test` (static), `main` (neon mirror) and `hud-fixture` `fixture`; each writes `web/status-<place>.json`; run `scripts/check-viewer-batching.cjs` on the five files and quote the bound, the keys and the result of each row. The existing static, mirror and fixture rows must stay green.
