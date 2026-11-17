@@ -1434,3 +1434,34 @@ Changes, in web/wasm-index.html (each committed as lanmower, no trailers):
 - .tabs: overflow-x auto removed, replaced with flex-wrap: wrap, so the tab buttons wrap instead of scrolling sideways.
 
 Not changed: .bucket, .spark, .metrics and the inspector body. Phase B measures them and records any defect.
+
+## Round 30 Phase B: strip and tabs fit the panel, witnessed
+
+Viewer: http://127.0.0.1:8092/web/wasm/index.html?inspector=1&still=1 through gm's playwriter, 20 s wait after each load, the inspector open. scrollWidth and clientWidth are read from each element. Before values come from the old rules injected over the new page (the strip rule min-width 720px with nowrap, the tab rule overflow-x auto with nowrap), not from the old file.
+
+Correction to the Round 29 report: at 1024x768 the metric strip did not scroll. Its scrollWidth and clientWidth were both 794. The element that scrolled was the tab row (scrollWidth 1244, clientWidth 987), and four tabs (Physics, Vibes, Parameters, Diagnostic) sat outside the panel.
+
+### Numbers (CSS px)
+
+| Size | Element | Before scrollWidth / clientWidth | After scrollWidth / clientWidth |
+| --- | --- | --- | --- |
+| 1440x900 | #inspector-strip | 1210 / 1210 | 1210 / 1210 |
+| 1440x900 | #inspector-tabs | 1403 / 1403 | 1403 / 1403 |
+| 1440x900 | #render-inspector height | 405.2 | 420.2 (strip wraps SIM and LAUNCH to a second row) |
+| 1024x768 | #inspector-strip | 794 / 794 | 794 / 794 |
+| 1024x768 | #inspector-tabs | 1244 / 987 (257 px overflow) | 987 / 987 |
+| 1024x768 | #render-inspector height | 468.1 | 515.1 (tabs wrap to two rows) |
+
+Buckets: 7 of 7 inside the panel at both sizes, before and after. None clipped at either size (each bucket scrollWidth equals clientWidth). Tabs outside the panel: before at 1024x768 four (Physics, Vibes, Parameters, Diagnostic); after none at either size. Bucket width is at least 82 px, so each bucket is readable.
+
+Screenshots: docs/ui-layout/strip-before-1440x900.png, strip-after-1440x900.png, strip-before-1024x768.png, strip-after-1024x768.png.
+
+### Other witnesses
+
+- scripts/check-inspector.cjs with CDP_URL=http://127.0.0.1:10232: exit 0, ok true, failures []. Output screenshot: docs/ui-layout/check-inspector-r30.png.
+- scripts/check-hud-overlap.sh with DISPLAY=:1.0: exit 0, uiLabels 23, uiLabelOverlaps 0.
+
+### Open
+
+- Page-level horizontal overflow at 1024x768, outside the panel: document scrollWidth 1048 against clientWidth 1009. main is min(100vw, 1280px) wide plus 12 px padding each side (1048 px), and the stage is 1026 px. It predates this round and is not fixed here. A one-line fix would be box-sizing: border-box on main and the stage, to be done in its own round.
+- The inspector body (max-height 42vh) now scrolls vertically at 1024x768, because the wrapped tabs make the panel taller. That is the existing max-height rule working as designed.
