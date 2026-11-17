@@ -1381,3 +1381,11 @@ Lowest label: 6.13:1. Before the round it was 6.35:1 (#7f9dbb on #091827, metric
 ### Processes
 
 Stopped by PID at the end of the round, as trees: the playwriter browser (chromium 2576749 and its children, including the two crashpad handlers 2576766 and 2576768), its gate and project processes (2576690, 2576681 and 2576697), and the serve-wasm job (2576659, 2576663, 2576664). No viewer process from check-hud-overlap remained.
+
+## Round 29 Phase A: inspector panel below the header
+
+Defect: the Render Inspector was position: fixed (top 10, left 10, right 10, z-index 20), so with the panel open it covered the page header, including the "Inspector: I" toggle and the app-status pill at 1440x900.
+
+Change, in web/wasm-index.html, the #render-inspector rule (commit on main, as lanmower, no trailers): position: fixed, top, left, right and z-index are removed, and margin: 10px 10px 0 places the panel in normal flow below the header. The open panel now pushes the stage down instead of covering the header. No z-index was changed to hide anything.
+
+Checked by reading only: no script or page script depends on the panel being fixed (grep of scripts/, web/*.js, web/*.html, src/ for render-inspector, inspector-toggle and app-status). Phase B witnesses the layout in the browser at 1440x900 and 1024x768.
