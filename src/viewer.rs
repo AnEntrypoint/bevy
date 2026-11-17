@@ -2,12 +2,12 @@ use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTime
 use bevy::prelude::*;
 use bevy::ui::{ComputedNode, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowResolution};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
-use crate::ui_html::{overlapping_pairs, uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
+use crate::ui_html::{overlapping_pairs, uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus, WorldAnchor};
 use crate::{script, viewer_world, world};
 
 #[derive(Resource, Clone, Debug)]
@@ -45,6 +45,79 @@ pub struct ViewerScene {
     pub terrains: usize,
     pub lights: usize,
     pub camera: Vec3,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AnchorPlacement {
+    Placed(Vec2),
+    Unresolved,
+    Behind,
+    Offscreen,
+}
+
+pub fn classify_anchor(view_depth: f32, point: Option<Vec2>, viewport: Vec2) -> AnchorPlacement {
+    match point {
+        _ if view_depth >= 0.0 => AnchorPlacement::Behind,
+        None => AnchorPlacement::Behind,
+        Some(point) if (0.0..=viewport.x).contains(&point.x) && (0.0..=viewport.y).contains(&point.y) => AnchorPlacement::Placed(point),
+        Some(_) => AnchorPlacement::Offscreen,
+    }
+}
+
+#[derive(Resource, Clone, Debug, Default)]
+pub struct AnchorReport {
+    pub total: usize,
+    pub placed: Vec<(String, Vec2)>,
+    pub unresolved: Vec<String>,
+    pub behind: usize,
+    pub offscreen: usize,
+    pub viewport: Vec2,
+}
+
+fn place_world_anchors(
+    cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    objects: Query<(&ViewerObject, &GlobalTransform)>,
+    mut anchors: Query<(&WorldAnchor, &mut Node, &mut Visibility, &ComputedNode)>,
+    mut report: ResMut<AnchorReport>,
+) {
+    let Some((camera, camera_transform)) = cameras.iter().find(|(camera, _)| camera.is_active) else {
+        return;
+    };
+    let viewport = camera.logical_viewport_size().unwrap_or(Vec2::ZERO);
+    let positions = objects
+        .iter()
+        .map(|(object, transform)| (object.id.as_str(), transform.translation()))
+        .collect::<HashMap<_, _>>();
+    let view = camera_transform.affine().inverse();
+    let mut next = AnchorReport { viewport, ..default() };
+    for (anchor, mut node, mut visibility, computed) in &mut anchors {
+        next.total += 1;
+        let placement = match positions.get(anchor.id.as_str()) {
+            None => AnchorPlacement::Unresolved,
+            Some(position) => {
+                let world = *position + anchor.offset;
+                classify_anchor(view.transform_point3(world).z, camera.world_to_viewport(camera_transform, world).ok(), viewport)
+            }
+        };
+        match placement {
+            AnchorPlacement::Placed(point) => {
+                let half = computed.size * computed.inverse_scale_factor * 0.5;
+                node.left = Val::Px(point.x - half.x);
+                node.top = Val::Px(point.y - half.y);
+                *visibility = Visibility::Inherited;
+                next.placed.push((anchor.id.clone(), point));
+            }
+            other => {
+                *visibility = Visibility::Hidden;
+                match other {
+                    AnchorPlacement::Unresolved => next.unresolved.push(anchor.id.clone()),
+                    AnchorPlacement::Behind => next.behind += 1,
+                    _ => next.offscreen += 1,
+                }
+            }
+        }
+    }
+    *report = next;
 }
 
 #[derive(Resource, Clone, Debug, Default)]
@@ -134,7 +207,8 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     .init_resource::<HtmlUiSource>()
     .add_plugins(HtmlUiPlugin)
     .add_systems(Startup, spawn_viewer)
-    .add_systems(Update, (update_overlay, primary_window_title, write_browser_report));
+    .init_resource::<AnchorReport>()
+    .add_systems(Update, (update_overlay, primary_window_title, place_world_anchors, write_browser_report.after(place_world_anchors)));
     if let Some(globe) = place_def.config.extra.get("globe") {
         app.insert_resource(crate::globe::GlobeWorld::from_value(Some(globe)));
         crate::globe::register(&mut app);
@@ -304,7 +378,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform)>, windows: Query<&Window, With<PrimaryWindow>>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform, &InheritedVisibility)>, windows: Query<&Window, With<PrimaryWindow>>, anchors: Res<AnchorReport>) {
     if report.path.is_empty() {
         return;
     }
@@ -312,8 +386,8 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     ids.sort();
     let boxes = labels
         .iter()
-        .filter(|(text, node, _)| !text.0.is_empty() && node.size.x > 0.0 && node.size.y > 0.0)
-        .map(|(text, node, transform)| {
+        .filter(|(text, node, _, visible)| visible.get() && !text.0.is_empty() && node.size.x > 0.0 && node.size.y > 0.0)
+        .map(|(text, node, transform, _)| {
             let center = transform.translation;
             let half = node.size * 0.5;
             (text.0.clone(), [center.x - half.x, center.y - half.y, center.x + half.x, center.y + half.y])
@@ -379,10 +453,35 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     value["uiWindowWidth"] = serde_json::json!(window_width);
     value["uiFullWidthLabels"] = serde_json::json!(full_width);
     value["uiLabelBoxes"] = serde_json::json!(label_boxes);
+    value["uiAnchorsInScene"] = serde_json::json!(ui.anchors);
+    value["uiAnchorsSeen"] = serde_json::json!(anchors.total);
+    value["uiAnchorsPlaced"] = serde_json::json!(anchors.placed.len());
+    value["uiAnchorsUnresolved"] = serde_json::json!(anchors.unresolved);
+    value["uiAnchorsBehind"] = serde_json::json!(anchors.behind);
+    value["uiAnchorsOffscreen"] = serde_json::json!(anchors.offscreen);
+    value["uiAnchorViewport"] = serde_json::json!([anchors.viewport.x, anchors.viewport.y]);
+    value["uiAnchorPositions"] = serde_json::json!(anchors.placed.iter().map(|(id, point)| serde_json::json!({ "id": id, "x": point.x, "y": point.y })).collect::<Vec<_>>());
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
 }
 
 pub fn browser_report_path(_directory: &str, place: Option<&str>) -> String {
     let name = place.unwrap_or("world");
     format!("web/status-{}.json", name.replace(['/', '\\'], "-"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AnchorPlacement, classify_anchor};
+    use bevy::prelude::Vec2;
+
+    #[test]
+    fn anchors_are_placed_only_in_front_of_the_camera_and_inside_the_viewport() {
+        let viewport = Vec2::new(800.0, 600.0);
+        assert_eq!(classify_anchor(-5.0, Some(Vec2::new(10.0, 20.0)), viewport), AnchorPlacement::Placed(Vec2::new(10.0, 20.0)));
+        assert_eq!(classify_anchor(-5.0, Some(Vec2::new(800.0, 600.0)), viewport), AnchorPlacement::Placed(Vec2::new(800.0, 600.0)));
+        assert_eq!(classify_anchor(2.0, Some(Vec2::new(10.0, 20.0)), viewport), AnchorPlacement::Behind);
+        assert_eq!(classify_anchor(-5.0, None, viewport), AnchorPlacement::Behind);
+        assert_eq!(classify_anchor(-5.0, Some(Vec2::new(-1.0, 20.0)), viewport), AnchorPlacement::Offscreen);
+        assert_eq!(classify_anchor(-5.0, Some(Vec2::new(10.0, 601.0)), viewport), AnchorPlacement::Offscreen);
+    }
 }

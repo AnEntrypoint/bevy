@@ -31,6 +31,25 @@ pub struct HtmlUiStatus {
     pub nodes: usize,
     pub warnings: Vec<String>,
     pub uncovered: usize,
+    pub anchors: usize,
+}
+
+#[derive(Component, Clone, Debug, PartialEq)]
+pub struct WorldAnchor {
+    pub id: String,
+    pub offset: Vec3,
+}
+
+fn anchor_offset(value: Option<&str>) -> Vec3 {
+    let parts = value
+        .unwrap_or_default()
+        .split_whitespace()
+        .filter_map(|part| part.parse::<f32>().ok())
+        .collect::<Vec<_>>();
+    match parts.as_slice() {
+        [x, y, z] => Vec3::new(*x, *y, *z),
+        _ => Vec3::ZERO,
+    }
 }
 
 pub struct HtmlUiPlugin;
@@ -64,6 +83,7 @@ fn sync_html_ui(
     status.nodes = built.spec.count();
     status.warnings = built.warnings;
     status.uncovered = built.spec.uncovered_glyphs();
+    status.anchors = built.spec.anchors();
     let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
 }
@@ -80,6 +100,13 @@ impl UiSpec {
         match self {
             UiSpec::Box { children, .. } => 1 + children.iter().map(UiSpec::count).sum::<usize>(),
             UiSpec::Text { .. } | UiSpec::Shape { .. } => 1,
+        }
+    }
+
+    pub fn anchors(&self) -> usize {
+        match self {
+            UiSpec::Box { style, children } => usize::from(style.anchor.is_some()) + children.iter().map(UiSpec::anchors).sum::<usize>(),
+            _ => 0,
         }
     }
 
@@ -105,6 +132,7 @@ pub struct BoxStyle {
     inset: Option<[Val; 4]>,
     align_self: AlignSelf,
     background: Option<Color>,
+    anchor: Option<WorldAnchor>,
 }
 
 impl BoxStyle {
@@ -121,6 +149,7 @@ impl BoxStyle {
             inset: Some([Val::Px(0.0), Val::Px(0.0), Val::Px(0.0), Val::Px(0.0)]),
             align_self: AlignSelf::Auto,
             background: None,
+            anchor: None,
         }
     }
 
@@ -186,6 +215,9 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 let mut entity = commands.spawn(style.node());
                 if let Some(background) = style.background {
                     entity.insert(BackgroundColor(background));
+                }
+                if let Some(anchor) = &style.anchor {
+                    entity.insert((anchor.clone(), Visibility::Hidden));
                 }
                 entity.id()
             };
@@ -890,6 +922,7 @@ fn box_style(scope: &Scope) -> BoxStyle {
         inset,
         align_self,
         background,
+        anchor: None,
     }
 }
 
@@ -1442,10 +1475,6 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     run.push(BREAK);
                     continue;
                 }
-                if attr(attrs, "data-world-anchor").is_some() {
-                    *dropped.entry(format!("{tag} data-world-anchor")).or_insert(0) += 1;
-                    continue;
-                }
                 path.push(Elem::new(tag, attrs));
                 let props = cascade(path, rules, attr(attrs, "style").unwrap_or(""));
                 let scope = Scope::new(props, inherit);
@@ -1453,7 +1482,7 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     path.pop();
                     continue;
                 }
-                if scope.props.is_empty() && INLINE.contains(&tag.as_str()) {
+                if scope.props.is_empty() && INLINE.contains(&tag.as_str()) && attr(attrs, "data-world-anchor").is_none() {
                     for spec in convert(children, path, &scope.inherit, rules, dropped) {
                         match spec {
                             UiSpec::Text { text, .. } => run.push_str(&text),
@@ -1466,6 +1495,10 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                 } else {
                     flush_run(&mut run, &mut out, inherit);
                     let mut style = box_style(&scope);
+                    if let Some(id) = attr(attrs, "data-world-anchor") {
+                        style.anchor = Some(WorldAnchor { id: id.to_string(), offset: anchor_offset(attr(attrs, "data-anchor-offset")) });
+                        style.inset = Some([Val::Px(0.0), Val::Auto, Val::Auto, Val::Px(0.0)]);
+                    }
                     let inner = if tag == "svg" {
                         fit_svg(&mut style, attrs);
                         let scope = SvgScope::new(children);
@@ -1558,10 +1591,16 @@ mod tests {
     }
 
     #[test]
-    fn world_anchored_elements_are_dropped_with_a_warning() {
-        let built = build(r#"<div data-world-anchor="district-a" data-anchor-offset="0 1 0"><div>tag</div></div><div>y</div>"#);
-        assert_eq!(built.warnings.len(), 1);
-        assert!(built.warnings[0].contains("data-world-anchor"));
+    fn world_anchored_elements_become_anchored_absolute_boxes() {
+        let built = build(r#"<div data-world-anchor="district-a" data-anchor-offset="0 0.4 0"><div>tag</div></div><div data-world-anchor="foe"><b>x</b></div><div>y</div>"#);
+        assert!(built.warnings.is_empty());
+        assert_eq!(built.spec.anchors(), 2);
+        let mut styles = Vec::new();
+        box_styles(&built.spec, &mut styles);
+        let anchored = styles.iter().filter_map(|style| style.anchor.clone().map(|anchor| (anchor, style.inset.clone()))).collect::<Vec<_>>();
+        assert_eq!(anchored[0].0, WorldAnchor { id: "district-a".to_string(), offset: Vec3::new(0.0, 0.4, 0.0) });
+        assert_eq!(anchored[1].0.offset, Vec3::ZERO);
+        assert!(anchored.iter().all(|(_, inset)| matches!(inset, Some([Val::Px(_), Val::Auto, Val::Auto, Val::Px(_)]))));
     }
 
     #[test]
