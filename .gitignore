@@ -5,3 +5,4 @@
 /web/status.json
 /web/status-test.json
 .playwriter/
+/web/status-*.json
