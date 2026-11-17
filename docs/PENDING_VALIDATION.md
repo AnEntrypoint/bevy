@@ -1531,3 +1531,39 @@ Changes, each a local commit by lanmower with no trailers; no build, test, gate 
 | AGENTS.md: the bound line states `MIRROR_SLACK` 1 and the one-extra-pair meaning | 421ade2, the last commit of Round 32 Phase A (it also carries this entry) | `AGENTS.md` |
 
 Phase B plan: run `target/debug/bevy-jayzee viewer` on `testdata/spec-world` for `batch-second-material`, `batch-split-shape`, `test` (static), `main` (neon mirror) and `hud-fixture` `fixture`; each writes `web/status-<place>.json`; run `scripts/check-viewer-batching.cjs` on the five files and quote the bound, the keys and the result of each row. The existing static, mirror and fixture rows must stay green.
+
+## Round 32 Phase B: slack in the mirror batching bound, witnessed
+
+Build: none. The Rust source last changed before the dev binary `target/debug/bevy-jayzee` (built 13:43:15, the last commit touching `src/` is 13:43:30 and carries no later source edit), so no cargo ran. Memory at the start: 4.7 GB available, 14 GB of swap free.
+
+Slack value: MIRROR_SLACK = 1, a global term. Measured reason: each case differs from the floor by whole (shape, material) pairs. The second-material case has 3 mirror keys on 2 shapes, one pair above the floor. The split-shape case has 4 keys on 2 shapes, two pairs above. A slack of 1 admits the one pair and rejects the second. The three existing rows have no pair above the floor, so the slack changes none of them. A slack of 2 would let split-shape pass. The slack is global, not per shape, so two shapes each with a second material would be two pairs and would fail.
+
+Viewer runs (`target/debug/bevy-jayzee viewer <world> <place>`, DISPLAY :1.0, each under `timeout 60`, rc 124 on each, the expected timeout, status written before it):
+
+| Place | World | Status file |
+| --- | --- | --- |
+| batch-second-material (case A) | testdata/spec-world | web/status-batch-second-material.json |
+| batch-split-shape (case B) | testdata/spec-world | web/status-batch-split-shape.json |
+| test (static) | testdata/spec-world | web/status-test.json |
+| main (mirror) | /workspace/neon-syndicates/world | web/status-main.json |
+| fixture (fixture) | testdata/hud-fixture | web/status-fixture.json |
+
+The `local-player` marker is in every place as a second shape with one material (a sphere), so each status counts it. That is why case A has 2 shapes, not 1.
+
+Results, `node scripts/check-viewer-batching.cjs` (default slack 1) and with MIRROR_SLACK=0 (the old floor):
+
+| Row | shapesCreated | objectDraws / objectBatchKeys | mirrorBatchKeys | bound, slack 0 / slack 1 | mirrorsWithinBound, slack 0 / slack 1 | objectsBatched | meshesShared | ok, slack 0 / slack 1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Case A, batch-second-material | 2 | 5 / 3 | 3 | 2 / 3 | false / true | true | true | false / true |
+| Case B, batch-split-shape | 2 | 7 / 4 | 4 | 2 / 3 | false / false | true | true | false / false |
+| Static, test | 10 | 8 / 8 | 8 | 10 / 11 | true / true | true | true | true / true |
+| Mirror, main | 2 | 42 / 3 | 2 | 2 / 3 | true / true | true | true | true / true |
+| Fixture, fixture | 1 | 6 / 1 | 1 | 1 / 2 | true / true | true | true | true / true |
+
+The checker on the three existing rows alone (test, main, fixture) at slack 1: exit 0, `ok` true, `slack` 1. The checker on all five files at slack 1: exit 1, and the only failing row is case B, which is the broken-sharing case that must fail.
+
+Witness outcome: case A passes at the slack and fails at the floor. Case B fails at both. The three existing rows pass at both. The bound is the floor plus one (shapes x 1 + 0 + 1), so it is not raised above what one second material needs.
+
+Broken-sharing scope: case B is a shape split across three palette slots (material sharing broken). The mesh-sharing check (`meshesShared`) is a separate check and was not re-witnessed here, because no case in this round breaks mesh sharing.
+
+Processes: each viewer ended on its `timeout 60`; no viewer remains (checked); no browser or server was started in this round.
