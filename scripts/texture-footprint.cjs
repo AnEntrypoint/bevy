@@ -61,7 +61,7 @@ function footprint(models, target) {
     };
 }
 
-function judge(format, spec, models) {
+function judge(format, spec, models, names) {
     const fp = footprint(models, format);
     const witness = witnessSummary(spec.witness);
     const reference = witnessSummary(spec.reference);
@@ -69,7 +69,7 @@ function judge(format, spec, models) {
     const texel = spec.texel ? texelSummary() : null;
     const loadOk = Boolean(witness && reference && witness.loadMsMedian !== null && reference.loadMsMedian !== null && witness.loadMsMedian <= reference.loadMsMedian * loadTolerance);
     const cleanOk = Boolean(witness && witness.total > 0 && witness.clean === witness.total);
-    const visualOk = Boolean(visual && visual.ok && visual.pairs === models.length);
+    const visualOk = Boolean(visual && visual.ok && visual.pairs === names.length);
     const texelOk = spec.texel ? Boolean(texel && texel.ok) : null;
     const usable = fp.wins && loadOk && cleanOk && visualOk && texelOk !== false;
     return { footprint: fp, reference: spec.reference, witness, referenceWitness: reference, visual, texel, reasons: { footprintWins: fp.wins, loadOk, cleanOk, visualOk, texelOk, loadTolerance }, usable };
@@ -78,7 +78,7 @@ function judge(format, spec, models) {
 function main() {
     const names = fs.readdirSync(cdn).filter((file) => file.endsWith('.glb')).sort();
     const models = names.filter((name) => sourceIsZstd(path.join(cdn, name)));
-    const formats = Object.fromEntries(Object.entries(judged).map(([format, spec]) => [format, judge(format, spec, models)]));
+    const formats = Object.fromEntries(Object.entries(judged).map(([format, spec]) => [format, judge(format, spec, models, names)]));
     const complete = Object.values(formats).every((format) => format.footprint.complete);
     const decision = formats.bc7.usable ? 'bc7' : 'rgba8';
     const result = {
