@@ -411,11 +411,8 @@ fn update_overlay(
         .filter_map(|diagnostic| diagnostic.value())
         .collect::<Vec<f64>>();
     let gpu = if gpu_passes.is_empty() {
-        format!(
-            "unsupported (timestamp queries {}, device features {})",
-            if stats.timestamp_queries { "enabled, no spans recorded" } else { "not enabled" },
-            stats.device_features
-        )
+        let reason = if stats.gpu_timing_missing.is_empty() { "enabled, no spans recorded".to_string() } else { format!("device lacks {}", stats.gpu_timing_missing) };
+        format!("unsupported ({reason}; device features {})", stats.device_features)
     } else {
         format!("{:.3}ms over {} passes", gpu_passes.iter().sum::<f64>(), gpu_passes.len())
     };
@@ -506,6 +503,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "uiNodes": ui.nodes,
         "uiWarnings": ui.warnings,
         "uiUncoveredGlyphs": ui.uncovered + overlay.iter().map(|text| uncovered_glyph_count(&text.0)).sum::<usize>(),
+        "hud": overlay.iter().map(|text| text.0.clone()).collect::<Vec<_>>(),
         "uiLabels": rects.len(),
         "uiLabelOverlaps": overlaps.len(),
         "uiLabelOverlapPairs": overlap_pairs,
