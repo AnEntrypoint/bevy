@@ -52,9 +52,9 @@ pub fn mirror_world(
     mut shapes: Local<HashMap<MeshShape, Handle<Mesh>>>,
     formats: Option<Res<CompressedImageFormatSupport>>,
 ) {
-    let bc_supported = formats.is_some_and(|support| support.0.contains(CompressedImageFormats::BC));
-    let target = TextureTarget::for_gpu(bc_supported);
-    scene.bc_supported = bc_supported;
+    let support = formats.map_or(CompressedImageFormats::empty(), |support| support.0);
+    let target = TextureTarget::for_gpu(support);
+    scene.bc_supported = support.contains(CompressedImageFormats::BC);
     scene.texture_target = target.name();
     let directory = PathBuf::from(&scene.directory);
     let world = runner.0.world_mut();

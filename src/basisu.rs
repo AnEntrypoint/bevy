@@ -1,3 +1,4 @@
+use bevy::image::CompressedImageFormats;
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 
@@ -77,22 +78,42 @@ const SUPERCOMPRESSION_ZSTD: u32 = 2;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 const VK_FORMAT_BC7_UNORM: u32 = 145;
 const KHR_DF_MODEL_BC7: u8 = 134;
+const VK_FORMAT_ETC2_R8G8B8A8_UNORM: u32 = 151;
+const VK_FORMAT_ASTC_4X4_UNORM: u32 = 157;
+const KHR_DF_MODEL_ETC2: u8 = 161;
+const KHR_DF_MODEL_ASTC: u8 = 162;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextureTarget {
     Rgba8,
     Bc7,
+    Etc2,
+    Astc4x4,
 }
 
 impl TextureTarget {
-    pub fn for_gpu(bc_supported: bool) -> Self {
-        if bc_supported { Self::Bc7 } else { Self::Rgba8 }
+    pub fn for_gpu(formats: CompressedImageFormats) -> Self {
+        if formats.contains(CompressedImageFormats::BC) {
+            Self::Bc7
+        } else if formats.contains(CompressedImageFormats::ASTC_LDR) {
+            Self::Astc4x4
+        } else if formats.contains(CompressedImageFormats::ETC2) {
+            Self::Etc2
+        } else {
+            Self::Rgba8
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        [Self::Rgba8, Self::Bc7, Self::Etc2, Self::Astc4x4].into_iter().find(|target| target.name() == name)
     }
 
     pub fn name(self) -> &'static str {
         match self {
             Self::Rgba8 => "rgba8",
             Self::Bc7 => "bc7",
+            Self::Etc2 => "etc2",
+            Self::Astc4x4 => "astc4x4",
         }
     }
 
@@ -100,6 +121,8 @@ impl TextureTarget {
         match self {
             Self::Rgba8 => "target/gltf-cache-rgba8",
             Self::Bc7 => "target/gltf-cache",
+            Self::Etc2 => "target/gltf-cache-etc2",
+            Self::Astc4x4 => "target/gltf-cache-astc",
         }
     }
 
@@ -107,20 +130,33 @@ impl TextureTarget {
         match self {
             Self::Rgba8 => VK_FORMAT_R8G8B8A8_UNORM,
             Self::Bc7 => VK_FORMAT_BC7_UNORM,
+            Self::Etc2 => VK_FORMAT_ETC2_R8G8B8A8_UNORM,
+            Self::Astc4x4 => VK_FORMAT_ASTC_4X4_UNORM,
         }
     }
 
     fn level_bytes(self, width: usize, height: usize) -> usize {
         match self {
             Self::Rgba8 => width * height * 4,
-            Self::Bc7 => width.div_ceil(4) * height.div_ceil(4) * 16,
+            Self::Bc7 | Self::Etc2 | Self::Astc4x4 => width.div_ceil(4) * height.div_ceil(4) * 16,
+        }
+    }
+
+    fn transcoder_format(self) -> u32 {
+        match self {
+            Self::Rgba8 => 0,
+            Self::Bc7 => 1,
+            Self::Etc2 => 2,
+            Self::Astc4x4 => 3,
         }
     }
 
     fn dfd(self) -> Vec<u8> {
         match self {
             Self::Rgba8 => rgba8_dfd(),
-            Self::Bc7 => wrap_dfd(bc7_block()),
+            Self::Bc7 => wrap_dfd(block_format_dfd(KHR_DF_MODEL_BC7)),
+            Self::Etc2 => wrap_dfd(block_format_dfd(KHR_DF_MODEL_ETC2)),
+            Self::Astc4x4 => wrap_dfd(block_format_dfd(KHR_DF_MODEL_ASTC)),
         }
     }
 }
@@ -135,7 +171,7 @@ unsafe extern "C" {
         layers: *mut u32,
         faces: *mut u32,
     ) -> i32;
-    fn bevy_basislz_transcode_level(data: *const u8, size: u32, level: u32, out: *mut u8, capacity: u64, bc7: u32) -> i64;
+    fn bevy_basislz_transcode_level(data: *const u8, size: u32, level: u32, out: *mut u8, capacity: u64, format: u32) -> i64;
 }
 
 pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>, target: TextureTarget) -> Result<usize, String> {
@@ -230,9 +266,8 @@ pub fn transcode_basis(input: &[u8], target: TextureTarget) -> Result<Vec<u8>, S
         let level_height = height.checked_shr(level).unwrap_or(0).max(1) as usize;
         let capacity = target.level_bytes(level_width, level_height);
         let mut buffer = vec![0u8; capacity];
-        let bc7 = u32::from(target == TextureTarget::Bc7);
         let written = unsafe {
-            bevy_basislz_transcode_level(bytes.as_ptr(), size, level, buffer.as_mut_ptr(), capacity as u64, bc7)
+            bevy_basislz_transcode_level(bytes.as_ptr(), size, level, buffer.as_mut_ptr(), capacity as u64, target.transcoder_format())
         };
         if written != capacity as i64 {
             return Err(format!("basis transcoder failed on level {level} (status {written})"));
@@ -354,12 +389,12 @@ fn rgba8_dfd() -> Vec<u8> {
     wrap_dfd(block)
 }
 
-fn bc7_block() -> Vec<u8> {
+fn block_format_dfd(model: u8) -> Vec<u8> {
     let mut block = Vec::with_capacity(24);
     block.extend_from_slice(&0u32.to_le_bytes());
     block.extend_from_slice(&2u16.to_le_bytes());
     block.extend_from_slice(&24u16.to_le_bytes());
-    block.extend_from_slice(&[KHR_DF_MODEL_BC7, 1, 1, 0]);
+    block.extend_from_slice(&[model, 1, 1, 0]);
     block.extend_from_slice(&[3, 3, 0, 0]);
     block.extend_from_slice(&[16, 0, 0, 0, 0, 0, 0, 0]);
     block
@@ -375,6 +410,7 @@ fn wrap_dfd(block: Vec<u8>) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::{is_basis_ktx2, ktx2_bytes, promote, transcode_basis, transcode_basis_images, TextureTarget};
+    use bevy::image::CompressedImageFormats;
     use serde_json::json;
 
     #[test]
@@ -410,11 +446,39 @@ mod tests {
     }
 
     #[test]
-    fn gpu_without_bc_falls_back_to_rgba8() {
-        assert_eq!(TextureTarget::for_gpu(true), TextureTarget::Bc7);
-        assert_eq!(TextureTarget::for_gpu(false), TextureTarget::Rgba8);
-        assert_eq!(TextureTarget::for_gpu(false).name(), "rgba8");
-        assert_eq!(TextureTarget::for_gpu(false).cache_dir(), "target/gltf-cache-rgba8");
+    fn gpu_picks_the_first_compressed_format_it_supports_in_bc_astc_etc2_order() {
+        let none = CompressedImageFormats::empty();
+        assert_eq!(TextureTarget::for_gpu(none), TextureTarget::Rgba8);
+        assert_eq!(TextureTarget::for_gpu(CompressedImageFormats::ETC2), TextureTarget::Etc2);
+        assert_eq!(TextureTarget::for_gpu(CompressedImageFormats::ETC2 | CompressedImageFormats::ASTC_LDR), TextureTarget::Astc4x4);
+        assert_eq!(TextureTarget::for_gpu(CompressedImageFormats::ETC2 | CompressedImageFormats::ASTC_LDR | CompressedImageFormats::BC), TextureTarget::Bc7);
+        assert_eq!(TextureTarget::for_gpu(none).name(), "rgba8");
+        assert_eq!(TextureTarget::for_gpu(none).cache_dir(), "target/gltf-cache-rgba8");
+        assert_eq!(TextureTarget::for_gpu(CompressedImageFormats::ETC2).cache_dir(), "target/gltf-cache-etc2");
+        assert_eq!(TextureTarget::for_gpu(CompressedImageFormats::ASTC_LDR).cache_dir(), "target/gltf-cache-astc");
+    }
+
+    #[test]
+    fn every_target_round_trips_through_its_name() {
+        for target in [TextureTarget::Rgba8, TextureTarget::Bc7, TextureTarget::Etc2, TextureTarget::Astc4x4] {
+            assert_eq!(TextureTarget::from_name(target.name()), Some(target));
+        }
+        assert_eq!(TextureTarget::from_name("dxt1"), None);
+    }
+
+    #[test]
+    fn etc2_and_astc_ktx2_declare_their_vulkan_format_and_block_size() {
+        assert_eq!(TextureTarget::Etc2.level_bytes(5, 3), 2 * 16);
+        assert_eq!(TextureTarget::Astc4x4.level_bytes(5, 3), 2 * 16);
+        for (target, vk_format, model) in [(TextureTarget::Etc2, 151u32, 161u8), (TextureTarget::Astc4x4, 157u32, 162u8)] {
+            let bytes = ktx2_bytes(target, 8, 4, &[vec![3u8; 32], vec![5u8; 16]]);
+            assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), vk_format);
+            assert_eq!(u32::from_le_bytes(bytes[40..44].try_into().unwrap()), 2);
+            let dfd = u32::from_le_bytes(bytes[48..52].try_into().unwrap()) as usize;
+            assert_eq!(bytes[dfd + 12], model);
+        }
+        assert_eq!(TextureTarget::Etc2.transcoder_format(), 2);
+        assert_eq!(TextureTarget::Astc4x4.transcoder_format(), 3);
     }
 
     #[test]
