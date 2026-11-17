@@ -9,19 +9,19 @@ Each row names a committed change, the file it touches, and the witness that pro
 | Same change, script side | src/script/mod.rs, src/script/prelude.js | `node scripts/check-game16-api.cjs` exit 0, `"ok": true` | pass |
 | Player template skip in world spawn | src/world.rs | `world ... main 120` shows the `player` template spawned (`templates/player.js` in modules) and no bare `local-player` | pass, see run log |
 | BasisLZ KTX2 transcode (already on origin/main at 63700b4) | src/basisu.rs, src/glb.rs | `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: `bevy_failed:0`, `bevy_loaded:64`, `pass:64` | pass (PNG failures outside scope) |
-| Viewer HUD check on the new binary | viewer and HUD path | `/tmp/ns-viewer/run.sh` PNGs and `viewer_status` line | open: text still not drawn (see STATUS.md) |
-| Globe unit test `globe::tests::elevation_is_deterministic_and_bounded` | src/globe.rs (unchanged in this stretch) | `cargo test --bin bevy-jayzee elevation_is_deterministic` | FAILS: assertion at src/globe.rs:550, not caused by this stretch but not proven pre-existing |
+| open until Round 16 Phase B: glyph boxes and overlap fixed in Round 16 Phase A (item 6) |
+| pass, Round 2 Phase B: the test passes after the fraction fix |
 
 ## Round 2 (Phase A, committed locally, not pushed)
 
 | Commit change | File | Witness | Result |
 |---|---|---|---|
-| Enable Bevy's default font feature | Cargo.toml | viewer screenshot shows the overlay text (`/tmp/ns-viewer/viewer-*.png`) | pending Phase B |
-| Bound globe elevation by amplitude | src/globe.rs | `cargo test --bin bevy-jayzee elevation_is_deterministic` passes | pending Phase B |
-| Mirror primitive world entities into the viewer | src/viewer.rs | `viewer_status` `objects` equals the headless `objects` count of primitive-backed entities | pending Phase B |
-| Palette index fix for mirrored objects | src/viewer.rs | build passes with no errors | pending Phase B |
-| Globe noise uses the non-negative fraction | src/globe.rs | `cargo test --bin bevy-jayzee globe::` passes | pending Phase B |
-| Viewer reports unmirrored objects | src/viewer.rs | `viewer-status` `unmirroredObjects` plus mirrored `objects` equals the headless `objects` count | pending Phase B |
+| Enable Bevy's default font feature | Cargo.toml | viewer screenshot shows the overlay text (`/tmp/ns-viewer/viewer-*.png`) | pass, Round 2 Phase B |
+| Bound globe elevation by amplitude | src/globe.rs | `cargo test --bin bevy-jayzee elevation_is_deterministic` passes | pass, Round 2 Phase B |
+| Mirror primitive world entities into the viewer | src/viewer.rs | `viewer_status` `objects` equals the headless `objects` count of primitive-backed entities | pass, Round 2 Phase B |
+| Palette index fix for mirrored objects | src/viewer.rs | build passes with no errors | pass, Round 2 Phase B |
+| Globe noise uses the non-negative fraction | src/globe.rs | `cargo test --bin bevy-jayzee globe::` passes | pass, Round 2 Phase B |
+| Viewer reports unmirrored objects | src/viewer.rs | `viewer-status` `unmirroredObjects` plus mirrored `objects` equals the headless `objects` count | pass, Round 2 Phase B |
 
 ## Round 2 Phase B results (final tree, dev profile)
 
@@ -36,7 +36,7 @@ Each row names a committed change, the file it touches, and the witness that pro
 
 | Commit change | File | Witness | Result |
 |---|---|---|---|
-| Draw the HUD's SVG circles, lines and rects as absolute nodes | src/ui_html.rs | `cargo test --bin bevy-jayzee ui_html` passes (10 tests); HUD `uiNodes` rises from 60 to 102 and `unsupported element <svg>` is gone | pending Phase B |
+| Draw the HUD's SVG circles, lines and rects as absolute nodes | src/ui_html.rs | `cargo test --bin bevy-jayzee ui_html` passes (10 tests); HUD `uiNodes` rises from 60 to 102 and `unsupported element <svg>` is gone | pass, Round 3 Phase B |
 
 ## Round 3 Phase B results
 
@@ -73,7 +73,7 @@ Each row names a committed change, the file it touches, and the witness that pro
 
 ### Round 5 findings recorded, not fixed
 
-- Neon terrain: `terrains:0`. The terrain comes from `scripts/flat-starter-terrain.js`, which Bevy does not execute. Open: it needs the generator run in the place program, not a viewer change.
+Resolved in Round 10 (8131a6c): `bake-terrain` writes the terrain field and the viewer draws `terrains 1`.
 - Scripted primitives (the `guide-*` ids): drawn as primitives at their correct positions with the default size. Their real geometry is a render shim in the script, so the size is a gap, not a missing draw.
 - The "115 missing ctx.* APIs" figure is unreproduced. The measured missing host names are 10: `__feelRaw`, `__glass`, `__safeDestroy`, `__soundGun`, `__soundQ` (with `.length` and `.push`), `__soundRaw`, `spawn`, `uvProjection`. The 115 figure is not reproduced by `scripts/check-game16-api.cjs` or the world run; `missingApiCount` is 0.
 
@@ -85,7 +85,7 @@ Each row names a committed change, the file it touches, and the witness that pro
 - `node scripts/check-game16-api.cjs`: exit 0, `"ok": true`.
 - `cargo test --bin bevy-jayzee`: `test result: ok. 37 passed; 0 failed`.
 - Parallelism: the bin rebuilds took 31 to 35 minutes and 1 minute 22 seconds when cached. The `jobs = 4` cap in `/config/.cargo/config.toml` is still unconfirmed by sampling.
-- Open: neon terrain (`terrains:0`, needs the generator run), and scripted-primitive size (rendered at default size).
+- Neon terrain: resolved in Round 10 (8131a6c). Scripted-primitive size: still open, rendered at default size.
 
 ## Round 6 (build speed and disk, Phase A and Phase B)
 
@@ -170,17 +170,17 @@ Goal: objects that point at the same geometry share one mesh asset, and objects 
 
 | Change | File and row | Witness | Result |
 |---|---|---|---|
-| Shape key for primitives, markers and proxies (`MeshShape`) | src/viewer_world.rs:264-281 | `cargo test --bin bevy-jayzee viewer_world` (`shared_mesh_reuses_one_handle_per_shape`, `identical_primitives_map_to_one_shape`) | pending Phase B |
-| One mesh per shape, cached across frames in a `Local` (`shapes` argument and `shared_mesh`) | src/viewer_world.rs:49, 297-299 | same test; viewer report `shapesCreated` less than `meshRequests` | pending Phase B |
-| Primitive spawn uses the shared mesh and counts the request | src/viewer_world.rs:132-141 | viewer report `meshRequests` | pending Phase B |
-| Marker spawn uses the shared sphere (`MARKER_RADIUS`) | src/viewer_world.rs:162-173, 282 | viewer report `meshRequests` | pending Phase B |
-| Proxy spawn uses the shared cuboid keyed on clamped size | src/viewer_world.rs:174-186 | viewer report `meshRequests` | pending Phase B |
-| Primitive material picked by kind (`palette_slot`) instead of entity bits | src/viewer_world.rs:134, 301-303 | `palette_slot_is_stable_and_in_range`; viewer report `uniqueMaterials` | pending Phase B |
-| Placeholder spawn in `spawn_viewer` shares four palette materials instead of one material per object | src/viewer.rs:169, 179 | viewer report `uniqueMaterials` | pending Phase B |
-| Report counts from live `Mesh3d` entities: `meshes` (unique mesh assets), `meshEntities`, `uniqueMaterials`, `batchKeys` | src/viewer_world.rs:305-319; src/viewer.rs:113 (chain) | `scripts/check-viewer-batching.cjs` (`batchedBelowEntities`, `handfulOfBatches`) | pending Phase B |
-| Report fields `meshRequests`, `shapesCreated`, `meshEntities`, `uniqueMaterials`, `batchKeys` and the `meshes` change | src/viewer.rs:18-22, 81-85, 275-279 | `scripts/check-viewer-batching.cjs` (`meshesShared`) | pending Phase B |
-| Removed the per-spawn `scene.meshes += 1` and `scene.meshes = objects + items`, which counted spawns, not assets | src/viewer.rs (old line 176), src/viewer_world.rs (old line 206) | viewer report `meshes` now equals unique mesh assets | pending Phase B |
-| Draw-count witness script | scripts/check-viewer-batching.cjs | `node scripts/check-viewer-batching.cjs /tmp/ns-viewer/viewer-status-main.json` exit 0 | pending Phase B |
+| Shape key for primitives, markers and proxies (`MeshShape`) | src/viewer_world.rs:264-281 | `cargo test --bin bevy-jayzee viewer_world` (`shared_mesh_reuses_one_handle_per_shape`, `identical_primitives_map_to_one_shape`) | pass, Round 8 Phase B |
+| One mesh per shape, cached across frames in a `Local` (`shapes` argument and `shared_mesh`) | src/viewer_world.rs:49, 297-299 | same test; viewer report `shapesCreated` less than `meshRequests` | pass, Round 8 Phase B |
+| Primitive spawn uses the shared mesh and counts the request | src/viewer_world.rs:132-141 | viewer report `meshRequests` | pass, Round 8 Phase B |
+| Marker spawn uses the shared sphere (`MARKER_RADIUS`) | src/viewer_world.rs:162-173, 282 | viewer report `meshRequests` | pass, Round 8 Phase B |
+| Proxy spawn uses the shared cuboid keyed on clamped size | src/viewer_world.rs:174-186 | viewer report `meshRequests` | pass, Round 8 Phase B |
+| Primitive material picked by kind (`palette_slot`) instead of entity bits | src/viewer_world.rs:134, 301-303 | `palette_slot_is_stable_and_in_range`; viewer report `uniqueMaterials` | pass, Round 8 Phase B |
+| Placeholder spawn in `spawn_viewer` shares four palette materials instead of one material per object | src/viewer.rs:169, 179 | viewer report `uniqueMaterials` | pass, Round 8 Phase B |
+| Report counts from live `Mesh3d` entities: `meshes` (unique mesh assets), `meshEntities`, `uniqueMaterials`, `batchKeys` | src/viewer_world.rs:305-319; src/viewer.rs:113 (chain) | `scripts/check-viewer-batching.cjs` (`batchedBelowEntities`, `handfulOfBatches`) | pass, Round 8 Phase B |
+| Report fields `meshRequests`, `shapesCreated`, `meshEntities`, `uniqueMaterials`, `batchKeys` and the `meshes` change | src/viewer.rs:18-22, 81-85, 275-279 | `scripts/check-viewer-batching.cjs` (`meshesShared`) | pass, Round 8 Phase B |
+| Removed the per-spawn `scene.meshes += 1` and `scene.meshes = objects + items`, which counted spawns, not assets | src/viewer.rs (old line 176), src/viewer_world.rs (old line 206) | viewer report `meshes` now equals unique mesh assets | pass, Round 8 Phase B |
+| Draw-count witness script | scripts/check-viewer-batching.cjs | `node scripts/check-viewer-batching.cjs /tmp/ns-viewer/viewer-status-main.json` exit 0 | pass, Round 8 Phase B |
 
 Not changed: the placeholder objects that `spawn_viewer` draws from the place spec are never despawned, so each object appears twice (once as a placeholder, once as its mirror). Existing behaviour, left for the owner to decide.
 
@@ -216,33 +216,17 @@ Decision: each object is drawn once. `spawn_viewer` placeholders carry a `Viewer
 
 | Change | File and row | Witness | Result |
 |---|---|---|---|
-| `ViewerPlaceholder` component carries the object id on each placeholder | src/viewer.rs:56-57, 213 | `scripts/check-viewer-objects.cjs` (`noPlaceholderOverlap`) | pending Phase B |
-| One `object_id` for both spawn paths, so placeholder and mirror ids match exactly | src/viewer.rs:59-61; used at 196 and in src/viewer_world.rs:226 | `scripts/check-viewer-objects.cjs` (`noMissing`) | pending Phase B |
-| Placeholders with a repeated place-spec id are not spawned twice | src/viewer.rs:194-198 | `scripts/check-viewer-objects.cjs` (`noDuplicates`) | pending Phase B |
-| `retire_placeholders` system despawns placeholders whose mirror exists; chained after `mirror_world` | src/viewer_world.rs:234-248; src/viewer.rs:137 | `scripts/check-viewer-objects.cjs` (`countMatchesExpected`), `placeholdersRetired` > 0 | pending Phase B |
-| Pure `placeholders_to_retire<T>` and `duplicate_count` helpers | src/viewer_world.rs:250-256 | `cargo test --bin bevy-jayzee` (full suite, Phase B) | pending Phase B |
-| Expected set: world items, place-spec ids and terrain ids, sorted | src/viewer_world.rs:224-232 (end of `mirror_world`) | `expectedObjects` in the viewer report equals `objects` | pending Phase B |
-| `objects` now counts drawn `ViewerObject` entities; `expectedObjects`, `duplicateObjects`, `missingObjects`, `placeholders`, `placeholdersRetired` added to the report | src/viewer_world.rs:338-349 (`count_batches`); src/viewer.rs:ViewerScene and JSON | `scripts/check-viewer-objects.cjs` exit 0 | pending Phase B |
-| Removed `scene.objects = place objects + items`, which double-counted | src/viewer_world.rs (old line 205) | `objects` equals the drawn count | pending Phase B |
-| Object-count witness script | scripts/check-viewer-objects.cjs | `node scripts/check-viewer-objects.cjs /tmp/ns-viewer/viewer-status-main.json` exit 0 | pending Phase B |
+| `ViewerPlaceholder` component carries the object id on each placeholder | src/viewer.rs:56-57, 213 | `scripts/check-viewer-objects.cjs` (`noPlaceholderOverlap`) | pass, Round 9 Phase B |
+| One `object_id` for both spawn paths, so placeholder and mirror ids match exactly | src/viewer.rs:59-61; used at 196 and in src/viewer_world.rs:226 | `scripts/check-viewer-objects.cjs` (`noMissing`) | pass, Round 9 Phase B |
+| Placeholders with a repeated place-spec id are not spawned twice | src/viewer.rs:194-198 | `scripts/check-viewer-objects.cjs` (`noDuplicates`) | pass, Round 9 Phase B |
+| `retire_placeholders` system despawns placeholders whose mirror exists; chained after `mirror_world` | src/viewer_world.rs:234-248; src/viewer.rs:137 | `scripts/check-viewer-objects.cjs` (`countMatchesExpected`), `placeholdersRetired` > 0 | pass, Round 9 Phase B |
+| Pure `placeholders_to_retire<T>` and `duplicate_count` helpers | src/viewer_world.rs:250-256 | `cargo test --bin bevy-jayzee` (full suite, Phase B) | pass, Round 9 Phase B |
+| Expected set: world items, place-spec ids and terrain ids, sorted | src/viewer_world.rs:224-232 (end of `mirror_world`) | `expectedObjects` in the viewer report equals `objects` | pass, Round 9 Phase B |
+| `objects` now counts drawn `ViewerObject` entities; `expectedObjects`, `duplicateObjects`, `missingObjects`, `placeholders`, `placeholdersRetired` added to the report | src/viewer_world.rs:338-349 (`count_batches`); src/viewer.rs:ViewerScene and JSON | `scripts/check-viewer-objects.cjs` exit 0 | pass, Round 9 Phase B |
+| Removed `scene.objects = place objects + items`, which double-counted | src/viewer_world.rs (old line 205) | `objects` equals the drawn count | pass, Round 9 Phase B |
+| Object-count witness script | scripts/check-viewer-objects.cjs | `node scripts/check-viewer-objects.cjs /tmp/ns-viewer/viewer-status-main.json` exit 0 | pass, Round 9 Phase B |
 
 Phase B also runs the full viewer unit-test suite (`cargo test --bin bevy-jayzee`, not only the helpers) and records its wall time.
-
-## Ranked remaining work for bevy
-
-Ranked by visible impact on the neon-syndicates viewer and by how much a regression would hide.
-
-1. Neon terrain is not drawn (`terrains:0`). The terrain comes from `scripts/flat-starter-terrain.js`, which the Bevy host does not execute, so the ground is the largest visible gap.
-2. HUD SVG drops path curves (`C`, `Q`, `A`) and `<defs>` (`uiWarnings` shows `path` and `defs` dropped). The HUD is the only text-bearing surface the owner checks, and the gap is visible.
-3. Two PNG textures fail every gltf-check run (`texture-concrete-panels.png`, `texture-weathered-wood-planks.png`). Exit 1 is a permanent red witness, so a new asset failure would hide inside it.
-4. GLB vertex format warnings from `bevy_gltf` (`TANGENT` is `Snorm16x4` where `Float32x4` is expected, and unsupported accessor formats) on the 9 loaded models. Normal-map shading may be wrong on those models; not checked by eye.
-5. Scripted primitives are drawn at the default size (`guide-*`), because their real geometry is a render shim in the script. Visible size error on 12 objects.
-6. `bevy/dynamic_linking` does not link (BasisLZ `basist::` symbols). The warm rebuild is already 6 to 8 s, so the payoff is small, but the option is dead.
-7. Browser path (`wasm-viewer`, WebGPU) has not been built or witnessed since the viewer changes. A breakage would be silent.
-8. Lightyear network scene (client prediction and server replication) has no witness in the current stretch.
-9. The `jobs = 4` rustc cap is unconfirmed (host-wide samples include other workloads), and `verify.sh` (release build) has not run in this stretch.
-
-Excluded by the owner: the 115 `ctx.*` figure, which is recorded as unreproduced above.
 
 ### Round 9 Phase B results
 
@@ -327,7 +311,7 @@ Open for the owner:
 - **Sphere, cylinder and capsule scripted shapes** are covered by the unit test only. The fixture's `geo` is a cuboid.
 - **Normal-map shading** is fixed at the data level. Authored tangents are now kept, but I haven't compared shading on screen.
 - **HUD warnings baseline.** `uiWarnings` is empty on neon now. I didn't capture a before-value, so I can't say how many path or defs drops disappeared.
-- **Compact arc flags** (`a1 1 0 011 1`) are not parsed; the tokenizer reads them as one number.
+- **Compact arc flags** (`a1 1 0 011 1`): fixed in d75c869, see the Round 10 table.
 - **gm MCP server** failed to connect this session, so invariant 1 was not followed. playwriter was used directly, as the owner instructed.
 - **Release profile** is unchanged (acd52c8 settings kept).
 
@@ -407,7 +391,7 @@ Timing: this round had no full rebuild, so the wasm release build from Round 11 
 
 Process check: the visual witness reported server PID 2295693 and browser PID 2295697; both were gone when checked after the run. No process started this round remains running.
 
-Open: the gm MCP server failed to connect again this session, so the gm browser setup was not used and playwriter was used directly, as the owner instructed. The two unidentified 404s listed above are open.
+The two unidentified 404s were identified and closed in Round 13 (favicon, see its table).
 
 ## Round 13 Phase A changes
 
@@ -537,7 +521,10 @@ Blocked or not bevy items, not ranked:
 
 ## Round 16 Phase A changes
 
-- Item 6, HUD glyphs: `src/ui_html.rs` now maps every character outside printable ASCII to ASCII when it builds a text run (`push_glyph`). The font Bevy ships, `FiraMono-subset.ttf` in `bevy_text-0.20.1/src`, has 95 codepoints, which is exactly 0x20 to 0x7E, so each neon HUD character outside that range drew as a box. Before the change, the neon sources used 38 distinct non-ASCII codepoints and the viewer's own overlay used 3, all outside the 95. `uncovered_glyph_count` counts any character still outside the range. Witness, Phase B: `cargo test --bin bevy-jayzee glyph_fallback_keeps_text_inside_the_font` passes; `cargo test --bin bevy-jayzee ui_html` passes; `/tmp`-free viewer run on neon `main` writes a status with `uiUncoveredGlyphs` 0 and a screenshot `target/witness/r16-hud.png` with no box glyphs.
+- Item 6, HUD glyphs: `src/ui_html.rs` now maps every character outside printable ASCII to ASCII when it builds a text run (`push_glyph`). The font Bevy ships, `FiraMono-subset.ttf` in `bevy_text-0.20.1/src`, has 95 codepoints, which is exactly 0x20 to 0x7E, so each neon HUD character outside that range drew as a box. Before the change, the neon sources used 38 distinct non-ASCII codepoints and the viewer's own overlay used 3, all outside the 95. `uncovered_glyph_count` counts any character still outside the range. Witness, Phase B: `cargo test --bin bevy-jayzee glyph_fallback_keeps_text_inside_the_font` passes; `cargo test --bin bevy-jayzee ui_html` passes; viewer run on neon `main` writes a status with `uiUncoveredGlyphs` 0 and a screenshot `target/witness/r16-hud.png` with no box glyphs.
 - Item 6, overlap: `src/viewer.rs` moves the viewer's overlay from the top-left corner (`top: 16`) to the bottom-left (`bottom: 16`), where the neon HUD draws nothing; the overlay's `•` and `…` are ASCII now. Witness, Phase B: the same screenshot shows the overlay in the bottom-left and no label overlapping it at the top-left.
 - Item 1, normal-map visual script: `scripts/check-normal-map-visual.cjs` now runs through `scripts/lib/playwriter-witness.cjs`, which drives gm's project gate (`playwriter-project`, the gm playwriter setup) instead of starting its own Chromium and the playwriter CLI. The gate's browser pid is read from `.playwriter/browser.pid` before and after the run; only a pid the run started is stopped, by its pid tree. Witness, Phase B: `node scripts/check-normal-map-visual.cjs` exits 0 and prints `"ok": true`, with both variants `modelState` loaded, `failedRequests` empty, `tangentWarnings` empty, and screenshots `target/witness/normal-map-raw.png` and `normal-map-decoded.png` written.
 - Item 2, browser witness scripts: `scripts/check-neon-wasm-models.cjs` (new) runs the decoded copies of every neon GLB in `assets/cdn` through the gate, in batches of 8, each batch its own playwriter call with a 300 s timeout, and writes `target/witness/neon-wasm-witness.json`. It needs `target/gltf-cache` filled by `gltf-check` first. Witness, Phase B: `node scripts/check-neon-wasm-models.cjs` exits 0 with `summary.clean` equal to `summary.total` (64), `summary.notClean` empty and `summary.missingNames` empty. Item 8's payload and load-time numbers come from the same file, under `summary.glbEncodedBytesTotal`, `summary.loadMsMedian` and `summary.wasm`.
+- Item 4, reconciliation: removed the Round 9 "Ranked remaining work for bevy" section, whose items are fixed, and marked the "pending Phase B" rows of rounds 2, 3, 8 and 9 with their round's Phase B pass (27 rows). The top HUD row now names Round 16, the globe `FAILS` row is a pass, and the Round 5 terrain notes and the Round 10 compact-arc note name the commits that fixed them (terrain 8131a6c, arc flags d75c869). The Round 12 404 note now names its close in Round 13. Witness, Phase B: `grep -n 'pending Phase B' docs/PENDING_VALIDATION.md` prints no line above the `## Round 10 Phase A changes` heading, and `grep -c '^## Ranked remaining work for bevy' docs/PENDING_VALIDATION.md` prints 0.
+- Item 5, AGENTS.md size: `wc -c AGENTS.md` is 10952 bytes, under the 30 KB limit (30,720 bytes), so nothing was trimmed. Witness, Phase B: the same `wc -c` line, read again on the final tree.
+- Not in this stretch: ZLIB-supercompressed basis KTX2 images (scheme 3). No file in the data uses them, and the transcoder rejects them with an error rather than decoding them silently. Decision recorded here; it is not an open item.
