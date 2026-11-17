@@ -12,6 +12,7 @@ mod runtime;
 mod script;
 mod server;
 mod spec;
+mod texture_quality;
 mod tree;
 mod ui_html;
 mod viewer;
@@ -63,6 +64,12 @@ fn main() {
                 _ => basisu::TextureTarget::Rgba8,
             };
             if !gltf_check::run(directory, project, target) {
+                std::process::exit(1);
+            }
+        }
+        Some("texture-quality") => {
+            let directory = args.get(1).map(String::as_str).unwrap_or("/workspace/neon-syndicates/assets/cdn");
+            if !texture_quality::run(directory) {
                 std::process::exit(1);
             }
         }

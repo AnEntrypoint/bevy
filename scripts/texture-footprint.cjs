@@ -77,7 +77,14 @@ function witnessSummary(texture) {
     return { clean: summary.clean, total: summary.total, loadMsMedian: summary.loadMsMedian, loadMsMax: summary.loadMsMax, glbEncodedBytesTotal: summary.glbEncodedBytesTotal };
 }
 
-function visualSummary() {
+function texelSummary() {
+    const file = path.join(witnessDir, 'texture-texel.json');
+    if (!fs.existsSync(file)) return null;
+    const texel = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return { ok: texel.ok, images: texel.images, models: texel.models.length, psnrLevel0Min: texel.psnrLevel0Min, psnrLevel0Median: texel.psnrLevel0Median, maxError: texel.maxError, criteria: texel.criteria, errors: texel.errors };
+}
+
+function screenshotSummary() {
     const file = path.join(witnessDir, 'texture-visual.json');
     if (!fs.existsSync(file)) return null;
     const visual = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -103,7 +110,8 @@ function main() {
     };
     const footprintWins = complete && totals.bc7TextureBytes < totals.rgba8TextureBytes && totals.bc7GlbBytes < totals.rgba8GlbBytes;
     const witness = { rgba8: witnessSummary('rgba8'), bc7: witnessSummary('bc7') };
-    const visual = visualSummary();
+    const visual = texelSummary();
+    const screenshots = screenshotSummary();
     const loadOk = Boolean(witness.rgba8 && witness.bc7 && witness.bc7.loadMsMedian !== null && witness.rgba8.loadMsMedian !== null && witness.bc7.loadMsMedian <= witness.rgba8.loadMsMedian * loadTolerance);
     const cleanOk = Boolean(witness.bc7 && witness.bc7.total > 0 && witness.bc7.clean === witness.bc7.total);
     const visualOk = Boolean(visual && visual.ok);
@@ -115,10 +123,10 @@ function main() {
         visualOk,
         loadTolerance,
     };
-    const result = { ok: complete, decision, reasons, totals, ratio: totals.rgba8TextureBytes ? totals.bc7TextureBytes / totals.rgba8TextureBytes : null, witness, visual, rows };
+    const result = { ok: complete, decision, reasons, totals, ratio: totals.rgba8TextureBytes ? totals.bc7TextureBytes / totals.rgba8TextureBytes : null, witness, visual, screenshots, rows };
     fs.mkdirSync(witnessDir, { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(result, null, 2));
-    console.log(JSON.stringify({ ok: complete, decision, reasons, totals, ratio: result.ratio, witness, visual, witnessPath: outPath }, null, 2));
+    console.log(JSON.stringify({ ok: complete, decision, reasons, totals, ratio: result.ratio, witness, visual, screenshots, witnessPath: outPath }, null, 2));
     process.exit(complete ? 0 : 1);
 }
 

@@ -53,6 +53,25 @@ pub fn decode_with(bytes: &[u8], target: basisu::TextureTarget) -> Result<Decode
     Ok(Decoded { bytes, meshopt_views, basisu_textures, ktx2_textures })
 }
 
+pub fn ktx2_images(bytes: &[u8]) -> Result<Vec<Vec<u8>>, String> {
+    let container = read_container(bytes)?;
+    let bin = container.bin.unwrap_or_default();
+    let views = array_field(&container.json, "bufferViews");
+    array_field(&container.json, "images")
+        .iter()
+        .filter(|image| image.get("mimeType").and_then(Value::as_str) == Some("image/ktx2"))
+        .filter_map(|image| image.get("bufferView").and_then(Value::as_u64))
+        .map(|index| {
+            let view = views.get(index as usize).ok_or_else(|| format!("image names missing buffer view {index}"))?;
+            let offset = view.get("byteOffset").and_then(Value::as_u64).unwrap_or(0) as usize;
+            let length = view.get("byteLength").and_then(Value::as_u64).unwrap_or(0) as usize;
+            bin.get(offset..offset + length)
+                .map(<[u8]>::to_vec)
+                .ok_or_else(|| format!("buffer view {index} runs past the BIN chunk"))
+        })
+        .collect()
+}
+
 fn ktx2_texture_indices(json: &Value) -> Vec<usize> {
     let images = array_field(json, "images");
     array_field(json, "textures")
