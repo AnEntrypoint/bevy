@@ -30,6 +30,7 @@ impl HtmlUiSource {
 pub struct HtmlUiStatus {
     pub nodes: usize,
     pub warnings: Vec<String>,
+    pub uncovered: usize,
 }
 
 pub struct HtmlUiPlugin;
@@ -62,6 +63,7 @@ fn sync_html_ui(
     let built = build(&source.html);
     status.nodes = built.spec.count();
     status.warnings = built.warnings;
+    status.uncovered = built.spec.uncovered_glyphs();
     let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
 }
@@ -78,6 +80,14 @@ impl UiSpec {
         match self {
             UiSpec::Box { children, .. } => 1 + children.iter().map(UiSpec::count).sum::<usize>(),
             UiSpec::Text { .. } | UiSpec::Shape { .. } => 1,
+        }
+    }
+
+    pub fn uncovered_glyphs(&self) -> usize {
+        match self {
+            UiSpec::Box { children, .. } => children.iter().map(UiSpec::uncovered_glyphs).sum(),
+            UiSpec::Text { text, .. } => uncovered_glyph_count(text),
+            UiSpec::Shape { .. } => 0,
         }
     }
 }
@@ -837,6 +847,39 @@ fn box_style(scope: &Scope) -> BoxStyle {
     }
 }
 
+fn is_covered(c: char) -> bool {
+    (' '..='~').contains(&c)
+}
+
+pub fn uncovered_glyph_count(text: &str) -> usize {
+    text.chars().filter(|c| *c != '\n' && !is_covered(*c)).count()
+}
+
+fn push_glyph(out: &mut String, c: char) {
+    if c == BREAK || is_covered(c) {
+        out.push(c);
+        return;
+    }
+    out.push_str(match c {
+        '·' | '•' => "|",
+        '—' | '–' | '―' | '−' | '─' => "-",
+        '═' => "=",
+        '…' | '⋯' | '⁙' => "...",
+        '→' | '➶' => "->",
+        '▲' | '⟰' => "^",
+        '▼' => "v",
+        '◀' => "<",
+        '≤' => "<=",
+        '▶' | '▸' | '›' => ">",
+        '±' => "+/-",
+        '×' | '✕' => "x",
+        '°' => " deg",
+        '✓' => "+",
+        '◆' | '◈' | '◎' | '●' | '✦' | '✶' | '✱' | '⁂' | '⁍' | '♨' | 'ϟ' | '⚔' | '⛨' => "*",
+        _ => "?",
+    });
+}
+
 fn flush_run(run: &mut String, out: &mut Vec<UiSpec>, inherit: &Inherit) {
     let mut collapsed = String::new();
     let mut spaced = false;
@@ -847,7 +890,7 @@ fn flush_run(run: &mut String, out: &mut Vec<UiSpec>, inherit: &Inherit) {
             }
             spaced = true;
         } else {
-            collapsed.push(c);
+            push_glyph(&mut collapsed, c);
             spaced = false;
         }
     }
@@ -1505,6 +1548,21 @@ mod tests {
         assert_eq!(style.padding, [2.0, 6.0, 2.0, 6.0]);
         assert_eq!(style.width, Val::Percent(50.0));
         assert_eq!(children.len(), 1);
+    }
+
+    #[test]
+    fn glyph_fallback_keeps_text_inside_the_font() {
+        let sample = "·•—–―─═…⋯⁙×→➶⟰▲▼◀▶▸›≤±✕✓°−◆◈◎●✦✶✱⁂⁍♨ϟ⚔⛨";
+        for c in sample.chars() {
+            let mut out = String::new();
+            push_glyph(&mut out, c);
+            assert!(!out.is_empty() && uncovered_glyph_count(&out) == 0, "{c:?} maps to {out:?}");
+        }
+        let mut out = String::new();
+        push_glyph(&mut out, 'é');
+        assert_eq!(out, "?");
+        assert_eq!(uncovered_glyph_count("a | b\n"), 0);
+        assert_eq!(uncovered_glyph_count("a\u{e9}"), 1);
     }
 
     #[test]

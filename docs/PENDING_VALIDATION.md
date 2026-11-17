@@ -534,3 +534,8 @@ Blocked or not bevy items, not ranked:
 - Build speed: `dynamic_linking` is skipped by decision; sccache is not installed and sudo is blocked on this host.
 - The two neon texture PNG conversions exist only in `/workspace/neon-syndicates`, outside git.
 - The gm playwriter gate tree still running on this host: `2313609` and its child `2327190`, with Chromium `2327217`. Gm owns these.
+
+## Round 16 Phase A changes
+
+- Item 6, HUD glyphs: `src/ui_html.rs` now maps every character outside printable ASCII to ASCII when it builds a text run (`push_glyph`). The font Bevy ships, `FiraMono-subset.ttf` in `bevy_text-0.20.1/src`, has 95 codepoints, which is exactly 0x20 to 0x7E, so each neon HUD character outside that range drew as a box. Before the change, the neon sources used 38 distinct non-ASCII codepoints and the viewer's own overlay used 3, all outside the 95. `uncovered_glyph_count` counts any character still outside the range. Witness, Phase B: `cargo test --bin bevy-jayzee glyph_fallback_keeps_text_inside_the_font` passes; `cargo test --bin bevy-jayzee ui_html` passes; `/tmp`-free viewer run on neon `main` writes a status with `uiUncoveredGlyphs` 0 and a screenshot `target/witness/r16-hud.png` with no box glyphs.
+- Item 6, overlap: `src/viewer.rs` moves the viewer's overlay from the top-left corner (`top: 16`) to the bottom-left (`bottom: 16`), where the neon HUD draws nothing; the overlay's `•` and `…` are ASCII now. Witness, Phase B: the same screenshot shows the overlay in the bottom-left and no label overlapping it at the top-left.

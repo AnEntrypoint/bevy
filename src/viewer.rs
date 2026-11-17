@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
-use crate::ui_html::{HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
+use crate::ui_html::{uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
 use crate::{script, viewer_world, world};
 
 #[derive(Resource, Clone, Debug)]
@@ -238,13 +238,13 @@ fn spawn_viewer(
         Name::new("viewer-camera"),
     ));
     commands.spawn((
-        Text::new("bevy-jayzee native viewer\nloading world objects…"),
+        Text::new("bevy-jayzee native viewer\nloading world objects..."),
         TextFont { font_size: FontSize::Px(18.0), ..default() },
         TextColor(Color::srgb(0.92, 0.95, 1.0)),
         Node {
             position_type: PositionType::Absolute,
             left: Val::Px(18.0),
-            top: Val::Px(16.0),
+            bottom: Val::Px(16.0),
             ..default()
         },
         ViewerOverlay,
@@ -283,7 +283,7 @@ fn update_overlay(
     let frame_ms = diagnostics.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|diagnostic| diagnostic.value());
     let entities = diagnostics.get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT).and_then(|diagnostic| diagnostic.value());
     let value = format!(
-        "{}  •  place={}  •  objects={}  •  proxy meshes={}  •  light={}  •  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path • headless world API preserved\nBevy DiagnosticsStore • fps={} • frame={}ms • entities={} • I toggles browser inspector in wasm viewer",
+        "{}  |  place={}  |  objects={}  |  proxy meshes={}  |  light={}  |  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path | headless world API preserved\nBevy DiagnosticsStore | fps={} | frame={}ms | entities={} | I toggles browser inspector in wasm viewer",
         scene.title, scene.place, scene.objects, visible, scene.lights, scene.camera.x, scene.camera.y, scene.camera.z,
         fps.map(|value| format!("{value:.1}")).unwrap_or_else(|| "unavailable".to_string()),
         frame_ms.map(|value| format!("{value:.2}")).unwrap_or_else(|| "unavailable".to_string()),
@@ -300,7 +300,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>) {
     if report.path.is_empty() {
         return;
     }
@@ -342,6 +342,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "visibleIds": ids,
         "uiNodes": ui.nodes,
         "uiWarnings": ui.warnings,
+        "uiUncoveredGlyphs": ui.uncovered + overlay.iter().map(|text| uncovered_glyph_count(&text.0)).sum::<usize>(),
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
