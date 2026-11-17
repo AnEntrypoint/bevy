@@ -1,0 +1,30 @@
+cube-b1:
+  id: cube-b1
+  primitive: { kind: cube, size: 1 }
+  feetPosition: { x: -6, y: 0, z: 0 }
+  physics: static
+cube-b2:
+  id: cube-b2
+  primitive: { kind: cube, size: 1 }
+  feetPosition: { x: -4, y: 0, z: 0 }
+  physics: static
+boxy-b1:
+  id: boxy-b1
+  primitive: { kind: boxy }
+  feetPosition: { x: -2, y: 0, z: 0 }
+  physics: static
+boxy-b2:
+  id: boxy-b2
+  primitive: { kind: boxy }
+  feetPosition: { x: 0, y: 0, z: 0 }
+  physics: static
+pad-b1:
+  id: pad-b1
+  primitive: { kind: pad }
+  feetPosition: { x: 2, y: 0, z: 0 }
+  physics: static
+pad-b2:
+  id: pad-b2
+  primitive: { kind: pad }
+  feetPosition: { x: 4, y: 0, z: 0 }
+  physics: static
