@@ -651,3 +651,37 @@ Changes, each a local commit by lanmower with no trailers; no build, test or wit
 | If the decision is `bc7`: the decoded cache default becomes BC7 (`gltf-check` default target, `glb::decode`) | Phase B only, conditional | `gltf-check` rc 0 on the switched cache; RGBA8-to-BC7 neon witness 64 of 64 on `target/gltf-cache`; normal-map witness; HUD overlap witness; `cargo test`; `verify.sh` |
 
 Risk recorded before measuring: a BC7 cache needs `texture-compression-bc` on the GPU. Desktop WebGPU (the witness host, NVIDIA) has it; most mobile GPUs do not, and there the BC7 images would not load. None of the witnesses cover a device without BC support.
+
+## Round 18 Phase B results
+
+Contention: the gate read swap-out 0 KB/s and over 10 GB free with no cargo before each build. One cargo ran at a time, and the unit suite never ran alongside a build. The release build ran in the background under `timeout 1500` with its PID in `target/witness/build-release.pid`; it was waited on with bounded `tail --pid` calls, not a Monitor.
+
+Rows from Round 18 Phase A, with their witnesses:
+
+| Change | Witness | Result |
+| --- | --- | --- |
+| `glb::ktx2_images` | dev build, then used by `texture-quality` | build rc 0, no warnings; `texture-quality` read every image with no errors |
+| `texture-quality` subcommand (`bcdec_rs` 0.2.1) | `target/debug/bevy-jayzee texture-quality /workspace/neon-syndicates/assets/cdn` → `target/witness/texture-texel.json` | `ok: true`, 12 models, 61 basis images, level-0 PSNR minimum 41.70 dB (`value.279b3bbd` image 2), median 53.51 dB, largest channel error 69; `errors` empty. Values that high also show the BC7 decoder is decoding correctly |
+| Texel criterion gates the decision | `node scripts/texture-footprint.cjs` | `decision: bc7`; footprint, load, clean and visual all true |
+| BC7 becomes the default decoded cache (526406e): `glb::decode` and plain `gltf-check` write BC7 to `target/gltf-cache`; `gltf-check <dir> <project> rgba8` writes `target/gltf-cache-rgba8`; the neon witness defaults to BC7 and takes `NEON_TEXTURE=rgba8`; AGENTS.md updated (11,198 bytes) | the witnesses below | all pass |
+
+BC7 measurement on the final build:
+
+- Footprint over the 12 Zstandard models: texel payload 60,578,736 bytes BC7 against 242,308,356 RGBA8 (0.2500); cache GLB bytes 99,689,200 against 281,422,780.
+- Load (neon browser witness through the gm gate, 64 models each): BC7 on `target/gltf-cache` `ok: true`, 64 of 64 clean, median 1,103 ms, max 2,800 ms, GLB transfer 101,358,620 bytes. RGBA8 on `target/gltf-cache-rgba8` `ok: true`, 64 of 64 clean, median 1,122 ms, max 3,524 ms, GLB transfer 283,092,200 bytes.
+- Visible quality: texel PSNR above. The screenshot PSNR is reported and does not gate: median 32.2 dB, minimum 15.6 dB, the same range as the RGBA8-against-RGBA8 control from Round 17.
+- Decision: BC7. The cache switch is in 526406e.
+
+Other witnesses on the final tree:
+
+- `cargo test --bin bevy-jayzee`: 54 passed, 0 failed.
+- `gltf-check` on the neon CDN: default (BC7) `bevy_loaded` 64, `bevy_failed` 0, `decode_failed` 0; `rgba8` the same. `gltf-check testdata/normal-map`: `bevy_loaded` 1, `bevy_failed` 0.
+- `scripts/check-normal-map-visual.cjs`: `ok: true`, raw and decoded both `loaded`, one adapter, no tangent warnings, no failed requests.
+- `scripts/check-hud-overlap.sh` on neon `main`, viewer now loading BC7 models: `uiLabels` 17, `uiLabelOverlaps` 0, `uiUncoveredGlyphs` 0, `modelsLoaded` 9, `modelsMissing` [], exit 0; screenshot `target/witness/neon-hud.png`. The 15 `Unsupported vertex attribute format` warnings in the viewer log are the same count as Round 16's log and are not texture related.
+- Release build: rc 0, 10 m 33 s. `bash scripts/verify.sh` once on it: exit 0; bench means 0.4168 / 0.7683 / 1.3624 ms at 500 / 2000 / 5000 bodies; determinism `hashA` = `hashB` = 0x3a5f0b51; network check `ok: true`, `errorM` 0, `singleClientReport` true. The bench means are not compared back-to-back with an earlier run, so they are not called a regression or an improvement.
+- Processes: every browser (2396428, 2403629, 2406205), gate (2396407, 2403614), viewer (2406502) and the release build (2406890) started this round has exited.
+
+Open, recorded:
+
+- Portability: the BC7 cache needs `texture-compression-bc`. The witness host has it (NVIDIA, desktop WebGPU). A device without it (most mobile GPUs) cannot use the BC7 images; `gltf-check ... rgba8` produces the RGBA8 cache, but nothing serves it automatically to such devices.
+- gm PATH: gm's fix (5f0b8ce, documented in f47d502) puts `.gmnew/pw/bin` first on the gm shell PATH. The gm host running this session is `2d72a75`, before that fix: a fresh gm shell still has no `playwriter-project` on PATH, and `command -v playwriter` names `/data/cache/npm-global/bin/playwriter`, which has no project gate. The witnesses ran with `PATH=/config/.gmnew/pw/bin:$PATH`; the repo still does not hardcode the path. The lib needs no change once the host is updated.
