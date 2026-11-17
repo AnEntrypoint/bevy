@@ -1,6 +1,8 @@
 use bevy::asset::{AssetMetaCheck, AssetPlugin, LoadState};
 use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats};
 use bevy::prelude::*;
+use bevy::render::settings::{RenderCreation, WgpuFeatures, WgpuSettings};
+use bevy::render::RenderPlugin;
 use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
     LogDiagnosticsPlugin,
@@ -57,7 +59,8 @@ pub fn start() {
             ..default()
         }),
         ..default()
-    }))
+    })
+    .set(RenderPlugin { render_creation: device_request(bc_disabled_by_query()), ..default() }))
     .add_plugins((
         FrameTimeDiagnosticsPlugin::default(),
         EntityCountDiagnosticsPlugin::default(),
@@ -149,6 +152,21 @@ fn model_request() -> Option<String> {
     let model = web_sys::UrlSearchParams::new_with_str(&search).ok()?.get("model")?;
     let path = model.trim_start_matches('/').to_string();
     (!path.is_empty() && !path.split('/').any(|part| part == "..")).then_some(path)
+}
+
+fn bc_disabled_by_query() -> bool {
+    web_sys::window()
+        .and_then(|window| window.location().search().ok())
+        .and_then(|search| web_sys::UrlSearchParams::new_with_str(&search).ok())
+        .and_then(|params| params.get("disable-bc"))
+        .is_some_and(|value| value == "1")
+}
+
+fn device_request(disable_bc: bool) -> RenderCreation {
+    RenderCreation::Automatic(Box::new(WgpuSettings {
+        disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
+        ..default()
+    }))
 }
 
 fn texture_choice(path: &str, bc_supported: bool) -> (String, &'static str) {
