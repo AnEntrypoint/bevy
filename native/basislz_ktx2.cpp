@@ -28,7 +28,7 @@ int32_t bevy_basislz_info(const uint8_t* data, uint32_t size, uint32_t* width, u
     return 0;
 }
 
-int64_t bevy_basislz_transcode_level(const uint8_t* data, uint32_t size, uint32_t level, uint8_t* out, uint64_t capacity) {
+int64_t bevy_basislz_transcode_level(const uint8_t* data, uint32_t size, uint32_t level, uint8_t* out, uint64_t capacity, uint32_t bc7) {
     ensure_transcoder_init();
     basist::ktx2_transcoder transcoder;
     if (!transcoder.init(data, size) || !transcoder.start_transcoding()) {
@@ -37,6 +37,16 @@ int64_t bevy_basislz_transcode_level(const uint8_t* data, uint32_t size, uint32_
     basist::ktx2_image_level_info info;
     if (!transcoder.get_image_level_info(info, level, 0, 0)) {
         return -2;
+    }
+    if (bc7 != 0) {
+        const uint64_t blocks = static_cast<uint64_t>(info.m_num_blocks_x) * info.m_num_blocks_y;
+        if (capacity < blocks * 16) {
+            return -3;
+        }
+        if (!transcoder.transcode_image_level(level, 0, 0, out, static_cast<uint32_t>(blocks), basist::transcoder_texture_format::cTFBC7_RGBA)) {
+            return -4;
+        }
+        return static_cast<int64_t>(blocks * 16);
     }
     const uint64_t pixels = static_cast<uint64_t>(info.m_orig_width) * info.m_orig_height;
     if (capacity < pixels * 4) {

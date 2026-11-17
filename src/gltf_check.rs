@@ -1,5 +1,5 @@
 use crate::glb::{self, Decoded};
-use crate::png_check;
+use crate::{basisu, png_check};
 use bevy::asset::{AssetPlugin, LoadState};
 use bevy::gltf::{Gltf, GltfPlugin};
 use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats, Image, ImagePlugin};
@@ -17,7 +17,6 @@ const GLB_VERSION: u32 = 2;
 const CHUNK_JSON: u32 = 0x4E4F_534A;
 const CHUNK_BIN: u32 = 0x004E_4942;
 const REFERENCE_DIRS: [&str; 3] = ["pages", "world", "values"];
-const CACHE_DIR: &str = "target/gltf-cache";
 
 struct BevyLoad {
     outcome: Result<(), String>,
@@ -25,7 +24,7 @@ struct BevyLoad {
     ktx2_images: usize,
 }
 
-pub fn run(directory: &str, project: Option<&str>) -> bool {
+pub fn run(directory: &str, project: Option<&str>, target: basisu::TextureTarget) -> bool {
     let root = match std::fs::canonicalize(directory) {
         Ok(root) => root,
         Err(error) => {
@@ -41,8 +40,8 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
     });
     let glb_files = collect_sorted(&root, &|path: &Path| has_extension(path, "glb"));
     let png_files = collect_sorted(&root, &|path: &Path| has_extension(path, "png"));
-    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(CACHE_DIR);
-    let decodes = decode_to_cache(&root, &cache, &glb_files);
+    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(target.cache_dir());
+    let decodes = decode_to_cache(&root, &cache, &glb_files, target);
     let bevy_loads = load_with_bevy(&cache, &decodes);
 
     let glb_total = glb_files.len();
@@ -181,6 +180,7 @@ fn decode_to_cache(
     root: &Path,
     cache: &Path,
     files: &[PathBuf],
+    target: basisu::TextureTarget,
 ) -> BTreeMap<String, Result<Decoded, String>> {
     files
         .iter()
@@ -188,7 +188,7 @@ fn decode_to_cache(
             let relative = relative_name(root, path);
             let decoded = std::fs::read(path)
                 .map_err(|error| error.to_string())
-                .and_then(|bytes| glb::decode(&bytes))
+                .and_then(|bytes| glb::decode_with(&bytes, target))
                 .and_then(|decoded| write_cached(cache, &relative, &decoded.bytes).map(|()| decoded));
             (relative, decoded)
         })

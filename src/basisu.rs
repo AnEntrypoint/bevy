@@ -75,6 +75,44 @@ const KTX2_SGD_LENGTH_OFFSET: usize = 72;
 const VK_FORMAT_UNDEFINED: u32 = 0;
 const SUPERCOMPRESSION_ZSTD: u32 = 2;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
+const VK_FORMAT_BC7_UNORM: u32 = 145;
+const KHR_DF_MODEL_BC7: u8 = 134;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextureTarget {
+    Rgba8,
+    Bc7,
+}
+
+impl TextureTarget {
+    pub fn cache_dir(self) -> &'static str {
+        match self {
+            Self::Rgba8 => "target/gltf-cache",
+            Self::Bc7 => "target/gltf-cache-bc7",
+        }
+    }
+
+    fn vk_format(self) -> u32 {
+        match self {
+            Self::Rgba8 => VK_FORMAT_R8G8B8A8_UNORM,
+            Self::Bc7 => VK_FORMAT_BC7_UNORM,
+        }
+    }
+
+    fn level_bytes(self, width: usize, height: usize) -> usize {
+        match self {
+            Self::Rgba8 => width * height * 4,
+            Self::Bc7 => width.div_ceil(4) * height.div_ceil(4) * 16,
+        }
+    }
+
+    fn dfd(self) -> Vec<u8> {
+        match self {
+            Self::Rgba8 => rgba8_dfd(),
+            Self::Bc7 => wrap_dfd(bc7_block()),
+        }
+    }
+}
 
 unsafe extern "C" {
     fn bevy_basislz_info(
@@ -86,10 +124,10 @@ unsafe extern "C" {
         layers: *mut u32,
         faces: *mut u32,
     ) -> i32;
-    fn bevy_basislz_transcode_level(data: *const u8, size: u32, level: u32, out: *mut u8, capacity: u64) -> i64;
+    fn bevy_basislz_transcode_level(data: *const u8, size: u32, level: u32, out: *mut u8, capacity: u64, bc7: u32) -> i64;
 }
 
-pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<usize, String> {
+pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>, target: TextureTarget) -> Result<usize, String> {
     let targets: Vec<(usize, usize)> = json
         .get("images")
         .and_then(Value::as_array)
@@ -123,7 +161,7 @@ pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<usi
         let new_view = match rewritten.get(&view_index) {
             Some(index) => *index,
             None => {
-                let rgba = transcode_basis(source).map_err(|error| format!("image {image_index}: {error}"))?;
+                let rgba = transcode_basis(source, target).map_err(|error| format!("image {image_index}: {error}"))?;
                 let buffer = view.get("buffer").and_then(Value::as_u64).unwrap_or(0);
                 let aligned = bin.len().next_multiple_of(4);
                 bin.resize(aligned, 0);
@@ -161,7 +199,7 @@ fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
         .map(u32::from_le_bytes)
 }
 
-pub fn transcode_basis(input: &[u8]) -> Result<Vec<u8>, String> {
+pub fn transcode_basis(input: &[u8], target: TextureTarget) -> Result<Vec<u8>, String> {
     let inflated = inflate_zstd_levels(input)?;
     let bytes = inflated.as_deref().unwrap_or(input);
     let size = u32::try_from(bytes.len()).map_err(|_| "KTX2 texture is larger than 4 GiB".to_string())?;
@@ -179,17 +217,18 @@ pub fn transcode_basis(input: &[u8]) -> Result<Vec<u8>, String> {
     for level in 0..levels.max(1) {
         let level_width = width.checked_shr(level).unwrap_or(0).max(1) as usize;
         let level_height = height.checked_shr(level).unwrap_or(0).max(1) as usize;
-        let capacity = level_width * level_height * 4;
+        let capacity = target.level_bytes(level_width, level_height);
         let mut buffer = vec![0u8; capacity];
+        let bc7 = u32::from(target == TextureTarget::Bc7);
         let written = unsafe {
-            bevy_basislz_transcode_level(bytes.as_ptr(), size, level, buffer.as_mut_ptr(), capacity as u64)
+            bevy_basislz_transcode_level(bytes.as_ptr(), size, level, buffer.as_mut_ptr(), capacity as u64, bc7)
         };
         if written != capacity as i64 {
             return Err(format!("basis transcoder failed on level {level} (status {written})"));
         }
         pixels.push(buffer);
     }
-    Ok(rgba8_ktx2_bytes(width, height, &pixels))
+    Ok(ktx2_bytes(target, width, height, &pixels))
 }
 
 fn inflate_zstd_levels(bytes: &[u8]) -> Result<Option<Vec<u8>>, String> {
@@ -253,8 +292,8 @@ fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
         .map(u64::from_le_bytes)
 }
 
-pub fn rgba8_ktx2_bytes(width: u32, height: u32, levels: &[Vec<u8>]) -> Vec<u8> {
-    let dfd = rgba8_dfd();
+pub fn ktx2_bytes(target: TextureTarget, width: u32, height: u32, levels: &[Vec<u8>]) -> Vec<u8> {
+    let dfd = target.dfd();
     let dfd_offset = KTX2_HEADER_LEN + KTX2_LEVEL_ENTRY_LEN * levels.len();
     let mut offsets = vec![0usize; levels.len()];
     let mut cursor = dfd_offset + dfd.len();
@@ -264,7 +303,7 @@ pub fn rgba8_ktx2_bytes(width: u32, height: u32, levels: &[Vec<u8>]) -> Vec<u8> 
     }
     let mut out = Vec::with_capacity(cursor);
     out.extend_from_slice(&KTX2_IDENTIFIER);
-    for value in [VK_FORMAT_R8G8B8A8_UNORM, 1, width, height, 0, 0, 1, levels.len() as u32, 0] {
+    for value in [target.vk_format(), 1, width, height, 0, 0, 1, levels.len() as u32, 0] {
         out.extend_from_slice(&value.to_le_bytes());
     }
     for value in [dfd_offset as u32, dfd.len() as u32, 0, 0] {
@@ -301,6 +340,21 @@ fn rgba8_dfd() -> Vec<u8> {
         block.extend_from_slice(&0u32.to_le_bytes());
         block.extend_from_slice(&255u32.to_le_bytes());
     }
+    wrap_dfd(block)
+}
+
+fn bc7_block() -> Vec<u8> {
+    let mut block = Vec::with_capacity(24);
+    block.extend_from_slice(&0u32.to_le_bytes());
+    block.extend_from_slice(&2u16.to_le_bytes());
+    block.extend_from_slice(&24u16.to_le_bytes());
+    block.extend_from_slice(&[KHR_DF_MODEL_BC7, 1, 1, 0]);
+    block.extend_from_slice(&[3, 3, 0, 0]);
+    block.extend_from_slice(&[16, 0, 0, 0, 0, 0, 0, 0]);
+    block
+}
+
+fn wrap_dfd(block: Vec<u8>) -> Vec<u8> {
     let mut dfd = Vec::with_capacity(block.len() + 4);
     dfd.extend_from_slice(&((block.len() + 4) as u32).to_le_bytes());
     dfd.extend_from_slice(&block);
@@ -309,7 +363,7 @@ fn rgba8_dfd() -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_basis_ktx2, promote, rgba8_ktx2_bytes, transcode_basis, transcode_basis_images};
+    use super::{is_basis_ktx2, ktx2_bytes, promote, transcode_basis, transcode_basis_images, TextureTarget};
     use serde_json::json;
 
     #[test]
@@ -327,7 +381,7 @@ mod tests {
 
     #[test]
     fn rgba8_ktx2_lists_levels_smallest_first_and_writes_a_dfd() {
-        let bytes = rgba8_ktx2_bytes(4, 2, &[vec![7u8; 32], vec![9u8; 8]]);
+        let bytes = ktx2_bytes(TextureTarget::Rgba8, 4, 2, &[vec![7u8; 32], vec![9u8; 8]]);
         assert_eq!(&bytes[..12], &[0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n']);
         assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), 37);
         assert_eq!(u32::from_le_bytes(bytes[20..24].try_into().unwrap()), 4);
@@ -342,6 +396,17 @@ mod tests {
         assert_eq!(&bytes[level0..level0 + 32], &[7u8; 32]);
         assert_eq!(&bytes[level1..level1 + 8], &[9u8; 8]);
         assert!(level1 < level0);
+    }
+
+    #[test]
+    fn bc7_ktx2_declares_bc7_and_sizes_levels_in_blocks() {
+        assert_eq!(TextureTarget::Bc7.level_bytes(5, 3), 2 * 1 * 16);
+        assert_eq!(TextureTarget::Rgba8.level_bytes(5, 3), 60);
+        let bytes = ktx2_bytes(TextureTarget::Bc7, 8, 4, &[vec![3u8; 32], vec![5u8; 16]]);
+        assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), 145);
+        assert_eq!(u32::from_le_bytes(bytes[40..44].try_into().unwrap()), 2);
+        let dfd = u32::from_le_bytes(bytes[48..52].try_into().unwrap()) as usize;
+        assert_eq!(bytes[dfd + 12], 134);
     }
 
     fn zstd_raw_frame(data: &[u8]) -> Vec<u8> {
@@ -389,18 +454,19 @@ mod tests {
 
     #[test]
     fn transcoding_rejects_bytes_that_are_not_ktx2() {
-        assert!(transcode_basis(&[0u8; 96]).is_err());
+        assert!(transcode_basis(&[0u8; 96], TextureTarget::Rgba8).is_err());
+        assert!(transcode_basis(&[0u8; 96], TextureTarget::Bc7).is_err());
     }
 
     #[test]
     fn images_that_are_not_basis_keep_their_buffer_view() {
-        let original = rgba8_ktx2_bytes(1, 1, &[vec![1, 2, 3, 4]]);
+        let original = ktx2_bytes(TextureTarget::Rgba8, 1, 1, &[vec![1, 2, 3, 4]]);
         let mut bin = original.clone();
         let mut document = json!({
             "images": [{"mimeType": "image/ktx2", "bufferView": 0}],
             "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": original.len()}]
         });
-        assert_eq!(transcode_basis_images(&mut document, &mut bin).unwrap(), 0);
+        assert_eq!(transcode_basis_images(&mut document, &mut bin, TextureTarget::Bc7).unwrap(), 0);
         assert_eq!(bin, original);
         assert_eq!(document["images"][0]["bufferView"], json!(0));
         assert_eq!(document["bufferViews"].as_array().unwrap().len(), 1);

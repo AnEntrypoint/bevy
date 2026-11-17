@@ -58,7 +58,11 @@ fn main() {
         Some("gltf-check") => {
             let directory = args.get(1).map(String::as_str).unwrap_or("/workspace/neon-syndicates/assets/cdn");
             let project = args.get(2).map(String::as_str);
-            if !gltf_check::run(directory, project) {
+            let target = match args.get(3).map(String::as_str) {
+                Some("bc7") => basisu::TextureTarget::Bc7,
+                _ => basisu::TextureTarget::Rgba8,
+            };
+            if !gltf_check::run(directory, project, target) {
                 std::process::exit(1);
             }
         }
