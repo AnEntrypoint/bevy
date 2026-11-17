@@ -1179,3 +1179,57 @@ Phase A: dc4f9ed, 17032f9, bc2c941, 568e608, c7e40c6. Phase B: 914d88f (still ca
 5. The screenshot cross-adapter caveat: BC7 is compared with a hardware RGBA8 render, and ASTC and ETC2 with a SwiftShader RGBA8 render. Each pair is on one adapter, but the references differ. Open: a SwiftShader BC7 set would remove the difference. Reason left undone: the queue asked for the new formats on the fallback adapter, and the BC7 reference already passes.
 6. The batching floor (1, 0): accepted by the owner; revert note recorded in Round 25 Phase A.
 7. The Round 23 list is unchanged: colour and transform transitions, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation.
+
+
+## Round 27 Phase A: performance metrics wired or removed
+
+Phase A is code, docs and local commits only. Nothing here was built, run or witnessed. The only check was a syntax parse of web/inspector.js, which is not a test. Phase B builds and witnesses.
+
+Commits, all as lanmower with no trailers: 1057517 (native HUD), 921c1d9 (wasm snapshot), a09b7c4 (inspector renders the snapshot only), 4b2cdca (check-inspector.cjs fails on stubs), and the commit that adds this section.
+
+### Metric sources
+
+| Metric | Surface | Source | Status |
+|---|---|---|---|
+| FPS | strip | FrameTimeDiagnosticsPlugin fps | real |
+| MEMQ | strip | WebAssembly.Memory buffer byteLength | real in wasm; native has no wasm memory |
+| MEMO | strip | performance.memory.usedJSHeapSize | real in Chromium; unsupported elsewhere, with reason |
+| DRAW | strip, bar | timer around RenderSystems::Render in the render world (encode, submit, present) | real |
+| SHOW | strip, bar | none | unsupported: present_frames runs inside render_system with no hook in Bevy 0.20.1; its time is counted in DRAW |
+| SIM | strip, bar | First to Last schedule timer in the main world | real |
+| LAUNCH | strip, bar | Last end to Render start (extract handoff) | real |
+| CPU total | bar | First start to Render end | real |
+| GPU | bar | RenderDiagnosticsPlugin elapsed_gpu spans, summed | real when TIMESTAMP_QUERY is enabled; otherwise unsupported with the device feature list |
+| DRAWS | metric | RenderVisibleEntities<Mesh3d> of the main views | real; batching is not counted |
+| SHADOW-MAP DRAWS | metric | RenderVisibleEntities<Mesh3d> of ViewLightEntities shadow views | real |
+| TRIANGLES | metric | RenderMeshInstances mesh asset, RenderAssets<RenderMesh> index count / 3 (vertex_count / 3 when non-indexed) | real |
+| SHADOW TRIS | metric | same, shadow views | real |
+| SHADOW PASSES | metric | ViewLightEntities.lights count | real; 0 in the wasm scene because shadow maps are disabled |
+| ENTITIES | metric | EntityCountDiagnosticsPlugin | real |
+| MESHES | metric | Assets<Mesh>::len | real |
+| SPRITES | metric | Query<Sprite> | real |
+| TEXTURES | metric | Assets<Image>::len | new |
+| TEXTURE BYTES | metric | sum of Assets<Image> data lengths (CPU side) | new; GPU texture bytes are not readable from Bevy |
+
+### Removed, with reasons
+
+- CASCADE SKIPS: Bevy 0.20.1 exposes no cascade-skip counter, so there is no source.
+- TERRAIN: the wasm scene has no terrain plugin, so a count would always be zero.
+- Frame bars adapter CPU, Lume GPU renderer, process/queue and on-demand timing: no source. Lume was another project's label.
+- The FPS frame bar: a duplicate of the strip FPS.
+- The static unavailable list in the snapshot: replaced by per-entry reasons and an unsupported list.
+
+### Design
+
+- src/render_stats.rs is the shared module. The wasm viewer includes it with a path attribute. RenderStatsPlugin takes main-world timers in First and Last, render-world timers around RenderSystems::Render, and the counters in RenderSystems::Cleanup. The state is an Arc of Mutex of FrameStats, shared between the two worlds.
+- RenderDiagnosticsPlugin is added explicitly in both apps, because RenderPlugin adds it only under the tracing-tracy feature.
+- Bevy's default WgpuSettings priority requests every adapter feature, so TIMESTAMP_QUERY is on whenever the adapter has it. The snapshot records the device feature list in either case.
+- The snapshot entry constructor always sets a reason when the value is absent, so the inspector and the checker can rely on that.
+- The native HUD prints the same values. RSS comes from /proc/self/statm and assumes a 4096-byte page, which holds on Linux x86_64.
+
+### Not verified (Phase B must settle these)
+
+- Names: bevy::platform::time::Instant, bevy::render::view::RenderVisibleEntities, bevy::pbr::{RenderMeshInstances, ViewLightEntities}, the RenderMesh.vertex_count and RenderMeshBufferInfo::Indexed count fields, and App::get_sub_app_mut. The compile settles each one.
+- Whether the render-world visibility lists are populated when RenderSystems::Cleanup runs in both viewers.
+- Whether the wasm software adapter reports TIMESTAMP_QUERY.
+- Whether RenderDiagnosticsPlugin records GPU spans on this host.
