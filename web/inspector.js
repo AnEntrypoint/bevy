@@ -1,5 +1,5 @@
 const tabs = ['Performance','GPU Passes','Frame Graph','Scene','Memory','Textures','Multiplayer','Log','Jobs','Terrain','Fields','World','ECS','Physics','Vibes','Parameters','Diagnostic'];
-const colors = ['var(--flag-green-text)','var(--flag-gold-text)','var(--flag-blue-text)','var(--flag-red-text)','var(--ui-text)','var(--ui-muted)','var(--flag-green-text)'];
+const colors = ['var(--flag-green-text)','var(--flag-gold-text)','var(--flag-blue-text)','var(--ui-text)','var(--ui-muted)','var(--flag-green-text)','var(--flag-gold-text)'];
 const q = (id) => document.getElementById(id);
 const root = q('render-inspector');
 const query = new URLSearchParams(location.search);
