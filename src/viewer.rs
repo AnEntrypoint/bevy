@@ -260,6 +260,9 @@ fn feed_ui_html(mut source: ResMut<HtmlUiSource>) {
 #[derive(Component)]
 struct ViewerOverlay;
 
+#[derive(Component)]
+struct ViewerStatsOverlay;
+
 #[derive(Resource, Clone, Debug, Default)]
 pub struct ViewerObjects(pub Vec<ObjectSpec>);
 
@@ -337,6 +340,20 @@ fn spawn_viewer(
         ViewerOverlay,
         Name::new("viewer-overlay"),
     ));
+    commands.spawn((
+        Text::new("render stats"),
+        TextFont { font_size: FontSize::Px(14.0), ..default() },
+        TextColor(Color::srgb(0.910, 0.945, 1.0)),
+        Node {
+            position_type: PositionType::Absolute,
+            right: Val::Px(18.0),
+            bottom: Val::Px(200.0),
+            max_width: Val::Percent(65.0),
+            ..default()
+        },
+        ViewerStatsOverlay,
+        Name::new("viewer-stats-overlay"),
+    ));
 }
 
 fn orbit_camera(
@@ -398,7 +415,8 @@ fn update_overlay(
     diagnostics: Res<DiagnosticsStore>,
     frame_stats: Res<crate::render_stats::SharedFrameStats>,
     objects: Query<&ViewerObject>,
-    mut text: Query<&mut Text, With<ViewerOverlay>>,
+    mut text: Query<&mut Text, (With<ViewerOverlay>, Without<ViewerStatsOverlay>)>,
+    mut stats_text: Query<&mut Text, (With<ViewerStatsOverlay>, Without<ViewerOverlay>)>,
 ) {
     let visible = objects.iter().map(|object| { let _ = object.kind.as_str(); 1 }).sum::<usize>();
     let fps = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|diagnostic| diagnostic.value());
@@ -417,17 +435,23 @@ fn update_overlay(
         format!("{:.3}ms over {} passes", gpu_passes.iter().sum::<f64>(), gpu_passes.len())
     };
     let value = format!(
-        "{}  |  place={}  |  objects={}  |  proxy meshes={}  |  light={}  |  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path | headless world API preserved\nBevy DiagnosticsStore | fps={} | frame={}ms | entities={} | I toggles browser inspector in wasm viewer\nRender world | draws={} | triangles={} | shadow draws={} | shadow triangles={} | shadow passes={}\nFrame phases | SIM={} | LAUNCH={} | DRAW={} | SHOW=unsupported (present runs inside the render system) | CPU total={}\nGPU passes | {} | process RSS={}",
+        "{}  |  place={}  |  objects={}  |  proxy meshes={}  |  light={}  |  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path | headless world API preserved\nBevy DiagnosticsStore | fps={} | frame={}ms | entities={} | I toggles browser inspector in wasm viewer",
         scene.title, scene.place, scene.objects, visible, scene.lights, scene.camera.x, scene.camera.y, scene.camera.z,
         fps.map(|value| format!("{value:.1}")).unwrap_or_else(|| "unavailable".to_string()),
         frame_ms.map(|value| format!("{value:.2}")).unwrap_or_else(|| "unavailable".to_string()),
         entities.map(|value| format!("{value:.0}")).unwrap_or_else(|| "unavailable".to_string()),
+    );
+    for mut text in &mut text {
+        text.0 = value.clone();
+    }
+    let stats_value = format!(
+        "Render world | draws={} | triangles={} | shadow draws={} | shadow tris={} | passes={}\nFrame phases | SIM={} | LAUNCH={} | DRAW={} | SHOW=unsupported | CPU total={}\nGPU passes | {} | RSS={}",
         stats.main.draws, stats.main.triangles, stats.shadow.draws, stats.shadow.triangles, stats.shadow_passes,
         ms(stats.sim_ms), ms(stats.launch_ms), ms(stats.draw_ms), ms(stats.cpu_ms),
         gpu, process_rss_mib()
     );
-    for mut text in &mut text {
-        text.0 = value.clone();
+    for mut text in &mut stats_text {
+        text.0 = stats_value.clone();
     }
 }
 
