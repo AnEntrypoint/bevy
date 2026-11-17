@@ -750,10 +750,42 @@ fn parse_val(value: &str) -> Option<Val> {
     if value == "auto" {
         return Some(Val::Auto);
     }
+    if let Some(inner) = value.strip_prefix("calc(").and_then(|rest| rest.strip_suffix(')')) {
+        return parse_calc(inner);
+    }
     if let Some(percent) = value.strip_suffix('%') {
         return percent.parse::<f32>().ok().map(Val::Percent);
     }
     parse_px(value).map(Val::Px)
+}
+
+fn parse_calc(inner: &str) -> Option<Val> {
+    let mut px = 0.0_f32;
+    let mut percent = 0.0_f32;
+    let mut sign = 1.0_f32;
+    for token in inner.split_whitespace() {
+        match token {
+            "+" => sign = 1.0,
+            "-" => sign = -1.0,
+            term => {
+                match term.strip_suffix('%') {
+                    Some(number) => percent += sign * number.parse::<f32>().ok()?,
+                    None => px += sign * parse_px(term)?,
+                }
+                sign = 1.0;
+            }
+        }
+    }
+    Some(if percent != 0.0 { Val::Percent(percent) } else { Val::Px(px) })
+}
+
+pub fn overlapping_pairs(rects: &[[f32; 4]]) -> usize {
+    rects
+        .iter()
+        .enumerate()
+        .flat_map(|(index, a)| rects[index + 1..].iter().map(move |b| (a, b)))
+        .filter(|(a, b)| a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3])
+        .count()
 }
 
 fn shorthand<T: Clone>(value: &str, parse: impl Fn(&str) -> Option<T>) -> Option<[T; 4]> {
@@ -1563,6 +1595,27 @@ mod tests {
         assert_eq!(out, "?");
         assert_eq!(uncovered_glyph_count("a | b\n"), 0);
         assert_eq!(uncovered_glyph_count("a\u{e9}"), 1);
+    }
+
+    #[test]
+    fn calc_insets_resolve_to_the_summed_terms() {
+        assert!(matches!(parse_val("calc(18px + 0px)"), Some(Val::Px(v)) if v == 18.0));
+        assert!(matches!(parse_val("calc(24px - 4px)"), Some(Val::Px(v)) if v == 20.0));
+        assert!(matches!(parse_val("calc(-6px + 2px)"), Some(Val::Px(v)) if v == -4.0));
+        assert!(matches!(parse_val("calc(50% + 0px)"), Some(Val::Percent(v)) if v == 50.0));
+        assert!(matches!(parse_val("calc(24% + 200px)"), Some(Val::Percent(v)) if v == 24.0));
+        assert!(parse_val("calc(oops)").is_none());
+    }
+
+    #[test]
+    fn overlapping_pairs_counts_only_real_intersections() {
+        let touching = [[0.0, 0.0, 10.0, 10.0], [10.0, 0.0, 20.0, 10.0]];
+        assert_eq!(overlapping_pairs(&touching), 0);
+        let overlap = [[0.0, 0.0, 10.0, 10.0], [5.0, 5.0, 15.0, 15.0], [40.0, 0.0, 50.0, 10.0]];
+        assert_eq!(overlapping_pairs(&overlap), 1);
+        let stacked = [[0.0, 0.0, 10.0, 10.0], [0.0, 0.0, 10.0, 10.0], [0.0, 0.0, 10.0, 10.0]];
+        assert_eq!(overlapping_pairs(&stacked), 3);
+        assert_eq!(overlapping_pairs(&[]), 0);
     }
 
     #[test]

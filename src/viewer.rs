@@ -1,12 +1,13 @@
 use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use bevy::ui::{ComputedNode, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowResolution};
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
-use crate::ui_html::{uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
+use crate::ui_html::{overlapping_pairs, uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus};
 use crate::{script, viewer_world, world};
 
 #[derive(Resource, Clone, Debug)]
@@ -300,12 +301,21 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform)>) {
     if report.path.is_empty() {
         return;
     }
     let mut ids = objects.iter().map(|object| object.id.clone()).collect::<Vec<_>>();
     ids.sort();
+    let rects = labels
+        .iter()
+        .filter(|(text, node, _)| !text.0.is_empty() && node.size.x > 0.0 && node.size.y > 0.0)
+        .map(|(_, node, transform)| {
+            let center = transform.translation;
+            let half = node.size * 0.5;
+            [center.x - half.x, center.y - half.y, center.x + half.x, center.y + half.y]
+        })
+        .collect::<Vec<_>>();
     let value = serde_json::json!({
         "kind": "viewer-status",
         "title": scene.title,
@@ -343,6 +353,8 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "uiNodes": ui.nodes,
         "uiWarnings": ui.warnings,
         "uiUncoveredGlyphs": ui.uncovered + overlay.iter().map(|text| uncovered_glyph_count(&text.0)).sum::<usize>(),
+        "uiLabels": rects.len(),
+        "uiLabelOverlaps": overlapping_pairs(&rects),
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
