@@ -12,6 +12,11 @@ use bevy::window::{PrimaryWindow, WindowResolution};
 use bevy::world_serialization::{WorldAsset, WorldAssetRoot};
 use wasm_bindgen::prelude::*;
 
+#[path = "../../src/render_stats.rs"]
+mod render_stats;
+use render_stats::{is_gpu_pass, RenderStatsPlugin, SharedFrameStats};
+use bevy::render::diagnostic::RenderDiagnosticsPlugin;
+
 #[derive(Component)]
 struct OrbitCamera;
 
@@ -74,6 +79,8 @@ pub fn start() {
         FrameTimeDiagnosticsPlugin::default(),
         EntityCountDiagnosticsPlugin::default(),
         LogDiagnosticsPlugin::default(),
+        RenderDiagnosticsPlugin,
+        RenderStatsPlugin,
     ))
     .insert_resource(ClearColor(Color::srgb(0.025, 0.04, 0.07)))
     .insert_resource(ReadySent(false))
@@ -342,6 +349,7 @@ fn publish_diagnostics(
     time: Res<Time>,
     mut state: ResMut<InspectorState>,
     diagnostics: Res<DiagnosticsStore>,
+    frame_stats: Res<SharedFrameStats>,
     mesh_assets: Res<Assets<Mesh>>,
     image_assets: Res<Assets<Image>>,
     material_assets: Res<Assets<StandardMaterial>>,
@@ -363,6 +371,21 @@ fn publish_diagnostics(
         return;
     }
     state.last_update = time.elapsed_secs_f64();
+    let stats = frame_stats.snapshot();
+    let fps_value = diagnostic_value(&diagnostics, &FrameTimeDiagnosticsPlugin::FPS);
+    let frame_time_value = diagnostic_value(&diagnostics, &FrameTimeDiagnosticsPlugin::FRAME_TIME);
+    let entity_value = diagnostic_value(&diagnostics, &EntityCountDiagnosticsPlugin::ENTITY_COUNT);
+    let gpu_passes = diagnostics
+        .iter()
+        .filter(|diagnostic| is_gpu_pass(diagnostic.path().as_str()))
+        .filter_map(|diagnostic| diagnostic.value())
+        .collect::<Vec<f64>>();
+    let gpu_ms = (!gpu_passes.is_empty()).then(|| gpu_passes.iter().sum::<f64>());
+    let gpu_reason = match (gpu_ms, stats.timestamp_queries) {
+        (Some(_), _) => None,
+        (None, true) => Some("RenderDiagnosticsPlugin recorded no elapsed_gpu spans".to_string()),
+        (None, false) => Some(format!("TIMESTAMP_QUERY is not enabled on this device; device features: {}", stats.device_features)),
+    };
     let fps = diagnostic_json(&diagnostics, &FrameTimeDiagnosticsPlugin::FPS, "fps", "fps");
     let frame_time = diagnostic_json(&diagnostics, &FrameTimeDiagnosticsPlugin::FRAME_TIME, "frame_time", "ms");
     let frame_count = diagnostic_json(&diagnostics, &FrameTimeDiagnosticsPlugin::FRAME_COUNT, "frame_count", "");
@@ -384,23 +407,120 @@ fn publish_diagnostics(
         ));
     }
     render.push(']');
+    let memory_js_bytes = js_heap_bytes();
+    let wasm_bytes = wasm_memory_bytes();
+    let mesh_count = mesh_assets.len();
+    let image_count = image_assets.len();
+    let image_bytes = image_assets.iter().map(|(_, image)| image.data.as_ref().map_or(0, |data| data.len())).sum::<usize>();
+    let entries = vec![
+        entry("FPS", "strip", fps_value, "fps", 144.0, "FrameTimeDiagnosticsPlugin/fps", Some(NO_DIAGNOSTIC.into())),
+        entry("MEMQ", "strip", Some(mib(wasm_bytes)), "MiB", 0.0, "WebAssembly.Memory buffer byteLength", None),
+        entry("MEMO", "strip", memory_js_bytes.map(mib), "MiB", 0.0, "performance.memory.usedJSHeapSize", Some("performance.memory is Chromium-only; this browser exposes no JS heap counter".into())),
+        entry("DRAW", "strip", stats.draw_ms, "ms", 16.7, "render schedule timer around RenderSystems::Render (encode, submit, present)", Some(NO_FRAME.into())),
+        entry("SHOW", "strip", None, "ms", 16.7, "present_frames", Some(SHOW_REASON.into())),
+        entry("SIM", "strip", stats.sim_ms, "ms", 16.7, "First to Last schedule timer", Some(NO_FRAME.into())),
+        entry("LAUNCH", "strip", stats.launch_ms, "ms", 16.7, "Last end to Render start (extract handoff)", Some(NO_FRAME.into())),
+        entry("DRAWS", "metric", Some(stats.main.draws as f64), "", 0.0, "RenderVisibleEntities<Mesh3d> of the main views, render world; batching not counted", None),
+        entry("SHADOW-MAP DRAWS", "metric", Some(stats.shadow.draws as f64), "", 0.0, "RenderVisibleEntities<Mesh3d> of ViewLightEntities shadow views", None),
+        entry("TRIANGLES", "metric", Some(stats.main.triangles as f64), "", 0.0, "RenderMeshInstances with RenderAssets<RenderMesh> index counts / 3, main views", None),
+        entry("SHADOW TRIS", "metric", Some(stats.shadow.triangles as f64), "", 0.0, "RenderMeshInstances with RenderAssets<RenderMesh> index counts / 3, shadow views", None),
+        entry("SHADOW PASSES", "metric", Some(stats.shadow_passes as f64), "", 0.0, "ViewLightEntities shadow views of the camera views", None),
+        entry("ENTITIES", "metric", entity_value, "", 0.0, "EntityCountDiagnosticsPlugin/entity_count", Some(NO_DIAGNOSTIC.into())),
+        entry("MESHES", "metric", Some(mesh_count as f64), "", 0.0, "Assets<Mesh>::len", None),
+        entry("SPRITES", "metric", Some(sprites.iter().count() as f64), "", 0.0, "Query<Sprite>", None),
+        entry("TEXTURES", "metric", Some(image_count as f64), "", 0.0, "Assets<Image>::len", None),
+        entry("TEXTURE BYTES", "metric", Some(image_bytes as f64), "B", 0.0, "Assets<Image> CPU data length; GPU texture memory is not readable from Bevy", None),
+        entry("frame interval", "bar", frame_time_value, "ms", 16.7, "FrameTimeDiagnosticsPlugin/frame_time", Some(NO_DIAGNOSTIC.into())),
+        entry("CPU total", "bar", stats.cpu_ms, "ms", 16.7, "First start to Render end", Some(NO_FRAME.into())),
+        entry("SIM", "bar", stats.sim_ms, "ms", 16.7, "First to Last schedule timer", Some(NO_FRAME.into())),
+        entry("LAUNCH", "bar", stats.launch_ms, "ms", 16.7, "Last end to Render start (extract handoff)", Some(NO_FRAME.into())),
+        entry("DRAW", "bar", stats.draw_ms, "ms", 16.7, "render schedule timer around RenderSystems::Render (encode, submit, present)", Some(NO_FRAME.into())),
+        entry("SHOW", "bar", None, "ms", 16.7, "present_frames", Some(SHOW_REASON.into())),
+        entry("GPU", "bar", gpu_ms, "ms", 16.7, "RenderDiagnosticsPlugin elapsed_gpu spans, summed", gpu_reason.clone()),
+    ];
+    let entries_json = entries.iter().map(shown_json).collect::<Vec<_>>().join(",");
+    let gpu_reason_json = gpu_reason.as_ref().map_or_else(|| "null".to_string(), |reason| format!("\"{}\"", escape(reason)));
     let json = format!(
-        "{{\"kind\":\"bevy-diagnostics\",\"source\":\"DiagnosticsStore\",\"time\":{},\"plugins\":[\"FrameTimeDiagnosticsPlugin\",\"EntityCountDiagnosticsPlugin\",\"LogDiagnosticsPlugin\",\"DiagnosticsPlugin/DefaultPlugins\"],\"diagnostics\":[{fps},{frame_time},{frame_count},{entities}],\"renderDiagnostics\":{render},\"ecs\":{{\"cameras\":{},\"lights\":{},\"meshEntities\":{},\"sprites\":{},\"uiNodes\":{}}},\"assets\":{{\"meshes\":{},\"images\":{},\"standardMaterials\":{}}},\"unavailable\":[\"drawCalls\",\"triangles\",\"shadowMapDraws\",\"shadowTriangles\",\"shadowPasses\",\"cascadeSkips\",\"gpuPassTimestamps\",\"frameGraph\",\"textureBytes\",\"terrain\",\"physics\",\"multiplayer\",\"jobs\",\"vibes\",\"parameters\"]}}",
+        "{{\"kind\":\"bevy-diagnostics\",\"source\":\"DiagnosticsStore\",\"time\":{},\"plugins\":[\"FrameTimeDiagnosticsPlugin\",\"EntityCountDiagnosticsPlugin\",\"LogDiagnosticsPlugin\",\"RenderDiagnosticsPlugin\",\"RenderStatsPlugin\",\"DiagnosticsPlugin/DefaultPlugins\"],\"diagnostics\":[{},{},{},{}],\"renderDiagnostics\":{},\"shown\":[{}],\"gpu\":{{\"timestampQueries\":{},\"deviceFeatures\":\"{}\",\"reason\":{}}},\"memory\":{{\"wasmBytes\":{},\"jsHeapBytes\":{}}},\"ecs\":{{\"cameras\":{},\"lights\":{},\"meshEntities\":{},\"sprites\":{},\"uiNodes\":{}}},\"assets\":{{\"meshes\":{},\"images\":{},\"imageBytes\":{},\"standardMaterials\":{}}},\"unsupported\":[{}]}}",
         js_sys::Date::now(),
+        fps,
+        frame_time,
+        frame_count,
+        entities,
+        render,
+        entries_json,
+        stats.timestamp_queries,
+        escape(&stats.device_features),
+        gpu_reason_json,
+        number(Some(wasm_bytes)),
+        number(memory_js_bytes),
         cameras.iter().count(),
         lights.iter().count(),
         meshes.iter().count(),
         sprites.iter().count(),
         ui_nodes.iter().count(),
-        mesh_assets.len(),
-        image_assets.len(),
-        material_assets.len()
+        mesh_count,
+        image_count,
+        image_bytes,
+        material_assets.len(),
+        UNSUPPORTED
     );
     let window = web_sys::window().expect("window");
     let _ = js_sys::Reflect::set(&window, &JsValue::from_str("__BEVY_INSPECTOR_SNAPSHOT"), &JsValue::from_str(&json));
     if let Some(element) = window.document().expect("document").get_element_by_id("inspector-data") {
         element.set_text_content(Some(&json));
     }
+}
+
+const NO_FRAME: &str = "no completed frame has been timed yet";
+const NO_DIAGNOSTIC: &str = "diagnostic is not registered";
+const SHOW_REASON: &str = "present_frames runs inside RenderSystems::Render with no separate hook in Bevy 0.20.1; its time is counted in DRAW";
+const UNSUPPORTED: &str = r#"{"name":"frameGraph","reason":"Bevy 0.20 exposes no browser-readable frame graph"},{"name":"physics","reason":"Avian is native-only in this build"},{"name":"multiplayer","reason":"the wasm viewer excludes Lightyear networking"},{"name":"jobs","reason":"no job diagnostics are registered in the wasm scene"},{"name":"vibes","reason":"native feature state is not linked into the wasm scene"},{"name":"cascadeSkips","reason":"Bevy 0.20 exposes no cascade-skip counter; the metric was removed"},{"name":"terrain","reason":"the wasm scene has no terrain plugin; the metric was removed"}"#;
+
+struct Shown {
+    name: &'static str,
+    group: &'static str,
+    value: Option<f64>,
+    unit: &'static str,
+    max: f64,
+    source: &'static str,
+    reason: Option<String>,
+}
+
+fn entry(name: &'static str, group: &'static str, value: Option<f64>, unit: &'static str, max: f64, source: &'static str, reason: Option<String>) -> Shown {
+    let reason = match value {
+        Some(_) => None,
+        None => Some(reason.unwrap_or_else(|| "no source value is available".to_string())),
+    };
+    Shown { name, group, value, unit, max, source, reason }
+}
+
+fn shown_json(entry: &Shown) -> String {
+    let reason = entry.reason.as_ref().map_or_else(|| "null".to_string(), |reason| format!("\"{}\"", escape(reason)));
+    format!(
+        "{{\"name\":\"{}\",\"group\":\"{}\",\"value\":{},\"unit\":\"{}\",\"max\":{},\"source\":\"{}\",\"reason\":{}}}",
+        entry.name, entry.group, number(entry.value), entry.unit, entry.max, escape(entry.source), reason
+    )
+}
+
+fn diagnostic_value(store: &DiagnosticsStore, path: &bevy::diagnostic::DiagnosticPath) -> Option<f64> {
+    store.get(path).and_then(|diagnostic| diagnostic.value())
+}
+
+fn mib(bytes: f64) -> f64 {
+    bytes / 1048576.0
+}
+
+fn js_heap_bytes() -> Option<f64> {
+    let window: JsValue = web_sys::window()?.into();
+    let performance = js_sys::Reflect::get(&window, &JsValue::from_str("performance")).ok()?;
+    let memory = js_sys::Reflect::get(&performance, &JsValue::from_str("memory")).ok()?;
+    js_sys::Reflect::get(&memory, &JsValue::from_str("usedJSHeapSize")).ok()?.as_f64()
+}
+
+fn wasm_memory_bytes() -> f64 {
+    let buffer = js_sys::WebAssembly::Memory::from(wasm_bindgen::memory()).buffer();
+    f64::from(js_sys::ArrayBuffer::from(buffer).byte_length())
 }
 
 fn diagnostic_json(store: &DiagnosticsStore, path: &bevy::diagnostic::DiagnosticPath, name: &str, suffix: &str) -> String {
