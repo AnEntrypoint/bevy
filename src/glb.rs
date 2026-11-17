@@ -29,7 +29,7 @@ pub struct Decoded {
 }
 
 pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
-    decode_with(bytes, basisu::TextureTarget::Rgba8)
+    decode_with(bytes, basisu::TextureTarget::Bc7)
 }
 
 pub fn decode_with(bytes: &[u8], target: basisu::TextureTarget) -> Result<Decoded, String> {

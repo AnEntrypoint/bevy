@@ -6,8 +6,8 @@ const { withGateWitness } = require('./lib/playwriter-witness.cjs');
 const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
-const texture = process.env.NEON_TEXTURE === 'bc7' ? 'bc7' : 'rgba8';
-const cacheDir = texture === 'bc7' ? 'gltf-cache-bc7' : 'gltf-cache';
+const texture = process.env.NEON_TEXTURE === 'rgba8' ? 'rgba8' : 'bc7';
+const cacheDir = texture === 'rgba8' ? 'gltf-cache-rgba8' : 'gltf-cache';
 const cache = path.join(repo, 'target', cacheDir);
 const witnessDir = path.join(repo, 'target', 'witness');
 const witnessPath = path.join(witnessDir, `neon-wasm-witness-${texture}.json`);
@@ -105,7 +105,7 @@ async function main() {
     const result = { ok: false, total: names.length, cdn };
     const missing = names.filter((name) => !fs.existsSync(path.join(cache, name)));
     if (missing.length) {
-        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first${texture === 'bc7' ? ' with the bc7 target' : ''}: ${missing.slice(0, 5).join(', ')}`;
+        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first${texture === 'rgba8' ? ' with the rgba8 target' : ''}: ${missing.slice(0, 5).join(', ')}`;
         return result;
     }
     fs.mkdirSync(witnessDir, { recursive: true });

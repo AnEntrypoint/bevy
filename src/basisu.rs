@@ -87,8 +87,8 @@ pub enum TextureTarget {
 impl TextureTarget {
     pub fn cache_dir(self) -> &'static str {
         match self {
-            Self::Rgba8 => "target/gltf-cache",
-            Self::Bc7 => "target/gltf-cache-bc7",
+            Self::Rgba8 => "target/gltf-cache-rgba8",
+            Self::Bc7 => "target/gltf-cache",
         }
     }
 
