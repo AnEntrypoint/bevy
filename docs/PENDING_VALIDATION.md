@@ -1668,3 +1668,40 @@ Updated in the Round 33 Phase A section above. This phase changed nothing in it.
 ### Processes
 
 The wasm server tree (root 2632762) and the playwriter project tree (root 2632800) were stopped by PID as trees, with the gate's browser and renderer processes. The debug and release builds, the viewers and both bench passes exited on their own. No process from this round remains. The `playwriter-ws-server` (PID 2616609) and the other agents' processes predate this round and were left alone.
+
+## Round 34 Phase A: the 500-body bench regression
+
+Phase A is code, docs and local commits only. Nothing here was built, run or measured. The measurements are Phase B.
+
+### What the reading established (no build)
+
+The baseline is commit dcc84d8 ("Measure against jayzee on the same host"), which recorded 0.40 vs 0.43 ms at 500 bodies and 1.04 vs 2.78 at 2000 and 8.96 at 5000 (AGENTS.md line 46). Since dcc84d8, on the bench path:
+
+- `src/bench.rs`: unchanged (`git diff dcc84d8 HEAD -- src/bench.rs` is empty).
+- `src/protocol.rs`, the release profile, `.cargo/config.toml`: unchanged. The bench's tick, gravity and ball radius are the same constants.
+- Dependency versions: avian3d 0.8.0, parry3d 0.31.1, bevy 0.20.1 (bevy_ecs, bevy_tasks, bevy_app) are the same. The lock file's only removed line is a transitive `convert_case` entry.
+- Avian's feature list is unchanged. Bevy's list gained `bevy_render`, `bevy_pbr`, `bevy_ui`, `bevy_winit`, `bevy_gltf`, `reflect_auto_register`, `ktx2`, `basis-universal` and others. `MinimalPlugins` (the bench's only Bevy plugin group) does not include the render or asset plugins, so these add code to the binary but no per-tick work of their own.
+- No global allocator and no tracing subscriber in the crate or in the added dependencies (grep).
+
+So the bench code and its physics inputs are identical to the baseline. The growth has to come from the binary's build (feature unification, added crates changing LTO inlining) or from the host.
+
+The measured cost grows with body count. Pass 2 of Round 33 gives bevy minus jayzee of 0.12 ms at 500 bodies, 0.4 ms at 2000 and 1.0 ms at 5000 when the bench was at about load 6 (on 12 cores). That is roughly 0.2 to 0.3 µs per body, so it is per-body cost, not per-tick overhead.
+
+### Ranked candidates
+
+1. Thread contention on a loaded host. The bench runs bevy with `ComputeTaskPool` on all 12 logical cores (`MinimalPlugins` and `avian3d`'s `parallel` feature), while jayzee is single-threaded. The host's 1-minute load was about 6 during the Round 33 runs, from other sessions, so bevy's parallel phases waited on busy cores. The baseline was recorded on a quieter host. This fits per-body growth and the 500-body row. Test in Phase B: pin bevy to one core with `BINARY_PREFIX="taskset -c 0"` and compare the ratio with the unpinned run on the same load.
+2. The feature and crate additions changing the release codegen (LTO inlining in avian or bevy_ecs). Not measurable without a build of the dcc84d8 feature set. Test in Phase B only if (1) does not explain the regression.
+3. The Round 33 panic hook in `src/main.rs`. It is installed before the command match, but it is only a hook: it does nothing per tick. Ruled out by reading.
+
+### Changes, each a local commit by lanmower with no trailers
+
+- 43f59c8 `Cargo.toml`: adds avian3d's `bevy_diagnostic` feature. The feature only compiles Avian's diagnostics code; `PhysicsPlugins` does not add `PhysicsDiagnosticsPlugin` (Avian's lib.rs says it "must be added separately"), so the normal bench runs the same systems as before.
+- a81b593 `src/bench.rs`, `src/main.rs`: the bench JSON gains a `threads` field (the `ComputeTaskPool` thread count). A new `bench-phases` command adds `PhysicsDiagnosticsPlugin` and prints each physics phase's average from `DiagnosticsStore`, with the sample count. The normal `bench` path is unchanged except for the added field and the `diagnostics` flag, which is false there.
+- c924f80 `scripts/bench-vs-jayzee.sh`: `BINARY_PREFIX` (empty by default) is put in front of the Bevy command, so a witness can pin bevy with `taskset`. The jayzee command and the default run are unchanged.
+
+### Phase B plan
+
+1. Measure before any change: `RUNS=5 scripts/bench-vs-jayzee.sh` on the existing release binary (built at 20:53, before these commits), with load before and after each run, medians of 500, 2000 and 5000. This is the "before".
+2. Build the release binary once through cargo, then run `bench-phases` at 500, 2000 and 5000 to see which physics phase's average grows at 500 bodies.
+3. Run the pinned variant (`BINARY_PREFIX="taskset -c 0"`) with the same method, to test candidate 1.
+4. Fix the cause that the witnesses show. Do not change the bench to hide it. Re-run the same method for the witness, and check the batching, fixture and device-format checks.
