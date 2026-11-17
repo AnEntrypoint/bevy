@@ -37,11 +37,11 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
         (container.json, container.bin.unwrap_or_default(), 0)
     };
     let basisu_textures = basisu::promote(&mut json);
-    let basislz_images = basisu::transcode_basislz_images(&mut json, &mut bin)?;
+    let basis_images = basisu::transcode_basis_images(&mut json, &mut bin)?;
     let quantization_retired = retire_extension(&mut json, MESH_QUANTIZATION);
     let floated_tangents = float_tangents(&mut json, &mut bin)?;
     let ktx2_textures = ktx2_texture_indices(&json);
-    let bytes = if meshopt || basisu_textures > 0 || basislz_images > 0 || quantization_retired || floated_tangents > 0 {
+    let bytes = if meshopt || basisu_textures > 0 || basis_images > 0 || quantization_retired || floated_tangents > 0 {
         write_container(&json, bin)?
     } else {
         bytes.to_vec()

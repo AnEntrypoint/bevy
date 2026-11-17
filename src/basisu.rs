@@ -68,8 +68,8 @@ fn retire_extension_name(json: &mut Value, list: &str) {
 const KTX2_IDENTIFIER: [u8; 12] = [0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n'];
 const KTX2_HEADER_LEN: usize = 80;
 const KTX2_LEVEL_ENTRY_LEN: usize = 24;
-const KTX2_SUPERCOMPRESSION_OFFSET: usize = 44;
-const SUPERCOMPRESSION_BASISLZ: u32 = 1;
+const KTX2_VK_FORMAT_OFFSET: usize = 12;
+const VK_FORMAT_UNDEFINED: u32 = 0;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 
 unsafe extern "C" {
@@ -85,7 +85,7 @@ unsafe extern "C" {
     fn bevy_basislz_transcode_level(data: *const u8, size: u32, level: u32, out: *mut u8, capacity: u64) -> i64;
 }
 
-pub fn transcode_basislz_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<usize, String> {
+pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<usize, String> {
     let targets: Vec<(usize, usize)> = json
         .get("images")
         .and_then(Value::as_array)
@@ -113,13 +113,13 @@ pub fn transcode_basislz_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<u
         let source = bin
             .get(offset..offset + length)
             .ok_or_else(|| format!("buffer view {view_index} runs past the BIN chunk"))?;
-        if !is_basislz(source) {
+        if !is_basis_ktx2(source) {
             continue;
         }
         let new_view = match rewritten.get(&view_index) {
             Some(index) => *index,
             None => {
-                let rgba = transcode_basislz(source).map_err(|error| format!("image {image_index}: {error}"))?;
+                let rgba = transcode_basis(source).map_err(|error| format!("image {image_index}: {error}"))?;
                 let buffer = view.get("buffer").and_then(Value::as_u64).unwrap_or(0);
                 let aligned = bin.len().next_multiple_of(4);
                 bin.resize(aligned, 0);
@@ -146,8 +146,8 @@ pub fn transcode_basislz_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<u
     Ok(count)
 }
 
-pub fn is_basislz(bytes: &[u8]) -> bool {
-    bytes.starts_with(&KTX2_IDENTIFIER) && read_u32(bytes, KTX2_SUPERCOMPRESSION_OFFSET) == Some(SUPERCOMPRESSION_BASISLZ)
+pub fn is_basis_ktx2(bytes: &[u8]) -> bool {
+    bytes.starts_with(&KTX2_IDENTIFIER) && read_u32(bytes, KTX2_VK_FORMAT_OFFSET) == Some(VK_FORMAT_UNDEFINED)
 }
 
 fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
@@ -157,7 +157,7 @@ fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
         .map(u32::from_le_bytes)
 }
 
-pub fn transcode_basislz(bytes: &[u8]) -> Result<Vec<u8>, String> {
+pub fn transcode_basis(bytes: &[u8]) -> Result<Vec<u8>, String> {
     let size = u32::try_from(bytes.len()).map_err(|_| "KTX2 texture is larger than 4 GiB".to_string())?;
     let (mut width, mut height, mut levels, mut layers, mut faces) = (0u32, 0u32, 0u32, 0u32, 0u32);
     let status = unsafe {
@@ -242,18 +242,20 @@ fn rgba8_dfd() -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_basislz, promote, rgba8_ktx2_bytes, transcode_basislz, transcode_basislz_images};
+    use super::{is_basis_ktx2, promote, rgba8_ktx2_bytes, transcode_basis, transcode_basis_images};
     use serde_json::json;
 
     #[test]
-    fn basislz_detection_reads_the_supercompression_scheme() {
+    fn basis_detection_reads_the_vk_format() {
         let mut header = vec![0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n'];
         header.resize(44, 0);
         header.extend_from_slice(&1u32.to_le_bytes());
-        assert!(is_basislz(&header));
+        assert!(is_basis_ktx2(&header));
         header[44] = 2;
-        assert!(!is_basislz(&header));
-        assert!(!is_basislz(b"glTF"));
+        assert!(is_basis_ktx2(&header));
+        header[12..16].copy_from_slice(&37u32.to_le_bytes());
+        assert!(!is_basis_ktx2(&header));
+        assert!(!is_basis_ktx2(b"glTF"));
     }
 
     #[test]
@@ -277,18 +279,18 @@ mod tests {
 
     #[test]
     fn transcoding_rejects_bytes_that_are_not_ktx2() {
-        assert!(transcode_basislz(&[0u8; 96]).is_err());
+        assert!(transcode_basis(&[0u8; 96]).is_err());
     }
 
     #[test]
-    fn images_that_are_not_basislz_keep_their_buffer_view() {
+    fn images_that_are_not_basis_keep_their_buffer_view() {
         let original = rgba8_ktx2_bytes(1, 1, &[vec![1, 2, 3, 4]]);
         let mut bin = original.clone();
         let mut document = json!({
             "images": [{"mimeType": "image/ktx2", "bufferView": 0}],
             "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": original.len()}]
         });
-        assert_eq!(transcode_basislz_images(&mut document, &mut bin).unwrap(), 0);
+        assert_eq!(transcode_basis_images(&mut document, &mut bin).unwrap(), 0);
         assert_eq!(bin, original);
         assert_eq!(document["images"][0]["bufferView"], json!(0));
         assert_eq!(document["bufferViews"].as_array().unwrap().len(), 1);
