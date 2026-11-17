@@ -636,3 +636,18 @@ Process check: every browser, gate and witness server started by this round's ru
 Untracked, not committed: `web/status-main.json`, written by the native viewer on every run. The viewer writes it and it is not in `.gitignore`; it is left in the working tree.
 
 Round 17 items: 1 neon HUD overlap, fixed and witnessed (0 overlaps; screenshot kept). 2 BC7 against RGBA8, measured; cache stays RGBA8 with the reason recorded; the texel-level visual measurement is open. 3 PATH, recorded as a gm friction item in Phase A; the witnesses still need `PATH=/config/.gmnew/pw/bin:$PATH`.
+
+## Round 18 Phase A
+
+State of `32b4d25`: the Round 17 witnesses that ran and passed are the HUD overlap witness (0 pairs), the full BC7 cache witness (64 of 64 clean, decision recomputed with the 44bc3a1 `cleanOk` fix), the RGBA8 neon witness, native `gltf-check` for both caches, the footprint measurement, the normal-map witness, `cargo test` (54 passed) and `verify.sh` (exit 0). Open: visible quality. The screenshot PSNR criterion did not measure BC7, because an RGBA8-against-RGBA8 control scored the same, so the `rgba8` decision rested on a criterion that cannot fail or pass on codec error.
+
+Changes, each a local commit by lanmower with no trailers; no build, test or witness ran in Phase A:
+
+| Change | Files | Witness it needs (Phase B) |
+| --- | --- | --- |
+| `glb::ktx2_images` returns the KTX2 image bytes of a GLB in image order | `src/glb.rs` | dev build; `texture-quality` run below reads both caches through it |
+| `bevy-jayzee texture-quality <dir>`: for each Zstandard model, transcodes the same basis source to RGBA8 and BC7, decodes every BC7 block with `bcdec_rs` 0.2.1, and reports per-image PSNR (RGBA, level 0 and all levels) and the largest channel error | `src/texture_quality.rs`, `src/main.rs`, `Cargo.toml` | `target/debug/bevy-jayzee texture-quality /workspace/neon-syndicates/assets/cdn > target/witness/texture-texel.json`; 12 models listed; no errors |
+| Visual criterion is the texel measurement, fixed before measuring: every image's level-0 PSNR at least 35 dB and the median at least 40 dB. The screenshot PSNR is still reported as `screenshots`, without gating | `scripts/texture-footprint.cjs` | `node scripts/texture-footprint.cjs` prints `visual` from `texture-texel.json` and a `decision` |
+| If the decision is `bc7`: the decoded cache default becomes BC7 (`gltf-check` default target, `glb::decode`) | Phase B only, conditional | `gltf-check` rc 0 on the switched cache; RGBA8-to-BC7 neon witness 64 of 64 on `target/gltf-cache`; normal-map witness; HUD overlap witness; `cargo test`; `verify.sh` |
+
+Risk recorded before measuring: a BC7 cache needs `texture-compression-bc` on the GPU. Desktop WebGPU (the witness host, NVIDIA) has it; most mobile GPUs do not, and there the BC7 images would not load. None of the witnesses cover a device without BC support.
