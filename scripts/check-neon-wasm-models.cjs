@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
-const { withGateWitness, lastJsonLine } = require('./lib/playwriter-witness.cjs');
+const { withGateWitness } = require('./lib/playwriter-witness.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
@@ -9,26 +9,34 @@ const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
 const cache = path.join(repo, 'target', 'gltf-cache');
 const witnessDir = path.join(repo, 'target', 'witness');
 const witnessPath = path.join(witnessDir, 'neon-wasm-witness.json');
-const batchSize = Number(process.env.BATCH || 8);
-const batchTimeoutMs = Number(process.env.BATCH_TIMEOUT_MS || 300000);
+const rowsPath = path.join(witnessDir, 'neon-rows.json');
+const callTimeoutMs = Number(process.env.CALL_TIMEOUT_MS || 1200000);
 
-function snippet(pageBase, batch) {
+function snippet(pageBase, models, outPath) {
     return `
 return await (async () => {
-const batch = ${JSON.stringify(batch)};
+const fs = require('node:fs');
+const models = ${JSON.stringify(models)};
 const pageBase = ${JSON.stringify(pageBase)};
+const outPath = ${JSON.stringify(outPath)};
 const rows = [];
-for (const name of batch) {
+const page = await context.newPage();
+page.on('console', (message) => state.logs.push(message.type() + ': ' + message.text() + ' @ ' + (message.location().url || '(no url)')));
+page.on('pageerror', (error) => state.logs.push('pageerror: ' + error.message));
+page.on('response', (response) => { if (response.status() >= 400) state.failures.push({ url: response.url(), status: response.status() }); });
+page.on('requestfailed', (request) => state.failures.push({ url: request.url(), status: 'failed: ' + (request.failure()?.errorText ?? 'unknown') }));
+for (const name of models) {
   const model = '/target/gltf-cache/' + name;
   state.logs = [];
   state.failures = [];
-  const page = await context.newPage();
-  page.on('console', (message) => state.logs.push(message.type() + ': ' + message.text() + ' @ ' + (message.location().url || '(no url)')));
-  page.on('pageerror', (error) => state.logs.push('pageerror: ' + error.message));
-  page.on('response', (response) => { if (response.status() >= 400) state.failures.push({ url: response.url(), status: response.status() }); });
-  page.on('requestfailed', (request) => state.failures.push({ url: request.url(), status: 'failed: ' + (request.failure()?.errorText ?? 'unknown') }));
   const started = Date.now();
-  await page.goto(pageBase + '?model=' + encodeURIComponent(model), { waitUntil: 'domcontentloaded' });
+  try {
+    await page.goto(pageBase + '?model=' + encodeURIComponent(model), { waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    rows.push({ name, model, ready: false, modelState: 'goto failed: ' + String(error.message).slice(0, 160), loadMs: null, adapter: 0, tangentWarnings: [], errors: ['goto failed'], failedRequests: [], glb: null, wasm: [] });
+    fs.writeFileSync(outPath, JSON.stringify(rows));
+    continue;
+  }
   const deadline = started + 120000;
   let loadMs = null;
   let status = { ready: false, modelState: null };
@@ -55,9 +63,11 @@ for (const name of batch) {
     glb: glb ? { transferSize: glb.transferSize, encodedBodySize: glb.encodedBodySize, decodedBodySize: glb.decodedBodySize } : null,
     wasm,
   });
-  await page.close();
+  fs.writeFileSync(outPath, JSON.stringify(rows));
 }
-console.log(JSON.stringify(rows));
+await page.close();
+fs.writeFileSync(outPath, JSON.stringify(rows));
+return 'written ' + rows.length;
 })();
 `;
 }
@@ -71,7 +81,7 @@ function summarize(rows, names) {
         total: names.length,
         rows: rows.length,
         clean: clean.length,
-        notClean: rows.filter((row) => !clean.includes(row)).map((row) => row.name),
+        notClean: names.filter((name) => !clean.some((row) => row.name === name)),
         missingNames: names.filter((name) => !rows.some((row) => row.name === name)),
         glbEncodedBytesTotal: glbBytes.reduce((sum, value) => sum + value, 0),
         glbEncodedBytesMax: Math.max(0, ...glbBytes),
@@ -83,32 +93,28 @@ function summarize(rows, names) {
 
 async function main() {
     const names = fs.readdirSync(cdn).filter((file) => file.endsWith('.glb')).sort();
-    const result = { ok: false, total: names.length, cdn, batches: [] };
+    const result = { ok: false, total: names.length, cdn };
     const missing = names.filter((name) => !fs.existsSync(path.join(cache, name)));
     if (missing.length) {
         result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first: ${missing.slice(0, 5).join(', ')}`;
         return result;
     }
     fs.mkdirSync(witnessDir, { recursive: true });
-    const rows = [];
     try {
-        const { value, browser } = await withGateWitness({ repo, port, tabGroup: 'neon-wasm' }, async ({ pageBase, run }) => {
-            for (let index = 0; index < names.length; index += batchSize) {
-                const batch = names.slice(index, index + batchSize);
-                const started = Date.now();
-                const batchRows = lastJsonLine(run(snippet(pageBase, batch), batchTimeoutMs));
-                result.batches.push({ first: batch[0], count: batch.length, wallMs: Date.now() - started });
-                rows.push(...batchRows);
-            }
-            return rows;
+        const { value, browser, gate } = await withGateWitness({ repo, port }, async ({ pageBase, run }) => {
+            const started = Date.now();
+            run(snippet(pageBase, names, rowsPath), callTimeoutMs);
+            result.wallMs = Date.now() - started;
+            return JSON.parse(fs.readFileSync(rowsPath, 'utf8'));
         });
         result.browser = browser;
+        result.gate = gate;
         result.summary = summarize(value, names);
         result.rows = value;
         result.ok = result.summary.clean === names.length && result.summary.missingNames.length === 0;
     } catch (error) {
         result.error = String(error.stderr || error.message || error);
-        result.rows = rows;
+        result.rows = fs.existsSync(rowsPath) ? JSON.parse(fs.readFileSync(rowsPath, 'utf8')) : [];
     }
     fs.writeFileSync(witnessPath, JSON.stringify(result, null, 2));
     return result;

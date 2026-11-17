@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
-const { withGateWitness, lastJsonLine } = require('./lib/playwriter-witness.cjs');
+const { withGateWitness } = require('./lib/playwriter-witness.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const witnessDir = path.join(repo, 'target', 'witness');
+const rowsPath = path.join(witnessDir, 'normal-map-rows.json');
 const variants = [
     { kind: 'raw', model: '/testdata/normal-map/normal-map.glb', screenshot: path.join(witnessDir, 'normal-map-raw.png') },
     { kind: 'decoded', model: '/target/gltf-cache/normal-map.glb', screenshot: path.join(witnessDir, 'normal-map-decoded.png') },
 ];
 
-function snippet(pageBase) {
+function snippet(pageBase, outPath) {
     return `
 return await (async () => {
 const variants = ${JSON.stringify(variants)};
@@ -50,7 +51,7 @@ for (const variant of variants) {
   });
   await page.close();
 }
-console.log(JSON.stringify(results));
+require('node:fs').writeFileSync(${JSON.stringify(outPath)}, JSON.stringify(results));
 })();
 `;
 }
@@ -59,9 +60,9 @@ async function main() {
     const result = { ok: false, variants: [] };
     fs.mkdirSync(witnessDir, { recursive: true });
     try {
-        const { value, browser } = await withGateWitness({ repo, port, tabGroup: 'normal-map' }, async ({ pageBase, run }) => {
-            const output = run(snippet(pageBase), 420000);
-            return lastJsonLine(output);
+        const { value, browser } = await withGateWitness({ repo, port }, async ({ pageBase, run }) => {
+            run(snippet(pageBase, rowsPath), 420000);
+            return JSON.parse(fs.readFileSync(rowsPath, 'utf8'));
         });
         result.variants = value;
         result.browser = browser;

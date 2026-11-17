@@ -1,5 +1,4 @@
 const { execFileSync, spawn } = require('node:child_process');
-const fs = require('node:fs');
 const path = require('node:path');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,12 +31,18 @@ function killTree(pid) {
     }
 }
 
-function gateBrowserPid(repo) {
-    try {
-        return Number(fs.readFileSync(path.join(repo, '.playwriter', 'browser.pid'), 'utf8').trim()) || null;
-    } catch {
-        return null;
-    }
+function gateCli(repo, args, timeout) {
+    return execFileSync('playwriter-project', args, {
+        cwd: repo,
+        encoding: 'utf8',
+        timeout,
+        maxBuffer: 64 * 1024 * 1024,
+        env: { ...process.env, PLAYWRITER_PROJECT_DIR: repo, PLAYWRITER_WEBGPU: '1' },
+    });
+}
+
+function gateStatus(repo) {
+    return JSON.parse(gateCli(repo, ['status', '--json'], 30000));
 }
 
 async function waitFor(check, limitMs) {
@@ -57,52 +62,42 @@ async function listening(url) {
     }
 }
 
-function gate(repo, args, timeout) {
-    return execFileSync('playwriter-project', args, {
-        cwd: repo,
-        encoding: 'utf8',
-        timeout,
-        maxBuffer: 64 * 1024 * 1024,
-        env: { ...process.env, PLAYWRITER_PROJECT_DIR: repo, PLAYWRITER_WEBGPU: '1' },
-    });
-}
-
-function lastJsonLine(output) {
-    for (const line of output.trim().split('\n').reverse()) {
-        try {
-            const value = JSON.parse(line.replace(/^\[log\] /, '').trim());
-            if (value && typeof value === 'object') return value;
-        } catch {}
-    }
-    throw new Error(`no JSON result in playwriter output: ${output.slice(-400)}`);
-}
-
-async function withGateWitness({ repo, port, tabGroup }, body) {
+async function withGateWitness({ repo, port }, body) {
     const pageBase = `http://127.0.0.1:${port}/web/wasm/index.html`;
     if (await listening(pageBase)) throw new Error(`port ${port} already serves ${pageBase}; refusing to run a second server`);
-    const ctx = { pageBase, browser: { before: gateBrowserPid(repo), started: null }, run: null };
+    const before = gateStatus(repo);
+    const ctx = { pageBase, run: null, browser: { before: before.browser?.pid ?? null, started: null }, gate: { before: before.gate?.pid ?? null, started: null } };
     const server = spawn('bash', [path.join(repo, 'scripts/serve-wasm.sh')], { cwd: repo, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
     let session = null;
     let value;
     try {
         if (!(await waitFor(() => listening(pageBase), 20000))) throw new Error(`server did not answer ${pageBase} within 20 s`);
-        const created = gate(repo, ['session', 'new', '--tab-group', tabGroup], 60000);
+        gateCli(repo, ['start'], 120000);
+        const status = gateStatus(repo);
+        if (!status.browser?.pid || !status.debugPort) throw new Error(`gate browser not running: ${JSON.stringify(status.browser)}`);
+        const wsUrl = (await (await fetch(`http://127.0.0.1:${status.debugPort}/json/version`)).json()).webSocketDebuggerUrl;
+        const created = gateCli(repo, ['session', 'new', '--direct', wsUrl], 60000);
         session = /Session (\d+)/.exec(created)?.[1];
         if (!session) throw new Error(`no session id in: ${created.trim()}`);
-        ctx.run = (code, timeout) => gate(repo, ['-s', session, '--timeout', String(timeout), '-e', code], timeout + 60000);
+        ctx.run = (code, timeout) => gateCli(repo, ['-s', session, '--timeout', String(timeout), '-e', code], timeout + 60000);
         value = await body(ctx);
     } finally {
         if (session) {
             try {
-                gate(repo, ['session', 'delete', session], 30000);
+                gateCli(repo, ['session', 'delete', session], 30000);
             } catch {}
         }
-        const after = gateBrowserPid(repo);
-        ctx.browser.started = after && after !== ctx.browser.before ? after : null;
+        let after = null;
+        try {
+            after = gateStatus(repo);
+        } catch {}
+        ctx.browser.started = after?.browser?.pid && after.browser.pid !== ctx.browser.before ? after.browser.pid : null;
+        ctx.gate.started = after?.gate?.pid && after.gate.pid !== ctx.gate.before ? after.gate.pid : null;
         killTree(ctx.browser.started);
+        killTree(ctx.gate.started);
         killTree(server.pid);
     }
-    return { value, browser: ctx.browser };
+    return { value, browser: ctx.browser, gate: ctx.gate };
 }
 
-module.exports = { withGateWitness, lastJsonLine, sleep, waitFor };
+module.exports = { withGateWitness, sleep, waitFor };
