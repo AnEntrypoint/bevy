@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::spec::ObjectSpec;
 use crate::tree::WorldTree;
-use crate::ui_html::{overlapping_pairs, uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus, HtmlTranslated, WorldAnchor};
+use crate::ui_html::{overlapping_pairs, uncovered_glyph_count, HtmlUiPlugin, HtmlUiSource, HtmlUiStatus, HtmlAnimationStatus, HtmlTranslated, WorldAnchor};
 use crate::{script, viewer_world, world};
 
 #[derive(Resource, Clone, Debug)]
@@ -388,7 +388,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform, &InheritedVisibility)>, windows: Query<&Window, With<PrimaryWindow>>, anchors: Res<AnchorReport>, translated: Query<(&ComputedNode, &UiGlobalTransform, &InheritedVisibility), With<HtmlTranslated>>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform, &InheritedVisibility)>, windows: Query<&Window, With<PrimaryWindow>>, anchors: Res<AnchorReport>, translated: Query<(&ComputedNode, &UiGlobalTransform, &InheritedVisibility), With<HtmlTranslated>>, animations: Res<HtmlAnimationStatus>, time: Res<Time>) {
     if report.path.is_empty() {
         return;
     }
@@ -470,6 +470,12 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
             let half = node.size * 0.5;
             [transform.translation.x - half.x, transform.translation.y - half.y, transform.translation.x + half.x, transform.translation.y + half.y]
         })
+        .collect::<Vec<_>>());
+    value["uiClock"] = serde_json::json!(time.elapsed_secs());
+    value["uiAnimations"] = serde_json::json!(animations
+        .samples
+        .iter()
+        .map(|sample| serde_json::json!({ "key": sample.key, "names": sample.names, "elapsed": sample.elapsed, "opacity": sample.opacity, "visible": sample.visible }))
         .collect::<Vec<_>>());
     value["uiAnchorsInScene"] = serde_json::json!(ui.anchors);
     value["uiAnchorsSeen"] = serde_json::json!(anchors.total);

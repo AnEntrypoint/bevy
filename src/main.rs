@@ -5,6 +5,7 @@ mod globe;
 mod gltf_check;
 mod png_check;
 mod basisu;
+mod css_anim;
 mod bench;
 mod client;
 mod protocol;

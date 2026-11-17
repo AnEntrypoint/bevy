@@ -1,7 +1,9 @@
 use bevy::color::Srgba;
+use crate::css_anim::{attach, parse_animation, parse_keyframes, sample, Animation, Keyframes};
+use std::sync::Arc;
 use bevy::math::Rot2;
 use bevy::prelude::*;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 const VOID: &[&str] = &["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"];
 const RAW: &[&str] = &["style", "script"];
@@ -37,6 +39,34 @@ pub struct HtmlUiStatus {
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct HtmlTranslated;
 
+#[derive(Component, Clone, Debug)]
+pub struct HtmlAnimated {
+    pub key: String,
+    pub animations: Vec<Animation>,
+}
+
+#[derive(Component, Clone, Copy, Debug)]
+pub struct HtmlBaseAlpha(pub f32);
+
+#[derive(Resource, Default, Clone, Debug)]
+pub struct HtmlAnimationClock {
+    pub starts: HashMap<String, f32>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AnimationSample {
+    pub key: String,
+    pub names: Vec<String>,
+    pub elapsed: f32,
+    pub opacity: f32,
+    pub visible: bool,
+}
+
+#[derive(Resource, Default, Clone, Debug)]
+pub struct HtmlAnimationStatus {
+    pub samples: Vec<AnimationSample>,
+}
+
 #[derive(Component, Clone, Debug, PartialEq)]
 pub struct WorldAnchor {
     pub id: String,
@@ -61,7 +91,9 @@ impl Plugin for HtmlUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HtmlUiSource>()
             .init_resource::<HtmlUiStatus>()
-            .add_systems(Update, sync_html_ui);
+            .init_resource::<HtmlAnimationClock>()
+            .init_resource::<HtmlAnimationStatus>()
+            .add_systems(Update, (sync_html_ui, animate_html).chain());
     }
 }
 
@@ -70,6 +102,8 @@ fn sync_html_ui(
     mut source: ResMut<HtmlUiSource>,
     mut status: ResMut<HtmlUiStatus>,
     roots: Query<Entity, With<HtmlUiRoot>>,
+    time: Res<Time>,
+    mut clock: ResMut<HtmlAnimationClock>,
 ) {
     if source.applied.as_deref() == Some(source.html.as_str()) {
         return;
@@ -80,6 +114,7 @@ fn sync_html_ui(
     source.applied = Some(source.html.clone());
     *status = HtmlUiStatus::default();
     if source.html.trim().is_empty() {
+        clock.starts.clear();
         return;
     }
     let built = build(&source.html);
@@ -87,8 +122,61 @@ fn sync_html_ui(
     status.warnings = built.warnings;
     status.uncovered = built.spec.uncovered_glyphs();
     status.anchors = built.spec.anchors();
+    let keys = built.spec.animation_keys();
+    clock.starts.retain(|key, _| keys.contains(key));
+    let now = time.elapsed_secs();
+    for key in keys {
+        clock.starts.entry(key).or_insert(now);
+    }
     let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
+}
+
+fn animate_html(
+    time: Res<Time>,
+    clock: Res<HtmlAnimationClock>,
+    animated: Query<(Entity, &HtmlAnimated)>,
+    children: Query<&Children>,
+    mut paints: Query<(&HtmlBaseAlpha, Option<&mut TextColor>, Option<&mut BackgroundColor>)>,
+    mut visibility: Query<&mut Visibility, Without<WorldAnchor>>,
+    mut status: ResMut<HtmlAnimationStatus>,
+) {
+    let now = time.elapsed_secs();
+    status.samples.clear();
+    for (entity, animated) in &animated {
+        let Some(start) = clock.starts.get(&animated.key) else {
+            continue;
+        };
+        let elapsed = now - start;
+        let sampled = sample(&animated.animations, elapsed);
+        if let Ok(mut current) = visibility.get_mut(entity) {
+            let wanted = if sampled.visible { Visibility::Inherited } else { Visibility::Hidden };
+            if *current != wanted {
+                *current = wanted;
+            }
+        }
+        let mut stack = vec![entity];
+        while let Some(node) = stack.pop() {
+            if let Ok((base, text, background)) = paints.get_mut(node) {
+                if let Some(mut text) = text {
+                    text.0.set_alpha(base.0 * sampled.opacity);
+                }
+                if let Some(mut background) = background {
+                    background.0.set_alpha(base.0 * sampled.opacity);
+                }
+            }
+            if let Ok(kids) = children.get(node) {
+                stack.extend(kids.iter());
+            }
+        }
+        status.samples.push(AnimationSample {
+            key: animated.key.clone(),
+            names: animated.animations.iter().map(|animation| animation.name.clone()).collect(),
+            elapsed,
+            opacity: sampled.opacity,
+            visible: sampled.visible,
+        });
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -103,6 +191,35 @@ impl UiSpec {
         match self {
             UiSpec::Box { children, .. } => 1 + children.iter().map(UiSpec::count).sum::<usize>(),
             UiSpec::Text { .. } | UiSpec::Shape { .. } => 1,
+        }
+    }
+
+    pub fn animation_keys(&self) -> Vec<String> {
+        match self {
+            UiSpec::Box { style, children } => style
+                .animation_key
+                .iter()
+                .filter(|_| !style.animations.is_empty())
+                .cloned()
+                .chain(children.iter().flat_map(UiSpec::animation_keys))
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    fn finish_animations(&mut self, keyframes: &BTreeMap<String, Arc<Keyframes>>, path: &str) {
+        if let UiSpec::Box { style, children } = self {
+            if !style.animations.is_empty() {
+                attach(&mut style.animations, keyframes);
+                style.animations.retain(|animation| animation.keyframes.is_some());
+                if style.animation_key.is_none() {
+                    let names = style.animations.iter().map(|animation| animation.name.as_str()).collect::<Vec<_>>().join(",");
+                    style.animation_key = Some(format!("path:{path}:{names}"));
+                }
+            }
+            for (index, child) in children.iter_mut().enumerate() {
+                child.finish_animations(keyframes, &format!("{path}/{index}"));
+            }
         }
     }
 
@@ -137,6 +254,8 @@ pub struct BoxStyle {
     background: Option<Color>,
     anchor: Option<WorldAnchor>,
     translate: Option<(Val, Val)>,
+    animations: Vec<Animation>,
+    animation_key: Option<String>,
 }
 
 impl BoxStyle {
@@ -155,6 +274,8 @@ impl BoxStyle {
             background: None,
             anchor: None,
             translate: None,
+            animations: Vec::new(),
+            animation_key: None,
         }
     }
 
@@ -219,7 +340,10 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
             let id = {
                 let mut entity = commands.spawn(style.node());
                 if let Some(background) = style.background {
-                    entity.insert(BackgroundColor(background));
+                    entity.insert((BackgroundColor(background), HtmlBaseAlpha(background.alpha())));
+                }
+                if !style.animations.is_empty() {
+                    entity.insert(HtmlAnimated { key: style.animation_key.clone().unwrap_or_default(), animations: style.animations.clone() });
                 }
                 if let Some(anchor) = &style.anchor {
                     entity.insert((anchor.clone(), Visibility::Hidden));
@@ -237,7 +361,7 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
         UiSpec::Shape { style } => {
             let mut entity = commands.spawn(style.node());
             if let Some(fill) = style.fill {
-                entity.insert(BackgroundColor(fill));
+                entity.insert((BackgroundColor(fill), HtmlBaseAlpha(fill.alpha())));
             }
             if let Some(stroke) = style.stroke {
                 entity.insert(BorderColor::all(stroke));
@@ -253,6 +377,7 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 Text::new(text.clone()),
                 TextFont { font_size: FontSize::Px(*size), ..default() },
                 TextColor(color.unwrap_or(Color::WHITE)),
+                HtmlBaseAlpha(color.unwrap_or(Color::WHITE).alpha()),
             ))
             .id(),
     };
@@ -273,11 +398,14 @@ pub fn build(html: &str) -> Built {
     let inherit = Inherit { vars: BTreeMap::new(), color: Some(Color::WHITE), font_size: 16.0 };
     let mut dropped = BTreeMap::new();
     let children = convert(&dom, &mut Vec::new(), &inherit, &rules, &mut dropped);
+    let keyframes = parse_keyframes(&css);
     let warnings = dropped
         .into_iter()
         .map(|(tag, count)| format!("unsupported element <{tag}> dropped ({count})"))
         .collect();
-    Built { spec: UiSpec::Box { style: BoxStyle::root(), children }, warnings }
+    let mut spec = UiSpec::Box { style: BoxStyle::root(), children };
+    spec.finish_animations(&keyframes, "");
+    Built { spec, warnings }
 }
 
 #[derive(Clone, Debug)]
@@ -932,6 +1060,8 @@ fn box_style(scope: &Scope) -> BoxStyle {
         background,
         anchor: None,
         translate: scope.get("transform").and_then(|value| parse_translate(&value)),
+        animations: scope.get("animation").map(|value| parse_animation(&value)).unwrap_or_default(),
+        animation_key: None,
     }
 }
 
@@ -1528,6 +1658,7 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                 } else {
                     flush_run(&mut run, &mut out, inherit);
                     let mut style = box_style(&scope);
+                    style.animation_key = attr(attrs, "id").map(str::to_string);
                     if let Some(id) = attr(attrs, "data-world-anchor") {
                         style.anchor = Some(WorldAnchor { id: id.to_string(), offset: anchor_offset(attr(attrs, "data-anchor-offset")) });
                         style.inset = Some([Val::Px(0.0), Val::Auto, Val::Auto, Val::Px(0.0)]);
@@ -1621,6 +1752,20 @@ mod tests {
         let mut plain_styles = Vec::new();
         box_styles(&plain.spec, &mut plain_styles);
         assert!(plain_styles.iter().all(|style| style.align_self == AlignSelf::Auto));
+    }
+
+    #[test]
+    fn animated_boxes_keep_their_keyframes_under_their_id() {
+        let built = build(r#"<div id="dzNEXUS" style="position:absolute;animation:dzin 4s forwards">NEXUS</div><div style="animation:missing 1s">x</div><div><p style="animation:dzin 1s">y</p></div><style>@keyframes dzin{0%{opacity:0}100%{opacity:0;visibility:hidden}}</style>"#);
+        let keys = built.spec.animation_keys();
+        assert_eq!(keys.len(), 2);
+        assert_eq!(keys[0], "dzNEXUS");
+        assert!(keys[1].starts_with("path:") && keys[1].ends_with(":dzin"));
+        let mut styles = Vec::new();
+        box_styles(&built.spec, &mut styles);
+        let banner = styles.iter().find(|style| style.animation_key.as_deref() == Some("dzNEXUS")).expect("banner");
+        assert_eq!(sample(&banner.animations, 9.0), crate::css_anim::Sampled { opacity: 0.0, visible: false });
+        assert!(styles.iter().all(|style| style.animations.iter().all(|animation| animation.keyframes.is_some())));
     }
 
     #[test]
