@@ -803,3 +803,30 @@ Still undone after this stretch, with reasons:
 - CSS animation of properties other than `opacity` and `visibility` (for example `dzin`'s `transform: translateY(-4px)` on the first frames, or colour animations): the native path samples only those two. Not done because no witness on neon `main` or the fixture depends on them, and `transform` animation would need per-frame `UiTransform` writes that conflict with the static translate support; next candidate.
 - The `animation-*` longhands (`animation-name`, `animation-duration` and so on): not parsed; neon's HUD uses the shorthand everywhere it animates.
 - `transition`: not run. A transition needs the previous value of a property across HUD rebuilds, which the rebuild-from-HTML model does not keep.
+
+## Round 21 Phase B results
+
+Contention: before each build the gate read swap-out 0 KB/s, over 10 GB free and no cargo. One cargo ran at a time; the unit suite ran alone. The release build ran in the background under `timeout 1500` (PID 2475023), waited on with bounded `tail --pid` calls. The browser witness ran as a gm job (600 s deadline) in the gm shell.
+
+Defect found and fixed (41f2f4f): an animated banner was drawn on an opaque black box. In Bevy 0.20 `Node` requires `BackgroundColor`, whose default is transparent black, so every text entity has one; `animate_html` scaled that background's alpha by the text's base alpha and made it opaque. The 1 s screenshot showed NEXUS on a black box (pixels `(0,0,0)` around the glyphs). Text and background now keep separate base alphas (`HtmlTextAlpha`, `HtmlBackgroundAlpha`), and only colours the HTML set are scaled. The fixture witness now also probes the screenshot: the banner box's corner pixels must match the scene just outside it within 12 per channel. After the fix the largest difference is 1.
+
+Fixture change found in Phase B: the BEACON tag (x offset +2) overlapped the viewer's own debug overlay box by 8 px; its offset is now -2. That is fixture layout, not engine code.
+
+Witnesses:
+
+| Row | Witness | Result |
+| --- | --- | --- |
+| `css_anim`, animated boxes, anchors, fixed eye | `cargo test --bin bevy-jayzee` | 63 passed, 0 failed, including `keyframes_and_shorthand_parse`, `ease_matches_the_css_curve`, `zone_banner_fades_in_holds_and_ends_hidden`, `animated_boxes_keep_their_keyframes_under_their_id` |
+| Item 2, anchors on non-scene objects | `node scripts/check-hud-fixture.cjs` | exit 0. `uiAnchorsInScene` 5, placed 5, unresolved [], behind 0, offscreen 0, inside the 898 x 579 viewport 5 of 5, ids `fixture-district`, `fixture-event`, `fixture-foe`, `fixture-pad`, `fixture-ping`. Screen positions: ping (449, 108), pad/beacon (410, 483), foe (268, 289), event (638, 288), district (449, 289). Label overlaps 0. Viewer PID 2474478 stopped |
+| Item 1, native banner clock | the same run | 113 samples. First sample at 0.050 s: opacity 0.071. From 0.7 s to 2.9 s: 31 samples, all opacity 1 and visible. From 4.0 s: 34 samples, all opacity 0 and hidden; last sample before 4 s at 3.987 s, opacity 0.0001. Screenshots `target/witness/hud-fixture-1s.png` (NEXUS shown, no backdrop) and `hud-fixture-6s.png` (NEXUS gone) |
+| Item 1, browser agreement | `node scripts/check-banner-browser.cjs` (gm job) | exit 0. 114 native samples compared with Chromium's own `dzin` animation seeked to the same elapsed time: 0 disagreements, largest opacity difference 0.0000018, visibility equal on every sample. Browser at fixed times: 0 s opacity 0 visible, 2 s opacity 1, 4 s opacity 0 hidden, 6 s opacity 0 hidden. Examples: 0.298 s native 0.7987 / browser 0.7987; 3.198 s 0.7099 / 0.7099; 4.098 s 0 hidden / 0 hidden. Browser 2474682 and gate 2474667 exited |
+| Neon regression | `scripts/check-hud-overlap.sh` on neon `main` | exit 0: 22 labels, 0 overlaps, 0 full-width, anchors 5 of 5 placed, `topCentreOffset` 0, `textureTarget` `bc7`, `modelsMissing` 0. Neon's own animations now run natively: `dzDOWNTOWN` (`dzin`) and three `fd` fades sampled at 2.0 s, opacity 1 |
+| Regression | release build, then `bash scripts/verify.sh` once | build rc 0, 11 m 02 s; verify exit 0, determinism `hashA` = `hashB` = 0x3a5f0b51 `pass: true`, network `ok: true`. Bench means 1.0718 / 1.3212 / 2.5245 ms were measured in the tail of the release build's load and are not a timing result |
+
+Not done, with reasons:
+
+- Ranked item 6, bench against jayzee back-to-back: the script is committed (d7bbd25) and runs, but the host was not quiet. After the release build the 1-minute load stayed between 4.8 and 10.3 for more than 25 minutes (three bounded waits of up to 570 s each for load under 1.5 and no compiler process), driven by another session on this host (a `cc1plus` compile, then `gm-core` and its claude process), none of it started by this round. A run made at load 9.85 gave jayzee 0.436 / 2.805 / 9.389 ms and bevy 0.494 / 2.341 / 4.171 ms at 500 / 2000 / 5000 bodies; bevy's solver is parallel and loses more to contention than jayzee's single thread, so those numbers are recorded only as a contended run, not as a comparison. Run `scripts/bench-vs-jayzee.sh` on a quiet host.
+- ASTC or ETC2 for non-BC GPUs, and a real non-BC device: open by dispatcher decision; this host has neither.
+- Animation of properties other than `opacity` and `visibility`, the `animation-*` longhands, and `transition`: reasons as listed in Round 21 Phase A.
+
+Processes: the fixture viewers (PIDs 2473073, 2473204, 2474478), the neon viewer, the browser and gate of the browser witness, and the release build all exited; nothing started by this round remains.
