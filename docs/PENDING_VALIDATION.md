@@ -1233,3 +1233,66 @@ Commits, all as lanmower with no trailers: 1057517 (native HUD), 921c1d9 (wasm s
 - Whether the render-world visibility lists are populated when RenderSystems::Cleanup runs in both viewers.
 - Whether the wasm software adapter reports TIMESTAMP_QUERY.
 - Whether RenderDiagnosticsPlugin records GPU spans on this host.
+
+
+## Round 27 Phase B: performance metrics witnessed
+
+### Builds
+
+- Native dev: /config/.local/bin/cargo build, exit 0, no warnings, on the last three builds.
+- Wasm release: PATH=/config/.local/bin:$PATH WASM_PROFILE=release scripts/build-wasm.sh, exit 0. The build script calls cargo by name, so PATH selects the permitted binary.
+- Gate before the first build: swap-out 0 KB/s in the one-second samples, 7.3 GB free.
+
+### Defects found by the witness, fixed
+
+1. Counts printed with two decimals (3.00 DRAWS) and the strip repeated its unit (fps fps). Fixed: integers print without decimals; each value sits in one value cell.
+2. Bevy publishes the snapshot as a JSON string, and the inspector's 250 ms poll is the only thing that parses it. A reader that did not parse it saw no shown list. Fixed: the check hook and check-inspector.cjs both parse a string snapshot.
+3. The GPU reason said "no elapsed_gpu spans" on a device that lacks two features. Bevy's pass timers (bevy_render diagnostic/internal.rs lines 296 and 298) need TIMESTAMP_QUERY_INSIDE_PASSES and TIMESTAMP_QUERY_INSIDE_ENCODERS too. This WebGPU adapter exposes TIMESTAMP_QUERY alone, so GPU passes are unsupported in the wasm viewer. Fixed: the reason lists the missing flags and the device feature list. The native viewer reports GPU passes as supported (see below).
+4. The four phases came from different frames. Bevy pipelines rendering, so the render world can run during the next frame's main update, and the shared frame start was overwritten. Fixed: the render world captures each frame's marks at extract and publishes SIM, LAUNCH, DRAW and CPU total together at render end. Before the fix the native HUD read SIM 2.96 + LAUNCH 10.79 + DRAW 13.06 against CPU total 13.01 ms. After the fix it reads SIM 2.58 + LAUNCH 18.54 + DRAW 15.68 = 36.80 = CPU total 36.80 ms.
+5. LAUNCH includes any wait for the previous render frame under pipelining. The label now says so.
+6. check-inspector.cjs launched its own Chromium, which the owner's rule against browser work outside playwriter excludes. Changed: it attaches to the playwriter browser through CDP_URL, closes only its own page, and exits 2 without CDP_URL. The judge is exported and the script runs main only when executed directly, so the negative case can run without a browser.
+
+### Browser witness (gm playwriter)
+
+The page was served on 8092 by scripts/serve-wasm.sh and opened through playwriter_execute at http://127.0.0.1:8092/web/wasm/index.html?inspector=1&still=1. Witness output from the final build, produced by scripts/check-inspector.cjs with CDP_URL=http://127.0.0.1:10232 (the playwriter browser):
+
+- ok: true, failures: [], inspector: open, appReady: true, exit 0.
+- strip: FPS=32.85 fps (FrameTimeDiagnosticsPlugin/fps); MEMQ=59.50 MiB (WebAssembly.Memory buffer byteLength); MEMO=25.53 MiB (performance.memory.usedJSHeapSize); DRAW=1.94 ms (render schedule timer around RenderSystems::Render); SHOW=unsupported (present_frames runs inside RenderSystems::Render with no separate hook in Bevy 0.20.1; its time is counted in DRAW); SIM=0.85 ms (First to Last schedule timer); LAUNCH=0.47 ms (Last end to Render start, including any wait for the previous render frame).
+- metrics: DRAWS=3 (RenderVisibleEntities<Mesh3d> of the main views; batching not counted); SHADOW-MAP DRAWS=0; TRIANGLES=734 (RenderMeshInstances with RenderAssets<RenderMesh> index counts / 3); SHADOW TRIS=0; SHADOW PASSES=0 (the wasm scene disables shadow maps); ENTITIES=302; MESHES=8; SPRITES=0; TEXTURES=8; TEXTURE BYTES=3850248 B (Assets<Image> CPU data length).
+- bars: frame interval=30.44 ms; CPU total=3.25 ms; SIM=0.85 ms; LAUNCH=0.47 ms; DRAW=1.94 ms; SHOW=unsupported; GPU=unsupported (device lacks TIMESTAMP_QUERY_INSIDE_ENCODERS, TIMESTAMP_QUERY_INSIDE_PASSES; device features list recorded in the snapshot).
+
+The first run of this witness (before fixes 1 to 3) and the playwriter DOM probe are the source of defects 1 to 3.
+
+### Stub guard
+
+The judge in scripts/check-inspector.cjs, run on a snapshot with one null value and no reason, prints:
+
+- stub: strip/MEMO has no value and no reason (source: test)
+- strip/MEMO is unsupported without a reason
+
+### Native run
+
+Command: DISPLAY=:1.0 target/debug/bevy-jayzee viewer testdata/spec-world shapes. The HUD text comes from web/status-shapes.json, the "hud" array that write_browser_report now records (untracked output). Final run:
+
+- bevy-jayzee viewer - shapes | place=shapes | objects=4 | proxy meshes=4 | light=1 | camera=(4.4,10.0,-17.5)
+- Native Bevy render/window/PBR/UI path | headless world API preserved
+- Bevy DiagnosticsStore | fps=47.3 | frame=21.16ms | entities=313 | I toggles browser inspector in wasm viewer
+- Render world | draws=5 | triangles=2590 | shadow draws=0 | shadow triangles=0 | shadow passes=0
+- Frame phases | SIM=2.58ms | LAUNCH=18.54ms | DRAW=15.68ms | SHOW=unsupported (present runs inside the render system) | CPU total=36.80ms
+- GPU passes | 1.528ms over 9 passes | process RSS=585.7MiB
+
+RSS is read from /proc/self/statm with a 4096-byte page size. GPU passes are supported natively: the native adapter exposes all three timestamp features.
+
+### Processes
+
+- Browser: playwriter browser pid 2571207 and its gate pid 2571177 stopped by SIGTERM over their process trees (nine PIDs in all, the browser's own children included). Afterwards no playwriter or Chromium process of this round remains.
+- Wasm server job (pid 2572455): stopped. Port 8092 no longer answers.
+- Native viewer jobs (pids 2572910, 2573559, 2574003): stopped.
+- Not stopped, not started by this round: PID 289316 (playwriter-ws-server) and the playwriter-project processes from before this round (2566897 and its children).
+
+### Open
+
+- SHOW has no source in Bevy 0.20.1; it stays unsupported with that reason.
+- GPU passes are unsupported in the wasm viewer on this adapter, and supported natively.
+- DRAWS counts visible mesh entities in the render world, not GPU draw calls. Batching is not counted, so the count is an upper bound on submitted draws.
+- Each figure is one run. No median over runs was taken.
