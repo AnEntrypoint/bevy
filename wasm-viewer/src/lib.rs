@@ -1,5 +1,6 @@
 use bevy::asset::{AssetMetaCheck, AssetPlugin, LoadState};
 use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats};
+use bevy::render::renderer::RenderAdapterInfo;
 use bevy::prelude::*;
 use bevy::render::settings::{RenderCreation, WgpuFeatures, WgpuSettings};
 use bevy::render::RenderPlugin;
@@ -62,10 +63,7 @@ pub fn start() {
         }),
         ..default()
     })
-    .set(RenderPlugin {
-        render_creation: device_request(query_value("disable-bc").as_deref() == Some("1"), query_value("adapter").as_deref() == Some("software")),
-        ..default()
-    }))
+    .set(RenderPlugin { render_creation: device_request(query_value("disable-bc").as_deref() == Some("1")), ..default() }))
     .add_plugins((
         FrameTimeDiagnosticsPlugin::default(),
         EntityCountDiagnosticsPlugin::default(),
@@ -164,10 +162,9 @@ fn query_value(name: &str) -> Option<String> {
     web_sys::UrlSearchParams::new_with_str(&search).ok()?.get(name)
 }
 
-fn device_request(disable_bc: bool, software: bool) -> RenderCreation {
+fn device_request(disable_bc: bool) -> RenderCreation {
     RenderCreation::Automatic(Box::new(WgpuSettings {
         disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
-        force_fallback_adapter: software,
         ..default()
     }))
 }
@@ -208,6 +205,7 @@ fn spawn_model(
     asset_server: Res<AssetServer>,
     mut request: ResMut<ModelRequest>,
     support: Option<Res<CompressedImageFormatSupport>>,
+    adapter: Option<Res<RenderAdapterInfo>>,
     mut spawned: Local<bool>,
 ) {
     if *spawned {
@@ -224,6 +222,9 @@ fn spawn_model(
     let (path, format) = texture_choice(&requested, support.0);
     publish_status_attribute("data-bc-supported", if bc_supported { "true" } else { "false" });
     publish_status_attribute("data-compressed-formats", &compressed_names(support.0));
+    if let Some(adapter) = adapter {
+        publish_status_attribute("data-adapter", &adapter.name);
+    }
     publish_status_attribute("data-texture-format", format);
     publish_status_attribute("data-model-path", &path);
     let handle = asset_server.load::<WorldAsset>(format!("{path}#Scene0"));

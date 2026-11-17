@@ -53,6 +53,7 @@ async function visit(page, name, query) {
           modelPath: element?.getAttribute('data-model-path') ?? null,
           bcSupported: element?.getAttribute('data-bc-supported') ?? null,
           compressedFormats: element?.getAttribute('data-compressed-formats') ?? null,
+          adapter: element?.getAttribute('data-adapter') ?? null,
         };
       }).catch(() => ({ ready: false, modelState: null }));
       if (status.modelState === 'loaded' || /fail|error|missing/.test(status.modelState ?? '')) break;
@@ -110,7 +111,7 @@ function summarize(result, names) {
     const expected = result.expected;
     const rows = result.rows;
     const others = Object.keys(cacheDirs).filter((key) => key !== expected);
-    const good = rows.filter((row) => row.modelState === 'loaded' && row.format === expected && row.bcSupported === 'false' && row.fetchedFrom[expected] && others.every((key) => !row.fetchedFrom[key]) && row.errors.length === 0 && row.failedRequests.length === 0);
+    const good = rows.filter((row) => row.modelState === 'loaded' && row.format === expected && row.bcSupported === 'false' && /swiftshader/i.test(row.adapter ?? '') && row.fetchedFrom[expected] && others.every((key) => !row.fetchedFrom[key]) && row.errors.length === 0 && row.failedRequests.length === 0);
     const control = result.control;
     const controlOk = Boolean(control && control.modelState === 'loaded' && control.format === 'bc7' && control.bcSupported === 'true' && control.fetchedFrom.bc7 && !control.fetchedFrom.rgba8);
     const loads = rows.map((row) => row.loadMs).filter((value) => value !== null).sort((a, b) => a - b);
@@ -126,6 +127,7 @@ function summarize(result, names) {
         fetchedFromOtherCache: rows.filter((row) => others.some((key) => row.fetchedFrom[key])).length,
         deviceBcFalse: rows.filter((row) => row.bcSupported === 'false').length,
         compressedFormats: [...new Set(rows.map((row) => row.compressedFormats))],
+        deviceAdapters: [...new Set(rows.map((row) => row.adapter))],
         good: good.length,
         notGood: names.filter((name) => !good.some((row) => row.name === name)),
         loadMsMedian: loads.length ? loads[Math.floor(loads.length / 2)] : null,

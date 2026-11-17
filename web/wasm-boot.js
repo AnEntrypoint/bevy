@@ -15,6 +15,10 @@ fetch('./status.json?t=' + Date.now(), { cache: 'no-store' })
   .then((r) => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
   .then((data) => { statusJson.textContent = JSON.stringify(data, null, 2); })
   .catch((e) => { statusJson.textContent = 'status fallback unavailable: ' + e; });
+if (new URLSearchParams(location.search).get('adapter') === 'software' && typeof navigator !== 'undefined' && 'gpu' in navigator) {
+  const requestAdapter = navigator.gpu.requestAdapter.bind(navigator.gpu);
+  navigator.gpu.requestAdapter = (options) => requestAdapter({ ...options, forceFallbackAdapter: true });
+}
 const hasWebGpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
 statusEl.dataset.webgpu = hasWebGpu ? 'available' : 'unavailable';
 if (!hasWebGpu) {
