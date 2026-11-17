@@ -703,3 +703,31 @@ Changes, each a local commit by lanmower with no trailers; no build, test, gate 
 | Viewer status also reports `uiWindowWidth`, `uiFullWidthLabels` (labels at least 95% of the window width) and up to 60 `uiLabelBoxes`; the HUD witness also requires `uiFullWidthLabels` 0 and no missing models | 2ffe41b, 60ede4c | `src/viewer.rs`, `scripts/check-hud-overlap.sh` | `scripts/check-hud-overlap.sh` exit 0 |
 | Item 3, the last reachable open item (Round 17's zone banner): an absolute box with `width: max-content` (or `fit-content`, `min-content`) and auto horizontal margins drops its left and right insets and gets `align_self: center`, so it shrinks to its text and centres instead of spanning the window; unit test `max_content_boxes_with_auto_margins_shrink_and_centre` | 60ede4c | `src/ui_html.rs` | `cargo test`; HUD witness `uiFullWidthLabels` 0 and the screenshot shows the banner centred |
 | `/web/status-*.json` in `.gitignore` (covers `web/status-main.json` and other places the viewer writes) | 081f14e | `.gitignore` | `git check-ignore -v web/status-main.json` names the rule; `git status` clean |
+
+## Round 19 Phase B results
+
+Contention: before each build the gate read swap-out 0 KB/s, over 10 GB free and no cargo. One cargo ran at a time; the unit suite ran alone. The release build ran in the background under `timeout 1500` (PID 2426285) and was waited on with bounded `tail --pid` calls. Browser witnesses ran as gm jobs (`job_start` with a 15 or 20 minute deadline, bounded `job_status` waits) in the gm shell, where `playwriter-project` resolves to `/config/.gmnew/pw/bin/playwriter-project` with no PATH prefix; the gm host was `29e97a7-511` by then (it restarted from `29e97a7-1` during the round).
+
+Defect found and fixed: the status `json!` literal in `write_browser_report` hit the macro recursion limit once the new fields were added (`error: recursion limit reached while expanding $crate::json_internal!`). `textureTarget`, `uiWindowWidth`, `uiFullWidthLabels` and `uiLabelBoxes` are now assigned on the built value (ab26e55).
+
+Witnesses, one per Round 19 Phase A row:
+
+| Row | Witness | Result |
+| --- | --- | --- |
+| `TextureTarget::for_gpu` | `cargo test --bin bevy-jayzee` | 56 passed, 0 failed, including `gpu_without_bc_falls_back_to_rgba8` |
+| Native runtime target | dev build; `scripts/check-hud-overlap.sh` | build rc 0, no warnings; `textureTarget: "bc7"` on this NVIDIA host, `modelsLoaded` 9, `modelsMissing` 0 |
+| Wasm runtime target | `WASM_PROFILE=release CARGO_TARGET_DIR=target/wasm-viewer scripts/build-wasm.sh` (cargo is `/config/.local/bin/cargo`) | rc 0, 1 m 24 s, `wasm-bindgen 0.2.129`, bundle 31,062,146 bytes |
+| Fallback witness, BC forced off | `node scripts/check-texture-fallback.cjs` (gm job) | `ok: true`. With `texture-compression-bc` hidden: `rows` 64, `loaded` 64, `formatRgba8` 64, `fetchedFromRgba8Cache` 64, `fetchedFromBc7Cache` 0, `bcHiddenOnAdapter` 64, `good` 64, `notGood` [], median load 1,094 ms. Control with BC visible: `format: bc7`, `bcSupported: true`, `adapterHasBc: true`, loaded from `target/gltf-cache`. Browser 2415514 and gate 2415485 exited |
+| Full-width labels and the zone banner | `scripts/check-hud-overlap.sh` on neon `main` | exit 0: `uiLabels` 17, `uiLabelOverlaps` 0, `uiUncoveredGlyphs` 0, `uiFullWidthLabels` 0 at `uiWindowWidth` 898. The DOWNTOWN banner box is now `[413, 139, 485, 157]` (72 px, centred) instead of 898 px wide. Screenshot `target/witness/neon-hud.png` |
+| `max_content_boxes_with_auto_margins_shrink_and_centre` | `cargo test` | passed |
+| `.gitignore` | `git check-ignore -v web/status-main.json` | `.gitignore:8:/web/status-*.json`; `git status` clean |
+
+Regression witnesses on the final tree:
+
+- `gltf-check` on the neon CDN: default (BC7) rc 0 and `rgba8` rc 0; `testdata/normal-map` rc 0.
+- `node scripts/check-neon-wasm-models.cjs` (default BC7 cache, gm job): `ok: true`, 64 of 64 clean, median 1,110 ms, GLB transfer 101,358,620 bytes. Browser 2418642 and gate 2418608 exited.
+- `node scripts/check-normal-map-visual.cjs` (gm job): `ok: true`, raw and decoded both `loaded`, one adapter each, no tangent warnings, no failed requests. Browser 2425932 exited.
+- Release build rc 0, 10 m 44 s. `bash scripts/verify.sh` once: exit 0; bench means 0.2946 / 0.7708 / 1.3427 ms at 500 / 2000 / 5000 bodies; determinism `hashA` = `hashB` = 0x3a5f0b51, `pass: true`; network check `ok: true`. The bench means are not compared back-to-back with an earlier run, so they are not called a regression or an improvement.
+- Processes: no Chromium on the repo profile, gate, witness server, viewer or build started this round remains.
+
+Open list after this round: none reachable. World-anchored HUD tags remain dropped in the native viewer (it has no projection for them); that is a stated limitation of the native viewer, not an open defect.
