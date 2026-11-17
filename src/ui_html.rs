@@ -1,5 +1,5 @@
 use bevy::color::Srgba;
-use crate::css_anim::{attach, parse_animation, parse_keyframes, sample, Animation, Keyframes};
+use crate::css_anim::{apply_animation_longhands, attach, parse_animation, parse_keyframes, parse_transitions, sample_over, transition_for, Animation, Keyframes, Sampled, Track, Transition};
 use std::sync::Arc;
 use bevy::math::Rot2;
 use bevy::prelude::*;
@@ -45,6 +45,64 @@ pub struct HtmlAnimated {
     pub animations: Vec<Animation>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct ElementClock {
+    pub start: f32,
+    pub paused_since: Option<f32>,
+    pub opacity: Track<f32>,
+    pub visible: Track<bool>,
+}
+
+impl ElementClock {
+    fn new(now: f32, paused: bool, opacity: f32, visible: bool) -> Self {
+        Self { start: now, paused_since: paused.then_some(now), opacity: Track::settled(opacity), visible: Track::settled(visible) }
+    }
+
+    fn update(&mut self, now: f32, target: &DynamicBox) {
+        match (target.paused, self.paused_since) {
+            (true, None) => self.paused_since = Some(now),
+            (false, Some(since)) => {
+                self.start += now - since;
+                self.paused_since = None;
+            }
+            _ => {}
+        }
+        if self.opacity.to != target.opacity {
+            self.opacity = match transition_for(&target.transitions, "opacity") {
+                Some(t) => Track { from: self.opacity.value(now), to: target.opacity, start: now, duration: t.duration, delay: t.delay, timing: t.timing },
+                None => Track::settled(target.opacity),
+            };
+        }
+        if self.visible.to != target.visible {
+            self.visible = match transition_for(&target.transitions, "visibility") {
+                Some(t) => Track { from: self.visible.value(now), to: target.visible, start: now, duration: t.duration, delay: t.delay, timing: t.timing },
+                None => Track::settled(target.visible),
+            };
+        }
+    }
+
+    pub fn elapsed(&self, now: f32) -> f32 {
+        self.paused_since.unwrap_or(now) - self.start
+    }
+
+    pub fn transition_elapsed(&self, now: f32) -> Option<f32> {
+        [(self.opacity.duration > 0.0 || self.opacity.delay > 0.0).then_some(self.opacity.start), (self.visible.duration > 0.0 || self.visible.delay > 0.0).then_some(self.visible.start)]
+            .into_iter()
+            .flatten()
+            .reduce(f32::max)
+            .map(|start| now - start)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DynamicBox {
+    pub key: String,
+    pub paused: bool,
+    pub opacity: f32,
+    pub visible: bool,
+    pub transitions: Vec<Transition>,
+}
+
 #[derive(Component, Clone, Copy, Debug)]
 pub struct HtmlTextAlpha(pub f32);
 
@@ -53,7 +111,7 @@ pub struct HtmlBackgroundAlpha(pub f32);
 
 #[derive(Resource, Default, Clone, Debug)]
 pub struct HtmlAnimationClock {
-    pub starts: HashMap<String, f32>,
+    pub elements: HashMap<String, ElementClock>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -63,6 +121,8 @@ pub struct AnimationSample {
     pub elapsed: f32,
     pub opacity: f32,
     pub visible: bool,
+    pub paused: bool,
+    pub transition_elapsed: Option<f32>,
 }
 
 #[derive(Resource, Default, Clone, Debug)]
@@ -117,7 +177,7 @@ fn sync_html_ui(
     source.applied = Some(source.html.clone());
     *status = HtmlUiStatus::default();
     if source.html.trim().is_empty() {
-        clock.starts.clear();
+        clock.elements.clear();
         return;
     }
     let built = build(&source.html);
@@ -125,11 +185,16 @@ fn sync_html_ui(
     status.warnings = built.warnings;
     status.uncovered = built.spec.uncovered_glyphs();
     status.anchors = built.spec.anchors();
-    let keys = built.spec.animation_keys();
-    clock.starts.retain(|key, _| keys.contains(key));
+    let mut dynamic = Vec::new();
+    built.spec.dynamic_boxes(&mut dynamic);
+    clock.elements.retain(|key, _| dynamic.iter().any(|target| &target.key == key));
     let now = time.elapsed_secs();
-    for key in keys {
-        clock.starts.entry(key).or_insert(now);
+    for target in &dynamic {
+        clock
+            .elements
+            .entry(target.key.clone())
+            .and_modify(|entry| entry.update(now, target))
+            .or_insert_with(|| ElementClock::new(now, target.paused, target.opacity, target.visible));
     }
     let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
@@ -147,11 +212,12 @@ fn animate_html(
     let now = time.elapsed_secs();
     status.samples.clear();
     for (entity, animated) in &animated {
-        let Some(start) = clock.starts.get(&animated.key) else {
+        let Some(entry) = clock.elements.get(&animated.key) else {
             continue;
         };
-        let elapsed = now - start;
-        let sampled = sample(&animated.animations, elapsed);
+        let elapsed = entry.elapsed(now);
+        let underlying = Sampled { opacity: entry.opacity.value(now), visible: entry.visible.value(now) };
+        let sampled = sample_over(&animated.animations, elapsed, underlying);
         if let Ok(mut current) = visibility.get_mut(entity) {
             let wanted = if sampled.visible { Visibility::Inherited } else { Visibility::Hidden };
             if *current != wanted {
@@ -178,6 +244,8 @@ fn animate_html(
             elapsed,
             opacity: sampled.opacity,
             visible: sampled.visible,
+            paused: entry.paused_since.is_some(),
+            transition_elapsed: entry.transition_elapsed(now),
         });
     }
 }
@@ -198,23 +266,33 @@ impl UiSpec {
     }
 
     pub fn animation_keys(&self) -> Vec<String> {
-        match self {
-            UiSpec::Box { style, children } => style
-                .animation_key
-                .iter()
-                .filter(|_| !style.animations.is_empty())
-                .cloned()
-                .chain(children.iter().flat_map(UiSpec::animation_keys))
-                .collect(),
-            _ => Vec::new(),
+        let mut dynamic = Vec::new();
+        self.dynamic_boxes(&mut dynamic);
+        dynamic.into_iter().map(|target| target.key).collect()
+    }
+
+    pub fn dynamic_boxes(&self, out: &mut Vec<DynamicBox>) {
+        if let UiSpec::Box { style, children } = self {
+            if let Some(key) = style.animation_key.as_ref().filter(|_| style.is_dynamic()) {
+                out.push(DynamicBox {
+                    key: key.clone(),
+                    paused: !style.animations.is_empty() && style.animations.iter().all(|animation| animation.paused),
+                    opacity: style.opacity,
+                    visible: style.visible,
+                    transitions: style.transitions.clone(),
+                });
+            }
+            for child in children {
+                child.dynamic_boxes(out);
+            }
         }
     }
 
     fn finish_animations(&mut self, keyframes: &BTreeMap<String, Arc<Keyframes>>, path: &str) {
         if let UiSpec::Box { style, children } = self {
-            if !style.animations.is_empty() {
-                attach(&mut style.animations, keyframes);
-                style.animations.retain(|animation| animation.keyframes.is_some());
+            attach(&mut style.animations, keyframes);
+            style.animations.retain(|animation| animation.keyframes.is_some());
+            if style.is_dynamic() {
                 if style.animation_key.is_none() {
                     let names = style.animations.iter().map(|animation| animation.name.as_str()).collect::<Vec<_>>().join(",");
                     style.animation_key = Some(format!("path:{path}:{names}"));
@@ -259,6 +337,15 @@ pub struct BoxStyle {
     translate: Option<(Val, Val)>,
     animations: Vec<Animation>,
     animation_key: Option<String>,
+    transitions: Vec<Transition>,
+    opacity: f32,
+    visible: bool,
+}
+
+impl BoxStyle {
+    fn is_dynamic(&self) -> bool {
+        !self.animations.is_empty() || !self.transitions.is_empty()
+    }
 }
 
 impl BoxStyle {
@@ -279,6 +366,9 @@ impl BoxStyle {
             translate: None,
             animations: Vec::new(),
             animation_key: None,
+            transitions: Vec::new(),
+            opacity: 1.0,
+            visible: true,
         }
     }
 
@@ -345,8 +435,10 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 if let Some(background) = style.background {
                     entity.insert((BackgroundColor(background), HtmlBackgroundAlpha(background.alpha())));
                 }
-                if !style.animations.is_empty() {
+                if style.is_dynamic() {
                     entity.insert(HtmlAnimated { key: style.animation_key.clone().unwrap_or_default(), animations: style.animations.clone() });
+                } else if !style.visible && style.anchor.is_none() {
+                    entity.insert(Visibility::Hidden);
                 }
                 if let Some(anchor) = &style.anchor {
                     entity.insert((anchor.clone(), Visibility::Hidden));
@@ -783,7 +875,10 @@ struct Scope {
     props: BTreeMap<String, String>,
     inherit: Inherit,
     opacity: f32,
+    declared_opacity: f32,
 }
+
+const DYNAMIC_PROPERTIES: [&str; 4] = ["animation", "animation-name", "transition", "transition-property"];
 
 impl Scope {
     fn new(props: BTreeMap<String, String>, parent: &Inherit) -> Self {
@@ -797,8 +892,11 @@ impl Scope {
             props,
             inherit: Inherit { vars, color: parent.color, font_size: parent.font_size },
             opacity: 1.0,
+            declared_opacity: 1.0,
         };
-        scope.opacity = scope.get("opacity").and_then(|value| value.parse::<f32>().ok()).unwrap_or(1.0).clamp(0.0, 1.0);
+        scope.declared_opacity = scope.get("opacity").and_then(|value| value.parse::<f32>().ok()).unwrap_or(1.0).clamp(0.0, 1.0);
+        let dynamic = DYNAMIC_PROPERTIES.iter().any(|name| scope.props.contains_key(*name));
+        scope.opacity = if dynamic { 1.0 } else { scope.declared_opacity };
         scope.inherit.color = scope.get("color").and_then(|value| parse_color(&value)).map(|color| with_opacity(color, scope.opacity)).or(parent.color);
         scope.inherit.font_size = scope.get("font-size").and_then(|value| parse_px(&value)).unwrap_or(parent.font_size);
         scope
@@ -1063,8 +1161,11 @@ fn box_style(scope: &Scope) -> BoxStyle {
         background,
         anchor: None,
         translate: scope.get("transform").and_then(|value| parse_translate(&value)),
-        animations: scope.get("animation").map(|value| parse_animation(&value)).unwrap_or_default(),
+        animations: apply_animation_longhands(scope.get("animation").map(|value| parse_animation(&value)).unwrap_or_default(), |name| scope.get(name)),
         animation_key: None,
+        transitions: parse_transitions(|name| scope.get(name)),
+        opacity: scope.declared_opacity,
+        visible: !matches!(scope.get("visibility").as_deref().map(str::trim), Some("hidden" | "collapse")),
     }
 }
 
@@ -1767,8 +1868,55 @@ mod tests {
         let mut styles = Vec::new();
         box_styles(&built.spec, &mut styles);
         let banner = styles.iter().find(|style| style.animation_key.as_deref() == Some("dzNEXUS")).expect("banner");
-        assert_eq!(sample(&banner.animations, 9.0), crate::css_anim::Sampled { opacity: 0.0, visible: false });
+        assert_eq!(crate::css_anim::sample(&banner.animations, 9.0), crate::css_anim::Sampled { opacity: 0.0, visible: false });
         assert!(styles.iter().all(|style| style.animations.iter().all(|animation| animation.keyframes.is_some())));
+    }
+
+    #[test]
+    fn longhands_transitions_and_visibility_reach_the_box_style() {
+        let built = build(r#"<style>@keyframes pulse{from{opacity:1}to{opacity:.2}}</style><div id="lh" style="animation-name:pulse;animation-duration:2s;animation-play-state:paused;opacity:.5;color:#ffffff">a</div><div id="tr" style="transition:opacity 1.5s ease-in-out;opacity:.25;background:#ff0000">b</div><div id="still" style="opacity:.5;background:#00ff00">c</div><div id="gone" style="visibility:hidden">d</div>"#);
+        let mut styles = Vec::new();
+        box_styles(&built.spec, &mut styles);
+        let find = |key: &str| styles.iter().find(|style| style.animation_key.as_deref() == Some(key)).expect(key).clone();
+        let lh = find("lh");
+        assert_eq!((lh.animations.len(), lh.animations[0].duration, lh.animations[0].paused, lh.opacity), (1, 2.0, true, 0.5));
+        let tr = find("tr");
+        assert_eq!((tr.transitions.len(), tr.opacity), (1, 0.25));
+        assert_eq!(tr.background.map(|color| color.alpha()), Some(1.0));
+        let still = find("still");
+        assert!(!still.is_dynamic());
+        assert_eq!(still.background.map(|color| color.alpha()), Some(0.5));
+        assert!(!find("gone").visible);
+        let mut dynamic = Vec::new();
+        built.spec.dynamic_boxes(&mut dynamic);
+        assert_eq!(dynamic.iter().map(|target| (target.key.as_str(), target.paused)).collect::<Vec<_>>(), vec![("lh", true), ("tr", false)]);
+    }
+
+    #[test]
+    fn element_clock_starts_a_transition_from_the_current_value_across_rebuilds() {
+        let target = |opacity: f32, visible: bool| DynamicBox {
+            key: "tr".to_string(),
+            paused: false,
+            opacity,
+            visible,
+            transitions: crate::css_anim::parse_transitions(|name| (name == "transition").then(|| "opacity 2s linear, visibility 2s linear".to_string())),
+        };
+        let mut clock = ElementClock::new(0.0, false, 1.0, true);
+        clock.update(1.0, &target(1.0, true));
+        assert_eq!(clock.opacity.value(1.5), 1.0);
+        clock.update(2.0, &target(0.0, false));
+        assert!((clock.opacity.value(3.0) - 0.5).abs() < 1e-6);
+        assert!(clock.visible.value(3.0));
+        clock.update(3.0, &target(1.0, false));
+        assert!((clock.opacity.value(3.0) - 0.5).abs() < 1e-6);
+        assert!((clock.opacity.value(4.0) - 0.75).abs() < 1e-6);
+        assert!(clock.visible.value(3.9));
+        assert!(!clock.visible.value(4.0));
+        assert_eq!(clock.transition_elapsed(3.5), Some(0.5));
+        let mut paused = ElementClock::new(0.0, true, 1.0, true);
+        assert_eq!(paused.elapsed(5.0), 0.0);
+        paused.update(5.0, &DynamicBox { paused: false, ..target(1.0, true) });
+        assert_eq!(paused.elapsed(6.0), 1.0);
     }
 
     #[test]

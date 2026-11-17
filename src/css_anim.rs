@@ -31,7 +31,82 @@ pub struct Animation {
     pub timing: Timing,
     pub iterations: f32,
     pub fill: Fill,
+    pub paused: bool,
     pub keyframes: Option<Arc<Keyframes>>,
+}
+
+impl Animation {
+    fn named(name: &str) -> Self {
+        Self { name: name.to_string(), duration: 0.0, delay: 0.0, timing: EASE, iterations: 1.0, fill: Fill::None, paused: false, keyframes: None }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Transition {
+    pub property: String,
+    pub duration: f32,
+    pub delay: f32,
+    pub timing: Timing,
+}
+
+impl Transition {
+    pub fn covers(&self, property: &str) -> bool {
+        self.property == property || self.property == "all"
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Track<T: Copy> {
+    pub from: T,
+    pub to: T,
+    pub start: f32,
+    pub duration: f32,
+    pub delay: f32,
+    pub timing: Timing,
+}
+
+impl<T: Copy> Track<T> {
+    pub fn settled(value: T) -> Self {
+        Self { from: value, to: value, start: 0.0, duration: 0.0, delay: 0.0, timing: Timing::Linear }
+    }
+
+    pub fn eased(&self, now: f32) -> f32 {
+        if self.duration <= 0.0 {
+            return 1.0;
+        }
+        let local = (now - self.start - self.delay) / self.duration;
+        if local <= 0.0 {
+            0.0
+        } else if local >= 1.0 {
+            1.0
+        } else {
+            self.timing.apply(local)
+        }
+    }
+
+    pub fn running(&self, now: f32) -> bool {
+        self.duration > 0.0 && now - self.start < self.delay + self.duration
+    }
+}
+
+impl Track<f32> {
+    pub fn value(&self, now: f32) -> f32 {
+        let eased = self.eased(now);
+        self.from + (self.to - self.from) * eased
+    }
+}
+
+impl Track<bool> {
+    pub fn value(&self, now: f32) -> bool {
+        let eased = self.eased(now);
+        if self.from == self.to || eased <= 0.0 {
+            self.from
+        } else if eased >= 1.0 {
+            self.to
+        } else {
+            self.from || self.to
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -178,6 +253,7 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
             let mut timing = EASE;
             let mut iterations = 1.0;
             let mut fill = Fill::None;
+            let mut paused = false;
             for token in split_top_level(single, ' ') {
                 if let Some(time) = parse_time(&token) {
                     times.push(time);
@@ -194,7 +270,9 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
                     _ => None,
                 } {
                     fill = parsed;
-                } else if matches!(token.as_str(), "none" | "normal" | "reverse" | "alternate" | "alternate-reverse" | "running" | "paused") {
+                } else if token == "paused" {
+                    paused = true;
+                } else if matches!(token.as_str(), "none" | "normal" | "reverse" | "alternate" | "alternate-reverse" | "running") {
                     if token == "none" && name.is_none() {
                         name = Some(String::new());
                     }
@@ -210,10 +288,130 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
                 timing,
                 iterations,
                 fill,
+                paused,
                 keyframes: None,
             })
         })
         .collect()
+}
+
+fn list(value: Option<String>) -> Vec<String> {
+    value.map(|value| split_top_level(&value, ',')).unwrap_or_default()
+}
+
+fn cycled<T: Clone>(values: &[T], index: usize) -> Option<T> {
+    (!values.is_empty()).then(|| values[index % values.len()].clone())
+}
+
+pub fn apply_animation_longhands(shorthand: Vec<Animation>, get: impl Fn(&str) -> Option<String>) -> Vec<Animation> {
+    let names = list(get("animation-name"));
+    let mut animations = if names.is_empty() {
+        shorthand
+    } else {
+        names
+            .iter()
+            .enumerate()
+            .filter(|(_, name)| name.as_str() != "none")
+            .map(|(index, name)| {
+                let mut animation = shorthand.get(index).cloned().unwrap_or_else(|| Animation::named(name));
+                animation.name = name.clone();
+                animation
+            })
+            .collect()
+    };
+    let durations = list(get("animation-duration")).iter().filter_map(|value| parse_time(value)).collect::<Vec<_>>();
+    let delays = list(get("animation-delay")).iter().filter_map(|value| parse_time(value)).collect::<Vec<_>>();
+    let timings = list(get("animation-timing-function")).iter().filter_map(|value| parse_timing(value)).collect::<Vec<_>>();
+    let counts = list(get("animation-iteration-count"))
+        .iter()
+        .filter_map(|value| if value == "infinite" { Some(f32::INFINITY) } else { value.parse::<f32>().ok() })
+        .collect::<Vec<_>>();
+    let fills = list(get("animation-fill-mode"))
+        .iter()
+        .map(|value| match value.as_str() {
+            "forwards" => Fill::Forwards,
+            "backwards" => Fill::Backwards,
+            "both" => Fill::Both,
+            _ => Fill::None,
+        })
+        .collect::<Vec<_>>();
+    let states = list(get("animation-play-state")).iter().map(|value| value == "paused").collect::<Vec<_>>();
+    for (index, animation) in animations.iter_mut().enumerate() {
+        if let Some(value) = cycled(&durations, index) {
+            animation.duration = value;
+        }
+        if let Some(value) = cycled(&delays, index) {
+            animation.delay = value;
+        }
+        if let Some(value) = cycled(&timings, index) {
+            animation.timing = value;
+        }
+        if let Some(value) = cycled(&counts, index) {
+            animation.iterations = value.max(0.0);
+        }
+        if let Some(value) = cycled(&fills, index) {
+            animation.fill = value;
+        }
+        if let Some(value) = cycled(&states, index) {
+            animation.paused = value;
+        }
+    }
+    animations
+}
+
+pub fn parse_transitions(get: impl Fn(&str) -> Option<String>) -> Vec<Transition> {
+    let mut transitions = list(get("transition"))
+        .iter()
+        .filter_map(|single| {
+            let mut property = None;
+            let mut times = Vec::new();
+            let mut timing = EASE;
+            for token in split_top_level(single, ' ') {
+                if let Some(time) = parse_time(&token) {
+                    times.push(time);
+                } else if let Some(parsed) = parse_timing(&token) {
+                    timing = parsed;
+                } else if property.is_none() {
+                    property = Some(token.to_ascii_lowercase());
+                }
+            }
+            let property = property.unwrap_or_else(|| "all".to_string());
+            (property != "none").then(|| Transition { property, duration: times.first().copied().unwrap_or(0.0), delay: times.get(1).copied().unwrap_or(0.0), timing })
+        })
+        .collect::<Vec<_>>();
+    let properties = list(get("transition-property"));
+    if !properties.is_empty() {
+        transitions = properties
+            .iter()
+            .enumerate()
+            .filter(|(_, property)| property.as_str() != "none")
+            .map(|(index, property)| {
+                let mut transition = transitions.get(index).cloned().unwrap_or(Transition { property: String::new(), duration: 0.0, delay: 0.0, timing: EASE });
+                transition.property = property.to_ascii_lowercase();
+                transition
+            })
+            .collect();
+    }
+    let durations = list(get("transition-duration")).iter().filter_map(|value| parse_time(value)).collect::<Vec<_>>();
+    let delays = list(get("transition-delay")).iter().filter_map(|value| parse_time(value)).collect::<Vec<_>>();
+    let timings = list(get("transition-timing-function")).iter().filter_map(|value| parse_timing(value)).collect::<Vec<_>>();
+    for (index, transition) in transitions.iter_mut().enumerate() {
+        if let Some(value) = cycled(&durations, index) {
+            transition.duration = value;
+        }
+        if let Some(value) = cycled(&delays, index) {
+            transition.delay = value;
+        }
+        if let Some(value) = cycled(&timings, index) {
+            transition.timing = value;
+        }
+    }
+    transitions.retain(|transition| transition.duration > 0.0 || transition.delay > 0.0);
+    transitions
+}
+
+pub fn transition_for<'a>(transitions: &'a [Transition], property: &str) -> Option<&'a Transition> {
+    transitions.iter().rev().find(|transition| transition.covers(property))
 }
 
 fn bezier(p1: f32, p2: f32, t: f32) -> f32 {
@@ -301,21 +499,27 @@ fn segment<'a>(keyframes: &'a Keyframes, property: &str, underlying: &'a str, p:
 }
 
 pub fn sample(animations: &[Animation], elapsed: f32) -> Sampled {
-    let mut sampled = Sampled { opacity: 1.0, visible: true };
+    sample_over(animations, elapsed, Sampled { opacity: 1.0, visible: true })
+}
+
+pub fn sample_over(animations: &[Animation], elapsed: f32, underlying: Sampled) -> Sampled {
+    let mut sampled = underlying;
+    let base_opacity = underlying.opacity.to_string();
+    let base_visibility = if underlying.visible { "visible" } else { "hidden" };
     for animation in animations {
         let (Some(keyframes), Some(p)) = (animation.keyframes.as_deref(), progress(animation, elapsed)) else {
             continue;
         };
         let specifies = |property: &str| keyframes.frames.iter().any(|(_, declarations)| declarations.contains_key(property));
         if specifies("opacity") {
-            let (from, to, local) = segment(keyframes, "opacity", "1", p);
+            let (from, to, local) = segment(keyframes, "opacity", &base_opacity, p);
             let eased = animation.timing.apply(local);
             let a = from.parse::<f32>().unwrap_or(1.0);
             let b = to.parse::<f32>().unwrap_or(1.0);
             sampled.opacity = (a + (b - a) * eased).clamp(0.0, 1.0);
         }
         if specifies("visibility") {
-            let (from, to, local) = segment(keyframes, "visibility", "visible", p);
+            let (from, to, local) = segment(keyframes, "visibility", base_visibility, p);
             let eased = animation.timing.apply(local);
             let value = if from == to {
                 from
@@ -391,4 +595,71 @@ mod tests {
         attach(&mut no_fill, &parse_keyframes(DZIN));
         assert_eq!(sample(&no_fill, 9.0), Sampled { opacity: 1.0, visible: true });
     }
+
+    fn props<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&str) -> Option<String> + 'a {
+        move |name| pairs.iter().find(|(key, _)| *key == name).map(|(_, value)| value.to_string())
+    }
+
+    #[test]
+    fn longhands_build_and_override_animations() {
+        let built = apply_animation_longhands(
+            Vec::new(),
+            props(&[
+                ("animation-name", "pulse, glow"),
+                ("animation-duration", "2s"),
+                ("animation-delay", "0.5s, 1s"),
+                ("animation-timing-function", "linear"),
+                ("animation-iteration-count", "2, infinite"),
+                ("animation-fill-mode", "both"),
+                ("animation-play-state", "running, paused"),
+            ]),
+        );
+        assert_eq!(built.len(), 2);
+        assert_eq!((built[0].name.as_str(), built[0].duration, built[0].delay, built[0].timing, built[0].iterations, built[0].fill, built[0].paused), ("pulse", 2.0, 0.5, Timing::Linear, 2.0, Fill::Both, false));
+        assert_eq!((built[1].name.as_str(), built[1].duration, built[1].delay, built[1].fill, built[1].paused), ("glow", 2.0, 1.0, Fill::Both, true));
+        assert!(built[1].iterations.is_infinite());
+        let overridden = apply_animation_longhands(parse_animation("dzin 4s forwards"), props(&[("animation-duration", "1s"), ("animation-play-state", "paused")]));
+        assert_eq!((overridden[0].duration, overridden[0].fill, overridden[0].paused), (1.0, Fill::Forwards, true));
+        assert!(apply_animation_longhands(parse_animation("dzin 4s"), props(&[("animation-name", "none")])).is_empty());
+        assert!(parse_animation("x 1s paused")[0].paused);
+    }
+
+    #[test]
+    fn transitions_parse_from_shorthand_and_longhands() {
+        let shorthand = parse_transitions(props(&[("transition", "opacity 1.5s ease-in-out, visibility 1s linear 0.2s")]));
+        assert_eq!(shorthand.len(), 2);
+        assert_eq!((shorthand[0].property.as_str(), shorthand[0].duration, shorthand[0].timing), ("opacity", 1.5, Timing::Bezier(0.42, 0.0, 0.58, 1.0)));
+        assert_eq!((shorthand[1].delay, shorthand[1].timing), (0.2, Timing::Linear));
+        let longhands = parse_transitions(props(&[("transition-property", "opacity, visibility"), ("transition-duration", "1s"), ("transition-timing-function", "linear")]));
+        assert_eq!(longhands.iter().map(|t| (t.property.as_str(), t.duration)).collect::<Vec<_>>(), vec![("opacity", 1.0), ("visibility", 1.0)]);
+        let all = parse_transitions(props(&[("transition", "all .3s")]));
+        assert!(transition_for(&all, "opacity").is_some() && transition_for(&all, "visibility").is_some());
+        assert!(parse_transitions(props(&[("transition", "none")])).is_empty());
+        assert!(parse_transitions(props(&[("transition", "opacity 0s")])).is_empty());
+    }
+
+    #[test]
+    fn tracks_hold_during_delay_then_ease_to_the_target() {
+        let fade = Track { from: 1.0f32, to: 0.25, start: 10.0, duration: 2.0, delay: 0.5, timing: Timing::Linear };
+        assert_eq!(fade.value(10.0), 1.0);
+        assert_eq!(fade.value(10.5), 1.0);
+        assert!((fade.value(11.5) - 0.625).abs() < 1e-6);
+        assert_eq!(fade.value(13.0), 0.25);
+        assert!(fade.running(12.0) && !fade.running(12.6));
+        let hide = Track { from: true, to: false, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };
+        assert!(hide.value(0.0) && hide.value(0.99) && !hide.value(1.0));
+        let show = Track { from: false, to: true, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };
+        assert!(!show.value(0.0) && show.value(0.01));
+        assert_eq!(Track::settled(0.4f32).value(99.0), 0.4);
+    }
+
+    #[test]
+    fn animations_sample_over_the_underlying_value() {
+        let mut half = parse_animation("p 2s");
+        attach(&mut half, &parse_keyframes("@keyframes p{to{opacity:0}}"));
+        let under = Sampled { opacity: 0.5, visible: true };
+        assert!((sample_over(&half, 0.0, under).opacity - 0.5).abs() < 1e-6);
+        assert_eq!(sample_over(&half, 5.0, under).opacity, 0.5);
+    }
 }
+
