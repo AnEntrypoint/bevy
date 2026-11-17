@@ -13,8 +13,8 @@ const witnessDir = path.join(repo, 'target', 'witness');
 const statusPath = path.join(repo, 'web', `status-${place}.json`);
 const outPath = path.join(witnessDir, 'hud-fixture-native.json');
 const expectedAnchors = ['fixture-district', 'fixture-event', 'fixture-foe', 'fixture-pad', 'fixture-ping'];
-const bannerKey = 'dzNEXUS';
-const sampleUntil = 6.0;
+const keys = ['dzNEXUS', 'lhAnim', 'lhPaused', 'trFade', 'trHide'];
+const sampleUntil = 6.5;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -38,9 +38,24 @@ function screenshot(name) {
     return path.relative(repo, png);
 }
 
-function bannerSample(status) {
-    const sample = (status?.uiAnimations || []).find((entry) => entry.key === bannerKey);
-    return sample ? { elapsed: sample.elapsed, opacity: sample.opacity, visible: sample.visible, clock: status.uiClock } : null;
+function backdrop(png, rect) {
+    const probe = `
+from PIL import Image
+import json, sys
+im = Image.open(sys.argv[1]).convert('RGB')
+l, t, r, b = [int(round(v)) for v in json.loads(sys.argv[2])]
+inside = [im.getpixel((x, y)) for x, y in [(l + 1, t + 1), (r - 2, t + 1), (l + 1, b - 2), (r - 2, b - 2)]]
+outside = [im.getpixel((x, y)) for x, y in [(l - 4, t + 1), (r + 3, t + 1), (l - 4, b - 2), (r + 3, b - 2)]]
+delta = max(abs(a - c) for p, q in zip(inside, outside) for a, c in zip(p, q))
+print(json.dumps({'inside': inside, 'outside': outside, 'maxChannelDelta': delta}))
+`;
+    return JSON.parse(execFileSync('python3', ['-I', '-c', probe, path.join(repo, png), JSON.stringify(rect)], { encoding: 'utf8' }));
+}
+
+function samplesOf(status) {
+    return (status?.uiAnimations || [])
+        .filter((entry) => keys.includes(entry.key))
+        .map((entry) => ({ key: entry.key, elapsed: entry.elapsed, transitionElapsed: entry.transitionElapsed ?? null, opacity: entry.opacity, visible: entry.visible, paused: entry.paused, clock: status.uiClock }));
 }
 
 async function main() {
@@ -59,77 +74,72 @@ async function main() {
     });
     const samples = [];
     const shots = {};
+    let lastClock = null;
     try {
         const deadline = Date.now() + 180000;
-        while (Date.now() < deadline && !exited && !bannerSample(readStatus())) await sleep(20);
+        while (Date.now() < deadline && !exited && !samplesOf(readStatus()).some((s) => s.key === 'dzNEXUS')) await sleep(15);
         while (Date.now() < deadline && !exited) {
             const status = readStatus();
-            const sample = bannerSample(status);
-            if (sample && (samples.length === 0 || sample.clock !== samples[samples.length - 1].clock)) samples.push(sample);
-            if (sample && sample.elapsed >= 1.0 && !shots.visible) {
-                shots.visible = screenshot('hud-fixture-1s');
-                shots.bannerRect = ((status && status.uiLabelBoxes) || []).find((box) => box.text === 'NEXUS')?.rect ?? null;
+            const current = samplesOf(status);
+            const banner = current.find((s) => s.key === 'dzNEXUS');
+            if (current.length && status.uiClock !== lastClock) {
+                lastClock = status.uiClock;
+                samples.push(...current);
             }
-            if (sample && sample.elapsed >= sampleUntil) {
+            if (banner && banner.elapsed >= 1.0 && !shots.visible) {
+                shots.visible = screenshot('hud-fixture-1s');
+                shots.bannerRect = (status.uiLabelBoxes || []).find((box) => box.text === 'NEXUS')?.rect ?? null;
+            }
+            if (banner && banner.elapsed >= sampleUntil) {
                 shots.ended = screenshot('hud-fixture-6s');
                 break;
             }
-            await sleep(sample && sample.elapsed < 0.5 ? 15 : 60);
+            await sleep(banner && banner.elapsed < 0.5 ? 15 : 40);
         }
         const status = readStatus() || {};
         const positions = status.uiAnchorPositions || [];
         const viewport = status.uiAnchorViewport || [0, 0];
         const inside = positions.filter((p) => p.x >= 0 && p.y >= 0 && p.x <= viewport[0] && p.y <= viewport[1]);
         const placedIds = positions.map((p) => p.id).sort();
-        result.anchors = {
-            inScene: status.uiAnchorsInScene,
-            placed: status.uiAnchorsPlaced,
-            unresolved: status.uiAnchorsUnresolved,
-            behind: status.uiAnchorsBehind,
-            offscreen: status.uiAnchorsOffscreen,
-            viewport,
-            insideViewport: inside.length,
-            placedIds,
-            positions,
-        };
+        result.anchors = { inScene: status.uiAnchorsInScene, placed: status.uiAnchorsPlaced, unresolved: status.uiAnchorsUnresolved, behind: status.uiAnchorsBehind, offscreen: status.uiAnchorsOffscreen, viewport, insideViewport: inside.length, placedIds, positions };
         result.labels = { count: status.uiLabels, overlaps: status.uiLabelOverlaps, uncovered: status.uiUncoveredGlyphs };
         result.screenshots = shots;
-        if (shots.visible && shots.bannerRect) {
-            const probe = `
-from PIL import Image
-import json, sys
-im = Image.open(sys.argv[1]).convert('RGB')
-l, t, r, b = [int(round(v)) for v in json.loads(sys.argv[2])]
-inside = [im.getpixel((x, y)) for x, y in [(l + 1, t + 1), (r - 2, t + 1), (l + 1, b - 2), (r - 2, b - 2)]]
-outside = [im.getpixel((x, y)) for x, y in [(l - 4, t + 1), (r + 3, t + 1), (l - 4, b - 2), (r + 3, b - 2)]]
-delta = max(abs(a - c) for p, q in zip(inside, outside) for a, c in zip(p, q))
-print(json.dumps({'inside': inside, 'outside': outside, 'maxChannelDelta': delta}))
-`;
-            result.bannerBackdrop = JSON.parse(execFileSync('python3', ['-I', '-c', probe, path.join(repo, shots.visible), JSON.stringify(shots.bannerRect)], { encoding: 'utf8' }));
-        }
+        if (shots.visible && shots.bannerRect) result.bannerBackdrop = backdrop(shots.visible, shots.bannerRect);
         result.samples = samples;
-        const first = samples[0];
-        const holding = samples.filter((s) => s.elapsed >= 0.7 && s.elapsed <= 2.9);
-        const after = samples.filter((s) => s.elapsed >= 4.0);
-        result.banner = {
-            samples: samples.length,
-            first,
-            holdingSamples: holding.length,
-            holdingAllOpaque: holding.length > 0 && holding.every((s) => s.opacity === 1 && s.visible),
-            afterFourSamples: after.length,
-            afterFourAllHidden: after.length > 0 && after.every((s) => s.opacity === 0 && !s.visible),
-            lastBeforeFour: samples.filter((s) => s.elapsed < 4.0).pop() || null,
+        const of = (key) => samples.filter((s) => s.key === key);
+        const banner = of('dzNEXUS');
+        const holding = banner.filter((s) => s.elapsed >= 0.7 && s.elapsed <= 2.9);
+        const after = banner.filter((s) => s.elapsed >= 4.0);
+        result.banner = { samples: banner.length, first: banner[0] ?? null, holdingSamples: holding.length, holdingAllOpaque: holding.length > 0 && holding.every((s) => s.opacity === 1 && s.visible), afterFourSamples: after.length, afterFourAllHidden: after.length > 0 && after.every((s) => s.opacity === 0 && !s.visible) };
+        const longhand = of('lhAnim');
+        const paused = of('lhPaused');
+        const fade = of('trFade');
+        const hide = of('trHide');
+        const settledFade = fade.filter((s) => s.transitionElapsed !== null && s.transitionElapsed >= 1.6);
+        const settledHide = hide.filter((s) => s.transitionElapsed !== null && s.transitionElapsed >= 1.1);
+        const midHide = hide.filter((s) => s.transitionElapsed !== null && s.transitionElapsed > 0.05 && s.transitionElapsed < 0.95);
+        result.cases = {
+            longhand: { samples: longhand.length, beforeDelay: longhand.filter((s) => s.elapsed < 0.5).map((s) => s.opacity).slice(0, 3), afterEnd: longhand.filter((s) => s.elapsed >= 4.6).map((s) => s.opacity).slice(0, 3) },
+            paused: { samples: paused.length, allPaused: paused.every((s) => s.paused), opacities: [...new Set(paused.map((s) => Number(s.opacity.toFixed(4))))] },
+            fade: { samples: fade.length, transitionSamples: fade.filter((s) => s.transitionElapsed !== null).length, settled: settledFade.map((s) => s.opacity).slice(0, 3) },
+            hide: { samples: hide.length, transitionSamples: hide.filter((s) => s.transitionElapsed !== null).length, midVisible: midHide.length > 0 && midHide.every((s) => s.visible), settled: settledHide.map((s) => [s.opacity, s.visible]).slice(0, 3) },
         };
-        const anchorsOk = status.uiAnchorsInScene === expectedAnchors.length
-            && status.uiAnchorsPlaced === expectedAnchors.length
-            && inside.length === expectedAnchors.length
-            && JSON.stringify(placedIds) === JSON.stringify([...expectedAnchors].sort());
-        const bannerOk = Boolean(first && first.elapsed < 0.2 && result.banner.holdingAllOpaque && result.banner.afterFourAllHidden);
+        const anchorsOk = status.uiAnchorsInScene === expectedAnchors.length && status.uiAnchorsPlaced === expectedAnchors.length && inside.length === expectedAnchors.length && JSON.stringify(placedIds) === JSON.stringify([...expectedAnchors].sort());
+        const bannerOk = Boolean(result.banner.first && result.banner.first.elapsed < 0.2 && result.banner.holdingAllOpaque && result.banner.afterFourAllHidden);
+        const casesOk = longhand.length > 0
+            && longhand.filter((s) => s.elapsed < 0.5).every((s) => Math.abs(s.opacity - 1) < 1e-4)
+            && longhand.filter((s) => s.elapsed >= 4.6).length > 0
+            && longhand.filter((s) => s.elapsed >= 4.6).every((s) => Math.abs(s.opacity - 0.2) < 1e-4)
+            && paused.length > 0 && paused.every((s) => s.paused && Math.abs(s.opacity - 0.3) < 1e-4)
+            && settledFade.length > 0 && settledFade.every((s) => Math.abs(s.opacity - 0.25) < 1e-4)
+            && settledHide.length > 0 && settledHide.every((s) => s.opacity === 0 && !s.visible)
+            && result.cases.hide.midVisible;
         result.anchorsOk = anchorsOk;
         result.bannerOk = bannerOk;
-        result.ok = anchorsOk && bannerOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended) && Boolean(result.bannerBackdrop && result.bannerBackdrop.maxChannelDelta <= 12);
+        result.casesOk = casesOk;
+        result.ok = anchorsOk && bannerOk && casesOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended) && Boolean(result.bannerBackdrop && result.bannerBackdrop.maxChannelDelta <= 12);
     } catch (error) {
-        result.error = String(error.message || error);
+        result.error = String(error.stack || error.message || error);
     } finally {
         if (!exited) {
             viewer.kill('SIGTERM');

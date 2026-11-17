@@ -5,7 +5,21 @@
 <div id="hud" style="position:fixed;inset:0"></div>
 <script type="module">
 import render from './scripts/ui.js';
-document.getElementById('hud').innerHTML = render();
+const hud = document.getElementById('hud');
+hud.innerHTML = render(null, { state: { step: 0 } });
+window.__renderStep = (step) => {
+  const next = document.createElement('div');
+  next.innerHTML = render(null, { state: { step } });
+  for (const element of next.querySelectorAll('[id]')) {
+    const current = document.getElementById(element.id);
+    if (!current) continue;
+    for (const name of ['class', 'style']) {
+      const value = element.getAttribute(name);
+      if (value === null) current.removeAttribute(name);
+      else if (current.getAttribute(name) !== value) current.setAttribute(name, value);
+    }
+  }
+};
 window.__FIXTURE_READY = true;
 </script>
 </body>
