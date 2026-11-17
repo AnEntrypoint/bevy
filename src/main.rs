@@ -9,6 +9,7 @@ mod css_anim;
 mod bench;
 mod client;
 mod protocol;
+mod render_stats;
 mod runtime;
 mod script;
 mod server;

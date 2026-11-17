@@ -172,7 +172,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
             render_creation: device_request(std::env::var("VIEWER_DISABLE_BC").is_ok_and(|value| value == "1"), std::env::var("VIEWER_DISABLE_ASTC").is_ok_and(|value| value == "1")),
             ..default()
         }))
-    .add_plugins((FrameTimeDiagnosticsPlugin::default(), EntityCountDiagnosticsPlugin::default(), LogDiagnosticsPlugin::default()))
+    .add_plugins((FrameTimeDiagnosticsPlugin::default(), EntityCountDiagnosticsPlugin::default(), LogDiagnosticsPlugin::default(), bevy::render::diagnostic::RenderDiagnosticsPlugin, crate::render_stats::RenderStatsPlugin))
     .insert_resource(ClearColor(Color::srgb(0.035, 0.045, 0.065)))
     .insert_resource(ViewerScene {
         title,
@@ -382,9 +382,21 @@ pub fn fixed_eye(value: Option<&str>) -> Option<Vec3> {
     }
 }
 
+fn ms(value: Option<f64>) -> String {
+    value.map_or_else(|| "unsupported".to_string(), |value| format!("{value:.2}ms"))
+}
+
+fn process_rss_mib() -> String {
+    std::fs::read_to_string("/proc/self/statm")
+        .ok()
+        .and_then(|statm| statm.split_whitespace().nth(1).and_then(|pages| pages.parse::<f64>().ok()))
+        .map_or_else(|| "unsupported (no /proc/self/statm)".to_string(), |pages| format!("{:.1}MiB", pages * 4096.0 / 1048576.0))
+}
+
 fn update_overlay(
     scene: Res<ViewerScene>,
     diagnostics: Res<DiagnosticsStore>,
+    frame_stats: Res<crate::render_stats::SharedFrameStats>,
     objects: Query<&ViewerObject>,
     mut text: Query<&mut Text, With<ViewerOverlay>>,
 ) {
@@ -392,12 +404,30 @@ fn update_overlay(
     let fps = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|diagnostic| diagnostic.value());
     let frame_ms = diagnostics.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|diagnostic| diagnostic.value());
     let entities = diagnostics.get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT).and_then(|diagnostic| diagnostic.value());
+    let stats = frame_stats.snapshot();
+    let gpu_passes = diagnostics
+        .iter()
+        .filter(|diagnostic| crate::render_stats::is_gpu_pass(diagnostic.path().as_str()))
+        .filter_map(|diagnostic| diagnostic.value())
+        .collect::<Vec<f64>>();
+    let gpu = if gpu_passes.is_empty() {
+        format!(
+            "unsupported (timestamp queries {}, device features {})",
+            if stats.timestamp_queries { "enabled, no spans recorded" } else { "not enabled" },
+            stats.device_features
+        )
+    } else {
+        format!("{:.3}ms over {} passes", gpu_passes.iter().sum::<f64>(), gpu_passes.len())
+    };
     let value = format!(
-        "{}  |  place={}  |  objects={}  |  proxy meshes={}  |  light={}  |  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path | headless world API preserved\nBevy DiagnosticsStore | fps={} | frame={}ms | entities={} | I toggles browser inspector in wasm viewer",
+        "{}  |  place={}  |  objects={}  |  proxy meshes={}  |  light={}  |  camera=({:.1},{:.1},{:.1})\nNative Bevy render/window/PBR/UI path | headless world API preserved\nBevy DiagnosticsStore | fps={} | frame={}ms | entities={} | I toggles browser inspector in wasm viewer\nRender world | draws={} | triangles={} | shadow draws={} | shadow triangles={} | shadow passes={}\nFrame phases | SIM={} | LAUNCH={} | DRAW={} | SHOW=unsupported (present runs inside the render system) | CPU total={}\nGPU passes | {} | process RSS={}",
         scene.title, scene.place, scene.objects, visible, scene.lights, scene.camera.x, scene.camera.y, scene.camera.z,
         fps.map(|value| format!("{value:.1}")).unwrap_or_else(|| "unavailable".to_string()),
         frame_ms.map(|value| format!("{value:.2}")).unwrap_or_else(|| "unavailable".to_string()),
-        entities.map(|value| format!("{value:.0}")).unwrap_or_else(|| "unavailable".to_string())
+        entities.map(|value| format!("{value:.0}")).unwrap_or_else(|| "unavailable".to_string()),
+        stats.main.draws, stats.main.triangles, stats.shadow.draws, stats.shadow.triangles, stats.shadow_passes,
+        ms(stats.sim_ms), ms(stats.launch_ms), ms(stats.draw_ms), ms(stats.cpu_ms),
+        gpu, process_rss_mib()
     );
     for mut text in &mut text {
         text.0 = value.clone();
