@@ -333,7 +333,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         .take(40)
         .map(|&(a, b)| serde_json::json!({ "a": boxes[a].0, "b": boxes[b].0, "aRect": boxes[a].1, "bRect": boxes[b].1 }))
         .collect::<Vec<_>>();
-    let value = serde_json::json!({
+    let mut value = serde_json::json!({
         "kind": "viewer-status",
         "title": scene.title,
         "directory": scene.directory,
@@ -359,7 +359,6 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "unmirroredModels": scene.unmirrored_models,
         "markerIds": scene.marker_ids,
         "modelsLoaded": scene.models_loaded,
-        "textureTarget": scene.texture_target,
         "modelsMissing": scene.models_missing,
         "proxies": scene.proxies,
         "markers": scene.markers,
@@ -374,11 +373,12 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "uiLabels": rects.len(),
         "uiLabelOverlaps": overlaps.len(),
         "uiLabelOverlapPairs": overlap_pairs,
-        "uiWindowWidth": window_width,
-        "uiFullWidthLabels": full_width,
-        "uiLabelBoxes": label_boxes,
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
+    value["textureTarget"] = serde_json::json!(scene.texture_target);
+    value["uiWindowWidth"] = serde_json::json!(window_width);
+    value["uiFullWidthLabels"] = serde_json::json!(full_width);
+    value["uiLabelBoxes"] = serde_json::json!(label_boxes);
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
 }
 
