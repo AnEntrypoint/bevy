@@ -6,7 +6,7 @@ const query = new URLSearchParams(location.search);
 let open = query.get('inspector') === '1' || query.has('inspector');
 let activeTab = 'Performance';
 const timeline = {};
-const fmt = (v) => Number(v).toFixed(Math.abs(v) > 100 ? 0 : 2);
+const fmt = (v) => Number.isInteger(v) ? String(v) : Number(v).toFixed(Math.abs(v) > 100 ? 0 : 2);
 const mibOf = (bytes) => bytes == null ? 'unsupported' : `${(bytes / 1048576).toFixed(1)} MiB`;
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function setOpen(value) {
@@ -25,14 +25,14 @@ function shown(snapshot, group) {
   return (snapshot.shown || []).filter(m => m.group === group);
 }
 function cell(m) {
-  if (Number.isFinite(m.value)) return `${fmt(m.value)}${m.unit ? ` ${esc(m.unit)}` : ''}`;
-  return `<span class="unavailable" title="${esc(m.reason || 'no reason given')}">unsupported</span>`;
+  if (Number.isFinite(m.value)) return `<span class="value">${fmt(m.value)}${m.unit ? ` ${esc(m.unit)}` : ''}</span>`;
+  return `<span class="value"><span class="unavailable" title="${esc(m.reason || 'no reason given')}">unsupported</span></span>`;
 }
 function strip(snapshot) {
   q('inspector-strip').innerHTML = shown(snapshot, 'strip').map((m, i) => {
     const series = [...(timeline[m.name] || []), Number.isFinite(m.value) ? m.value : 0].slice(-48);
     timeline[m.name] = series;
-    return `<span class="bucket" data-metric="${esc(m.name)}" title="${esc(m.source)}"><b>${esc(m.name)}</b> <span>${cell(m)}</span> ${sparkline(series, colors[i % colors.length])}<small>${esc(m.unit)}</small></span>`;
+    return `<span class="bucket" data-metric="${esc(m.name)}" title="${esc(m.source)}"><b>${esc(m.name)}</b> ${cell(m)} ${sparkline(series, colors[i % colors.length])}</span>`;
   }).join('');
 }
 function metrics(snapshot) {
@@ -94,8 +94,8 @@ setInterval(() => {
   window.__BEVY_INSPECTOR_SNAPSHOT = snapshot || {};
   if (open) render(window.__BEVY_INSPECTOR_SNAPSHOT);
 }, 250);
-window.__BEVY_INSPECTOR_CHECK = () => ({
-  open, marker: root.dataset.inspector, tabs: tabs.length,
-  shown: window.__BEVY_INSPECTOR_SNAPSHOT?.shown || [],
-  snapshot: window.__BEVY_INSPECTOR_SNAPSHOT || null
-});
+window.__BEVY_INSPECTOR_CHECK = () => {
+  let snapshot = window.__BEVY_INSPECTOR_SNAPSHOT;
+  if (typeof snapshot === 'string') { try { snapshot = JSON.parse(snapshot); } catch (_) { snapshot = null; } }
+  return { open, marker: root.dataset.inspector, tabs: tabs.length, shown: snapshot?.shown || [], snapshot: snapshot || null };
+};
