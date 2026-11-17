@@ -83,10 +83,6 @@ impl<T: Copy> Track<T> {
             self.timing.apply(local)
         }
     }
-
-    pub fn running(&self, now: f32) -> bool {
-        self.duration > 0.0 && now - self.start < self.delay + self.duration
-    }
 }
 
 impl Track<f32> {
@@ -498,6 +494,7 @@ fn segment<'a>(keyframes: &'a Keyframes, property: &str, underlying: &'a str, p:
     (from.1, to.1, local)
 }
 
+#[cfg(test)]
 pub fn sample(animations: &[Animation], elapsed: f32) -> Sampled {
     sample_over(animations, elapsed, Sampled { opacity: 1.0, visible: true })
 }
@@ -645,7 +642,6 @@ mod tests {
         assert_eq!(fade.value(10.5), 1.0);
         assert!((fade.value(11.5) - 0.625).abs() < 1e-6);
         assert_eq!(fade.value(13.0), 0.25);
-        assert!(fade.running(12.0) && !fade.running(12.6));
         let hide = Track { from: true, to: false, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };
         assert!(hide.value(0.0) && hide.value(0.99) && !hide.value(1.0));
         let show = Track { from: false, to: true, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };

@@ -265,6 +265,7 @@ impl UiSpec {
         }
     }
 
+    #[cfg(test)]
     pub fn animation_keys(&self) -> Vec<String> {
         let mut dynamic = Vec::new();
         self.dynamic_boxes(&mut dynamic);
