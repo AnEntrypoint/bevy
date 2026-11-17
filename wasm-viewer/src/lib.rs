@@ -25,6 +25,8 @@ struct ModelRequest(Option<String>);
 
 const BC7_CACHE: &str = "target/gltf-cache/";
 const RGBA8_CACHE: &str = "target/gltf-cache-rgba8/";
+const ETC2_CACHE: &str = "target/gltf-cache-etc2/";
+const ASTC_CACHE: &str = "target/gltf-cache-astc/";
 
 #[derive(Resource)]
 struct ModelHandle(Handle<WorldAsset>);
@@ -60,7 +62,10 @@ pub fn start() {
         }),
         ..default()
     })
-    .set(RenderPlugin { render_creation: device_request(bc_disabled_by_query()), ..default() }))
+    .set(RenderPlugin {
+        render_creation: device_request(query_value("disable-bc").as_deref() == Some("1"), query_value("adapter").as_deref() == Some("software")),
+        ..default()
+    }))
     .add_plugins((
         FrameTimeDiagnosticsPlugin::default(),
         EntityCountDiagnosticsPlugin::default(),
@@ -154,25 +159,46 @@ fn model_request() -> Option<String> {
     (!path.is_empty() && !path.split('/').any(|part| part == "..")).then_some(path)
 }
 
-fn bc_disabled_by_query() -> bool {
-    web_sys::window()
-        .and_then(|window| window.location().search().ok())
-        .and_then(|search| web_sys::UrlSearchParams::new_with_str(&search).ok())
-        .and_then(|params| params.get("disable-bc"))
-        .is_some_and(|value| value == "1")
+fn query_value(name: &str) -> Option<String> {
+    let search = web_sys::window()?.location().search().ok()?;
+    web_sys::UrlSearchParams::new_with_str(&search).ok()?.get(name)
 }
 
-fn device_request(disable_bc: bool) -> RenderCreation {
+fn device_request(disable_bc: bool, software: bool) -> RenderCreation {
     RenderCreation::Automatic(Box::new(WgpuSettings {
         disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
+        force_fallback_adapter: software,
         ..default()
     }))
 }
 
-fn texture_choice(path: &str, bc_supported: bool) -> (String, &'static str) {
+fn texture_target(support: CompressedImageFormats) -> (&'static str, &'static str) {
+    if support.contains(CompressedImageFormats::BC) {
+        ("bc7", BC7_CACHE)
+    } else if support.contains(CompressedImageFormats::ASTC_LDR) {
+        ("astc4x4", ASTC_CACHE)
+    } else if support.contains(CompressedImageFormats::ETC2) {
+        ("etc2", ETC2_CACHE)
+    } else {
+        ("rgba8", RGBA8_CACHE)
+    }
+}
+
+fn compressed_names(support: CompressedImageFormats) -> String {
+    let names: Vec<&str> = [(CompressedImageFormats::BC, "bc"), (CompressedImageFormats::ASTC_LDR, "astc"), (CompressedImageFormats::ETC2, "etc2")]
+        .into_iter()
+        .filter(|(flag, _)| support.contains(*flag))
+        .map(|(_, name)| name)
+        .collect();
+    if names.is_empty() { "none".to_string() } else { names.join(" ") }
+}
+
+fn texture_choice(path: &str, support: CompressedImageFormats) -> (String, &'static str) {
     match path.strip_prefix(BC7_CACHE) {
-        Some(rest) if !bc_supported => (format!("{RGBA8_CACHE}{rest}"), "rgba8"),
-        Some(_) => (path.to_string(), "bc7"),
+        Some(rest) => {
+            let (format, cache) = texture_target(support);
+            (format!("{cache}{rest}"), format)
+        }
         None => (path.to_string(), "source"),
     }
 }
@@ -195,8 +221,9 @@ fn spawn_model(
         return;
     };
     let bc_supported = support.0.contains(CompressedImageFormats::BC);
-    let (path, format) = texture_choice(&requested, bc_supported);
+    let (path, format) = texture_choice(&requested, support.0);
     publish_status_attribute("data-bc-supported", if bc_supported { "true" } else { "false" });
+    publish_status_attribute("data-compressed-formats", &compressed_names(support.0));
     publish_status_attribute("data-texture-format", format);
     publish_status_attribute("data-model-path", &path);
     let handle = asset_server.load::<WorldAsset>(format!("{path}#Scene0"));
