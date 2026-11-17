@@ -42,7 +42,6 @@ pub fn run(directory: &str, project: Option<&str>) -> bool {
     let glb_files = collect_sorted(&root, &|path: &Path| has_extension(path, "glb"));
     let png_files = collect_sorted(&root, &|path: &Path| has_extension(path, "png"));
     let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(CACHE_DIR);
-    let _ = std::fs::remove_dir_all(&cache);
     let decodes = decode_to_cache(&root, &cache, &glb_files);
     let bevy_loads = load_with_bevy(&cache, &decodes);
 
