@@ -513,3 +513,24 @@ Open: none for item 2.
 ## Round 15 Phase A changes
 
 - `.gitignore` ignores `.playwriter/`, the browser profile that gm's playwriter generates inside the repo. Committed locally as lanmower with no trailers; pushed in the Round 15 Phase B push.
+
+## Round 15 ranked remaining work
+
+Nothing below was started in Round 15. Each rank is the order I would work them, by the risk of a change already claimed as done and by how visible the gap is to the owner. The list is written as a local commit; it is not pushed until the next push.
+
+| Rank | Item | Why this rank | Witness that closes it |
+| --- | --- | --- | --- |
+| 1 | Native viewer memory and frame cost after the RGBA8 decode change | `glb::decode` now writes RGBA8 for the 12 Zstandard models, and `src/viewer_world.rs` also calls `glb::decode`, so the native viewer loads uncompressed textures it used to load as UASTC. The decoded cache is 271 MB. Neither the memory nor the frame cost has been measured. | Viewer RSS, texture bytes and frame time for neon `main`, before and after the change. The owner then decides: keep UASTC natively and decode only for wasm, or accept RGBA8. |
+| 2 | HUD text quality in the native viewer | The HUD text is drawn now (`/tmp/ns-viewer/viewer-1.png` shows the overlay line), but some glyphs render as empty boxes, such as the middle dot, and HUD labels overlap the top-left overlay. This is the owner's text surface. | A viewer PNG with no empty-box glyphs and no overlapping labels, and `uiWarnings` empty. |
+| 3 | Release gate on the current tree | Every Phase B witness this stretch used the dev binary. `scripts/verify.sh` (release build, bench 500/2000/5000, det 2000, server and client, `check-network`) has not run since Round 10. | `scripts/verify.sh` exit 0, with its output quoted. Cost: one release build. |
+| 4 | Wasm payload for the decoded neon copies | The 12 Zstandard models now ship RGBA8 KTX2 to the browser. Their download size and load time are not measured, and the 64-model witness took 287 s wall. | Per-model byte size and load time in the wasm viewer, and a decision on a compressed wasm format (BC or ASTC). |
+| 5 | Commit the browser witnesses as a repo script | The 64-model and normal-map wasm witnesses ran as gm snippets. Their only record is `/tmp/neon-scan/r14-wasm-witness.json`, outside the repo. | A script in the repo that reproduces 64 of 64 from a clean checkout. |
+| 6 | Move `scripts/check-normal-map-visual.cjs` onto gm's playwriter | The owner's browser rule is gm's playwriter setup, but this script still calls the playwriter binary directly. | The script, or its gm replacement, reproduces both normal-map variants. |
+| 7 | Reconcile `docs/PENDING_VALIDATION.md` | Old rows still say "pending Phase B" (Round 2) or "open" (the Round 1 HUD row). The "Ranked remaining work" section near line 231 lists items already fixed, such as the HUD path curves. A reader cannot tell what is open. | Each row marked with its current witness, and the stale section removed. |
+| 8 | ZLIB-supercompressed basis KTX2 is not handled | No file in the data uses it. The transcoder rejects it with an error, so it fails loudly rather than silently. | A ZLIB sample that decodes, or a clear error from `gltf-check`. |
+| 9 | AGENTS.md size rule (under 30 KB) | The 30 KB limit is a standing rule. This stretch added lines to AGENTS.md without measuring its size. | `wc -c AGENTS.md` under 30720 after an audit. |
+
+Blocked or not bevy items, not ranked:
+- Build speed: `dynamic_linking` is skipped by decision; sccache is not installed and sudo is blocked on this host.
+- The two neon texture PNG conversions exist only in `/workspace/neon-syndicates`, outside git.
+- The gm playwriter gate tree still running on this host: `2313609` and its child `2327190`, with Chromium `2327217`. Gm owns these.
