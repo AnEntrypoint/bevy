@@ -2,11 +2,6 @@
 const { chromium } = require('/data/cache/npm-global/lib/node_modules/rea-agents/node_modules/playwright-core');
 const url = process.argv[2] || 'http://127.0.0.1:8092/web/wasm/?inspector=1';
 const out = process.argv[3] || '/tmp/bevy-inspector.png';
-const flags = [
-  '--no-sandbox', '--disable-gpu-sandbox', '--enable-unsafe-webgpu',
-  '--enable-features=Vulkan,UseSkiaRenderer', '--use-angle=vulkan',
-  '--ignore-gpu-blocklist', '--enable-webgpu-developer-features'
-];
 const required = {
   strip: ['FPS', 'MEMQ', 'MEMO', 'DRAW', 'SHOW', 'SIM', 'LAUNCH'],
   metric: ['DRAWS', 'SHADOW-MAP DRAWS', 'TRIANGLES', 'SHADOW TRIS', 'SHADOW PASSES', 'ENTITIES', 'MESHES', 'SPRITES', 'TEXTURES', 'TEXTURE BYTES'],
@@ -41,9 +36,16 @@ function judge(snapshot, dom) {
   return failures;
 }
 
-(async () => {
-  const browser = await chromium.launch({ headless: false, executablePath: '/usr/bin/chromium', args: flags, env: { ...process.env, DISPLAY: process.env.DISPLAY || ':1.0' } });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+async function main() {
+  const cdp = process.env.CDP_URL;
+  if (!cdp) {
+    console.error('browser work goes through gm playwriter: set CDP_URL to the playwriter browser debug endpoint');
+    process.exit(2);
+  }
+  const browser = await chromium.connectOverCDP(cdp);
+  const context = browser.contexts()[0] ?? await browser.newContext();
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1440, height: 900 });
   const logs = [];
   page.on('console', m => logs.push(`${m.type()}: ${m.text()}`));
   page.on('pageerror', e => logs.push(`pageerror: ${e.message}`));
@@ -52,15 +54,17 @@ function judge(snapshot, dom) {
   const probe = await page.evaluate(() => {
     const read = (selector, attr) => [...document.querySelectorAll(selector)].map(el => ({
       name: el.dataset[attr],
-      text: el.textContent.trim(),
-      reason: el.querySelector('.unavailable')?.title || null
+      text: el.querySelector('.value')?.textContent.trim() ?? null,
+      reason: el.querySelector('.value .unavailable')?.title || null
     }));
+    let snapshot = window.__BEVY_INSPECTOR_SNAPSHOT || null;
+    if (typeof snapshot === 'string') { try { snapshot = JSON.parse(snapshot); } catch (_) { snapshot = null; } }
     return {
       inspector: document.getElementById('render-inspector')?.dataset.inspector ?? null,
       inspectorReady: document.getElementById('render-inspector')?.dataset.ready ?? null,
       appReady: window.__BEVY_WASM_READY === true,
       status: document.getElementById('app-status')?.outerHTML ?? null,
-      snapshot: window.__BEVY_INSPECTOR_SNAPSHOT || null,
+      snapshot,
       dom: {
         strip: read('#inspector-strip [data-metric]', 'metric'),
         metric: read('#inspector-metrics [data-metric]', 'metric'),
@@ -69,7 +73,7 @@ function judge(snapshot, dom) {
     };
   });
   await page.screenshot({ path: out });
-  await browser.close();
+  await page.close();
   const snapshot = probe.snapshot || {};
   const failures = snapshot.kind === 'bevy-diagnostics' ? judge(snapshot, probe.dom) : ['no bevy-diagnostics snapshot was published'];
   const result = {
@@ -86,4 +90,10 @@ function judge(snapshot, dom) {
   };
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 1);
-})().catch(e => { console.error(e.stack || e); process.exit(1); });
+}
+
+module.exports = { judge };
+
+if (require.main === module) {
+  main().catch(e => { console.error(e.stack || e); process.exit(1); });
+}
