@@ -1296,3 +1296,46 @@ RSS is read from /proc/self/statm with a 4096-byte page size. GPU passes are sup
 - GPU passes are unsupported in the wasm viewer on this adapter, and supported natively.
 - DRAWS counts visible mesh entities in the render world, not GPU draw calls. Batching is not counted, so the count is an upper bound on submitted draws.
 - Each figure is one run. No median over runs was taken.
+
+
+## Round 28 Phase A: web UI taste pass
+
+Phase A is code, CSS and docs only. Nothing was built, run or witnessed. Phase B runs the taste loop.
+
+### Palette
+
+The flag hues are softened by keeping each one's HSL lightness and taking two thirds of its saturation. Text uses a lighter tint of the same hue, so each text colour clears 6:1 on the panel colour (#07111f). The neutrals are the existing dark base and off-white.
+
+| Token | Hex | Source | Role |
+|---|---|---|---|
+| --flag-green | #146648 | flag #007A4D, softened | primary accent: ready border, bar fill |
+| --flag-gold | #D8A739 | flag #FFB612, softened | selected tab and active state |
+| --flag-red | #C1534E | flag #DE3831, softened | boot-error border |
+| --flag-blue | #19307C | flag #002395, softened | buttons, toggle |
+| --flag-green-text | #26C087 | tint of green | status text, bucket values, sparklines |
+| --flag-gold-text | #C09026 | tint of gold | pending status text, sparklines |
+| --flag-red-text | #CF7B77 | tint of red | boot-error text, sparklines |
+| --flag-blue-text | #758FE3 | tint of blue | panel headings, links |
+| --ui-base | #050b12 | neutral (black) | page background |
+| --ui-panel | #07111f | neutral | panels |
+| --ui-raised | #081522 | neutral | buckets, tabs |
+| --ui-card | #091827 | neutral | metric cards |
+| --ui-track | #14253a | neutral | bar track |
+| --ui-line | #1b3148 | neutral | borders |
+| --ui-edge | #52627a | neutral | pill border while not ready |
+| --ui-text | #e8f1ff | neutral (white) | primary text |
+| --ui-muted | #93a9c0 | neutral | secondary text, unsupported labels |
+| --ui-ink | #06111d | neutral | text on gold |
+
+All palette values are defined once, in the :root block of web/wasm-index.html. The page's inline colours were none, so nothing else needed changing there.
+
+### Changes (each committed as lanmower, no trailers)
+
+- c7b85ae: palette custom properties; header border, status pill (gold text while pending, green when ready), toggle (blue), boot-error box (red border, red-tint text).
+- 4168366: inspector panels, tabs (gold when selected), buckets, action buttons (blue), panel headings (blue tint), metric cards, bar track and fill (green to gold), links (blue tint), details and pre text. The .unavailable class moves from red to the muted neutral, because red is reserved for errors and an unsupported metric is not an error.
+- 3526ea7: sparkline series colours come from the tokens in web/inspector.js.
+- 8fbef24: the native loading text (src/viewer.rs) uses the palette text colour #e8f1ff. The native HUD sets no other colour; the 3D ClearColor, ground, model materials and the neon world are not touched.
+
+### Not changed
+
+The 3D scene's colours, the neon world, the banner's authored colours and every model material.
