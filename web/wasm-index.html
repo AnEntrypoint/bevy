@@ -22,31 +22,31 @@
     #stage { position: relative; width: min(100vw, 1280px); height: min(72vh, 720px); margin: 16px auto; border: 1px solid var(--ui-line); border-radius: 12px; overflow: hidden; background: #07111c; }
     #bevy-canvas { display: block; width: 100%; height: 100%; outline: none; }
     #boot-error { position: absolute; inset: 20px; display: none; white-space: pre-wrap; overflow: auto; background: rgba(8,15,25,.94); border: 1px solid var(--flag-red); color: var(--flag-red-text); padding: 18px; border-radius: 10px; font: 13px/1.5 ui-monospace, monospace; }
-    #render-inspector { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20; display: none; background: rgba(4,9,16,.96); border: 1px solid #27405a; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.65); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color: #dbeafe; }
+    #render-inspector { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20; display: none; background: rgba(4,9,16,.96); border: 1px solid var(--ui-line); border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.65); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ui-text); }
     #render-inspector[data-inspector="open"] { display: block; }
     #render-inspector[data-collapsed="true"] .inspector-body, #render-inspector[data-collapsed="true"] .tabs { display: none; }
-    .inspector-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #1b3148; flex-wrap: wrap; }
+    .inspector-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--ui-line); flex-wrap: wrap; }
     .strip { display: flex; gap: 7px; flex: 1; min-width: 720px; }
-    .bucket { min-width: 82px; padding: 3px 6px; border: 1px solid #20354a; border-radius: 6px; background: #081522; }
-    .bucket b { color: #fff; font-size: 12px; } .bucket span { color: #7dd3fc; }
+    .bucket { min-width: 82px; padding: 3px 6px; border: 1px solid var(--ui-line); border-radius: 6px; background: var(--ui-raised); }
+    .bucket b { color: var(--ui-text); font-size: 12px; } .bucket span { color: var(--flag-green-text); }
     .spark { width: 82px; height: 14px; vertical-align: middle; }
-    .inspector-actions button { border: 1px solid #36516c; background: #0d1b2a; color: #cfe6ff; border-radius: 6px; cursor: pointer; padding: 3px 7px; }
-    .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 6px 8px; border-bottom: 1px solid #1b3148; }
-    .tabs button { border: 1px solid #24364a; background: #081522; color: #93a9c0; border-radius: 999px; padding: 4px 8px; cursor: pointer; white-space: nowrap; }
-    .tabs button[aria-selected="true"] { color: #06111d; background: #7dd3fc; border-color: #7dd3fc; }
+    .inspector-actions button { border: 1px solid var(--flag-blue); background: var(--flag-blue); color: var(--ui-text); border-radius: 6px; cursor: pointer; padding: 3px 7px; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 6px 8px; border-bottom: 1px solid var(--ui-line); }
+    .tabs button { border: 1px solid var(--ui-line); background: var(--ui-raised); color: var(--ui-muted); border-radius: 999px; padding: 4px 8px; cursor: pointer; white-space: nowrap; }
+    .tabs button[aria-selected="true"] { color: var(--ui-ink); background: var(--flag-gold); border-color: var(--flag-gold); }
     .inspector-body { display: grid; grid-template-columns: 1.2fr .8fr; gap: 10px; max-height: 42vh; overflow: auto; padding: 9px; }
-    .panel { border: 1px solid #1b3148; border-radius: 8px; padding: 8px; background: #07111f; }
-    .panel h3 { margin: 0 0 7px; color: #93c5fd; font-size: 12px; text-transform: uppercase; }
+    .panel { border: 1px solid var(--ui-line); border-radius: 8px; padding: 8px; background: var(--ui-panel); }
+    .panel h3 { margin: 0 0 7px; color: var(--flag-blue-text); font-size: 12px; text-transform: uppercase; }
     .metrics { display: grid; grid-template-columns: repeat(5, minmax(110px, 1fr)); gap: 6px; }
-    .metric { border: 1px solid #1c3246; border-radius: 6px; padding: 5px; background: #091827; }
-    .metric b { display: block; color: #f8fafc; font-size: 13px; } .metric small { color: #7f9dbb; }
+    .metric { border: 1px solid var(--ui-line); border-radius: 6px; padding: 5px; background: var(--ui-card); }
+    .metric b { display: block; color: var(--ui-text); font-size: 13px; } .metric small { color: var(--ui-muted); }
     .bars div { display: grid; grid-template-columns: 150px 1fr 80px; gap: 6px; align-items: center; margin: 3px 0; }
-    .bar { height: 8px; background: #14253a; border-radius: 4px; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg,#22d3ee,#a3e635); }
-    .unavailable { color: #fca5a5; }
-    #inspector-json { max-height: 100px; overflow: auto; white-space: pre-wrap; color: #8fb3d9; }
+    .bar { height: 8px; background: var(--ui-track); border-radius: 4px; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--flag-green), var(--flag-gold)); }
+    .unavailable { color: var(--ui-muted); }
+    #inspector-json { max-height: 100px; overflow: auto; white-space: pre-wrap; color: var(--ui-muted); }
     main { width: min(100vw, 1280px); margin: 0 auto 28px; padding: 0 12px; }
-    details { background: #0c1723; border: 1px solid #1c2d3f; border-radius: 10px; padding: 12px 16px; } pre { overflow: auto; color: #b6c7dc; font-size: 12px; }
-    a { color: #93c5fd; }
+    details { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 10px; padding: 12px 16px; } pre { overflow: auto; color: var(--ui-muted); font-size: 12px; }
+    a { color: var(--flag-blue-text); }
   </style>
 </head>
 <body data-app="bevy-jayzee-webgpu-wasm">
