@@ -53,8 +53,16 @@ const out = {
   textureTarget: s.textureTarget,
   modelsLoaded: s.modelsLoaded,
   modelsMissing: (s.modelsMissing || []).length,
+  uiAnchorsInScene: s.uiAnchorsInScene,
+  uiAnchorsPlaced: s.uiAnchorsPlaced,
+  uiAnchorsUnresolved: s.uiAnchorsUnresolved,
+  uiAnchorsBehind: s.uiAnchorsBehind,
+  uiAnchorsOffscreen: s.uiAnchorsOffscreen,
+  uiAnchorViewport: s.uiAnchorViewport,
+  uiAnchorPositions: s.uiAnchorPositions,
+  anchorsInsideViewport: (s.uiAnchorPositions || []).filter((p) => p.x >= 0 && p.y >= 0 && p.x <= s.uiAnchorViewport[0] && p.y <= s.uiAnchorViewport[1]).length,
   screenshot: process.argv[4],
-  ok: process.argv[3] === "1" && s.uiLabels > 0 && s.uiLabelOverlaps === 0 && s.uiUncoveredGlyphs === 0 && s.uiFullWidthLabels === 0 && (s.modelsMissing || []).length === 0,
+  ok: process.argv[3] === "1" && s.uiLabels > 0 && s.uiLabelOverlaps === 0 && s.uiUncoveredGlyphs === 0 && s.uiFullWidthLabels === 0 && (s.modelsMissing || []).length === 0 && s.uiAnchorsInScene > 0 && s.uiAnchorsPlaced === s.uiAnchorsInScene && (s.uiAnchorPositions || []).every((p) => p.x >= 0 && p.y >= 0 && p.x <= s.uiAnchorViewport[0] && p.y <= s.uiAnchorViewport[1]),
 };
 fs.writeFileSync(process.argv[5], JSON.stringify(out, null, 2));
 console.log(JSON.stringify(out, null, 2));
