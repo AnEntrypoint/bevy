@@ -8,6 +8,7 @@ display=${DISPLAY:-:1}
 witness=target/witness
 status=web/status-$place.json
 binary=${BINARY:-target/debug/bevy-jayzee}
+export VIEWER_EYE="${VIEWER_EYE:-0,300,1}"
 mkdir -p "$witness"
 rm -f "$status"
 
@@ -60,6 +61,8 @@ const out = {
   uiAnchorsOffscreen: s.uiAnchorsOffscreen,
   uiAnchorViewport: s.uiAnchorViewport,
   uiAnchorPositions: s.uiAnchorPositions,
+  uiAnchorWorld: s.uiAnchorWorld,
+  viewerEye: process.env.VIEWER_EYE,
   topCentreOffset: (() => {
     const tops = (s.uiTranslatedBoxes || []).filter((r) => r[1] < 80);
     return tops.length ? Math.min(...tops.map((r) => Math.abs((r[0] + r[2]) / 2 - s.uiWindowWidth / 2))) : null;

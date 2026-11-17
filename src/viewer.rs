@@ -72,12 +72,13 @@ pub struct AnchorReport {
     pub behind: usize,
     pub offscreen: usize,
     pub viewport: Vec2,
+    pub world: Vec<(String, Vec3)>,
 }
 
 fn place_world_anchors(
     cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     objects: Query<(&ViewerObject, &GlobalTransform)>,
-    mut anchors: Query<(&WorldAnchor, &mut Node, &mut Visibility, &ComputedNode)>,
+    mut anchors: Query<(&WorldAnchor, &mut Node, &mut Visibility)>,
     mut report: ResMut<AnchorReport>,
 ) {
     let Some((camera, camera_transform)) = cameras.iter().find(|(camera, _)| camera.is_active) else {
@@ -90,20 +91,20 @@ fn place_world_anchors(
         .collect::<HashMap<_, _>>();
     let view = camera_transform.affine().inverse();
     let mut next = AnchorReport { viewport, ..default() };
-    for (anchor, mut node, mut visibility, computed) in &mut anchors {
+    for (anchor, mut node, mut visibility) in &mut anchors {
         next.total += 1;
         let placement = match positions.get(anchor.id.as_str()) {
             None => AnchorPlacement::Unresolved,
             Some(position) => {
                 let world = *position + anchor.offset;
+                next.world.push((anchor.id.clone(), world));
                 classify_anchor(view.transform_point3(world).z, camera.world_to_viewport(camera_transform, world).ok(), viewport)
             }
         };
         match placement {
             AnchorPlacement::Placed(point) => {
-                let half = computed.size * computed.inverse_scale_factor * 0.5;
-                node.left = Val::Px(point.x - half.x);
-                node.top = Val::Px(point.y - half.y);
+                node.left = Val::Px(point.x);
+                node.top = Val::Px(point.y);
                 *visibility = Visibility::Inherited;
                 next.placed.push((anchor.id.clone(), point));
             }
@@ -343,10 +344,19 @@ fn orbit_camera(
         .map(|(_, transform)| transform.translation)
         .unwrap_or(Vec3::ZERO);
     let angle = time.elapsed_secs() * 0.12;
-    let eye = focus + Vec3::new(angle.sin() * 18.0, 10.0, angle.cos() * 18.0);
+    let eye = fixed_eye(std::env::var("VIEWER_EYE").ok().as_deref())
+        .unwrap_or_else(|| focus + Vec3::new(angle.sin() * 18.0, 10.0, angle.cos() * 18.0));
     scene.camera = eye;
     for mut transform in &mut query {
         *transform = Transform::from_translation(eye).looking_at(focus, Vec3::Y);
+    }
+}
+
+pub fn fixed_eye(value: Option<&str>) -> Option<Vec3> {
+    let parts = value?.split(',').map(|part| part.trim().parse::<f32>().ok()).collect::<Option<Vec<_>>>()?;
+    match parts.as_slice() {
+        [x, y, z] => Some(Vec3::new(*x, *y, *z)),
+        _ => None,
     }
 }
 
@@ -467,6 +477,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     value["uiAnchorsUnresolved"] = serde_json::json!(anchors.unresolved);
     value["uiAnchorsBehind"] = serde_json::json!(anchors.behind);
     value["uiAnchorsOffscreen"] = serde_json::json!(anchors.offscreen);
+    value["uiAnchorWorld"] = serde_json::json!(anchors.world.iter().map(|(id, world)| serde_json::json!({ "id": id, "world": [world.x, world.y, world.z] })).collect::<Vec<_>>());
     value["uiAnchorViewport"] = serde_json::json!([anchors.viewport.x, anchors.viewport.y]);
     value["uiAnchorPositions"] = serde_json::json!(anchors.placed.iter().map(|(id, point)| serde_json::json!({ "id": id, "x": point.x, "y": point.y })).collect::<Vec<_>>());
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
@@ -479,8 +490,8 @@ pub fn browser_report_path(_directory: &str, place: Option<&str>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{AnchorPlacement, classify_anchor};
-    use bevy::prelude::Vec2;
+    use super::{AnchorPlacement, classify_anchor, fixed_eye};
+    use bevy::prelude::{Vec2, Vec3};
 
     #[test]
     fn anchors_are_placed_only_in_front_of_the_camera_and_inside_the_viewport() {
@@ -491,5 +502,14 @@ mod tests {
         assert_eq!(classify_anchor(-5.0, None, viewport), AnchorPlacement::Behind);
         assert_eq!(classify_anchor(-5.0, Some(Vec2::new(-1.0, 20.0)), viewport), AnchorPlacement::Offscreen);
         assert_eq!(classify_anchor(-5.0, Some(Vec2::new(10.0, 601.0)), viewport), AnchorPlacement::Offscreen);
+    }
+
+    #[test]
+    fn fixed_eye_parses_three_numbers_only() {
+        assert_eq!(fixed_eye(Some("0,300,1")), Some(Vec3::new(0.0, 300.0, 1.0)));
+        assert_eq!(fixed_eye(Some(" 1.5, 2 ,-3")), Some(Vec3::new(1.5, 2.0, -3.0)));
+        assert_eq!(fixed_eye(Some("1,2")), None);
+        assert_eq!(fixed_eye(Some("a,b,c")), None);
+        assert_eq!(fixed_eye(None), None);
     }
 }
