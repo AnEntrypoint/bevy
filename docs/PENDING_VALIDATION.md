@@ -485,3 +485,27 @@ Phase B witnesses still to run:
 - The wasm viewer on each of the 64 decoded copies, at `?model=target/gltf-cache/<name>`: `modelState loaded`, no console error, no failed request, no TANGENT warning, for every name.
 - Neon `main` on the native viewer: `objects 51 = expectedObjects 51`.
 - The unit suite, once after the build.
+
+## Round 14 Phase B results
+
+Contention: one cargo invocation at a time, each run alone. The gate read swap-out 0 and 10,975 MB free before the first build. A first gate check reported cargo=2, but that count was the gate's own command text matching the word cargo, and the gate was rerun with a process-name match before any build.
+
+Defect found in Phase B, not caught in Phase A: the Phase A row for item 2 claimed that Zstandard basis images were handled. They were not. `build.rs` sets `BASISD_SUPPORT_KTX2_ZSTD=0`, so the native transcoder cannot start on Zstandard levels. The unit test `basisu_glb_decodes_to_plain_glb_with_ktx2_images` failed with `basis transcoder failed on level 0 (status -1)` on `value.260c985144718b8764c86ef6a7b6f6fdb32e07d104aebcadfafe10e86ae846ee.glb`, which has supercompression 2 (Zstandard). Fix (5ce88c5): `inflate_zstd_levels` in `src/basisu.rs` decodes each Zstandard level with `ruzstd` 0.9.1 (already in the lock through Bevy's `zstd_rust`), clears the scheme, and rewrites the level index, keeping the rest of the file layout. `transcode_basis` runs it first. Images with BasisLZ are unchanged. ZLIB (scheme 3) is not handled; no file in the data uses it, and the transcoder rejects it with an error.
+
+Witnesses on the final tree:
+
+- Unit suite, once after the build: `test result: ok. 49 passed; 0 failed`, including `zstd_levels_are_inflated_and_the_scheme_is_cleared`, `basis_detection_reads_the_vk_format`, `images_that_are_not_basis_keep_their_buffer_view` and `basisu_glb_decodes_to_plain_glb_with_ktx2_images`.
+- `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn`: rc 0. GLB `total 64, pass 64, decoded 64, bevy_loaded 64, bevy_failed 0`. The decoded copies hold 61 KTX2 images, all `vkFormat 37` with supercompression 0 (RGBA8). `basisLeftCount 0`, which is the count of images with vkFormat 0 left in any decoded copy.
+- `target/debug/bevy-jayzee gltf-check testdata/normal-map`: rc 0. The cache now holds 65 entries: the 64 neon copies plus `normal-map.glb`, so the cache is not wiped between runs.
+- Wasm release build, `PATH=/config/.local/bin:$PATH WASM_PROFILE=release bash scripts/build-wasm.sh`: rc 0, `Finished release in 56.11s`, `wasm-bindgen 0.2.129`. The bundle is 31,059,942 bytes, 4 bytes more than before the `ktx2` feature. The bundle barely changed, so the browser witness below is the evidence that KTX2 loading works, not the size.
+- Wasm witness, 64 of 64 neon models, `?model=target/gltf-cache/<name>` on the wasm build served from `scripts/serve-wasm.sh` on port 8092, in gm's playwriter. Each model: `modelState loaded`, no console error, no page error, no failed request, no TANGENT warning, one BrowserWebGpu adapter line. The 12 Zstandard models are included (12/12 clean). Per-model rows are in `/tmp/neon-scan/r14-wasm-witness.json`, outside the repo. The first pass covered 61 models and 2 batches failed at the browser (a closed target and the 10 s default timeout); the 6 missing models were rerun with `timeout: 300000`, and all 6 loaded clean. The 3 `clip-*` animation GLBs are included in the 64.
+- Wasm regression, normal map, both variants: raw `/testdata/normal-map/normal-map.glb` and decoded `/target/gltf-cache/normal-map.glb` both report `modelState loaded`, `errors []`, `tangentWarnings []`, `failedRequests []`. Screenshots `target/witness/r14-normal-map-raw.png` and `target/witness/r14-normal-map-decoded.png`.
+- Native neon `main`: `objects 51, expectedObjects 51, duplicateObjects 0, missingObjects [], terrains 1, placeholdersRetired 0, objectKinds {marker 23, model 9, ring 18, terrain 1}`. This is the regression check for the native viewer, which also calls `glb::decode` (`src/viewer_world.rs`).
+
+Timing (wall): lock fetch 0.8 s; dev build 27.2 s; unit suite 7.4 s; gltf-check on neon not timed separately; wasm release build 60.0 s; the 64-model browser witness 287.3 s. The longest step is the 64-model browser witness at 287.3 s, in the pass that produced the recorded results.
+
+Process check: the witness server (gm job `r14-serve`) was stopped with `gm.job_stop`; port 8092 answers `000`. The witness browser tree was stopped by PID (2326182 wrapper and its 8 children, all gone after SIGTERM). gm's project gate process 2325939 remains. It is the project playwriter's gate, not something this round started on its own, so it was left running.
+
+Not committed: `.gitignore` has an added line `.playwriter/`. The gm playwriter added it, not this round; it is left uncommitted for the owner to decide.
+
+Open: none for item 2.
