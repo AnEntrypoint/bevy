@@ -1,0 +1,5 @@
+defaultPlace: fixture
+camera:
+  kind: custom
+ui:
+  render: scripts/ui.js
