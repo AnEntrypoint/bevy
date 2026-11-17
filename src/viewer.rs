@@ -326,7 +326,7 @@ fn spawn_viewer(
     commands.spawn((
         Text::new("bevy-jayzee native viewer\nloading world objects..."),
         TextFont { font_size: FontSize::Px(18.0), ..default() },
-        TextColor(Color::srgb(0.92, 0.95, 1.0)),
+        TextColor(Color::srgb(0.910, 0.945, 1.0)),
         Node {
             position_type: PositionType::Absolute,
             right: Val::Px(18.0),
