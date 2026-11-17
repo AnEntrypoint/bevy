@@ -1476,3 +1476,37 @@ Changes, in web/wasm-index.html (each committed as lanmower, no trailers):
 - #stage: box-sizing: border-box, and width 100% in place of min(100vw, 1280px). The border is inside the width, and the stage fills main's content box, so it cannot pass the viewport.
 
 Not changed: the stage height, the inspector panel, the header and the canvas. Phase B measures the document scrollWidth against clientWidth, the stage's right edge, and the header, status pill and toggle at both sizes.
+
+## Round 31 Phase B: page fits the viewport at 1024x768 and 1440x900
+
+Viewer: http://127.0.0.1:8092/web/wasm/index.html?inspector=1&still=1 through gm's playwriter, viewport set per size, 20 s wait after each load, the inspector open. Before values come from the old rules injected over the new page (main and #stage as content-box with min(100vw, 1280px)), not from the old file.
+
+Defect found in witness and fixed in this phase: the Phase A entry said #stage takes width 100%. #stage is a sibling of main, not a child, so 100% made the stage the full body width (1425 px) at 1440x900, where it had been a centred 1280 px. The fix is #stage width min(100%, 1280px), committed separately. At 1024x768 the stage is still the full 1009 px, and at 1440x900 it is centred at 1280 px again.
+
+### Numbers (CSS px; docClientWidth excludes the vertical scrollbar)
+
+| Size | Measure | Before | After |
+| --- | --- | --- | --- |
+| 1024x768 | document scrollWidth / clientWidth | 1048 / 1009 | 1009 / 1009 |
+| 1024x768 | main x, width | 0, 1048 | 0, 1009 |
+| 1024x768 | #stage x, width, right edge | 0, 1026, 1026 (outside 1009) | 0, 1009, 1009 (inside) |
+| 1024x768 | header width, right edge | 1009, 1009 | 1009, 1009 |
+| 1024x768 | #inspector-toggle x, y, w, h, right | 675.9, 14, 93.2, 34, 769.1 | 675.9, 14, 93.2, 34, 769.1 |
+| 1024x768 | #app-status x, y, w, h, right | 777.1, 15, 211.9, 32, 989 | 777.1, 15, 211.9, 32, 989 |
+| 1440x900 | document scrollWidth / clientWidth | 1425 / 1425 | 1425 / 1425 |
+| 1440x900 | main x, width | 60.5, 1304 | 72.5, 1280 |
+| 1440x900 | #stage x, width, right edge | 71.5, 1282, 1353.5 | 72.5, 1280, 1352.5 |
+| 1440x900 | header width, right edge | 1425, 1425 | 1425, 1425 |
+| 1440x900 | #inspector-toggle x, y, w, h, right | 1091.9, 14, 93.2, 34, 1185.1 | 1091.9, 14, 93.2, 34, 1185.1 |
+| 1440x900 | #app-status x, y, w, h, right | 1193.1, 15, 211.9, 32, 1405 | 1193.1, 15, 211.9, 32, 1405 |
+
+After the fix, at both sizes the toggle and status lie inside the header's box, elementFromPoint at each centre returns the toggle and the status, scrollX is 0, and appReady is true.
+
+At 1440x900 the stage is 2 px narrower than before (1280 against 1282), because its border is now inside the width. This is the intended border-box effect.
+
+Screenshots: docs/ui-layout/page-before-1024x768.png, page-after-1024x768.png, page-before-1440x900.png, page-after-1440x900.png.
+
+### Other witnesses
+
+- scripts/check-inspector.cjs with CDP_URL=http://127.0.0.1:10232: exit 0, ok true, failures []. Output screenshot: docs/ui-layout/check-inspector-r31.png.
+- scripts/check-hud-overlap.sh with DISPLAY=:1.0: exit 0, uiLabels 23, uiLabelOverlaps 0.
