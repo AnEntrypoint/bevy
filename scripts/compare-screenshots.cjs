@@ -8,7 +8,7 @@ const witnessDir = path.join(repo, 'target', 'witness');
 const left = process.env.SHOTS_LEFT || path.join(witnessDir, 'neon-shots-rgba8');
 const right = process.env.SHOTS_RIGHT || path.join(witnessDir, 'neon-shots-bc7');
 const minPsnr = Number(process.env.VISUAL_PSNR_MIN || 30);
-const outPath = path.join(witnessDir, 'texture-visual.json');
+const outPath = path.join(witnessDir, `texture-visual-${path.basename(right).replace(/^neon-shots-/, '')}.json`);
 
 function decodePng(file) {
     const bytes = fs.readFileSync(file);

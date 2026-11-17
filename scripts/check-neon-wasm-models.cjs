@@ -6,9 +6,17 @@ const { withGateWitness } = require('./lib/playwriter-witness.cjs');
 const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
-const texture = process.env.NEON_TEXTURE === 'rgba8' ? 'rgba8' : 'bc7';
-const cacheDir = texture === 'rgba8' ? 'gltf-cache-rgba8' : 'gltf-cache';
-const cache = path.join(repo, 'target', cacheDir);
+const modes = {
+    bc7: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache', query: '' },
+    rgba8: { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '' },
+    'rgba8-software': { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&adapter=software' },
+    astc4x4: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-astc', query: '&adapter=software&disable-bc=1' },
+    etc2: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-etc2', query: '&adapter=software&disable-bc=1&disable-astc=1' },
+};
+const texture = process.env.NEON_TEXTURE || 'bc7';
+if (!modes[texture]) throw new Error(`unknown NEON_TEXTURE ${texture}; expected one of ${Object.keys(modes).join(', ')}`);
+const { urlDir, decodedDir, query } = modes[texture];
+const cache = path.join(repo, 'target', decodedDir);
 const witnessDir = path.join(repo, 'target', 'witness');
 const witnessPath = path.join(witnessDir, `neon-wasm-witness-${texture}.json`);
 const rowsPath = path.join(witnessDir, `neon-rows-${texture}.json`);
@@ -22,7 +30,8 @@ const fs = require('node:fs');
 const models = ${JSON.stringify(models)};
 const pageBase = ${JSON.stringify(pageBase)};
 const outPath = ${JSON.stringify(outPath)};
-const cacheDir = ${JSON.stringify(cacheDir)};
+const cacheDir = ${JSON.stringify(urlDir)};
+const query = ${JSON.stringify(query)};
 const shotDir = ${JSON.stringify(shots)};
 fs.mkdirSync(shotDir, { recursive: true });
 const rows = [];
@@ -37,7 +46,7 @@ for (const name of models) {
   state.failures = [];
   const started = Date.now();
   try {
-    await page.goto(pageBase + '?model=' + encodeURIComponent(model), { waitUntil: 'domcontentloaded' });
+    await page.goto(pageBase + '?model=' + encodeURIComponent(model) + query, { waitUntil: 'domcontentloaded' });
   } catch (error) {
     rows.push({ name, model, ready: false, modelState: 'goto failed: ' + String(error.message).slice(0, 160), loadMs: null, adapter: 0, tangentWarnings: [], errors: ['goto failed'], failedRequests: [], glb: null, wasm: [] });
     fs.writeFileSync(outPath, JSON.stringify(rows));
@@ -57,7 +66,7 @@ for (const name of models) {
   await page.screenshot({ path: screenshot }).catch(() => null);
   const resources = await page.evaluate(() => performance.getEntriesByType('resource').map((entry) => ({ name: decodeURIComponent(entry.name), transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize })));
   const glb = resources.find((entry) => entry.name.endsWith('/target/' + cacheDir + '/' + name));
-  const wasm = resources.filter((entry) => /\.wasm$/.test(entry.name)).map((entry) => ({ name: entry.name.split('/').pop(), transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize }));
+  const wasm = resources.filter((entry) => /\\.wasm$/.test(entry.name)).map((entry) => ({ name: entry.name.split('/').pop(), transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize }));
   rows.push({
     name,
     model,
@@ -102,10 +111,10 @@ function summarize(rows, names) {
 
 async function main() {
     const names = fs.readdirSync(cdn).filter((file) => file.endsWith('.glb')).sort();
-    const result = { ok: false, total: names.length, cdn };
+    const result = { ok: false, texture, query, total: names.length, cdn };
     const missing = names.filter((name) => !fs.existsSync(path.join(cache, name)));
     if (missing.length) {
-        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} first${texture === 'rgba8' ? ' with the rgba8 target' : ''}: ${missing.slice(0, 5).join(', ')}`;
+        result.error = `decoded copies missing in ${cache}; run gltf-check on ${cdn} for ${decodedDir} first: ${missing.slice(0, 5).join(', ')}`;
         return result;
     }
     fs.mkdirSync(witnessDir, { recursive: true });
