@@ -381,10 +381,10 @@ fn publish_diagnostics(
         .filter_map(|diagnostic| diagnostic.value())
         .collect::<Vec<f64>>();
     let gpu_ms = (!gpu_passes.is_empty()).then(|| gpu_passes.iter().sum::<f64>());
-    let gpu_reason = match (gpu_ms, stats.timestamp_queries) {
-        (Some(_), _) => None,
-        (None, true) => Some("RenderDiagnosticsPlugin recorded no elapsed_gpu spans".to_string()),
-        (None, false) => Some(format!("TIMESTAMP_QUERY is not enabled on this device; device features: {}", stats.device_features)),
+    let gpu_reason = match gpu_ms {
+        Some(_) => None,
+        None if stats.gpu_timing_missing.is_empty() => Some("RenderDiagnosticsPlugin recorded no elapsed_gpu spans".to_string()),
+        None => Some(format!("device lacks {}; device features: {}", stats.gpu_timing_missing, stats.device_features)),
     };
     let fps = diagnostic_json(&diagnostics, &FrameTimeDiagnosticsPlugin::FPS, "fps", "fps");
     let frame_time = diagnostic_json(&diagnostics, &FrameTimeDiagnosticsPlugin::FRAME_TIME, "frame_time", "ms");
@@ -419,7 +419,7 @@ fn publish_diagnostics(
         entry("DRAW", "strip", stats.draw_ms, "ms", 16.7, "render schedule timer around RenderSystems::Render (encode, submit, present)", Some(NO_FRAME.into())),
         entry("SHOW", "strip", None, "ms", 16.7, "present_frames", Some(SHOW_REASON.into())),
         entry("SIM", "strip", stats.sim_ms, "ms", 16.7, "First to Last schedule timer", Some(NO_FRAME.into())),
-        entry("LAUNCH", "strip", stats.launch_ms, "ms", 16.7, "Last end to Render start (extract handoff)", Some(NO_FRAME.into())),
+        entry("LAUNCH", "strip", stats.launch_ms, "ms", 16.7, "Last end to Render start: extract, plus any wait for the previous render frame", Some(NO_FRAME.into())),
         entry("DRAWS", "metric", Some(stats.main.draws as f64), "", 0.0, "RenderVisibleEntities<Mesh3d> of the main views, render world; batching not counted", None),
         entry("SHADOW-MAP DRAWS", "metric", Some(stats.shadow.draws as f64), "", 0.0, "RenderVisibleEntities<Mesh3d> of ViewLightEntities shadow views", None),
         entry("TRIANGLES", "metric", Some(stats.main.triangles as f64), "", 0.0, "RenderMeshInstances with RenderAssets<RenderMesh> index counts / 3, main views", None),
@@ -433,7 +433,7 @@ fn publish_diagnostics(
         entry("frame interval", "bar", frame_time_value, "ms", 16.7, "FrameTimeDiagnosticsPlugin/frame_time", Some(NO_DIAGNOSTIC.into())),
         entry("CPU total", "bar", stats.cpu_ms, "ms", 16.7, "First start to Render end", Some(NO_FRAME.into())),
         entry("SIM", "bar", stats.sim_ms, "ms", 16.7, "First to Last schedule timer", Some(NO_FRAME.into())),
-        entry("LAUNCH", "bar", stats.launch_ms, "ms", 16.7, "Last end to Render start (extract handoff)", Some(NO_FRAME.into())),
+        entry("LAUNCH", "bar", stats.launch_ms, "ms", 16.7, "Last end to Render start: extract, plus any wait for the previous render frame", Some(NO_FRAME.into())),
         entry("DRAW", "bar", stats.draw_ms, "ms", 16.7, "render schedule timer around RenderSystems::Render (encode, submit, present)", Some(NO_FRAME.into())),
         entry("SHOW", "bar", None, "ms", 16.7, "present_frames", Some(SHOW_REASON.into())),
         entry("GPU", "bar", gpu_ms, "ms", 16.7, "RenderDiagnosticsPlugin elapsed_gpu spans, summed", gpu_reason.clone()),
