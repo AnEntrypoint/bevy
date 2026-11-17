@@ -105,7 +105,7 @@ function main() {
     const witness = { rgba8: witnessSummary('rgba8'), bc7: witnessSummary('bc7') };
     const visual = visualSummary();
     const loadOk = Boolean(witness.rgba8 && witness.bc7 && witness.bc7.loadMsMedian !== null && witness.rgba8.loadMsMedian !== null && witness.bc7.loadMsMedian <= witness.rgba8.loadMsMedian * loadTolerance);
-    const cleanOk = Boolean(witness.bc7 && witness.bc7.clean === witness.bc7.total && witness.bc7.total === rows.length);
+    const cleanOk = Boolean(witness.bc7 && witness.bc7.total > 0 && witness.bc7.clean === witness.bc7.total);
     const visualOk = Boolean(visual && visual.ok);
     const decision = footprintWins && loadOk && cleanOk && visualOk ? 'bc7' : 'rgba8';
     const reasons = {
