@@ -150,6 +150,38 @@ pub fn phases(bodies: usize, ticks: usize) {
     );
 }
 
+pub fn schedules(bodies: usize, ticks: usize) {
+    let mut app = build_app(bodies, false);
+    app.finish();
+    app.cleanup();
+    for _ in 0..30 {
+        app.update();
+    }
+    let labels = app.world().resource::<bevy::app::MainScheduleOrder>().labels.clone();
+    let mut totals = vec![0.0f64; labels.len()];
+    let mut whole = 0.0f64;
+    for _ in 0..ticks {
+        let started = std::time::Instant::now();
+        for (index, label) in labels.iter().enumerate() {
+            let step = std::time::Instant::now();
+            let _ = app.world_mut().try_run_schedule(*label);
+            totals[index] += step.elapsed().as_secs_f64() * 1000.0;
+        }
+        app.world_mut().clear_trackers();
+        whole += started.elapsed().as_secs_f64() * 1000.0;
+    }
+    let entries: Vec<String> = labels
+        .iter()
+        .zip(&totals)
+        .map(|(label, total)| format!("\"{label:?}\":{:.4}", total / ticks as f64))
+        .collect();
+    println!(
+        "{{\"kind\":\"bench-schedules\",\"bodies\":{bodies},\"ticks\":{ticks},\"tickMeanMs\":{:.4},\"schedules\":{{{}}}}}",
+        whole / ticks as f64,
+        entries.join(",")
+    );
+}
+
 pub fn det(bodies: usize, ticks: usize) -> bool {
     let (mut first, _) = simulate(bodies, 30, ticks);
     let (mut second, _) = simulate(bodies, 30, ticks);

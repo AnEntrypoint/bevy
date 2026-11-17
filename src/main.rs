@@ -43,6 +43,7 @@ fn main() {
     match args.first().map(String::as_str) {
         Some("bench") => bench::run(number(1, 2000), number(2, 300)),
         Some("bench-phases") => bench::phases(number(1, 500), number(2, 300)),
+        Some("bench-schedules") => bench::schedules(number(1, 500), number(2, 300)),
         Some("det") => {
             if !bench::det(number(1, 2000), number(2, 300)) {
                 std::process::exit(1);
