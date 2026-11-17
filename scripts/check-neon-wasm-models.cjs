@@ -7,11 +7,11 @@ const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
 const modes = {
-    bc7: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache', query: '' },
-    rgba8: { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '' },
-    'rgba8-software': { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&adapter=software' },
-    astc4x4: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-astc', query: '&adapter=software&disable-bc=1' },
-    etc2: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-etc2', query: '&adapter=software&disable-bc=1&disable-astc=1' },
+    bc7: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache', query: '&still=1' },
+    rgba8: { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&still=1' },
+    'rgba8-software': { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&adapter=software&still=1' },
+    astc4x4: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-astc', query: '&adapter=software&disable-bc=1&still=1' },
+    etc2: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-etc2', query: '&adapter=software&disable-bc=1&disable-astc=1&still=1' },
 };
 const texture = process.env.NEON_TEXTURE || 'bc7';
 if (!modes[texture]) throw new Error(`unknown NEON_TEXTURE ${texture}; expected one of ${Object.keys(modes).join(', ')}`);

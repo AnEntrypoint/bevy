@@ -36,6 +36,9 @@ struct ModelHandle(Handle<WorldAsset>);
 struct ModelReported(bool);
 
 #[derive(Resource)]
+struct Still(bool);
+
+#[derive(Resource)]
 struct InspectorState {
     enabled: bool,
     last_update: f64,
@@ -76,6 +79,7 @@ pub fn start() {
     .insert_resource(ReadySent(false))
     .insert_resource(ModelRequest(model))
     .insert_resource(ModelReported(false))
+    .insert_resource(Still(query_value("still").as_deref() == Some("1")))
     .insert_resource(InspectorState { enabled: inspector_enabled, last_update: 0.0 })
     .add_systems(Startup, setup)
     .add_systems(Update, (spawn_model, orbit, spin, mark_ready, report_model, publish_diagnostics));
@@ -296,17 +300,21 @@ fn publish_model_state(state: &str, detail: &str) {
     }
 }
 
-fn orbit(time: Res<Time>, mut cameras: Query<&mut Transform, With<OrbitCamera>>) {
-    let angle = time.elapsed_secs() * 0.18;
+fn clock(time: &Time, still: &Still) -> f32 {
+    if still.0 { 0.0 } else { time.elapsed_secs() }
+}
+
+fn orbit(time: Res<Time>, still: Res<Still>, mut cameras: Query<&mut Transform, With<OrbitCamera>>) {
+    let angle = clock(&time, &still) * 0.18;
     for mut transform in &mut cameras {
         *transform = Transform::from_xyz(angle.sin() * 11.0, 5.2, angle.cos() * 11.0)
             .looking_at(Vec3::NEG_Y * 0.1, Vec3::Y);
     }
 }
 
-fn spin(time: Res<Time>, mut meshes: Query<&mut Transform, With<Spinner>>) {
+fn spin(time: Res<Time>, still: Res<Still>, mut meshes: Query<&mut Transform, With<Spinner>>) {
     for mut transform in &mut meshes {
-        transform.rotation = Quat::from_rotation_y(time.elapsed_secs() * 0.9);
+        transform.rotation = Quat::from_rotation_y(clock(&time, &still) * 0.9);
     }
 }
 
