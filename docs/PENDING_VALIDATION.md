@@ -1423,3 +1423,14 @@ Screenshots: docs/ui-layout/before-1440x900.png, before-1024x768.png (old rule i
 ### Open
 
 - The metric strip (.strip, min-width 720px) scrolls horizontally inside the panel at 1024x768. It does not cover the header, toggle or status. It is an existing narrow-width rule and was left as it is.
+
+## Round 30 Phase A: metric strip and tabs fit the inspector panel
+
+Defect: at 1024x768 the inspector showed a horizontal scrollbar. The strip rule had min-width 720px, and the tab row had overflow-x auto. The scrollbar in the earlier screenshot sat under the tab row. Phase B measures which element scrolls.
+
+Changes, in web/wasm-index.html (each committed as lanmower, no trailers):
+
+- .strip: min-width 720px removed, replaced with min-width 0 and flex-wrap: wrap, so the metric buckets wrap onto a second line instead of forcing a minimum width.
+- .tabs: overflow-x auto removed, replaced with flex-wrap: wrap, so the tab buttons wrap instead of scrolling sideways.
+
+Not changed: .bucket, .spark, .metrics and the inspector body. Phase B measures them and records any defect.
