@@ -1,7 +1,8 @@
 use bevy::color::Srgba;
-use crate::css_anim::{apply_animation_longhands, attach, parse_animation, parse_keyframes, parse_transitions, sample_over, transition_for, Animation, Keyframes, Sampled, Track, Transition};
+use crate::css_anim::{apply_animation_longhands, attach, compose, parse_animation, parse_keyframes, parse_transform, parse_transitions, sample_over, transition_for, Animation, Keyframes, Rgba, Sampled, Track, TransformFunction, Transition};
 use std::sync::Arc;
 use bevy::math::Rot2;
+use bevy::ui::Val2;
 use bevy::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 
@@ -43,23 +44,27 @@ pub struct HtmlTranslated;
 pub struct HtmlAnimated {
     pub key: String,
     pub animations: Vec<Animation>,
+    pub color: Option<Rgba>,
+    pub background: Option<Rgba>,
+    pub transform: Vec<TransformFunction>,
 }
+
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct HtmlOwnColor;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ElementClock {
+pub struct AnimationClock {
     pub start: f32,
     pub paused_since: Option<f32>,
-    pub opacity: Track<f32>,
-    pub visible: Track<bool>,
 }
 
-impl ElementClock {
-    fn new(now: f32, paused: bool, opacity: f32, visible: bool) -> Self {
-        Self { start: now, paused_since: paused.then_some(now), opacity: Track::settled(opacity), visible: Track::settled(visible) }
+impl AnimationClock {
+    fn new(now: f32, paused: bool) -> Self {
+        Self { start: now, paused_since: paused.then_some(now) }
     }
 
-    fn update(&mut self, now: f32, target: &DynamicBox) {
-        match (target.paused, self.paused_since) {
+    fn set_paused(&mut self, now: f32, paused: bool) {
+        match (paused, self.paused_since) {
             (true, None) => self.paused_since = Some(now),
             (false, Some(since)) => {
                 self.start += now - since;
@@ -67,22 +72,66 @@ impl ElementClock {
             }
             _ => {}
         }
-        if self.opacity.to != target.opacity {
-            self.opacity = match transition_for(&target.transitions, "opacity") {
-                Some(t) => Track { from: self.opacity.value(now), to: target.opacity, start: now, duration: t.duration, delay: t.delay, timing: t.timing },
-                None => Track::settled(target.opacity),
-            };
-        }
-        if self.visible.to != target.visible {
-            self.visible = match transition_for(&target.transitions, "visibility") {
-                Some(t) => Track { from: self.visible.value(now), to: target.visible, start: now, duration: t.duration, delay: t.delay, timing: t.timing },
-                None => Track::settled(target.visible),
-            };
-        }
     }
 
     pub fn elapsed(&self, now: f32) -> f32 {
         self.paused_since.unwrap_or(now) - self.start
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ElementClock {
+    pub animations: Vec<AnimationClock>,
+    pub opacity: Track<f32>,
+    pub visible: Track<bool>,
+    pub transitions_started: u32,
+    pub reversed_at: Option<f32>,
+}
+
+impl ElementClock {
+    fn new(now: f32, target: &DynamicBox) -> Self {
+        Self {
+            animations: target.paused.iter().map(|paused| AnimationClock::new(now, *paused)).collect(),
+            opacity: Track::settled(target.opacity),
+            visible: Track::settled(target.visible),
+            transitions_started: 0,
+            reversed_at: None,
+        }
+    }
+
+    fn update(&mut self, now: f32, target: &DynamicBox) {
+        self.animations.truncate(target.paused.len());
+        for (index, paused) in target.paused.iter().enumerate() {
+            match self.animations.get_mut(index) {
+                Some(clock) => clock.set_paused(now, *paused),
+                None => self.animations.push(AnimationClock::new(now, *paused)),
+            }
+        }
+        if self.opacity.to != target.opacity {
+            let previous = self.opacity;
+            let (track, reversed) = previous.retarget(now, previous.value(now), target.opacity, transition_for(&target.transitions, "opacity"));
+            self.note(now, &previous.start, &track, reversed);
+            self.opacity = track;
+        }
+        if self.visible.to != target.visible {
+            let previous = self.visible;
+            let (track, reversed) = previous.retarget(now, previous.value(now), target.visible, transition_for(&target.transitions, "visibility"));
+            self.note(now, &previous.start, &track, reversed);
+            self.visible = track;
+        }
+    }
+
+    fn note<T: Copy>(&mut self, now: f32, previous_start: &f32, track: &Track<T>, reversed: bool) {
+        if track.duration > 0.0 || track.delay > 0.0 {
+            self.transitions_started += 1;
+        }
+        if reversed {
+            self.reversed_at = Some(now - previous_start);
+        }
+    }
+
+    pub fn elapsed(&self, now: f32) -> Vec<f32> {
+        self.animations.iter().map(|clock| clock.elapsed(now)).collect()
     }
 
     pub fn transition_elapsed(&self, now: f32) -> Option<f32> {
@@ -97,7 +146,7 @@ impl ElementClock {
 #[derive(Clone, Debug)]
 pub struct DynamicBox {
     pub key: String,
-    pub paused: bool,
+    pub paused: Vec<bool>,
     pub opacity: f32,
     pub visible: bool,
     pub transitions: Vec<Transition>,
@@ -121,8 +170,14 @@ pub struct AnimationSample {
     pub elapsed: f32,
     pub opacity: f32,
     pub visible: bool,
-    pub paused: bool,
+    pub paused: Vec<bool>,
+    pub animation_elapsed: Vec<f32>,
     pub transition_elapsed: Option<f32>,
+    pub transitions_started: u32,
+    pub reversed_at: Option<f32>,
+    pub color: Option<Rgba>,
+    pub background: Option<Rgba>,
+    pub transform: Option<[f32; 5]>,
 }
 
 #[derive(Resource, Default, Clone, Debug)]
@@ -194,58 +249,97 @@ fn sync_html_ui(
             .elements
             .entry(target.key.clone())
             .and_modify(|entry| entry.update(now, target))
-            .or_insert_with(|| ElementClock::new(now, target.paused, target.opacity, target.visible));
+            .or_insert_with(|| ElementClock::new(now, target));
     }
     let root = spawn(&mut commands, None, &built.spec);
     commands.entity(root).insert(HtmlUiRoot);
 }
 
+fn to_color(rgba: Rgba, opacity: f32) -> Color {
+    Color::srgba(rgba[0], rgba[1], rgba[2], rgba[3] * opacity)
+}
+
+#[allow(clippy::too_many_arguments)]
 fn animate_html(
     time: Res<Time>,
     clock: Res<HtmlAnimationClock>,
-    animated: Query<(Entity, &HtmlAnimated)>,
+    animated: Query<(Entity, &HtmlAnimated, Option<&ComputedNode>)>,
     children: Query<&Children>,
+    own_color: Query<(), With<HtmlOwnColor>>,
     mut paints: Query<(Option<&HtmlTextAlpha>, Option<&HtmlBackgroundAlpha>, Option<&mut TextColor>, Option<&mut BackgroundColor>)>,
     mut visibility: Query<&mut Visibility, Without<WorldAnchor>>,
+    mut transforms: Query<&mut UiTransform>,
     mut status: ResMut<HtmlAnimationStatus>,
 ) {
     let now = time.elapsed_secs();
     status.samples.clear();
-    for (entity, animated) in &animated {
+    for (entity, animated, computed) in &animated {
         let Some(entry) = clock.elements.get(&animated.key) else {
             continue;
         };
         let elapsed = entry.elapsed(now);
-        let underlying = Sampled { opacity: entry.opacity.value(now), visible: entry.visible.value(now) };
-        let sampled = sample_over(&animated.animations, elapsed, underlying);
+        let underlying = Sampled {
+            opacity: entry.opacity.value(now),
+            visible: entry.visible.value(now),
+            color: animated.color,
+            background: animated.background,
+            transform: Some(animated.transform.clone()),
+        };
+        let sampled = sample_over(&animated.animations, &elapsed, &underlying);
         if let Ok(mut current) = visibility.get_mut(entity) {
             let wanted = if sampled.visible { Visibility::Inherited } else { Visibility::Hidden };
             if *current != wanted {
                 *current = wanted;
             }
         }
-        let mut stack = vec![entity];
-        while let Some(node) = stack.pop() {
+        let animates = |property: &str| animated.animations.iter().any(|animation| animation.keyframes.as_deref().is_some_and(|frames| frames.specifies(property)));
+        let color = sampled.color.filter(|_| animates("color"));
+        let background_animated = animates("background-color") || animates("background");
+        let mut stack = vec![(entity, true)];
+        while let Some((node, coloured)) = stack.pop() {
             if let Ok((text_alpha, background_alpha, text, background)) = paints.get_mut(node) {
                 if let (Some(base), Some(mut text)) = (text_alpha, text) {
-                    text.0.set_alpha(base.0 * sampled.opacity);
+                    text.0 = match color.filter(|_| coloured) {
+                        Some(rgba) => to_color(rgba, sampled.opacity),
+                        None => text.0.with_alpha(base.0 * sampled.opacity),
+                    };
                 }
-                if let (Some(base), Some(mut background)) = (background_alpha, background) {
+                if node == entity && background_animated {
+                    if let (Some(rgba), Some(mut background)) = (sampled.background, background) {
+                        background.0 = to_color(rgba, sampled.opacity);
+                    }
+                } else if let (Some(base), Some(mut background)) = (background_alpha, background) {
                     background.0.set_alpha(base.0 * sampled.opacity);
                 }
             }
             if let Ok(kids) = children.get(node) {
-                stack.extend(kids.iter());
+                stack.extend(kids.iter().map(|kid| (kid, coloured && own_color.get(kid).is_err())));
             }
+        }
+        let mut resolved_transform = None;
+        if let Some(functions) = sampled.transform.as_ref().filter(|_| animates("transform")) {
+            let size = computed.map(|node| node.size * node.inverse_scale_factor).unwrap_or(Vec2::ZERO);
+            let resolved = compose(functions);
+            let (tx, ty) = (resolved.tx.resolve(size.x), resolved.ty.resolve(size.y));
+            if let Ok(mut transform) = transforms.get_mut(entity) {
+                *transform = UiTransform { translation: Val2::px(tx, ty), scale: Vec2::new(resolved.sx, resolved.sy), rotation: Rot2::radians(resolved.rotation) };
+            }
+            resolved_transform = Some([tx, ty, resolved.sx, resolved.sy, resolved.rotation]);
         }
         status.samples.push(AnimationSample {
             key: animated.key.clone(),
             names: animated.animations.iter().map(|animation| animation.name.clone()).collect(),
-            elapsed,
+            elapsed: elapsed.first().copied().unwrap_or(0.0),
             opacity: sampled.opacity,
             visible: sampled.visible,
-            paused: entry.paused_since.is_some(),
+            paused: entry.animations.iter().map(|clock| clock.paused_since.is_some()).collect(),
+            animation_elapsed: elapsed,
             transition_elapsed: entry.transition_elapsed(now),
+            transitions_started: entry.transitions_started,
+            reversed_at: entry.reversed_at,
+            color: sampled.color,
+            background: sampled.background,
+            transform: resolved_transform,
         });
     }
 }
@@ -277,7 +371,7 @@ impl UiSpec {
             if let Some(key) = style.animation_key.as_ref().filter(|_| style.is_dynamic()) {
                 out.push(DynamicBox {
                     key: key.clone(),
-                    paused: !style.animations.is_empty() && style.animations.iter().all(|animation| animation.paused),
+                    paused: style.animations.iter().map(|animation| animation.paused).collect(),
                     opacity: style.opacity,
                     visible: style.visible,
                     transitions: style.transitions.clone(),
@@ -341,6 +435,9 @@ pub struct BoxStyle {
     transitions: Vec<Transition>,
     opacity: f32,
     visible: bool,
+    color: Option<Color>,
+    own_color: bool,
+    transform_functions: Vec<TransformFunction>,
 }
 
 impl BoxStyle {
@@ -370,6 +467,9 @@ impl BoxStyle {
             transitions: Vec::new(),
             opacity: 1.0,
             visible: true,
+            color: None,
+            own_color: false,
+            transform_functions: Vec::new(),
         }
     }
 
@@ -436,16 +536,33 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 if let Some(background) = style.background {
                     entity.insert((BackgroundColor(background), HtmlBackgroundAlpha(background.alpha())));
                 }
+                if style.own_color {
+                    entity.insert(HtmlOwnColor);
+                }
                 if style.is_dynamic() {
-                    entity.insert(HtmlAnimated { key: style.animation_key.clone().unwrap_or_default(), animations: style.animations.clone() });
+                    let rgba = |color: Color| -> Rgba {
+                        let srgba = color.to_srgba();
+                        [srgba.red, srgba.green, srgba.blue, srgba.alpha]
+                    };
+                    entity.insert(HtmlAnimated {
+                        key: style.animation_key.clone().unwrap_or_default(),
+                        animations: style.animations.clone(),
+                        color: style.color.map(rgba),
+                        background: style.background.map(rgba),
+                        transform: style.transform_functions.clone(),
+                    });
                 } else if !style.visible && style.anchor.is_none() {
                     entity.insert(Visibility::Hidden);
                 }
                 if let Some(anchor) = &style.anchor {
                     entity.insert((anchor.clone(), Visibility::Hidden));
                 }
+                let resolved = compose(&style.transform_functions);
                 if let Some((x, y)) = style.translate {
-                    entity.insert((UiTransform::from_xy(x, y), HtmlTranslated));
+                    entity.insert(HtmlTranslated);
+                    entity.insert(UiTransform { translation: Val2::new(x, y), scale: Vec2::new(resolved.sx, resolved.sy), rotation: Rot2::radians(resolved.rotation) });
+                } else if resolved.sx != 1.0 || resolved.sy != 1.0 || resolved.rotation != 0.0 {
+                    entity.insert(UiTransform { translation: Val2::ZERO, scale: Vec2::new(resolved.sx, resolved.sy), rotation: Rot2::radians(resolved.rotation) });
                 }
                 entity.id()
             };
@@ -968,7 +1085,7 @@ fn parse_oklch(args: &str) -> Option<Color> {
     Some(Color::srgba(encode(linear[0]), encode(linear[1]), encode(linear[2]), alpha.clamp(0.0, 1.0)))
 }
 
-fn parse_color(value: &str) -> Option<Color> {
+pub(crate) fn parse_color(value: &str) -> Option<Color> {
     let value = value.trim().to_ascii_lowercase();
     if let Some(hex) = value.strip_prefix('#') {
         return parse_hex(hex);
@@ -1167,6 +1284,9 @@ fn box_style(scope: &Scope) -> BoxStyle {
         transitions: parse_transitions(|name| scope.get(name)),
         opacity: scope.declared_opacity,
         visible: !matches!(scope.get("visibility").as_deref().map(str::trim), Some("hidden" | "collapse")),
+        color: scope.inherit.color,
+        own_color: scope.get("color").is_some(),
+        transform_functions: scope.get("transform").and_then(|value| parse_transform(&value)).unwrap_or_default(),
     }
 }
 
@@ -1869,7 +1989,8 @@ mod tests {
         let mut styles = Vec::new();
         box_styles(&built.spec, &mut styles);
         let banner = styles.iter().find(|style| style.animation_key.as_deref() == Some("dzNEXUS")).expect("banner");
-        assert_eq!(crate::css_anim::sample(&banner.animations, 9.0), crate::css_anim::Sampled { opacity: 0.0, visible: false });
+        let ended = crate::css_anim::sample(&banner.animations, 9.0);
+        assert!(ended.opacity == 0.0 && !ended.visible);
         assert!(styles.iter().all(|style| style.animations.iter().all(|animation| animation.keyframes.is_some())));
     }
 
@@ -1890,34 +2011,50 @@ mod tests {
         assert!(!find("gone").visible);
         let mut dynamic = Vec::new();
         built.spec.dynamic_boxes(&mut dynamic);
-        assert_eq!(dynamic.iter().map(|target| (target.key.as_str(), target.paused)).collect::<Vec<_>>(), vec![("lh", true), ("tr", false)]);
+        assert_eq!(dynamic.iter().map(|target| (target.key.as_str(), target.paused.clone())).collect::<Vec<_>>(), vec![("lh", vec![true]), ("tr", vec![])]);
+    }
+
+    fn target(opacity: f32, visible: bool, paused: Vec<bool>, transition: &str) -> DynamicBox {
+        let transition = transition.to_string();
+        DynamicBox { key: "tr".to_string(), paused, opacity, visible, transitions: crate::css_anim::parse_transitions(move |name| (name == "transition").then(|| transition.clone())) }
     }
 
     #[test]
     fn element_clock_starts_a_transition_from_the_current_value_across_rebuilds() {
-        let target = |opacity: f32, visible: bool| DynamicBox {
-            key: "tr".to_string(),
-            paused: false,
-            opacity,
-            visible,
-            transitions: crate::css_anim::parse_transitions(|name| (name == "transition").then(|| "opacity 2s linear, visibility 2s linear".to_string())),
-        };
-        let mut clock = ElementClock::new(0.0, false, 1.0, true);
-        clock.update(1.0, &target(1.0, true));
+        let both = "opacity 2s linear, visibility 2s linear";
+        let mut clock = ElementClock::new(0.0, &target(1.0, true, vec![], both));
+        clock.update(1.0, &target(1.0, true, vec![], both));
         assert_eq!(clock.opacity.value(1.5), 1.0);
-        clock.update(2.0, &target(0.0, false));
+        clock.update(2.0, &target(0.0, false, vec![], both));
         assert!((clock.opacity.value(3.0) - 0.5).abs() < 1e-6);
-        assert!(clock.visible.value(3.0));
-        clock.update(3.0, &target(1.0, false));
-        assert!((clock.opacity.value(3.0) - 0.5).abs() < 1e-6);
-        assert!((clock.opacity.value(4.0) - 0.75).abs() < 1e-6);
-        assert!(clock.visible.value(3.9));
-        assert!(!clock.visible.value(4.0));
-        assert_eq!(clock.transition_elapsed(3.5), Some(0.5));
-        let mut paused = ElementClock::new(0.0, true, 1.0, true);
-        assert_eq!(paused.elapsed(5.0), 0.0);
-        paused.update(5.0, &DynamicBox { paused: false, ..target(1.0, true) });
-        assert_eq!(paused.elapsed(6.0), 1.0);
+        assert!(clock.visible.value(3.9) && !clock.visible.value(4.0));
+        assert_eq!(clock.transition_elapsed(3.5), Some(1.5));
+        assert_eq!(clock.transitions_started, 2);
+    }
+
+    #[test]
+    fn reversed_transitions_are_shortened_as_css_specifies() {
+        let fade = "opacity 2s linear";
+        let mut clock = ElementClock::new(0.0, &target(1.0, true, vec![], fade));
+        clock.update(10.0, &target(0.2, true, vec![], fade));
+        clock.update(10.8, &target(1.0, true, vec![], fade));
+        assert!((clock.opacity.from - 0.68).abs() < 1e-5);
+        assert!((clock.opacity.duration - 0.8).abs() < 1e-5);
+        assert!((clock.opacity.shortening - 0.4).abs() < 1e-5);
+        assert_eq!(clock.opacity.reversing_start, 0.2);
+        assert!((clock.reversed_at.unwrap() - 0.8).abs() < 1e-5);
+        assert!((clock.opacity.value(11.2) - 0.84).abs() < 1e-5);
+        assert_eq!(clock.opacity.value(11.6), 1.0);
+        clock.update(11.0, &target(0.2, true, vec![], fade));
+        assert!((clock.opacity.shortening - 0.7).abs() < 1e-4);
+    }
+
+    #[test]
+    fn each_animation_keeps_its_own_play_state() {
+        let mut clock = ElementClock::new(0.0, &target(1.0, true, vec![false, true], ""));
+        assert_eq!(clock.elapsed(3.0), vec![3.0, 0.0]);
+        clock.update(3.0, &target(1.0, true, vec![true, false], ""));
+        assert_eq!(clock.elapsed(5.0), vec![3.0, 2.0]);
     }
 
     #[test]

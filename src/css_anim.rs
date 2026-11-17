@@ -8,6 +8,12 @@ pub struct Keyframes {
     frames: Vec<(f32, BTreeMap<String, String>)>,
 }
 
+impl Keyframes {
+    pub fn specifies(&self, property: &str) -> bool {
+        self.frames.iter().any(|(_, declarations)| declarations.contains_key(property))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Timing {
     Linear,
@@ -23,6 +29,24 @@ pub enum Fill {
     Both,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    Normal,
+    Reverse,
+    Alternate,
+    AlternateReverse,
+}
+
+fn parse_direction(token: &str) -> Option<Direction> {
+    match token {
+        "normal" => Some(Direction::Normal),
+        "reverse" => Some(Direction::Reverse),
+        "alternate" => Some(Direction::Alternate),
+        "alternate-reverse" => Some(Direction::AlternateReverse),
+        _ => None,
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Animation {
     pub name: String,
@@ -31,13 +55,14 @@ pub struct Animation {
     pub timing: Timing,
     pub iterations: f32,
     pub fill: Fill,
+    pub direction: Direction,
     pub paused: bool,
     pub keyframes: Option<Arc<Keyframes>>,
 }
 
 impl Animation {
     fn named(name: &str) -> Self {
-        Self { name: name.to_string(), duration: 0.0, delay: 0.0, timing: EASE, iterations: 1.0, fill: Fill::None, paused: false, keyframes: None }
+        Self { name: name.to_string(), duration: 0.0, delay: 0.0, timing: EASE, iterations: 1.0, fill: Fill::None, direction: Direction::Normal, paused: false, keyframes: None }
     }
 }
 
@@ -63,11 +88,35 @@ pub struct Track<T: Copy> {
     pub duration: f32,
     pub delay: f32,
     pub timing: Timing,
+    pub reversing_start: T,
+    pub shortening: f32,
 }
 
-impl<T: Copy> Track<T> {
+impl<T: Copy + PartialEq> Track<T> {
     pub fn settled(value: T) -> Self {
-        Self { from: value, to: value, start: 0.0, duration: 0.0, delay: 0.0, timing: Timing::Linear }
+        Self { from: value, to: value, start: 0.0, duration: 0.0, delay: 0.0, timing: Timing::Linear, reversing_start: value, shortening: 1.0 }
+    }
+
+    pub fn active(&self, now: f32) -> bool {
+        (self.duration > 0.0 || self.delay > 0.0) && now < self.start + self.delay + self.duration
+    }
+
+    pub fn retarget(&self, now: f32, current: T, target: T, transition: Option<&Transition>) -> (Self, bool) {
+        let Some(transition) = transition else {
+            return (Self::settled(target), false);
+        };
+        if current == target {
+            return (Self::settled(target), false);
+        }
+        if self.active(now) && target == self.reversing_start {
+            let output = self.eased(now);
+            let factor = (output * self.shortening + (1.0 - self.shortening)).abs().clamp(0.0, 1.0);
+            let delay = if transition.delay < 0.0 { transition.delay * factor } else { transition.delay };
+            let track = Self { from: current, to: target, start: now, duration: transition.duration * factor, delay, timing: transition.timing, reversing_start: self.to, shortening: factor };
+            return (track, true);
+        }
+        let track = Self { from: current, to: target, start: now, duration: transition.duration, delay: transition.delay, timing: transition.timing, reversing_start: current, shortening: 1.0 };
+        (track, false)
     }
 
     pub fn eased(&self, now: f32) -> f32 {
@@ -105,10 +154,180 @@ impl Track<bool> {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Length {
+    pub px: f32,
+    pub percent: f32,
+}
+
+impl Length {
+    fn lerp(self, other: Self, t: f32) -> Self {
+        Self { px: self.px + (other.px - self.px) * t, percent: self.percent + (other.percent - self.percent) * t }
+    }
+
+    pub fn resolve(self, size: f32) -> f32 {
+        self.px + self.percent * size / 100.0
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub enum TransformFunction {
+    Translate(Length, Length),
+    Scale(f32, f32),
+    Rotate(f32),
+}
+
+impl TransformFunction {
+    fn kind(&self) -> u8 {
+        match self {
+            Self::Translate(..) => 0,
+            Self::Scale(..) => 1,
+            Self::Rotate(..) => 2,
+        }
+    }
+
+    fn identity(&self) -> Self {
+        match self {
+            Self::Translate(..) => Self::Translate(Length::default(), Length::default()),
+            Self::Scale(..) => Self::Scale(1.0, 1.0),
+            Self::Rotate(..) => Self::Rotate(0.0),
+        }
+    }
+
+    fn lerp(&self, other: &Self, t: f32) -> Self {
+        match (self, other) {
+            (Self::Translate(ax, ay), Self::Translate(bx, by)) => Self::Translate(ax.lerp(*bx, t), ay.lerp(*by, t)),
+            (Self::Scale(ax, ay), Self::Scale(bx, by)) => Self::Scale(ax + (bx - ax) * t, ay + (by - ay) * t),
+            (Self::Rotate(a), Self::Rotate(b)) => Self::Rotate(a + (b - a) * t),
+            _ => *self,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Resolved {
+    pub tx: Length,
+    pub ty: Length,
+    pub sx: f32,
+    pub sy: f32,
+    pub rotation: f32,
+}
+
+pub fn compose(functions: &[TransformFunction]) -> Resolved {
+    let mut out = Resolved { sx: 1.0, sy: 1.0, ..Default::default() };
+    for function in functions {
+        match function {
+            TransformFunction::Translate(x, y) => {
+                out.tx = Length { px: out.tx.px + x.px, percent: out.tx.percent + x.percent };
+                out.ty = Length { px: out.ty.px + y.px, percent: out.ty.percent + y.percent };
+            }
+            TransformFunction::Scale(x, y) => {
+                out.sx *= x;
+                out.sy *= y;
+            }
+            TransformFunction::Rotate(angle) => out.rotation += angle,
+        }
+    }
+    out
+}
+
+fn canonical(functions: &[TransformFunction]) -> Vec<TransformFunction> {
+    let resolved = compose(functions);
+    vec![TransformFunction::Translate(resolved.tx, resolved.ty), TransformFunction::Rotate(resolved.rotation), TransformFunction::Scale(resolved.sx, resolved.sy)]
+}
+
+pub fn interpolate_transform(a: &[TransformFunction], b: &[TransformFunction], t: f32) -> Vec<TransformFunction> {
+    let a = if a.is_empty() { b.iter().map(TransformFunction::identity).collect() } else { a.to_vec() };
+    let b = if b.is_empty() { a.iter().map(TransformFunction::identity).collect() } else { b.to_vec() };
+    let (a, b) = if a.len() == b.len() && a.iter().zip(&b).all(|(x, y)| x.kind() == y.kind()) { (a, b) } else { (canonical(&a), canonical(&b)) };
+    a.iter().zip(&b).map(|(x, y)| x.lerp(y, t)).collect()
+}
+
+fn parse_length(token: &str) -> Option<Length> {
+    let token = token.trim();
+    if let Some(percent) = token.strip_suffix('%') {
+        return percent.trim().parse::<f32>().ok().map(|percent| Length { px: 0.0, percent });
+    }
+    let number = token.strip_suffix("px").unwrap_or(token);
+    number.trim().parse::<f32>().ok().map(|px| Length { px, percent: 0.0 })
+}
+
+fn parse_angle(token: &str) -> Option<f32> {
+    let token = token.trim();
+    if let Some(value) = token.strip_suffix("deg") {
+        return value.parse::<f32>().ok().map(f32::to_radians);
+    }
+    if let Some(value) = token.strip_suffix("grad") {
+        return value.parse::<f32>().ok().map(|value| value * std::f32::consts::PI / 200.0);
+    }
+    if let Some(value) = token.strip_suffix("rad") {
+        return value.parse::<f32>().ok();
+    }
+    if let Some(value) = token.strip_suffix("turn") {
+        return value.parse::<f32>().ok().map(|value| value * std::f32::consts::TAU);
+    }
+    (token == "0").then_some(0.0)
+}
+
+pub fn parse_transform(value: &str) -> Option<Vec<TransformFunction>> {
+    let value = value.trim();
+    if value == "none" || value.is_empty() {
+        return Some(Vec::new());
+    }
+    let mut out = Vec::new();
+    let mut rest = value;
+    while let Some(open) = rest.find('(') {
+        let close = open + rest[open..].find(')')?;
+        let name = rest[..open].trim();
+        let args = rest[open + 1..close].split(',').map(str::trim).collect::<Vec<_>>();
+        let zero = Length::default();
+        out.push(match name {
+            "translate" => TransformFunction::Translate(parse_length(args.first()?)?, args.get(1).map(|arg| parse_length(arg)).unwrap_or(Some(zero))?),
+            "translateX" => TransformFunction::Translate(parse_length(args.first()?)?, zero),
+            "translateY" => TransformFunction::Translate(zero, parse_length(args.first()?)?),
+            "scale" => {
+                let x = args.first()?.parse::<f32>().ok()?;
+                TransformFunction::Scale(x, args.get(1).map(|arg| arg.parse::<f32>().ok()).unwrap_or(Some(x))?)
+            }
+            "scaleX" => TransformFunction::Scale(args.first()?.parse::<f32>().ok()?, 1.0),
+            "scaleY" => TransformFunction::Scale(1.0, args.first()?.parse::<f32>().ok()?),
+            "rotate" | "rotateZ" => TransformFunction::Rotate(parse_angle(args.first()?)?),
+            _ => return None,
+        });
+        rest = &rest[close + 1..];
+    }
+    rest.trim().is_empty().then_some(out)
+}
+
+pub type Rgba = [f32; 4];
+
+pub fn interpolate_color(a: Rgba, b: Rgba, t: f32) -> Rgba {
+    let alpha = a[3] + (b[3] - a[3]) * t;
+    if alpha <= 0.0 {
+        return [0.0, 0.0, 0.0, 0.0];
+    }
+    let channel = |index: usize| ((a[index] * a[3]) + ((b[index] * b[3]) - (a[index] * a[3])) * t) / alpha;
+    [channel(0), channel(1), channel(2), alpha]
+}
+
+pub fn parse_rgba(value: &str) -> Option<Rgba> {
+    let color = crate::ui_html::parse_color(value)?.to_srgba();
+    Some([color.red, color.green, color.blue, color.alpha])
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sampled {
     pub opacity: f32,
     pub visible: bool,
+    pub color: Option<Rgba>,
+    pub background: Option<Rgba>,
+    pub transform: Option<Vec<TransformFunction>>,
+}
+
+impl Default for Sampled {
+    fn default() -> Self {
+        Self { opacity: 1.0, visible: true, color: None, background: None, transform: None }
+    }
 }
 
 fn block_end(text: &str) -> Option<usize> {
@@ -250,6 +469,7 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
             let mut iterations = 1.0;
             let mut fill = Fill::None;
             let mut paused = false;
+            let mut direction = Direction::Normal;
             for token in split_top_level(single, ' ') {
                 if let Some(time) = parse_time(&token) {
                     times.push(time);
@@ -268,7 +488,9 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
                     fill = parsed;
                 } else if token == "paused" {
                     paused = true;
-                } else if matches!(token.as_str(), "none" | "normal" | "reverse" | "alternate" | "alternate-reverse" | "running") {
+                } else if let Some(parsed) = parse_direction(&token) {
+                    direction = parsed;
+                } else if matches!(token.as_str(), "none" | "running") {
                     if token == "none" && name.is_none() {
                         name = Some(String::new());
                     }
@@ -284,6 +506,7 @@ pub fn parse_animation(value: &str) -> Vec<Animation> {
                 timing,
                 iterations,
                 fill,
+                direction,
                 paused,
                 keyframes: None,
             })
@@ -332,6 +555,7 @@ pub fn apply_animation_longhands(shorthand: Vec<Animation>, get: impl Fn(&str) -
         })
         .collect::<Vec<_>>();
     let states = list(get("animation-play-state")).iter().map(|value| value == "paused").collect::<Vec<_>>();
+    let directions = list(get("animation-direction")).iter().filter_map(|value| parse_direction(value)).collect::<Vec<_>>();
     for (index, animation) in animations.iter_mut().enumerate() {
         if let Some(value) = cycled(&durations, index) {
             animation.duration = value;
@@ -350,6 +574,9 @@ pub fn apply_animation_longhands(shorthand: Vec<Animation>, get: impl Fn(&str) -
         }
         if let Some(value) = cycled(&states, index) {
             animation.paused = value;
+        }
+        if let Some(value) = cycled(&directions, index) {
+            animation.direction = value;
         }
     }
     animations
@@ -457,12 +684,22 @@ impl Timing {
     }
 }
 
+fn directed(direction: Direction, iteration: f32, p: f32) -> f32 {
+    let odd = (iteration as i64).rem_euclid(2) == 1;
+    match direction {
+        Direction::Normal => p,
+        Direction::Reverse => 1.0 - p,
+        Direction::Alternate => if odd { 1.0 - p } else { p },
+        Direction::AlternateReverse => if odd { p } else { 1.0 - p },
+    }
+}
+
 fn progress(animation: &Animation, elapsed: f32) -> Option<f32> {
     let local = elapsed - animation.delay;
     let backwards = matches!(animation.fill, Fill::Backwards | Fill::Both);
     let forwards = matches!(animation.fill, Fill::Forwards | Fill::Both);
     if local < 0.0 {
-        return backwards.then_some(0.0);
+        return backwards.then(|| directed(animation.direction, 0.0, 0.0));
     }
     let active = animation.duration * animation.iterations;
     if animation.duration <= 0.0 || (active.is_finite() && local >= active) {
@@ -470,68 +707,75 @@ fn progress(animation: &Animation, elapsed: f32) -> Option<f32> {
             return None;
         }
         let fraction = animation.iterations.fract();
-        return Some(if fraction > 0.0 { fraction } else { 1.0 });
+        let (iteration, p) = if fraction > 0.0 { (animation.iterations.floor(), fraction) } else { ((animation.iterations - 1.0).max(0.0), 1.0) };
+        return Some(directed(animation.direction, iteration, p));
     }
-    Some((local / animation.duration).fract())
+    let position = local / animation.duration;
+    Some(directed(animation.direction, position.floor(), position.fract()))
 }
 
-fn segment<'a>(keyframes: &'a Keyframes, property: &str, underlying: &'a str, p: f32) -> (&'a str, &'a str, f32) {
-    let mut points: Vec<(f32, &str)> = keyframes
+fn segment<T: Clone>(keyframes: &Keyframes, property: &str, underlying: T, p: f32, parse: impl Fn(&str) -> Option<T>) -> (T, T, f32) {
+    let mut points: Vec<(f32, T)> = keyframes
         .frames
         .iter()
-        .filter_map(|(offset, declarations)| declarations.get(property).map(|value| (*offset, value.as_str())))
+        .filter_map(|(offset, declarations)| declarations.get(property).map(|value| (*offset, parse(value).unwrap_or_else(|| underlying.clone()))))
         .collect();
     if points.first().is_none_or(|first| first.0 > 0.0) {
-        points.insert(0, (0.0, underlying));
+        points.insert(0, (0.0, underlying.clone()));
     }
     if points.last().is_none_or(|last| last.0 < 1.0) {
         points.push((1.0, underlying));
     }
     let index = points.iter().rposition(|point| point.0 <= p).unwrap_or(0).min(points.len() - 2);
-    let (from, to) = (points[index], points[index + 1]);
-    let span = to.0 - from.0;
-    let local = if span > 0.0 { ((p - from.0) / span).clamp(0.0, 1.0) } else { 1.0 };
-    (from.1, to.1, local)
+    let span = points[index + 1].0 - points[index].0;
+    let local = if span > 0.0 { ((p - points[index].0) / span).clamp(0.0, 1.0) } else { 1.0 };
+    (points[index].1.clone(), points[index + 1].1.clone(), local)
 }
 
 #[cfg(test)]
 pub fn sample(animations: &[Animation], elapsed: f32) -> Sampled {
-    sample_over(animations, elapsed, Sampled { opacity: 1.0, visible: true })
+    sample_over(animations, &vec![elapsed; animations.len()], &Sampled::default())
 }
 
-pub fn sample_over(animations: &[Animation], elapsed: f32, underlying: Sampled) -> Sampled {
-    let mut sampled = underlying;
-    let base_opacity = underlying.opacity.to_string();
-    let base_visibility = if underlying.visible { "visible" } else { "hidden" };
-    for animation in animations {
-        let (Some(keyframes), Some(p)) = (animation.keyframes.as_deref(), progress(animation, elapsed)) else {
+pub fn sample_over(animations: &[Animation], elapsed: &[f32], underlying: &Sampled) -> Sampled {
+    let mut sampled = underlying.clone();
+    for (index, animation) in animations.iter().enumerate() {
+        let time = elapsed.get(index).copied().unwrap_or(0.0);
+        let (Some(keyframes), Some(p)) = (animation.keyframes.as_deref(), progress(animation, time)) else {
             continue;
         };
         let specifies = |property: &str| keyframes.frames.iter().any(|(_, declarations)| declarations.contains_key(property));
         if specifies("opacity") {
-            let (from, to, local) = segment(keyframes, "opacity", &base_opacity, p);
+            let (a, b, local) = segment(keyframes, "opacity", underlying.opacity, p, |value| value.trim().parse::<f32>().ok());
             let eased = animation.timing.apply(local);
-            let a = from.parse::<f32>().unwrap_or(1.0);
-            let b = to.parse::<f32>().unwrap_or(1.0);
             sampled.opacity = (a + (b - a) * eased).clamp(0.0, 1.0);
         }
         if specifies("visibility") {
-            let (from, to, local) = segment(keyframes, "visibility", base_visibility, p);
+            let (a, b, local) = segment(keyframes, "visibility", underlying.visible, p, |value| Some(value.trim() == "visible"));
             let eased = animation.timing.apply(local);
-            let value = if from == to {
-                from
-            } else if eased <= 0.0 {
-                from
+            sampled.visible = if a == b || eased <= 0.0 {
+                a
             } else if eased >= 1.0 {
-                to
-            } else if from == "visible" || to == "visible" {
-                "visible"
-            } else if eased < 0.5 {
-                from
+                b
             } else {
-                to
+                a || b
             };
-            sampled.visible = value == "visible";
+        }
+        if specifies("color") {
+            let base = underlying.color.unwrap_or([1.0, 1.0, 1.0, 1.0]);
+            let (a, b, local) = segment(keyframes, "color", base, p, parse_rgba);
+            sampled.color = Some(interpolate_color(a, b, animation.timing.apply(local)));
+        }
+        if specifies("background-color") || specifies("background") {
+            let property = if specifies("background-color") { "background-color" } else { "background" };
+            let base = underlying.background.unwrap_or([0.0, 0.0, 0.0, 0.0]);
+            let (a, b, local) = segment(keyframes, property, base, p, parse_rgba);
+            sampled.background = Some(interpolate_color(a, b, animation.timing.apply(local)));
+        }
+        if specifies("transform") {
+            let base = underlying.transform.clone().unwrap_or_default();
+            let (a, b, local) = segment(keyframes, "transform", base, p, parse_transform);
+            sampled.transform = Some(interpolate_transform(&a, &b, animation.timing.apply(local)));
         }
     }
     sampled
@@ -581,16 +825,19 @@ mod tests {
     #[test]
     fn zone_banner_fades_in_holds_and_ends_hidden() {
         let banner = dzin();
-        assert_eq!(sample(&banner, 0.0), Sampled { opacity: 0.0, visible: true });
+        let start = sample(&banner, 0.0);
+        assert!(start.opacity == 0.0 && start.visible);
         assert_eq!(sample(&banner, 0.6).opacity, 1.0);
-        assert_eq!(sample(&banner, 2.0), Sampled { opacity: 1.0, visible: true });
+        let holding = sample(&banner, 2.0);
+        assert!(holding.opacity == 1.0 && holding.visible);
         let fading = sample(&banner, 3.5);
         assert!(fading.opacity > 0.0 && fading.opacity < 1.0 && fading.visible);
-        assert_eq!(sample(&banner, 4.0), Sampled { opacity: 0.0, visible: false });
-        assert_eq!(sample(&banner, 9.0), Sampled { opacity: 0.0, visible: false });
+        assert_eq!(sample(&banner, 4.0).opacity, 0.0);
+        assert!(!sample(&banner, 4.0).visible);
+        assert!(sample(&banner, 9.0).opacity == 0.0 && !sample(&banner, 9.0).visible);
         let mut no_fill = parse_animation("dzin 4s");
         attach(&mut no_fill, &parse_keyframes(DZIN));
-        assert_eq!(sample(&no_fill, 9.0), Sampled { opacity: 1.0, visible: true });
+        assert_eq!(sample(&no_fill, 9.0), Sampled::default());
     }
 
     fn props<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&str) -> Option<String> + 'a {
@@ -637,14 +884,14 @@ mod tests {
 
     #[test]
     fn tracks_hold_during_delay_then_ease_to_the_target() {
-        let fade = Track { from: 1.0f32, to: 0.25, start: 10.0, duration: 2.0, delay: 0.5, timing: Timing::Linear };
+        let fade = Track { from: 1.0f32, to: 0.25, start: 10.0, duration: 2.0, delay: 0.5, timing: Timing::Linear, reversing_start: 1.0, shortening: 1.0 };
         assert_eq!(fade.value(10.0), 1.0);
         assert_eq!(fade.value(10.5), 1.0);
         assert!((fade.value(11.5) - 0.625).abs() < 1e-6);
         assert_eq!(fade.value(13.0), 0.25);
-        let hide = Track { from: true, to: false, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };
+        let hide = Track { from: true, to: false, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear, reversing_start: true, shortening: 1.0 };
         assert!(hide.value(0.0) && hide.value(0.99) && !hide.value(1.0));
-        let show = Track { from: false, to: true, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear };
+        let show = Track { from: false, to: true, start: 0.0, duration: 1.0, delay: 0.0, timing: Timing::Linear, reversing_start: false, shortening: 1.0 };
         assert!(!show.value(0.0) && show.value(0.01));
         assert_eq!(Track::settled(0.4f32).value(99.0), 0.4);
     }
@@ -653,9 +900,59 @@ mod tests {
     fn animations_sample_over_the_underlying_value() {
         let mut half = parse_animation("p 2s");
         attach(&mut half, &parse_keyframes("@keyframes p{to{opacity:0}}"));
-        let under = Sampled { opacity: 0.5, visible: true };
-        assert!((sample_over(&half, 0.0, under).opacity - 0.5).abs() < 1e-6);
-        assert_eq!(sample_over(&half, 5.0, under).opacity, 0.5);
+        let under = Sampled { opacity: 0.5, ..Sampled::default() };
+        assert!((sample_over(&half, &[0.0], &under).opacity - 0.5).abs() < 1e-6);
+        assert_eq!(sample_over(&half, &[5.0], &under).opacity, 0.5);
+    }
+
+    fn sweep(direction: &str) -> Vec<Animation> {
+        let mut animations = parse_animation(&format!("sweep 1s linear 3 {direction} both"));
+        attach(&mut animations, &parse_keyframes("@keyframes sweep{from{opacity:0}to{opacity:1}}"));
+        animations
+    }
+
+    #[test]
+    fn directions_follow_css_directed_progress() {
+        let at = |direction: &str, time: f32| sample(&sweep(direction), time).opacity;
+        assert!((at("normal", 0.25) - 0.25).abs() < 1e-5 && (at("normal", 1.25) - 0.25).abs() < 1e-5);
+        assert!((at("reverse", 0.25) - 0.75).abs() < 1e-5);
+        assert!((at("alternate", 0.25) - 0.25).abs() < 1e-5 && (at("alternate", 1.25) - 0.75).abs() < 1e-5 && (at("alternate", 2.25) - 0.25).abs() < 1e-5);
+        assert!((at("alternate-reverse", 0.25) - 0.75).abs() < 1e-5 && (at("alternate-reverse", 1.25) - 0.25).abs() < 1e-5);
+        assert_eq!((at("normal", 9.0), at("reverse", 9.0), at("alternate", 9.0), at("alternate-reverse", 9.0)), (1.0, 0.0, 1.0, 0.0));
+        let mut even = parse_animation("sweep 1s linear 2 alternate forwards");
+        attach(&mut even, &parse_keyframes("@keyframes sweep{from{opacity:0}to{opacity:1}}"));
+        assert_eq!(sample(&even, 5.0).opacity, 0.0);
+        assert_eq!(apply_animation_longhands(parse_animation("x 1s"), |name| (name == "animation-direction").then(|| "alternate-reverse".to_string()))[0].direction, Direction::AlternateReverse);
+    }
+
+    #[test]
+    fn transforms_parse_and_interpolate() {
+        let slide = parse_transform("translateX(30px) scale(1.5) rotate(45deg)").unwrap();
+        assert_eq!(slide.len(), 3);
+        assert_eq!(parse_transform("none"), Some(Vec::new()));
+        assert!(parse_transform("skew(10deg)").is_none());
+        let start = parse_transform("translateX(0px) scale(1) rotate(0deg)").unwrap();
+        let half = compose(&interpolate_transform(&start, &slide, 0.5));
+        assert!((half.tx.px - 15.0).abs() < 1e-5 && (half.sx - 1.25).abs() < 1e-5 && (half.rotation - 22.5f32.to_radians()).abs() < 1e-5);
+        let from_none = compose(&interpolate_transform(&[], &parse_transform("translate(20px, 10px)").unwrap(), 0.5));
+        assert_eq!((from_none.tx.px, from_none.ty.px), (10.0, 5.0));
+        let centred = compose(&interpolate_transform(&parse_transform("translate(-50%, -50%)").unwrap(), &parse_transform("translate(10px, 0px)").unwrap(), 0.5));
+        assert_eq!((centred.tx.percent, centred.tx.px), (-25.0, 5.0));
+        assert_eq!(centred.tx.resolve(40.0), -5.0);
+        assert!((compose(&parse_transform("rotate(0.25turn)").unwrap()).rotation - std::f32::consts::FRAC_PI_2).abs() < 1e-5);
+    }
+
+    #[test]
+    fn colours_interpolate_in_premultiplied_srgb() {
+        let mid = interpolate_color([1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], 0.5);
+        assert_eq!(mid, [0.5, 0.5, 0.0, 1.0]);
+        let fading = interpolate_color([1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0], 0.5);
+        assert!((fading[0] - 1.0).abs() < 1e-6 && fading[2].abs() < 1e-6 && (fading[3] - 0.5).abs() < 1e-6);
+        let mut tint = parse_animation("tint 2s linear forwards");
+        attach(&mut tint, &parse_keyframes("@keyframes tint{from{color:#ff0000;background-color:#0000ff}to{color:#00ff00;background-color:#ffff00}}"));
+        let sampled = sample(&tint, 1.0);
+        assert_eq!(sampled.color.map(|c| c.map(|v| (v * 1000.0).round() / 1000.0)), Some([0.5, 0.5, 0.0, 1.0]));
+        assert_eq!(sampled.background.map(|c| c.map(|v| (v * 1000.0).round() / 1000.0)), Some([0.5, 0.5, 0.5, 1.0]));
     }
 }
 
