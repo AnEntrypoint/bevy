@@ -914,3 +914,30 @@ Witnesses:
 Remaining, with reasons (unchanged from Round 23 Phase A): transitions of colour and transform; `skew`, `matrix` and 3D transform functions; non-uniform scale combined with rotation (Bevy's fixed order); Oklab interpolation for modern colour syntaxes; ASTC/ETC2 and a real non-BC device (open by dispatcher decision). The jayzee bench was out of this stretch.
 
 Processes: the fixture and neon viewers were stopped by PID inside their scripts; the browser and gate of both Chromium runs, and the release build, exited; nothing started by this round remains.
+
+## Round 24 Phase A
+
+Dispatcher decisions applied: (1) tighten the mirror batching bound below 13 by measurement, keeping the lowest bound that passes across the static, mirror and fixture modes, without changing the cache or the mesh sharing; (2) witness the non-BC fallback through a real device request, not a script shim.
+
+The bound is `shapesCreated x MIRROR_SLOTS + MIRROR_PROXY`. Round 8 set it to 4 and 1 (the palette size and the proxy material), so 3 shapes give 13. Round 24 measures the mirror batch keys per mode and lowers the two terms step by step. A bound that is tight for this scene also detects a regression: a new object kind that uses a palette slot the measured scene never used will fail the check, so the lowest passing value is a claim about this scene and the witness is what keeps it honest.
+
+Changes, each a local commit by lanmower with no trailers; no build, test, gate or witness ran in Phase A:
+
+| Change | Commit | Files | Witness it needs (Phase B) |
+| --- | --- | --- | --- |
+| Native device request: `device_request(disable_bc)` returns `RenderCreation::Automatic` with `WgpuSettings::disabled_features = TEXTURE_COMPRESSION_BC` when `VIEWER_DISABLE_BC=1`, so Bevy's device request leaves BC out and `CompressedImageFormatSupport` (read from `device.features()`) reports no BC. `ViewerScene.bc_supported` comes from the same resource and is written as `bcSupported` in the viewer status | e0a8213 | `src/viewer.rs`, `src/viewer_world.rs` | `cargo test --bin bevy-jayzee disabling_bc_removes_only_that_feature_from_the_device_request`; a viewer run on neon `main` with `VIEWER_DISABLE_BC=1`: `bcSupported` false, `textureTarget` rgba8, `modelsLoaded` 9, `modelsMissing` [] |
+| Wasm device request: `?disable-bc=1` on the page URL gives the same `WgpuSettings` through a `RenderPlugin`, so the browser's device is requested without BC; the loader's existing check then takes the RGBA8 path | 691182e | `wasm-viewer/src/lib.rs` | wasm build (`WASM_PROFILE=release scripts/build-wasm.sh`, `CARGO_TARGET_DIR=target/wasm-viewer`), then `node scripts/check-device-bc-fallback.cjs` |
+| `scripts/check-viewer-batching.cjs`: `MIRROR_SLOTS` and `MIRROR_PROXY` (defaults 4 and 1, unchanged) set the two terms of the bound; every status file on the command line is checked, and each result carries its bound and its mirror batch keys | 923f354 | `scripts/check-viewer-batching.cjs` | the ladder below, one run per step over the three status files |
+| `scripts/check-device-bc-fallback.cjs`: no adapter shim. A control page without the flag must load `bc7` from `target/gltf-cache`; then each of the 64 neon models with `?disable-bc=1` must load, report `data-texture-format` rgba8 and `data-bc-supported` false, fetch from `target/gltf-cache-rgba8` and not from `target/gltf-cache`, and log no errors. The page's own `navigator.gpu` adapter is read unmodified and recorded as `adapterHasBc` per row | 6ee0772 | `scripts/check-device-bc-fallback.cjs` | `node scripts/check-device-bc-fallback.cjs` (gm job): `ok` true, `good` 64 of 64, `controlOk` true |
+
+Phase B plan, not run in Phase A:
+
+- Batching ladder. Each step is `MIRROR_SLOTS`, `MIRROR_PROXY`, the bound with 3 shapes, and the check's result on the three modes (static: `testdata/spec-world`, mirror: neon `main`, fixture: `testdata/hud-fixture` place `fixture`). Steps: (4,1) 13 is the current bound; then (4,0) 12, (3,1) 10, (2,1) 7, (1,1) 4, (1,0) 3. Each step records the three modes' `mirrorBatchKeys`, `shapesCreated` and `mirrorEntities`. The lowest step that passes on every mode is kept, and the constants in the checker become its defaults. A step below the measured keys fails by construction, so the ladder stops at the measurement, not at a guess.
+- Adapter. The browser's adapter on this host is the NVIDIA GeForce RTX 3060 Laptop GPU, which reports `texture-compression-bc` (the control in the Round 19 witness). Phase B first probes whether a Chromium software adapter (SwiftShader through the flags gm's playwriter passes) lacks BC. If it does, the fallback runs on that real adapter with no request change, and the witness says so. If it has BC, the `disable-bc=1` device request is the mechanism and the witness says that instead.
+
+Ranked remaining work, updated for Round 24:
+
+1. Batching bound: the ladder is measured in Phase B; the result lands here.
+2. Non-BC fallback on a real device: the device request is coded (Phase A); the witness and the adapter probe run in Phase B.
+3. ASTC or ETC2 for non-BC GPUs: still open by dispatcher decision; this host's adapter has neither format and no real non-BC device is available.
+4. The Round 23 list: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
