@@ -8,6 +8,7 @@ const port = Number(process.env.PORT || 8092);
 const witnessDir = path.join(repo, 'target', 'witness');
 const nativePath = path.join(witnessDir, 'hud-fixture-native.json');
 const rowsPath = path.join(witnessDir, 'css-browser-rows.json');
+const planPath = path.join(witnessDir, 'css-browser-plan.json');
 const outPath = path.join(witnessDir, 'css-agreement.json');
 const tolerance = { opacity: 0.02, channel: 1.5, matrix: 0.002, pixels: 0.05 };
 const transitionKeys = ['trFade', 'trHide', 'trRev'];
@@ -21,9 +22,10 @@ function plan(samples) {
     });
 }
 
-function snippet(pageUrl, steps, reversedAt, out) {
+function snippet(pageUrl, plan, out) {
     return `
 return await (async () => {
+const { steps, reversedAt } = JSON.parse(require('node:fs').readFileSync(${JSON.stringify(plan)}, 'utf8'));
 const page = await context.newPage();
 await page.goto(${JSON.stringify(pageUrl)}, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.__FIXTURE_READY === true, null, { timeout: 30000 });
@@ -74,7 +76,7 @@ const result = await page.evaluate(({ steps, reversedAt }) => {
     }
   }
   return { rows, meta };
-}, { steps: ${JSON.stringify(steps)}, reversedAt: ${JSON.stringify(reversedAt)} });
+}, { steps, reversedAt });
 await page.close();
 require('node:fs').writeFileSync(${JSON.stringify(out)}, JSON.stringify(result));
 return 'rows ' + result.rows.length;
@@ -138,7 +140,8 @@ async function main() {
     try {
         const { value, browser, gate } = await withGateWitness({ repo, port }, async ({ pageBase, run }) => {
             const pageUrl = new URL('/testdata/hud-fixture/browser.html', pageBase).toString();
-            run(snippet(pageUrl, steps, reversedAt, rowsPath), 300000);
+            fs.writeFileSync(planPath, JSON.stringify({ steps, reversedAt }));
+            run(snippet(pageUrl, planPath, rowsPath), 300000);
             return JSON.parse(fs.readFileSync(rowsPath, 'utf8'));
         });
         result.browser = browser;
