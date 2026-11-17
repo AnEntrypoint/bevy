@@ -99,13 +99,18 @@ fn report_and_exit(
     controlled: Query<(), With<Controlled>>,
     remote: Query<(), With<Remote>>,
     mut exit: MessageWriter<AppExit>,
+    mut reported: Local<bool>,
 ) {
+    if *reported {
+        return;
+    }
     let Some(start) = script.start else {
         return;
     };
     if time.elapsed_secs() - start < 5.0 {
         return;
     }
+    *reported = true;
     let mut error = f32::INFINITY;
     let mut confirmed_tick = 0u32;
     let mut current = Vec3::ZERO;
