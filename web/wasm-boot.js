@@ -19,6 +19,10 @@ if (new URLSearchParams(location.search).get('adapter') === 'software' && typeof
   const requestAdapter = navigator.gpu.requestAdapter.bind(navigator.gpu);
   navigator.gpu.requestAdapter = (options) => requestAdapter({ ...options, forceFallbackAdapter: true });
 }
+const focusElement = HTMLElement.prototype.focus;
+HTMLElement.prototype.focus = function (options) {
+  return focusElement.call(this, this instanceof HTMLCanvasElement ? { ...options, preventScroll: true } : options);
+};
 const hasWebGpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
 statusEl.dataset.webgpu = hasWebGpu ? 'available' : 'unavailable';
 if (!hasWebGpu) {
