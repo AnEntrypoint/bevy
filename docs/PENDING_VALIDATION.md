@@ -563,3 +563,40 @@ Witnesses:
 Not done in this round, recorded: ZLIB-supercompressed basis KTX2 images (scheme 3), decided in Phase A, no file in the data uses them.
 
 Round 16 items: 1 normal-map witness through the gate (done); 2 browser witness scripts in `scripts/` (done); 3 verify.sh once on the release binary (done, after one defect fix); 4 doc reconciliation (done); 5 AGENTS.md size, 10,952 bytes under 30,720 (done, nothing trimmed); 6 HUD glyph coverage and overlap (glyphs done; the neon HUD's own top-left label overlap remains open); 7 native measurement (done); 8 wasm payload (done).
+
+## Round 17 Phase A
+
+Phase A ran no build, test, gate or witness. Every item below is code, docs or a witness script that Phase B runs. Each change is a local commit by lanmower with no trailers; nothing is pushed.
+
+Changes:
+
+- 399f533, `src/ui_html.rs`: `parse_val` reads `calc(...)` by summing its px terms, or its percent terms when any are present, because `Val` has no calc variant. The mixed case (`calc(24% + 200px)`) keeps only the percent term. This is the hypothesis for the neon top-left overlap: the squad strip `#tl` (`top: calc(18px + var(--spawn-safe-area-top,0px))`) and `#topc` used calc insets, which fell back to `auto` and piled up at the origin. Not verified until Phase B's overlap witness runs. Unit tests: `calc_insets_resolve_to_the_summed_terms`, `overlapping_pairs_counts_only_real_intersections`.
+- 399f533, `src/ui_html.rs` and `src/viewer.rs`: `overlapping_pairs` counts strict rectangle intersections; `write_browser_report` writes `uiLabels` and `uiLabelOverlaps` into `web/status-<place>.json`, from every non-empty `Text` node's `ComputedNode` size and `UiGlobalTransform` centre.
+- cadcf9d, `scripts/check-hud-overlap.sh` (new), `scripts/xwd2png.py` (copied from the Round 16 `/tmp` tool): runs the native viewer on a place (`PLACE`, default `main`, world `/workspace/neon-syndicates/world`), waits for `uiLabels > 0`, takes `target/witness/neon-hud.png`, and writes `target/witness/hud-overlap-main.json`. Its `ok` is true only when `uiLabelOverlaps` and `uiUncoveredGlyphs` are both 0.
+- 4388b17, `native/basislz_ktx2.cpp`, `src/basisu.rs`, `src/glb.rs`, `src/gltf_check.rs`, `src/main.rs`: `TextureTarget { Rgba8, Bc7 }`. The transcoder takes a `bc7` flag and writes `cTFBC7_RGBA` sized in 4x4 blocks. `ktx2_bytes(target, ...)` writes vkFormat 37 (RGBA8) or 145 (BC7 UNORM) with a matching DFD (BC7 model 134, 4x4 texel blocks, 16 bytes per block). `transcode_basis(input, target)`, `transcode_basis_images(json, bin, target)`, and `glb::decode_with(bytes, target)`; `glb::decode` keeps the RGBA8 default, so the viewer's `load_model` is unchanged. `gltf-check <dir> <project> bc7` writes `target/gltf-cache-bc7`; with no third argument it writes `target/gltf-cache` as before. Unit test: `bc7_ktx2_declares_bc7_and_sizes_levels_in_blocks`.
+- cadcf9d, `scripts/check-neon-wasm-models.cjs`: `NEON_TEXTURE=bc7` loads `target/gltf-cache-bc7` instead. Outputs are now per texture: `target/witness/neon-wasm-witness-<rgba8|bc7>.json` and `neon-rows-<texture>.json` (the old `neon-wasm-witness.json` and `neon-rows.json` names are gone). Each model also writes a screenshot to `target/witness/neon-shots-<texture>/<model>.png`.
+- cadcf9d, `scripts/texture-footprint.cjs` (new): over the Zstandard models (those whose source KTX2 images use supercompression 2), it compares the cache GLB bytes and the KTX2 level payloads for both targets, reads the two neon witnesses and `target/witness/texture-visual.json`, and writes `target/witness/texture-footprint.json` with a `decision`.
+- cadcf9d, `scripts/compare-screenshots.cjs` (new): decodes each pair of `neon-shots-rgba8` and `neon-shots-bc7` PNGs (8-bit RGB or RGBA, all five filters), computes PSNR per pair, and writes `target/witness/texture-visual.json`. A pair is ok when it is identical or its PSNR is at least `VISUAL_PSNR_MIN` (30 dB).
+
+BC7 decision criteria, fixed before any measurement:
+
+1. Footprint: over the Zstandard models, the total BC7 KTX2 level payload is below the RGBA8 total, and the total BC7 cache GLB bytes are below the RGBA8 total. Every model must exist in both caches.
+2. Load time: the BC7 neon `loadMsMedian` is at most 1.10 times the RGBA8 median in the same host session (`LOAD_TOLERANCE`).
+3. Clean: the BC7 neon witness has `clean == total` with no missing names.
+4. Visual: `texture-visual.json` has `ok: true`, so every paired screenshot is identical or at least 30 dB PSNR.
+
+If all four hold, Phase B switches the decoded cache to BC7: the `gltf-check` default target, the `glb::decode` default, and the viewer's `load_model` decode. If any one fails, the cache stays RGBA8, and the failing criterion is recorded in the Round 17 Phase B results. The RGBA8 numbers from Round 16 are 242,308,356 bytes of GPU texels with mips against 60,578,736 for BC7 on the same texel count (4x); the new measurement replaces that estimate with the cache's own numbers.
+
+Phase B plan, in this order, one cargo at a time and no unit suite alongside a build:
+
+1. `/config/.local/bin/cargo build --bin bevy-jayzee` (dev), then `cargo test --bin bevy-jayzee`.
+2. `/config/.local/bin/cargo build --release --bin bevy-jayzee`, then `bash scripts/verify.sh` once.
+3. `target/debug/bevy-jayzee gltf-check /workspace/neon-syndicates/assets/cdn` (RGBA8 cache) and `... gltf-check /workspace/neon-syndicates/assets/cdn <project> bc7` (BC7 cache, with the project argument before the target).
+4. `scripts/check-hud-overlap.sh` on neon `main` (native viewer, display `:1`); read `hud-overlap-main.json` and `neon-hud.png`.
+5. `NEON_TEXTURE=rgba8 node scripts/check-neon-wasm-models.cjs`, then `NEON_TEXTURE=bc7 node scripts/check-neon-wasm-models.cjs` (both through the gm gate; `playwriter-project` must be on `PATH`).
+6. `node scripts/compare-screenshots.cjs`, then `node scripts/texture-footprint.cjs` for the decision.
+7. `node scripts/check-normal-map-visual.cjs`, the Round 16 normal-map witness, to confirm the normal-map path still works after the `decode` change.
+
+Friction item for gm (recorded, not fixed in code):
+
+- `playwriter-project` lives in `/config/.gmnew/pw/bin`, but that directory is not on the gm shell's `PATH`. Repo witnesses (`scripts/lib/playwriter-witness.cjs`) look the binary up on `PATH`, so they fail with `spawnSync playwriter-project ENOENT` unless the caller prefixes `PATH=/config/.gmnew/pw/bin:$PATH`. The repo does not hardcode the path. gm's launcher should put the playwriter bin on `PATH` for the shell it runs repo commands in, or expose the gate binary path, so witnesses run without a manual prefix.
