@@ -999,3 +999,24 @@ Ranked remaining work after Round 24:
 3. The Round 23 list is unchanged: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
 
 Processes: each viewer run ended on its `timeout 45` (rc 124) and the fixture and neon viewers stopped by their scripts; the browser and gate of the device witness exited; the dev and release builds, the wasm build and the unit suite exited. A `python3 -m http.server 8977` (PID 1830962) was already running before this round and was left alone.
+
+## Round 25 Phase A
+
+Owner notes applied: the batching bound stays at its floor (1, 0) with no slack, accepted for now. The judgement made in static mode, scoping `objectsBatched` to scenes with shared geometry (`shapesCreated >= objectDraws` passes it), is kept, and the owner can revert it: restoring the old check makes static `test` fail again, because its eight objects have eight distinct geometries and no batch can form.
+
+Dispatcher decision applied: ETC2 and ASTC 4x4 are added as KTX2 cache targets on the same path as BC7 and RGBA8, chosen by the device's compressed formats in the order BC, ASTC, ETC2, RGBA8. Both formats are added because the probe that decides which one the software adapter exposes has not run, and the format is only claimed where it is loaded.
+
+Changes, each a local commit by lanmower with no trailers; no build, test, gate or witness ran in Phase A:
+
+| Change | Commit | Files | Witness it needs (Phase B) |
+| --- | --- | --- | --- |
+| Transcoder bridge takes a format code instead of a BC7 flag (0 RGBA32, 1 BC7, 2 ETC2_RGBA, 3 ASTC_4x4_RGBA); block formats output 16 bytes per 4x4 block. `TextureTarget` gains `Etc2` (vkFormat 151, DFD model 161, cache `target/gltf-cache-etc2`) and `Astc4x4` (vkFormat 157, DFD model 162, cache `target/gltf-cache-astc`); `for_gpu` takes `CompressedImageFormats` and prefers BC, then ASTC, then ETC2, then RGBA8; `from_name` parses `gltf-check`'s target argument, which now rejects unknown names with exit 2 | bef6ffb | `native/basislz_ktx2.cpp`, `src/basisu.rs`, `src/main.rs`, `src/viewer_world.rs` | `cargo test --bin bevy-jayzee` (tests `gpu_picks_the_first_compressed_format_it_supports_in_bc_astc_etc2_order`, `every_target_round_trips_through_its_name`, `etc2_and_astc_ktx2_declare_their_vulkan_format_and_block_size`); `gltf-check <cdn> "" etc2` and `astc4x4` write the two caches |
+| Wasm viewer: `?adapter=software` sets `WgpuSettings::force_fallback_adapter`; `texture_target` picks BC7, ASTC, ETC2 or RGBA8 from the device's `CompressedImageFormatSupport`; the requested BC7 model path maps to the chosen cache; `data-compressed-formats` lists the device's formats | 69d89ac | `wasm-viewer/src/lib.rs` | wasm build, then `node scripts/check-device-format-fallback.cjs` |
+| `scripts/lib/texture-cache.cjs`: GLB and KTX2 helpers (`glbParts`, `ktx2Images`, `ktx2Info`, `sourceIsZstd`, `measure`) moved out of `scripts/texture-footprint.cjs`, which requires them; behaviour unchanged | 715daa5 | `scripts/lib/texture-cache.cjs`, `scripts/texture-footprint.cjs` | `node scripts/texture-footprint.cjs` gives the same totals as before on the BC7 and RGBA8 caches |
+| `scripts/check-device-format-fallback.cjs`: control on the hardware adapter must load `bc7`. It then reads both adapters' full feature lists (`forceFallbackAdapter` for the software one). Expected format = the first of ASTC 4x4 then ETC2 that the software adapter exposes, else RGBA8 and a recorded reason. If one is exposed, all 64 neon models load with `?adapter=software&disable-bc=1`; each must report that format, `bcSupported` false, fetch from its cache and not from another. The footprint of that cache against RGBA8 and BC7 is measured from the files | 715016c | `scripts/check-device-format-fallback.cjs` | gm job: `node scripts/check-device-format-fallback.cjs` |
+
+Phase B plan, not run in Phase A:
+
+1. Probe. The witness's own control records the software adapter's features. If it exposes neither `texture-compression-astc` nor `texture-compression-etc2`, the witness stops with `reason` set and the feature list in `adapters.software.features`, and no format is claimed. The cause for that case would be the adapter's own feature set, recorded as observed.
+2. If it exposes one or both, the caches are generated with `gltf-check` for `etc2` and `astc4x4` (both are generated, so the witness can name the format the device picks), the wasm build is rebuilt, and the witness runs. Its numbers: loaded count, format count, fetches from the chosen cache and from none other, footprint against RGBA8 and BC7.
+3. Quality of the ETC2 and ASTC transcodes is not measured by this round: `texture-quality` compares BC7 and RGBA8 only. The footprint is measured; the image quality of the new formats is open.
