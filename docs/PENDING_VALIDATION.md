@@ -1605,3 +1605,66 @@ Each item is either done in a round named here or left undone, with the reason.
 Done since the Round 26 ranked list: the batching floor is now a measured slack of 1 (Round 32); the inspector panel no longer covers the header (Round 29); the strip and tab rows fit the panel (Round 30); the page no longer overflows at 1024x768 (Round 31).
 
 Changes, each a local commit by lanmower with no trailers: b4fe35b (`src/main.rs`), 5e1c322 (`web/wasm-boot.js`), the bench commit (`scripts/bench-median.cjs`, `scripts/bench-vs-jayzee.sh`), and the commit that carries this section.
+
+## Round 33 Phase B: GPU adapter guard and bench medians, witnessed
+
+Builds, one cargo at a time, each with rc and warnings:
+
+| Build | Command | Result |
+| --- | --- | --- |
+| Debug, with the native guard | `/config/.local/bin/cargo build` | rc 0, 20.22 s, 0 warnings |
+| Release, for the bench | `/config/.local/bin/cargo build --release` | rc 0, 17 m 39 s, 0 warnings |
+
+Memory before the release build: 7.6 GB available, swap-in and swap-out at zero in the last samples.
+
+### 1. The GPU panic: reproduced, then guarded
+
+Native reproduction, on the pre-guard debug binary, with the Vulkan loader pointed at no drivers (`VK_ICD_FILENAMES=/nonexistent VK_DRIVER_FILES=/nonexistent WGPU_BACKEND=vulkan`), `DISPLAY=:1.0`, `timeout 60`:
+
+- rc 101. stderr: `thread 'main' (2632731) panicked at .../bevy_render-0.20.1/src/renderer/mod.rs:308:36:` then `Unable to find a GPU! Make sure you have installed required drivers! For extra information, see: https://github.com/bevyengine/bevy/blob/latest/docs/linux_dependencies.md`. Preceded by `vkCreateInstance: Found no drivers!`.
+
+Native guard, on the Round 33 debug binary, same environment:
+
+- rc 3. stderr has no `panicked` line. The guard prints: `bevy-jayzee: no GPU adapter was found, so the renderer cannot start. Check the graphics driver (on Linux, the Vulkan ICD files) and run again. Exit status 3.`
+
+Normal native run, same binary, no driver override: `viewer testdata/spec-world test` runs to the timeout (rc 124, as before). `web/status-test.json` has `objectDraws` 8, `shapesCreated` 10, `mirrorBatchKeys` 8, `objectBatchKeys` 8, `modelsMissing` [], `missingObjects` [], `textureTarget` bc7. `scripts/check-viewer-batching.cjs` on it: `ok` true. These are the Round 32 values.
+
+Browser reproduction, on the pre-guard `web/wasm-boot.js` (db90f1f), in the gate's Chromium at 1024x768, with an init script that makes `navigator.gpu.requestAdapter` return null:
+
+- The console has `panicked at .../bevy_render-0.20.1/src/renderer/mod.rs:308:36: Unable to find a GPU! Make sure you have installed required drivers!`, then `pageerror: RuntimeError: unreachable`. The status reads `WebGPU WASM blocked: headless WebGPU runtime failed`, and the boot box reads `headless WebGPU runtime failed: Uncaught RuntimeError: unreachable`. The status names the wrong cause, because the wasm trap is what the existing error handler sees. Screenshot: `docs/ui-layout/gpu-missing-before.png`.
+
+Browser guard, on the Round 33 `web/wasm-boot.js`, same init script:
+
+- The status reads `WebGPU WASM blocked: no WebGPU adapter`, `ready` is `false`, and the boot box reads `no WebGPU adapter: navigator.gpu.requestAdapter returned no adapter, so Bevy cannot start its renderer (it would panic with "Unable to find a GPU"). Check the browser GPU settings or the adapter selector in the URL, then reload.` The console has no `panicked` line and no `pageerror`. The wasm module is not imported. Screenshot: `docs/ui-layout/gpu-missing-after.png`.
+
+Browser normal run, on the Round 33 boot script, no init script, a fresh page: `Bevy WebGPU WASM initialized`, `ready` true, `window.__BEVY_WASM_READY` true, the boot box hidden, the adapter `NVIDIA GeForce RTX 3060 Laptop GPU`, and the log line `bevy-jayzee WebGPU WASM app-ready`. Screenshot: `docs/ui-layout/normal-after-gpu-guard.png`.
+
+The one-off panic in the first ASTC gate run: the cause is still not known. Both the native and the browser reproduction show the same mechanism: a null adapter reaches Bevy's `expect` at `mod.rs:308`. The guard covers that path in both places. What triggered the null in the gate run is not reproduced.
+
+### 2. Bench: median over five runs, with the load before and after each run
+
+Command: `RUNS=5 scripts/bench-vs-jayzee.sh` (release binary, `TICKS` 300, 12 cores). Each body count ran five times, jayzee and bevy back to back in each run, with `/proc/loadavg` read before and after each run. Two complete passes were run; each row's `loadBefore` and `loadAfter` are in `target/witness/bench-vs-jayzee-run1.json` and `-run2.json`.
+
+The host was busy in both passes: the 1-minute load was 5.7 to 7.1, and most runs read six or more other runnable tasks, so most runs are marked noisy. The load came from other sessions on this host (other `claude` processes, Xvfb, selkies and the gm worker), and from this round's browser, which was stopped before the second pass.
+
+Pass 2, `target/witness/bench-vs-jayzee-run2.json`, medians in ms:
+
+| bodies | runs | noisy runs | jayzee median | bevy median | speedup | quiet runs | jayzee quiet median | bevy quiet median | quiet speedup |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 500 | 5 | 3 | 0.433 | 0.5458 | 0.79 | 2 | 0.4355 | 0.566 | 0.77 |
+| 2000 | 5 | 3 | 3.743 | 1.4395 | 2.60 | 2 | 4.1055 | 1.4021 | 2.93 |
+| 5000 | 5 | 2 | 13.201 | 2.8786 | 4.59 | 3 | 13.201 | 2.8921 | 4.56 |
+
+Pass 1, `target/witness/bench-vs-jayzee-run1.json`, the first run of the new script, medians in ms: 500 bodies 0.414 against 0.5632 (speedup 0.74, 3 of 5 noisy); 2000 bodies 3.778 against 1.6647 (2.27, 4 of 5 noisy); 5000 bodies 12.926 against 2.7803 (4.65, 3 of 5 noisy).
+
+Per-run load readings, pass 2 (the 1-minute load, then the runnable count): at 500 bodies run 1 went from `5.68 6.58 5.30 10/2410` to `5.68 6.58 5.30 4/2410`, run 4 from `5.68 6.58 5.30 7/2410` to `…14/2419`. At 5000 bodies the 1-minute load ranged 5.80 to 6.27 across the five runs, and the runnable count ranged 2 to 9.
+
+Reading the bench: the speedups at 2000 and 5000 bodies agree between the passes and with the AGENTS.md baseline (1.04 and 2.78 at 2000 bodies, 1.88 and 8.96 at 5000, ratios 2.67 and 4.77), so the engines are measured consistently. The 500-body row is inconclusive: bevy is 0.55 ms against the recorded baseline of 0.40, and the two passes disagree on the ratio (0.74 and 0.79, both below 1). AGENTS.md (line 46) says a later run is compared with the baseline on the same host before it is called a regression; the 500-body baseline ratio is 0.43/0.40 = 1.08 and this host gave 0.79, so this is not called a regression.
+
+### 3. Ranked list
+
+Updated in the Round 33 Phase A section above. This phase changed nothing in it.
+
+### Processes
+
+The wasm server tree (root 2632762) and the playwriter project tree (root 2632800) were stopped by PID as trees, with the gate's browser and renderer processes. The debug and release builds, the viewers and both bench passes exited on their own. No process from this round remains. The `playwriter-ws-server` (PID 2616609) and the other agents' processes predate this round and were left alone.
