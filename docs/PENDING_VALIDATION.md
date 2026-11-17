@@ -1528,6 +1528,6 @@ Changes, each a local commit by lanmower with no trailers; no build, test, gate 
 | --- | --- | --- |
 | `scripts/check-viewer-batching.cjs`: `slack` = `MIRROR_SLACK` (default 1) added to the bound; the bound is `shapesCreated x MIRROR_SLOTS + MIRROR_PROXY + MIRROR_SLACK`; `slack` is reported at the top level and in each result | b68be2f | `scripts/check-viewer-batching.cjs` |
 | Two batching case places under the spec-world fixture: `batch-second-material` (case A) and `batch-split-shape` (case B), each with `config.yaml` (mode 3d, gravity) and `cells/x0z0.scene` (static cuboid objects) | 40e2511 | `testdata/spec-world/places/batch-second-material/`, `testdata/spec-world/places/batch-split-shape/` |
-| AGENTS.md: the bound line states `MIRROR_SLACK` 1 and the one-extra-pair meaning | (this round, see the Phase A commit list) | `AGENTS.md` |
+| AGENTS.md: the bound line states `MIRROR_SLACK` 1 and the one-extra-pair meaning | 421ade2, the last commit of Round 32 Phase A (it also carries this entry) | `AGENTS.md` |
 
 Phase B plan: run `target/debug/bevy-jayzee viewer` on `testdata/spec-world` for `batch-second-material`, `batch-split-shape`, `test` (static), `main` (neon mirror) and `hud-fixture` `fixture`; each writes `web/status-<place>.json`; run `scripts/check-viewer-batching.cjs` on the five files and quote the bound, the keys and the result of each row. The existing static, mirror and fixture rows must stay green.
