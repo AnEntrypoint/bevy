@@ -63,7 +63,10 @@ pub fn start() {
         }),
         ..default()
     })
-    .set(RenderPlugin { render_creation: device_request(query_value("disable-bc").as_deref() == Some("1")), ..default() }))
+    .set(RenderPlugin {
+        render_creation: device_request(query_value("disable-bc").as_deref() == Some("1"), query_value("disable-astc").as_deref() == Some("1")),
+        ..default()
+    }))
     .add_plugins((
         FrameTimeDiagnosticsPlugin::default(),
         EntityCountDiagnosticsPlugin::default(),
@@ -162,9 +165,16 @@ fn query_value(name: &str) -> Option<String> {
     web_sys::UrlSearchParams::new_with_str(&search).ok()?.get(name)
 }
 
-fn device_request(disable_bc: bool) -> RenderCreation {
+fn device_request(disable_bc: bool, disable_astc: bool) -> RenderCreation {
+    let mut disabled = WgpuFeatures::empty();
+    if disable_bc {
+        disabled |= WgpuFeatures::TEXTURE_COMPRESSION_BC;
+    }
+    if disable_astc {
+        disabled |= WgpuFeatures::TEXTURE_COMPRESSION_ASTC;
+    }
     RenderCreation::Automatic(Box::new(WgpuSettings {
-        disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
+        disabled_features: (!disabled.is_empty()).then_some(disabled),
         ..default()
     }))
 }

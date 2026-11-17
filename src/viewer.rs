@@ -168,7 +168,10 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
             ..default()
         })
         .set(AssetPlugin { file_path: cache.display().to_string(), ..default() })
-        .set(RenderPlugin { render_creation: device_request(std::env::var("VIEWER_DISABLE_BC").is_ok_and(|value| value == "1")), ..default() }))
+        .set(RenderPlugin {
+            render_creation: device_request(std::env::var("VIEWER_DISABLE_BC").is_ok_and(|value| value == "1"), std::env::var("VIEWER_DISABLE_ASTC").is_ok_and(|value| value == "1")),
+            ..default()
+        }))
     .add_plugins((FrameTimeDiagnosticsPlugin::default(), EntityCountDiagnosticsPlugin::default(), LogDiagnosticsPlugin::default()))
     .insert_resource(ClearColor(Color::srgb(0.035, 0.045, 0.065)))
     .insert_resource(ViewerScene {
@@ -357,9 +360,16 @@ fn orbit_camera(
     }
 }
 
-pub fn device_request(disable_bc: bool) -> RenderCreation {
+pub fn device_request(disable_bc: bool, disable_astc: bool) -> RenderCreation {
+    let mut disabled = WgpuFeatures::empty();
+    if disable_bc {
+        disabled |= WgpuFeatures::TEXTURE_COMPRESSION_BC;
+    }
+    if disable_astc {
+        disabled |= WgpuFeatures::TEXTURE_COMPRESSION_ASTC;
+    }
     RenderCreation::Automatic(Box::new(WgpuSettings {
-        disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
+        disabled_features: (!disabled.is_empty()).then_some(disabled),
         ..default()
     }))
 }
@@ -514,13 +524,15 @@ mod tests {
     use bevy::render::settings::{RenderCreation, WgpuFeatures};
 
     #[test]
-    fn disabling_bc_removes_only_that_feature_from_the_device_request() {
-        let requested = |disable| match device_request(disable) {
+    fn disabling_each_compressed_format_removes_only_that_feature_from_the_device_request() {
+        let requested = |disable_bc, disable_astc| match device_request(disable_bc, disable_astc) {
             RenderCreation::Automatic(settings) => settings.disabled_features,
             RenderCreation::Manual(_) => None,
         };
-        assert_eq!(requested(true), Some(WgpuFeatures::TEXTURE_COMPRESSION_BC));
-        assert_eq!(requested(false), None);
+        assert_eq!(requested(true, false), Some(WgpuFeatures::TEXTURE_COMPRESSION_BC));
+        assert_eq!(requested(false, true), Some(WgpuFeatures::TEXTURE_COMPRESSION_ASTC));
+        assert_eq!(requested(true, true), Some(WgpuFeatures::TEXTURE_COMPRESSION_BC | WgpuFeatures::TEXTURE_COMPRESSION_ASTC));
+        assert_eq!(requested(false, false), None);
     }
 
     #[test]
