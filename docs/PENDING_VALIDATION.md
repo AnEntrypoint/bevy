@@ -1705,3 +1705,114 @@ The measured cost grows with body count. Pass 2 of Round 33 gives bevy minus jay
 2. Build the release binary once through cargo, then run `bench-phases` at 500, 2000 and 5000 to see which physics phase's average grows at 500 bodies.
 3. Run the pinned variant (`BINARY_PREFIX="taskset -c 0"`) with the same method, to test candidate 1.
 4. Fix the cause that the witnesses show. Do not change the bench to hide it. Re-run the same method for the witness, and check the batching, fixture and device-format checks.
+
+## Round 34 Phase B: the 500-body regression, measured
+
+Result: open. The regression is measured and its sensitivity to host load is clear, but no code change was made, and no phase can be named as the one that grew relative to the baseline, because no baseline phase numbers or baseline binary exist.
+
+### Correction to the Phase A reading
+
+Phase A said the cost grows per body, not as per-tick overhead. That came from the threaded runs alone. The pinned (one-core) runs and the schedule timer show a fixed cost: 0.16 ms per tick with zero bodies. The correction is recorded here, and the Phase A text above is left as written.
+
+### Builds
+
+- Release, with `bench-phases`: `/config/.local/bin/cargo build --release`, rc 0, 17 m 39 s, 0 warnings. A first attempt was stopped by this round's own 1500 s bound at the crate step, before finishing. Nothing was left running. The rebuild ran with a one-hour bound.
+- Release, with `bench-schedules`: rc 0, 25 m 33 s, 0 warnings.
+- Gate before the first build: MemAvailable 5.3 GB, SwapFree 15 GB, swap-out 0 in the vmstat samples. The free column read 1.8 to 1.9 GB during the second build; the schedule-timer build ran with swap-out at 0.
+
+### 1. Before any change (the pre-change release binary, built 20:53, before Phase A)
+
+Command: `RUNS=5 scripts/bench-vs-jayzee.sh`. Load 1-minute 6.2 to 7.7, runnable 2 to 13 on 12 cores. Medians in ms:
+
+| bodies | jayzee | bevy | ratio | noisy runs |
+| --- | --- | --- | --- | --- |
+| 500 | 0.571 | 0.6586 | 0.867 | 0 of 5 |
+| 2000 | 4.219 | 1.8141 | 2.326 | 2 of 5 |
+| 5000 | 13.507 | 3.5436 | 3.812 | 2 of 5 |
+
+Raw rows: `target/witness/bench-r34-pre.json`. The copy taken before the rows were complete was stale and was deleted; this table is the file written by the run that finished at 21:15:56.
+
+Pinned to one core (`BINARY_PREFIX="taskset -c 0"`), same binary, load 7.4 to 8.1:
+
+| bodies | jayzee | bevy | ratio |
+| --- | --- | --- | --- |
+| 500 | 0.408 | 0.6098 | 0.669 |
+| 2000 | 3.309 | 2.2131 | 1.495 |
+| 5000 | 12.258 | 6.7199 | 1.824 |
+
+Raw rows: `target/witness/bench-r34-pinned-pre.json`.
+
+### 2. Where the time goes (`bench-phases` and `bench-schedules`, unpinned, load about 3)
+
+`bench-schedules` runs each Bevy `Main` schedule in the order `MainScheduleOrder` gives and times it, with the physics diagnostics off. Medians of three runs, in ms:
+
+| schedule | 0 bodies | 500 | 2000 | 5000 |
+| --- | --- | --- | --- | --- |
+| RunFixedMainLoop (physics substeps) | 0.0859 | 0.2466 | 0.7307 | 1.3335 |
+| PostUpdate | 0.0213 | 0.0194 | 0.0223 | 0.0222 |
+| First | 0.0144 | 0.0112 | 0.0122 | 0.0116 |
+| Update | 0.0136 | 0.0107 | 0.0121 | 0.0107 |
+| PreUpdate | 0.0131 | 0.0105 | 0.0115 | 0.0102 |
+| Last | 0.0123 | 0.0116 | 0.0102 | 0.0093 |
+| tick | 0.1618 | 0.3111 | 0.8000 | 1.3986 |
+
+Reading it: about 0.08 ms of every tick is Bevy's own cost (six schedules at about 0.013 ms each, even when empty). The rest is `RunFixedMainLoop`, which carries the physics. Its per-body cost is about 0.32 µs at 500 and 2000 bodies and 0.25 µs at 5000.
+
+`bench-phases` splits the physics further using Avian's timers. The timed phases with the largest share, medians of three runs, at 500 and 5000 bodies:
+
+- `avian/solver/integrate_velocities`: 0.0873 ms (17%) and 0.7975 ms (33%). This is the parallel per-body loop that runs once per substep.
+- `avian/collision/update_contacts`: 0.0721 ms (14%) and 0.5064 ms (21%).
+- The untimed remainder (Bevy and the un-timed Avian systems): 0.28 ms at 500 bodies and 0.69 ms at 5000.
+
+The zero-body timed phases total about 0.007 ms, so the 0.16 ms fixed cost is untimed.
+
+### 3. Thread contention
+
+Pinning bevy to one core makes it slower at 2000 and 5000 bodies (table above) and not faster at 500. So parallelism helps, and the 500-body gap is not caused by the threads competing with each other. Under host load, the parallel loops still lose time to scheduling, which is why the ratios move with load (below).
+
+### 4. After: no code change, same method, low host load
+
+The same binary as the "before" table with the same five-run method, at load 2.6 to 3.0 with 1 to 4 other runnable tasks:
+
+| bodies | jayzee | bevy | ratio | baseline ratio (AGENTS.md line 46) |
+| --- | --- | --- | --- | --- |
+| 500 | 0.321 | 0.3037 | 1.057 | 1.08 |
+| 2000 | 2.061 | 0.8059 | 2.557 | 2.67 |
+| 5000 | 6.736 | 1.4436 | 4.666 | 4.77 |
+
+Raw rows: `target/witness/bench-r34-lowload.json`. This binary differs from the "before" binary by the diagnostics feature and the timer commands, which are not on the normal bench path. Its normal `bench` code is unchanged. The before and after figures are not from the same load, so the difference between them is partly host state.
+
+Ratio across the three conditions:
+
+- 500 bodies: 0.867 before (load 6 to 8), 0.669 pinned, 1.057 at low load. Baseline 1.08.
+- 2000 bodies: 2.326 before, 2.557 at low load. Baseline 2.67.
+- 5000 bodies: 3.812 before, 4.666 at low load. Baseline 4.77.
+
+At low load the three ratios are 2 to 4% under their baselines, which is inside the spread of five runs at this host state. Two runs reached about 1.08 individually at 500 bodies. It is not a clean pass of the ≥1.08 target, and I have not claimed one.
+
+### 5. Why this stays open
+
+- The baseline binary no longer exists, and building the baseline commit needs a copy of the tree or a checkout over the shared one. Invariant 7 forbids both. So no phase can be shown to have grown relative to the baseline, and the feature-set cause (the Bevy features added after dcc84d8: `bevy_render`, `bevy_pbr`, `bevy_ui` and others, which the viewer needs) cannot be isolated by building without them.
+- The bench code, Avian and Bevy versions, the release profile and the protocol constants are the same as at the baseline (Phase A reading). A code cause would have to come from the feature set or from codegen, which is the open question above.
+- No fix was made. A fix in the bench would hide the cost. A fix in the engine configuration (for example the thread count) changes the viewer too, so that is a product decision for the owner.
+
+### 6. Checks run
+
+- `det 500 300`: pass, hashes equal (0x17ff9626).
+- `det 2000 300`: pass, hashes equal (0x3a5f0b51).
+- Native viewer on `testdata/spec-world test`: rc 124 by the 60 s timeout (expected), 0 panics; `objectDraws` 8, `shapesCreated` 10, `mirrorBatchKeys` 8, `objectBatchKeys` 8, `textureTarget` bc7; `check-viewer-batching.cjs` ok true.
+- Fixture and device-format browser checks: not re-run in this round. No web, wasm or viewer source changed in Round 34, and the wasm crate has its own lock file. Ask for a browser run if you want them repeated.
+
+### Commits this round (all lanmower, no trailers)
+
+43f59c8 (Avian `bevy_diagnostic` feature), a81b593 (thread count and `bench-phases`), c924f80 (`BINARY_PREFIX`), a188691 (Phase A reading), the `bench-schedules` commit, and the commit that carries this section.
+
+### Processes
+
+No process from this round remains. The release builds and the bench runs exited on their own. The viewer exited on its 60 s timeout and no viewer remains.
+
+### Ranked open items after Round 34
+
+1. The 500-body ratio at low host load is 1.057 against the 1.08 baseline, and the other two are below their baselines by 2 to 4%. Open. Needs a baseline binary from the dcc84d8 feature set, which needs a decision on building it outside the shared checkout (invariant 7 forbids a copy).
+2. Host load moves the bench ratio by a factor of about 1.3 at 500 bodies (0.87 to 1.06). The bench has no load gate that holds the medians steady. Open. Needs a quiet host or a load gate that the owner accepts.
+3. Integrate-velocities and contact update (the largest timed phases) per body: 0.16 µs and 0.10 µs. Recorded for a future engine-side review. Not a witnessed defect.
