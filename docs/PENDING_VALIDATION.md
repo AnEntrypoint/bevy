@@ -753,3 +753,28 @@ Changes, each a local commit by lanmower with no trailers; no build, test, gate 
 | Viewer: `place_world_anchors` projects each anchor's object position plus offset through the active 3D camera every frame and centres the box on the point; it hides the box when the id has no object (`unresolved`), the point is behind the camera, or the point is outside the viewport. `classify_anchor` holds the decision; test `anchors_are_placed_only_in_front_of_the_camera_and_inside_the_viewport`. Hidden text no longer counts as a label in the overlap check. Status fields: `uiAnchorsInScene`, `uiAnchorsSeen`, `uiAnchorsPlaced`, `uiAnchorsUnresolved`, `uiAnchorsBehind`, `uiAnchorsOffscreen`, `uiAnchorViewport`, `uiAnchorPositions` | b4ea88d | `src/viewer.rs` | `cargo test`; HUD witness below |
 | HUD witness requires `uiAnchorsInScene > 0`, `uiAnchorsPlaced == uiAnchorsInScene`, and every placed position inside the viewport | b1e3866 | `scripts/check-hud-overlap.sh` | `scripts/check-hud-overlap.sh` exit 0 with the anchor fields; screenshot `target/witness/neon-hud.png` |
 | Ranked item 1: `transform: translate(...)`, `translateX(...)`, `translateY(...)` (px or %) become a `UiTransform` translation (percent of the node's own size, as in CSS), with an `HtmlTranslated` marker. Test `translate_transforms_map_to_node_relative_offsets`. Status `uiTranslatedBoxes`; the HUD witness requires a translated box at the top (`#topc`) centred on the window within 2 px | the last Round 20 code commit | `src/ui_html.rs`, `src/viewer.rs`, `scripts/check-hud-overlap.sh` | `cargo test`; HUD witness `topCentreOffset` at most 2 |
+
+## Round 20 Phase B results
+
+Contention: before each build the gate read swap-out 0 KB/s, over 10 GB free and no cargo. One cargo ran at a time; the unit suite ran alone. The release build ran in the background under `timeout 1500` (PID 2449811), waited on with bounded `tail --pid` calls.
+
+Defects found in Phase B and fixed (5431a91):
+
+- Anchored tags were centred twice. The first run showed the `district-nexus` tag box at x 415 to 448 for a point at x 449. The neon CSS centres each tag itself (`.dtag` `translate(-50%,-50%)`, `.so-tag` and `.ev-tag` `translate(-50%,-100%)`), and the browser puts the anchor element's origin on the projected point. `place_world_anchors` now puts the anchor box's top-left on the point and leaves centring to the tag's own transform, which the Round 20 translate support now applies.
+- The witness could not meet "placed equals the count in the scene data" with the orbit camera. It circles 18 units from the origin at height 10, so in the first run 2 of the 5 district tags were placed, 1 was behind the camera and 2 were off screen. That is the correct hide rule for that pose, but the pose changes with time, so the count was not repeatable. `VIEWER_EYE=x,y,z` now fixes the eye, looking at the focus (`fixed_eye`, test `fixed_eye_parses_three_numbers_only`). The HUD witness uses `0,300,1`, overhead of the city, and the status lists each anchor's world position (`uiAnchorWorld`) so the framing can be checked.
+
+Witnesses:
+
+| Row | Witness | Result |
+| --- | --- | --- |
+| Anchored boxes in `ui_html`, `classify_anchor`, `fixed_eye`, translate parsing | `cargo test --bin bevy-jayzee` | 59 passed, 0 failed |
+| World-anchored tags placed by projection | `scripts/check-hud-overlap.sh` on neon `main`, `VIEWER_EYE=0,300,1` | exit 0. `uiAnchorsInScene` 5, `uiAnchorsPlaced` 5, `uiAnchorsUnresolved` [], `uiAnchorsBehind` 0, `uiAnchorsOffscreen` 0, `anchorsInsideViewport` 5 of 5 in 898 x 579. Positions: `district-northgate` (449, 205.5), `district-westworks` (365.0, 289.5), `district-nexus` (449, 289.5), `district-eastline` (533.0, 289.5), `district-southbank` (449, 373.5); world positions (0, 0.5, -36), (-36, 0.5, 0), (0, 0.5, 0), (36, 0.5, 0), (0, 0.5, 36), so the screen cross is symmetric about the window centre as the world cross is about the origin. Screenshot `target/witness/neon-hud.png` shows NORTHGATE, WESTWORKS, NEXUS, EASTLINE and SOUTHBANK centred on those points |
+| CSS translate (ranked item 1) | the same HUD run | `topCentreOffset` 0: the translated top block `#topc` box is `[358.5, 16, 539.5, 58]`, centred on 449 |
+| No regressions in the HUD | the same HUD run | `uiLabels` 22, `uiLabelOverlaps` 0, `uiUncoveredGlyphs` 0, `uiFullWidthLabels` 0, `modelsLoaded` 9, `modelsMissing` 0, `textureTarget` `bc7`; no unsupported-element warning for anchors any more |
+| Regression | release build, then `bash scripts/verify.sh` once | build rc 0, 10 m 34 s; verify exit 0; bench means 0.2844 / 0.7919 / 1.3540 ms at 500 / 2000 / 5000 bodies; determinism `hashA` = `hashB` = 0x3a5f0b51, `pass: true`; network `ok: true`. Not compared back-to-back with an earlier run, so not called a regression or an improvement |
+
+Not run this round, and why: the wasm build and the browser witnesses (neon models, texture fallback, normal-map). No file they depend on changed: `wasm-viewer/`, the decode path and the caches are untouched since Round 19's passing runs.
+
+Processes: the viewers (one per HUD run) were stopped by PID inside `check-hud-overlap.sh`; the release build PID 2449811 exited; no viewer, server or client from this round remains.
+
+Ranked list after this round: item 1 (translate) is done. Item 2 (anchors whose id is not a viewer object) did not occur on neon `main` at the witness moment (`uiAnchorsUnresolved` is empty), so it remains first and unproven rather than open. Items 3 to 6 are unchanged, for the reasons given in Round 20 Phase A.
