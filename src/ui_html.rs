@@ -779,13 +779,14 @@ fn parse_calc(inner: &str) -> Option<Val> {
     Some(if percent != 0.0 { Val::Percent(percent) } else { Val::Px(px) })
 }
 
-pub fn overlapping_pairs(rects: &[[f32; 4]]) -> usize {
-    rects
-        .iter()
-        .enumerate()
-        .flat_map(|(index, a)| rects[index + 1..].iter().map(move |b| (a, b)))
-        .filter(|(a, b)| a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3])
-        .count()
+pub fn overlapping_pairs(rects: &[[f32; 4]]) -> Vec<(usize, usize)> {
+    (0..rects.len())
+        .flat_map(|first| (first + 1..rects.len()).map(move |second| (first, second)))
+        .filter(|&(first, second)| {
+            let (a, b) = (rects[first], rects[second]);
+            a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
+        })
+        .collect()
 }
 
 fn shorthand<T: Clone>(value: &str, parse: impl Fn(&str) -> Option<T>) -> Option<[T; 4]> {
@@ -1416,6 +1417,10 @@ fn convert(nodes: &[Dom], path: &mut Vec<Elem>, inherit: &Inherit, rules: &[Rule
                     run.push(BREAK);
                     continue;
                 }
+                if attr(attrs, "data-world-anchor").is_some() {
+                    *dropped.entry(format!("{tag} data-world-anchor")).or_insert(0) += 1;
+                    continue;
+                }
                 path.push(Elem::new(tag, attrs));
                 let props = cascade(path, rules, attr(attrs, "style").unwrap_or(""));
                 let scope = Scope::new(props, inherit);
@@ -1502,6 +1507,13 @@ mod tests {
     fn display_none_and_unsupported_elements_are_dropped() {
         let spec = build("<style>.gone{display:none}</style><div class=gone>x</div><svg><rect/></svg><div>y</div>").spec;
         assert_eq!(spec.count(), 5);
+    }
+
+    #[test]
+    fn world_anchored_elements_are_dropped_with_a_warning() {
+        let built = build(r#"<div data-world-anchor="district-a" data-anchor-offset="0 1 0"><div>tag</div></div><div>y</div>"#);
+        assert_eq!(built.warnings.len(), 1);
+        assert!(built.warnings[0].contains("data-world-anchor"));
     }
 
     #[test]
@@ -1610,12 +1622,12 @@ mod tests {
     #[test]
     fn overlapping_pairs_counts_only_real_intersections() {
         let touching = [[0.0, 0.0, 10.0, 10.0], [10.0, 0.0, 20.0, 10.0]];
-        assert_eq!(overlapping_pairs(&touching), 0);
+        assert!(overlapping_pairs(&touching).is_empty());
         let overlap = [[0.0, 0.0, 10.0, 10.0], [5.0, 5.0, 15.0, 15.0], [40.0, 0.0, 50.0, 10.0]];
-        assert_eq!(overlapping_pairs(&overlap), 1);
+        assert_eq!(overlapping_pairs(&overlap), vec![(0, 1)]);
         let stacked = [[0.0, 0.0, 10.0, 10.0], [0.0, 0.0, 10.0, 10.0], [0.0, 0.0, 10.0, 10.0]];
-        assert_eq!(overlapping_pairs(&stacked), 3);
-        assert_eq!(overlapping_pairs(&[]), 0);
+        assert_eq!(overlapping_pairs(&stacked).len(), 3);
+        assert!(overlapping_pairs(&[]).is_empty());
     }
 
     #[test]

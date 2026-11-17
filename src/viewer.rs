@@ -244,8 +244,9 @@ fn spawn_viewer(
         TextColor(Color::srgb(0.92, 0.95, 1.0)),
         Node {
             position_type: PositionType::Absolute,
-            left: Val::Px(18.0),
+            right: Val::Px(18.0),
             bottom: Val::Px(16.0),
+            max_width: Val::Percent(65.0),
             ..default()
         },
         ViewerOverlay,
@@ -307,14 +308,21 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     }
     let mut ids = objects.iter().map(|object| object.id.clone()).collect::<Vec<_>>();
     ids.sort();
-    let rects = labels
+    let boxes = labels
         .iter()
         .filter(|(text, node, _)| !text.0.is_empty() && node.size.x > 0.0 && node.size.y > 0.0)
-        .map(|(_, node, transform)| {
+        .map(|(text, node, transform)| {
             let center = transform.translation;
             let half = node.size * 0.5;
-            [center.x - half.x, center.y - half.y, center.x + half.x, center.y + half.y]
+            (text.0.clone(), [center.x - half.x, center.y - half.y, center.x + half.x, center.y + half.y])
         })
+        .collect::<Vec<_>>();
+    let rects = boxes.iter().map(|(_, rect)| *rect).collect::<Vec<_>>();
+    let overlaps = overlapping_pairs(&rects);
+    let overlap_pairs = overlaps
+        .iter()
+        .take(40)
+        .map(|&(a, b)| serde_json::json!({ "a": boxes[a].0, "b": boxes[b].0, "aRect": boxes[a].1, "bRect": boxes[b].1 }))
         .collect::<Vec<_>>();
     let value = serde_json::json!({
         "kind": "viewer-status",
@@ -354,7 +362,8 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "uiWarnings": ui.warnings,
         "uiUncoveredGlyphs": ui.uncovered + overlay.iter().map(|text| uncovered_glyph_count(&text.0)).sum::<usize>(),
         "uiLabels": rects.len(),
-        "uiLabelOverlaps": overlapping_pairs(&rects),
+        "uiLabelOverlaps": overlaps.len(),
+        "uiLabelOverlapPairs": overlap_pairs,
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());
