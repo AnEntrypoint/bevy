@@ -1339,3 +1339,45 @@ All palette values are defined once, in the :root block of web/wasm-index.html. 
 ### Not changed
 
 The 3D scene's colours, the neon world, the banner's authored colours and every model material.
+
+## Round 28 Phase B: taste loop witnesses
+
+Viewer: http://127.0.0.1:8092/web/wasm/index.html?inspector=1&still=1 through gm's playwriter (debug port 10232), viewport 1440x900, 20 s wait before each capture. Files were copied from web/wasm-index.html and web/inspector.js into web/wasm (both git-ignored) before each reload.
+
+Contrast method: in the page, every visible text node under the header and inspector (82 nodes) is measured. Backgrounds are composited up the DOM from the body colour, and WCAG relative luminance gives the ratio. Limit: the boot-error box is hidden, so its ratio is a colour check only.
+
+### Palette after the passes
+
+Hex values are the Phase A table above. No hex value changed in the three passes. The one colour change was removing red from the sparkline cycle in web/inspector.js.
+
+### Contrast at the last pass (every label at or above 4.5:1)
+
+| Text | Background | Ratio |
+| --- | --- | --- |
+| #758fe3 (blue tint, panel headings and tab title) | #07111f | 6.13 |
+| #93a9c0 (muted, metric labels and unsupported) | #091827 | 7.41 |
+| #93a9c0 (muted, unselected tabs) | #081522 | 7.61 |
+| #26c087 (green, bucket values) | #081522 | 7.87 |
+| #26c087 (green, ready status pill) | #050b12 | 8.44 |
+| #06111d (ink, selected tab on gold) | #d8a739 | 8.60 |
+| #e8f1ff (text, toggle and window buttons) | #19307c | 10.52 |
+| #e8f1ff (text, primary) | #091827 | 15.75 |
+| #cf7b77 (red tint, boot error colour only) | #080f19 | 6.18 |
+
+Lowest label: 6.13:1. Before the round it was 6.35:1 (#7f9dbb on #091827, metric labels). Count of text nodes under 4.5:1: 0 in every pass.
+
+### Passes
+
+- Before (pre-palette files from 681eea0): docs/ui-taste/before-inspector.png. Cyan and lime sparklines, cyan-to-lime bars, red unsupported labels. Minimum 6.35:1, 0 below 4.5.
+- Pass 1 (Phase A palette): docs/ui-taste/pass1-inspector.png. Minimum 6.13:1. scripts/check-inspector.cjs ok:true, no failures (docs/ui-taste/pass1-check.png). scripts/check-hud-overlap.sh exit 1, uiLabelOverlaps 1: the Round 27 render-counter lines made the native overlay wider and taller, and its box crossed the EASTLINE label. Visible problem: the DRAW sparkline was red, and red is reserved for errors. Changes: (a) the native render counters and frame phases moved into their own overlay above the main overlay, commit 9288319; the first attempts (top-left, bottom-left, bottom-right at bottom 96) overlapped the HELIX, UZI, TECH, hold and ? labels or the main overlay, so the final box is right 18, bottom 200, font 14. (b) red removed from the sparkline series cycle, commit 0ecf66f.
+- Pass 2: docs/ui-taste/pass2-inspector.png. Minimum 6.13:1. check-inspector ok:true (docs/ui-taste/pass2-check.png). check-hud-overlap exit 0, uiLabels 23, uiLabelOverlaps 0. The DRAW sparkline is now the neutral text colour; no other visible problem.
+- Pass 3 (Memory tab selected): docs/ui-taste/pass3-inspector-memory-tab.png. Minimum 6.13:1. check-inspector ok:true (docs/ui-taste/pass3-check.png). check-hud-overlap exit 0, uiLabelOverlaps 0. Nothing visible changed, so the loop stopped at three passes.
+
+### Open
+
+- Layout, not palette: at 1440x900 the inspector panel (fixed, top 10) covers the page header, the h1, the app-status pill and the "Inspector: I" toggle. Their colours are measured above (status ready 8.44:1) but they are not visible in the screenshots. Left for a layout change.
+- The native witness checks label rectangles, not colour contrast. The native HUD colour is the loading text only (#e8f1ff).
+
+### Processes
+
+Stopped by PID at the end of the round, as trees: the playwriter browser (chromium 2576749 and its children, including the two crashpad handlers 2576766 and 2576768), its gate and project processes (2576690, 2576681 and 2576697), and the serve-wasm job (2576659, 2576663, 2576664). No viewer process from check-hud-overlap remained.
