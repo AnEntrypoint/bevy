@@ -855,3 +855,24 @@ Ranked remaining work, updated (reasons for each item left undone):
 3. Play state per animation: an element is paused only when all its animations are paused, and the whole element's clock freezes; a mixed list on one element is approximated.
 4. Reversing a running transition: CSS shortens the reverse duration by the reversing-shortening factor; the native track restarts with the full duration from the current value.
 5. ASTC or ETC2 for non-BC GPUs, and a real non-BC device: open by dispatcher decision; this host has neither.
+
+## Round 22 Phase B results
+
+Contention: before each build the gate read swap-out 0 KB/s, at least 6.6 GB free and no cargo; one cargo at a time; the unit suite ran alone. The release build ran in the background under `timeout 1500` (PID 2500935) and was waited on with bounded `tail --pid` calls; it took 15 m 34 s under the shared host's load. The browser witness ran as a gm job.
+
+Defect found and fixed: three dead-code warnings (`Track::running`, `css_anim::sample` and `UiSpec::animation_keys` were only used by tests). `running` is gone; the other two are `#[cfg(test)]`. The dev build is warning-free again.
+
+Witnesses:
+
+| Row | Witness | Result |
+| --- | --- | --- |
+| `css_anim` longhands, transitions, tracks; `ui_html` box style and element clock | `cargo test --bin bevy-jayzee` | 69 passed, 0 failed |
+| Native fixture | `node scripts/check-hud-fixture.cjs` | exit 0. 152 samples per element. `lhAnim` 1 before its 0.5 s delay and 0.2 after 4.6 s; `lhPaused` paused and 0.3 on all 152; `trFade` 0.25 once settled (105 samples carry a transition clock); `trHide` visible through its transition and 0 hidden once settled. Banner and anchors as in Round 21: 5 of 5 placed inside the viewport, 0 overlaps, backdrop delta 1 |
+| Chromium agreement | `node scripts/check-css-browser.cjs` (gm job) | exit 0. 760 samples, 0 disagreements. Largest opacity difference per element: banner 0.0000014, `lhAnim` 0.00000056 (seeked animation), `lhPaused` 0.000000012 (Chromium `playState: paused`, `currentTime: 0`, opacity 0.3), `trFade` 0.00000068 and `trHide` 0.00000049 (Chromium `CSSTransition`s for `opacity` and for `opacity` plus `visibility`, seeked to the native transition clock). Examples: `lhAnim` 0.996 s 0.8014 / 0.8014, 3.693 s 0.5227 / 0.5227; `trFade` 0.899 s 0.4996 / 0.4996; `trHide` 0.501 s 0.4992 / 0.4992, 1.182 s 0 hidden / 0 hidden. Browser 2500591 and gate 2500576 exited |
+| Neon regression | `scripts/check-hud-overlap.sh` | exit 0: 22 labels, 0 overlaps, anchors 5 of 5 inside the viewport, `topCentreOffset` 0; neon's own transition elements (`#tr`, the `#topc` spans) are now dynamic elements in the native clock |
+| Regression | release build, then `bash scripts/verify.sh` once | build rc 0; verify exit 0; determinism `hashA` = `hashB` = 0x3a5f0b51 `pass: true`; network `ok: true` |
+| Interleaved bench | `node scripts/bench-pairs.cjs`, 8 pairs per size, alternating first runner, 300 ticks | load 3.75 to 4.26 on every run (each pair's load is in `target/witness/bench-pairs.json`; `/proc/loadavg` refreshes every 5 s, so neighbouring runs often show the same reading). Ratio jayzee mean / bevy mean: 500 bodies median 1.057, range 0.993 to 1.133, spread 0.141 against 0.057 from parity, **inconclusive**; 2000 bodies median 2.558, range 2.402 to 2.689, spread 0.287 against 1.558, **bevy faster**; 5000 bodies median 4.084, range 3.164 to 4.817, spread 1.652 against 3.084, **bevy faster**. Against the AGENTS.md baseline ratios (1.075, 2.673, 4.766) every median lies within its own spread of the baseline, so no regression is detectable at this load. Determinism hashes match the solo bench (0x17ff9626, 0x3a5f0b51, 0x38909cb0) |
+
+Ranked list after this round (unchanged from Round 22 Phase A, reasons there): other animated properties (`transform`, colours); `animation-direction`; per-animation play state; the reversing-shortening factor for reversed transitions; ASTC/ETC2 and a real non-BC device (open by dispatcher decision). The 500-body bench ratio stays inconclusive at this load; `scripts/bench-pairs.cjs` remains for later runs.
+
+Processes: the fixture and neon viewers were stopped by PID inside their scripts; the browser, gate and release build exited; nothing started by this round remains.
