@@ -941,3 +941,61 @@ Ranked remaining work, updated for Round 24:
 2. Non-BC fallback on a real device: the device request is coded (Phase A); the witness and the adapter probe run in Phase B.
 3. ASTC or ETC2 for non-BC GPUs: still open by dispatcher decision; this host's adapter has neither format and no real non-BC device is available.
 4. The Round 23 list: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
+
+## Round 24 Phase B results
+
+Contention: the gate read swap-out 0 KB/s, 2.6 GB free and no cargo before the first build. One cargo ran at a time; the unit suite ran alone after the dev build; the wasm build and the release build each ran alone. Each viewer run was bounded by `timeout 45`, and the browser witness ran as a gm job.
+
+Defect found and fixed: the object batching check (`objectsBatched`) failed on spec-world `test` at every bound. Its 8 draws (4 boxes of different sizes, 2 spheres, a cuboid and a scripted proxy) have 8 distinct (mesh, material) keys, and the scene makes 10 shapes from 22 mesh requests, so mesh sharing works and no object can share a batch with another. The check now applies only when the scene has geometry to share: it passes when `shapesCreated >= objectDraws`. `meshesShared` still fails when sharing breaks. This is a decision about the witness, not the mesh code, and it can be reverted.
+
+Batching ladder. The current tree measured the mirror keys on the four status files; each step's bound is the checker's formula with that step's two terms:
+
+| Step (MIRROR_SLOTS, MIRROR_PROXY) | Static `test` bound / keys | Mirror neon `main` bound / keys | Fixture bound / keys | Mirror `main`, BC off bound / keys | Result |
+| --- | --- | --- | --- | --- | --- |
+| (4, 1), the Round 8 value | 41 / 8 | 9 / 2 | 5 / 1 | 9 / 2 | pass |
+| (4, 0) | 40 / 8 | 8 / 2 | 4 / 1 | 8 / 2 | pass |
+| (3, 1) | 31 / 8 | 7 / 2 | 4 / 1 | 7 / 2 | pass |
+| (2, 1) | 21 / 8 | 5 / 2 | 3 / 1 | 5 / 2 | pass |
+| (1, 1) | 11 / 8 | 3 / 2 | 2 / 1 | 3 / 2 | pass |
+| (1, 0), kept | 10 / 8 | 2 / 2 | 1 / 1 | 2 / 2 | pass |
+
+Shapes created: static 10, mirror `main` 2, fixture 1, mirror `main` with BC off 2. The Round 8 bound of 13 was `3 x 4 + 1` on the scene of that round; the current tree has 2 shapes on `main`.
+
+The next step down is `shapesCreated - 1`, which is not a formula in the two terms, and it fails on the measured values: `main` has 2 keys against a bound of 1, and the fixture has 1 key against 0. So (1, 0) is the lowest bound the measurement supports. It has no slack on `main` or the fixture, so a new (shape, material) pair fails the check by design. The kept defaults are `MIRROR_SLOTS` 1 and `MIRROR_PROXY` 0. The cache and the mesh-sharing code are unchanged.
+
+Non-BC device. The browser's adapters on this host both report BC, so no real adapter lacks it:
+
+| Adapter (`navigator.gpu` in the gate's Chromium) | Description | BC |
+| --- | --- | --- |
+| hardware, `requestAdapter()` | NVIDIA GeForce RTX 3060 Laptop GPU (nvidia, ampere) | true |
+| software, `requestAdapter({ forceFallbackAdapter: true })` | SwiftShader Device (Subzero) (google, swiftshader) | true |
+
+The gate's Chromium is launched by the playwriter bundle with `--use-vulkan=swiftshader`, `--enable-unsafe-swiftshader` and `--enable-unsafe-webgpu`. Since the software adapter has BC, the fallback is selected by the device request: `?disable-bc=1` on the wasm page and `VIEWER_DISABLE_BC=1` for the native viewer. The witness reads the device's BC through `data-bc-supported`, which the viewer sets from the device features, while the page's own adapter still reports BC. The loader's existing check takes the RGBA8 path.
+
+Witnesses:
+
+| Row | Witness | Result |
+| --- | --- | --- |
+| Dev build | `/config/.local/bin/cargo build --bin bevy-jayzee` | rc 0, 41.67 s, 0 warnings |
+| Unit suite | `/config/.local/bin/cargo test --bin bevy-jayzee` | 75 passed, 0 failed, including `disabling_bc_removes_only_that_feature_from_the_device_request` |
+| Batching, kept bound | `node scripts/check-viewer-batching.cjs` on static, mirror and fixture status | ok true, bounds 10 / 2 / 1, mirror keys 8 / 2 / 1, `objectsBatched` true on all three |
+| Wasm build | `PATH=/config/.local/bin:$PATH WASM_PROFILE=debug scripts/build-wasm.sh` | rc 0, 12 m 20 s, 0 warnings, `bevy-jayzee-wasm_bg.wasm` sha256 `e124bffb...` |
+| Device fallback, browser | `node scripts/check-device-bc-fallback.cjs` (gm job) | ok true. Control (no flag): `bc7`, `bcSupported` true, loaded from `target/gltf-cache`. With `?disable-bc=1`: 64 of 64 loaded, `formatRgba8` 64, `bcSupported` false 64, fetched from `target/gltf-cache-rgba8` 64, from `target/gltf-cache` 0, good 64 of 64, median load 1,267 ms. Adapters as in the table above. Browser 2515577 and gate 2515562 exited |
+| Device fallback, native | `VIEWER_DISABLE_BC=1` viewer on neon `main` | `bcSupported` false, `textureTarget` rgba8, `modelsLoaded` 9, `modelsMissing` [], `objectDraws` 42, `mirrorBatchKeys` 2 |
+| Neon HUD regression | `scripts/check-hud-overlap.sh` | ok true: 22 labels, 0 overlaps, 0 full-width, anchors 5 of 5 placed and inside the viewport, `topCentreOffset` 0, `textureTarget` bc7, `modelsLoaded` 9 |
+| Fixture HUD regression | `node scripts/check-hud-fixture.cjs` | ok true, 2,338 samples; anchors, banner and cases checks true |
+| Release and verify | `/config/.local/bin/cargo build --release`, then `bash scripts/verify.sh` once | build rc 0, 12 m 08 s; verify rc 0; determinism hashA = hashB = 0x3a5f0b51, `pass` true; network `ok` true. Bench means 0.3469 / 0.9448 / 1.8743 ms at 500 / 2000 / 5000 bodies; no load recorded, so these are not a timing comparison |
+
+Not done, with reasons:
+
+- A real adapter without BC: none exists on this host (both adapters report BC). The device-request path is witnessed instead, as the dispatcher's branch for an adapter that has BC. A real non-BC device is still open, as it was before.
+- ASTC or ETC2 for non-BC GPUs: open by dispatcher decision.
+- `scripts/check-texture-fallback.cjs` still hides BC with an adapter shim. It tests the loader's RGBA8 choice only; the device witness above is the one through the real device request.
+
+Ranked remaining work after Round 24:
+
+1. A real non-BC device or adapter, and ASTC or ETC2 for non-BC GPUs: open by dispatcher decision; neither is on this host.
+2. The batching bound is at its measured floor on `main` and the fixture; a new kind that shares a shape with another palette slot fails the check. Raise `MIRROR_SLOTS` or `MIRROR_PROXY` only after measuring why.
+3. The Round 23 list is unchanged: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
+
+Processes: each viewer run ended on its `timeout 45` (rc 124) and the fixture and neon viewers stopped by their scripts; the browser and gate of the device witness exited; the dev and release builds, the wasm build and the unit suite exited. A `python3 -m http.server 8977` (PID 1830962) was already running before this round and was left alone.
