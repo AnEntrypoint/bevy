@@ -22,7 +22,7 @@
     #stage { position: relative; width: min(100vw, 1280px); height: min(72vh, 720px); margin: 16px auto; border: 1px solid var(--ui-line); border-radius: 12px; overflow: hidden; background: #07111c; }
     #bevy-canvas { display: block; width: 100%; height: 100%; outline: none; }
     #boot-error { position: absolute; inset: 20px; display: none; white-space: pre-wrap; overflow: auto; background: rgba(8,15,25,.94); border: 1px solid var(--flag-red); color: var(--flag-red-text); padding: 18px; border-radius: 10px; font: 13px/1.5 ui-monospace, monospace; }
-    #render-inspector { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20; display: none; background: rgba(4,9,16,.96); border: 1px solid var(--ui-line); border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.65); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ui-text); }
+    #render-inspector { margin: 10px 10px 0; display: none; background: rgba(4,9,16,.96); border: 1px solid var(--ui-line); border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.65); font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ui-text); }
     #render-inspector[data-inspector="open"] { display: block; }
     #render-inspector[data-collapsed="true"] .inspector-body, #render-inspector[data-collapsed="true"] .tabs { display: none; }
     .inspector-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--ui-line); flex-wrap: wrap; }
