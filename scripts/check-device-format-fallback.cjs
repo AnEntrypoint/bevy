@@ -8,15 +8,17 @@ const repo = path.resolve(__dirname, '..');
 const port = Number(process.env.PORT || 8092);
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
 const witnessDir = path.join(repo, 'target', 'witness');
-const rowsPath = path.join(witnessDir, 'device-format-fallback-rows.json');
-const witnessPath = path.join(witnessDir, 'device-format-fallback.json');
 const callTimeoutMs = Number(process.env.CALL_TIMEOUT_MS || 1200000);
-const fallbackQuery = '&adapter=software&disable-bc=1';
-const compressed = {
-    astc4x4: { feature: 'texture-compression-astc', cache: 'target/gltf-cache-astc' },
-    etc2: { feature: 'texture-compression-etc2', cache: 'target/gltf-cache-etc2' },
+const formats = {
+    astc4x4: { feature: 'texture-compression-astc', cache: 'target/gltf-cache-astc', query: '&adapter=software&disable-bc=1', witness: 'device-format-fallback.json' },
+    etc2: { feature: 'texture-compression-etc2', cache: 'target/gltf-cache-etc2', query: '&adapter=software&disable-bc=1&disable-astc=1', witness: 'device-format-fallback-etc2.json' },
 };
-const cacheDirs = { rgba8: 'target/gltf-cache-rgba8', bc7: 'target/gltf-cache', ...Object.fromEntries(Object.entries(compressed).map(([key, value]) => [key, value.cache])) };
+const format = process.env.FORMAT || 'astc4x4';
+if (!formats[format]) throw new Error(`unknown FORMAT ${format}; expected one of ${Object.keys(formats).join(', ')}`);
+const { feature, query: fallbackQuery } = formats[format];
+const witnessPath = path.join(witnessDir, formats[format].witness);
+const rowsPath = witnessPath.replace(/\.json$/, '-rows.json');
+const cacheDirs = { rgba8: 'target/gltf-cache-rgba8', bc7: 'target/gltf-cache', astc4x4: formats.astc4x4.cache, etc2: formats.etc2.cache };
 
 function snippet(pageBase, models, outPath) {
     return `
@@ -26,7 +28,7 @@ const models = ${JSON.stringify(models)};
 const pageBase = ${JSON.stringify(pageBase)};
 const outPath = ${JSON.stringify(outPath)};
 const fallbackQuery = ${JSON.stringify(fallbackQuery)};
-const compressed = ${JSON.stringify(compressed)};
+const wanted = ${JSON.stringify({ key: format, feature })};
 const cacheDirs = ${JSON.stringify(cacheDirs)};
 const result = { adapters: null, expected: null, control: null, rows: [] };
 const write = () => fs.writeFileSync(outPath, JSON.stringify(result));
@@ -91,7 +93,7 @@ result.adapters = await control.evaluate(async () => {
 }).catch((error) => ({ error: String(error.message).slice(0, 160) }));
 await control.close();
 const software = result.adapters && result.adapters.software;
-result.expected = Object.keys(compressed).find((key) => software && software.features.includes(compressed[key].feature)) ?? 'rgba8';
+result.expected = software && software.features.includes(wanted.feature) ? wanted.key : 'rgba8';
 write();
 if (result.expected !== 'rgba8') {
   const page = await context.newPage();
@@ -137,22 +139,22 @@ function summarize(result, names) {
 }
 
 function footprintSummary(names, expected) {
-    const expectedDir = path.join(repo, compressed[expected].cache);
+    const expectedDir = path.join(repo, formats[expected].cache);
     const sums = { rgba8: 0, bc7: 0, expected: 0, rgba8Glb: 0, expectedGlb: 0 };
     let complete = true;
     for (const name of names) {
         const rgba8 = measure(path.join(repo, cacheDirs.rgba8, name));
         const bc7 = measure(path.join(repo, cacheDirs.bc7, name));
-        const format = measure(path.join(expectedDir, name));
-        if (!rgba8.present || !bc7.present || !format.present) {
+        const target = measure(path.join(expectedDir, name));
+        if (!rgba8.present || !bc7.present || !target.present) {
             complete = false;
             continue;
         }
         sums.rgba8 += rgba8.textureBytes;
         sums.bc7 += bc7.textureBytes;
-        sums.expected += format.textureBytes;
+        sums.expected += target.textureBytes;
         sums.rgba8Glb += rgba8.glbBytes;
-        sums.expectedGlb += format.glbBytes;
+        sums.expectedGlb += target.glbBytes;
     }
     return {
         complete,
@@ -169,7 +171,7 @@ function footprintSummary(names, expected) {
 
 async function main() {
     const names = fs.readdirSync(cdn).filter((file) => file.endsWith('.glb')).sort();
-    const result = { ok: false, total: names.length, cdn, query: fallbackQuery };
+    const result = { ok: false, format, total: names.length, cdn, query: fallbackQuery };
     const missing = names.filter((name) => Object.values(cacheDirs).some((dir) => !fs.existsSync(path.join(repo, dir, name))));
     if (missing.length) {
         result.error = `decoded copies missing; run gltf-check on ${cdn} for rgba8, bc7, etc2 and astc4x4 first: ${missing.slice(0, 5).join(', ')}`;
@@ -188,7 +190,7 @@ async function main() {
         result.summary = summarize(value, names);
         result.rows = value.rows;
         if (result.summary.expected === 'rgba8') {
-            result.reason = 'the software adapter exposes neither texture-compression-astc nor texture-compression-etc2';
+            result.reason = `the software adapter does not expose ${formats[format].feature}`;
         } else {
             result.ok = result.summary.good === names.length && result.summary.controlOk && result.summary.footprint.complete;
         }
