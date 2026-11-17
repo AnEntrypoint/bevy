@@ -21,7 +21,19 @@ mod viewer;
 mod viewer_world;
 mod world;
 
+fn exit_when_no_gpu_adapter() {
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if info.to_string().contains("Unable to find a GPU") {
+            eprintln!("bevy-jayzee: no GPU adapter was found, so the renderer cannot start. Check the graphics driver (on Linux, the Vulkan ICD files) and run again. Exit status 3.");
+            std::process::exit(3);
+        }
+        default_hook(info);
+    }));
+}
+
 fn main() {
+    exit_when_no_gpu_adapter();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let number = |index: usize, fallback: usize| {
         args.get(index)
