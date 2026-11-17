@@ -509,3 +509,7 @@ Process check: the witness server (gm job `r14-serve`) was stopped with `gm.job_
 Not committed: `.gitignore` has an added line `.playwriter/`. The gm playwriter added it, not this round; it is left uncommitted for the owner to decide.
 
 Open: none for item 2.
+
+## Round 15 Phase A changes
+
+- `.gitignore` ignores `.playwriter/`, the browser profile that gm's playwriter generates inside the repo. Committed locally as lanmower with no trailers; pushed in the Round 15 Phase B push.

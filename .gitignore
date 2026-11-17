@@ -4,3 +4,4 @@
 /web/wasm/
 /web/status.json
 /web/status-test.json
+.playwriter/
