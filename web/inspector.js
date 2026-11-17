@@ -1,14 +1,13 @@
 const tabs = ['Performance','GPU Passes','Frame Graph','Scene','Memory','Textures','Multiplayer','Log','Jobs','Terrain','Fields','World','ECS','Physics','Vibes','Parameters','Diagnostic'];
-const metricNames = ['DRAWS','SHADOW-MAP DRAWS','TRIANGLES','SHADOW TRIS','SHADOW PASSES','CASCADE SKIPS','ENTITIES','MESHES','SPRITES','TERRAIN'];
-const stripNames = ['FPS','MEMQ','MEMO','DRAW','SHOW','SIM','LAUNCH'];
 const colors = ['#22d3ee','#a3e635','#f472b6','#fbbf24','#60a5fa','#c084fc','#34d399'];
 const q = (id) => document.getElementById(id);
 const root = q('render-inspector');
 const query = new URLSearchParams(location.search);
 let open = query.get('inspector') === '1' || query.has('inspector');
 let activeTab = 'Performance';
-let history = Object.fromEntries(stripNames.map(n => [n, []]));
-const fmt = (v, suffix='') => v == null || !Number.isFinite(v) ? 'unavailable' : `${Number(v).toFixed(v > 100 ? 0 : 2)}${suffix}`;
+const timeline = {};
+const fmt = (v) => Number(v).toFixed(Math.abs(v) > 100 ? 0 : 2);
+const mibOf = (bytes) => bytes == null ? 'unsupported' : `${(bytes / 1048576).toFixed(1)} MiB`;
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function setOpen(value) {
   open = value;
@@ -22,73 +21,58 @@ function sparkline(values, color) {
   const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * 82},${13 - Math.min(13, Math.abs(v || 0) / max * 12)}`).join(' ');
   return `<svg class="spark" viewBox="0 0 82 14" role="img" aria-label="sparkline"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
 }
+function shown(snapshot, group) {
+  return (snapshot.shown || []).filter(m => m.group === group);
+}
+function cell(m) {
+  if (Number.isFinite(m.value)) return `${fmt(m.value)}${m.unit ? ` ${esc(m.unit)}` : ''}`;
+  return `<span class="unavailable" title="${esc(m.reason || 'no reason given')}">unsupported</span>`;
+}
 function strip(snapshot) {
-  const fps = value(snapshot, 'fps');
-  const frameTime = value(snapshot, 'frame_time');
-  const values = {
-    FPS: fps, MEMQ: unavailableNumber(snapshot, 'memory'), MEMO: unavailableNumber(snapshot, 'memory'),
-    DRAW: unavailableNumber(snapshot, 'draw'), SHOW: unavailableNumber(snapshot, 'show'),
-    SIM: unavailableNumber(snapshot, 'sim'), LAUNCH: frameTime
-  };
-  q('inspector-strip').innerHTML = stripNames.map((name, i) => {
-    const v = values[name];
-    history[name].push(Number.isFinite(v) ? v : 0);
-    history[name] = history[name].slice(-48);
-    const range = name === 'FPS' ? '0–144' : '0–16.7ms';
-    return `<span class="bucket" data-metric="${name}"><b>${name}</b> <span>${Number.isFinite(v) ? fmt(v) : 'unavailable'}</span> ${sparkline(history[name], colors[i])}<small>${range}</small></span>`;
+  q('inspector-strip').innerHTML = shown(snapshot, 'strip').map((m, i) => {
+    const series = [...(timeline[m.name] || []), Number.isFinite(m.value) ? m.value : 0].slice(-48);
+    timeline[m.name] = series;
+    return `<span class="bucket" data-metric="${esc(m.name)}" title="${esc(m.source)}"><b>${esc(m.name)}</b> <span>${cell(m)}</span> ${sparkline(series, colors[i % colors.length])}<small>${esc(m.unit)}</small></span>`;
   }).join('');
 }
-function value(snapshot, name) {
-  const d = (snapshot.diagnostics || []).find(x => x.name === name);
-  return d && Number.isFinite(d.value) ? d.value : null;
-}
-function unavailableNumber(_snapshot, _name) { return null; }
 function metrics(snapshot) {
-  const d = Object.fromEntries((snapshot.diagnostics || []).map(x => [x.name, x.value]));
-  const ecs = snapshot.ecs || {}, assets = snapshot.assets || {};
-  const values = {
-    DRAWS: null, 'SHADOW-MAP DRAWS': null, TRIANGLES: null, 'SHADOW TRIS': null,
-    'SHADOW PASSES': null, 'CASCADE SKIPS': null,
-    ENTITIES: d.entity_count, MESHES: assets.meshes ?? ecs.meshEntities,
-    SPRITES: ecs.sprites, TERRAIN: null
-  };
-  q('inspector-metrics').innerHTML = metricNames.map(name => {
-    const v = values[name];
-    return `<div class="metric" data-metric="${esc(name)}"><b>${Number.isFinite(v) ? fmt(v) : '<span class="unavailable">unavailable</span>'}</b><small>${esc(name)}</small></div>`;
+  q('inspector-metrics').innerHTML = shown(snapshot, 'metric').map(m => `<div class="metric" data-metric="${esc(m.name)}" title="${esc(m.source)}"><b>${cell(m)}</b><small>${esc(m.name)}</small></div>`).join('');
+}
+function bars(snapshot) {
+  q('inspector-bars').innerHTML = shown(snapshot, 'bar').map(m => {
+    const width = Number.isFinite(m.value) && m.max > 0 ? Math.min(100, m.value / m.max * 100) : 0;
+    return `<div data-bar="${esc(m.name)}" title="${esc(m.source)}"><span>${esc(m.name)}</span><span class="bar"><i style="width:${width}%"></i></span><span>${cell(m)}</span></div>`;
   }).join('');
 }
 function panel(snapshot) {
   const render = snapshot.renderDiagnostics || [];
-  const ecs = snapshot.ecs || {}, assets = snapshot.assets || {};
+  const ecs = snapshot.ecs || {}, assets = snapshot.assets || {}, memory = snapshot.memory || {}, gpu = snapshot.gpu || {};
+  const gpuNote = gpu.timestampQueries
+    ? (render.length ? render.map(x => `${x.path}: ${fmt(x.value)} ms`).join('\n') : 'unsupported: timestamp queries are enabled but no elapsed_gpu spans were recorded')
+    : `unsupported: ${gpu.reason || 'TIMESTAMP_QUERY is not enabled on this device'}\ndevice features: ${gpu.deviceFeatures || 'unknown'}`;
   const tabData = {
-    'GPU Passes': render.length ? render.map(x => `${x.path}: ${fmt(x.value, 'ms')}`).join('\n') : 'Render pass timestamps unavailable: Bevy RenderDiagnosticsPlugin is Tracy-gated; WebGPU reports CPU spans only when enabled.',
-    'Frame Graph': 'Frame graph unavailable: Bevy 0.20 does not expose a browser-readable graph through DiagnosticsStore.',
-    Scene: `cameras=${ecs.cameras ?? 'unavailable'} lights=${ecs.lights ?? 'unavailable'} meshEntities=${ecs.meshEntities ?? 'unavailable'}`,
-    Memory: `process memory=${performance.memory ? Math.round(performance.memory.usedJSHeapSize/1048576)+' MiB browser JS heap' : 'unavailable'}`,
-    Textures: `image assets=${assets.images ?? 'unavailable'}; texture bytes unavailable`,
-    Multiplayer: 'unavailable: wasm viewer intentionally excludes Lightyear networking',
+    'GPU Passes': gpuNote,
+    'Frame Graph': 'unsupported: Bevy 0.20 does not expose a browser-readable graph through DiagnosticsStore',
+    Scene: `cameras=${ecs.cameras} lights=${ecs.lights} meshEntities=${ecs.meshEntities} sprites=${ecs.sprites} uiNodes=${ecs.uiNodes}`,
+    Memory: `wasm linear memory=${mibOf(memory.wasmBytes)}\nJS heap=${mibOf(memory.jsHeapBytes)}${memory.jsHeapBytes == null ? ' (performance.memory is Chromium-only)' : ''}`,
+    Textures: `images=${assets.images} CPU image bytes=${mibOf(assets.imageBytes)}\nGPU texture memory: unsupported, Bevy exposes no GPU texture byte counter`,
+    Multiplayer: 'unsupported: wasm viewer intentionally excludes Lightyear networking',
     Log: 'Bevy LogDiagnosticsPlugin is enabled; see browser console for diagnostic logs',
-    Jobs: 'unavailable: no browser job diagnostics exposed by this wasm scene',
-    Terrain: 'unavailable: no terrain plugin in the wasm scene',
-    Fields: 'unavailable: no field diagnostics registered',
-    World: 'unavailable: filesystem world runtime is native-only',
+    Jobs: 'unsupported: no browser job diagnostics exposed by this wasm scene',
+    Terrain: 'unsupported: no terrain plugin in the wasm scene',
+    Fields: 'unsupported: no field diagnostics registered',
+    World: 'unsupported: filesystem world runtime is native-only',
     ECS: JSON.stringify(ecs),
-    Physics: 'unavailable: Avian is native-only in this build',
-    Vibes: 'unavailable: native feature state is not linked into the wasm scene',
-    Parameters: JSON.stringify({source: snapshot.source, plugins: snapshot.plugins, adapter: navigator.gpu ? 'WebGPU detected' : 'unavailable'}),
+    Physics: 'unsupported: Avian is native-only in this build',
+    Vibes: 'unsupported: native feature state is not linked into the wasm scene',
+    Parameters: JSON.stringify({source: snapshot.source, plugins: snapshot.plugins, adapter: navigator.gpu ? 'WebGPU detected' : 'unsupported: navigator.gpu is absent'}),
     Diagnostic: JSON.stringify(snapshot, null, 2)
   };
   q('inspector-tab-title').textContent = activeTab;
-  q('inspector-note').textContent = tabData[activeTab] || `Bevy DiagnosticsStore snapshot ${snapshot.time ?? 'unavailable'}`;
+  q('inspector-note').textContent = tabData[activeTab] || `Bevy DiagnosticsStore snapshot ${snapshot.time ?? 'unsupported'}`;
   q('inspector-json').textContent = JSON.stringify(snapshot.diagnostics || [], null, 2);
-  q('inspector-source').textContent = `Source: ${snapshot.source || 'unavailable'} • Plugins: ${(snapshot.plugins || []).join(', ')} • Browser: ${navigator.gpu ? 'navigator.gpu available' : 'navigator.gpu unavailable'}`;
-  const fps = value(snapshot, 'fps') ?? 0, frame = value(snapshot, 'frame_time') ?? 0;
-  const bars = [
-    ['frame interval', frame, 16.7, 'ms'], ['CPU total', frame, 16.7, 'ms'], ['FPS', fps, 144, ''],
-    ['adapter CPU', null, 1, ''], ['Lume GPU renderer', null, 1, ''], ['process/queue', null, 1, ''],
-    ['on-demand timing', null, 1, '']
-  ];
-  q('inspector-bars').innerHTML = bars.map(([name, v, max, unit]) => `<div><span>${name}</span><span class="bar"><i style="width:${Number.isFinite(v) ? Math.min(100, v/max*100) : 0}%"></i></span><span>${Number.isFinite(v) ? fmt(v, unit) : '<span class="unavailable">unavailable</span>'}</span></div>`).join('');
+  q('inspector-source').textContent = `Source: ${snapshot.source || 'unsupported'} • Plugins: ${(snapshot.plugins || []).join(', ')} • Browser: ${navigator.gpu ? 'navigator.gpu available' : 'navigator.gpu unavailable'}`;
+  bars(snapshot);
 }
 function render(snapshot) {
   strip(snapshot); metrics(snapshot); panel(snapshot);
@@ -112,7 +96,6 @@ setInterval(() => {
 }, 250);
 window.__BEVY_INSPECTOR_CHECK = () => ({
   open, marker: root.dataset.inspector, tabs: tabs.length,
-  metricNames, stripNames,
-  snapshot: window.__BEVY_INSPECTOR_SNAPSHOT || null,
-  domMetrics: [...document.querySelectorAll('#inspector-metrics [data-metric]')].map(x => x.dataset.metric)
+  shown: window.__BEVY_INSPECTOR_SNAPSHOT?.shown || [],
+  snapshot: window.__BEVY_INSPECTOR_SNAPSHOT || null
 });
