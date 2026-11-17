@@ -15,5 +15,6 @@ export function tick(ctx) {
   const state = ctx.place.state;
   state.ticks = (state.ticks ?? 0) + 1;
   const player = ctx.getObject('local-player');
-  if (state.ticks >= 20 && player && player.state.step !== 1) player.state.step = 1;
+  const step = state.ticks >= 28 ? 2 : state.ticks >= 20 ? 1 : 0;
+  if (player && step > 0 && player.state.step !== step) player.state.step = step;
 }

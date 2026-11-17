@@ -13,7 +13,7 @@ const witnessDir = path.join(repo, 'target', 'witness');
 const statusPath = path.join(repo, 'web', `status-${place}.json`);
 const outPath = path.join(witnessDir, 'hud-fixture-native.json');
 const expectedAnchors = ['fixture-district', 'fixture-event', 'fixture-foe', 'fixture-pad', 'fixture-ping'];
-const keys = ['dzNEXUS', 'lhAnim', 'lhPaused', 'trFade', 'trHide'];
+const keys = ['dzNEXUS', 'lhAnim', 'lhPaused', 'trFade', 'trHide', 'anTransform', 'anCompose', 'anColor', 'dirNormal', 'dirReverse', 'dirAlternate', 'dirAltReverse', 'ppMixed', 'trRev'];
 const sampleUntil = 6.5;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -55,7 +55,7 @@ print(json.dumps({'inside': inside, 'outside': outside, 'maxChannelDelta': delta
 function samplesOf(status) {
     return (status?.uiAnimations || [])
         .filter((entry) => keys.includes(entry.key))
-        .map((entry) => ({ key: entry.key, elapsed: entry.elapsed, transitionElapsed: entry.transitionElapsed ?? null, opacity: entry.opacity, visible: entry.visible, paused: entry.paused, clock: status.uiClock }));
+        .map((entry) => ({ key: entry.key, elapsed: entry.elapsed, animationElapsed: entry.animationElapsed || [], transitionElapsed: entry.transitionElapsed ?? null, transitionsStarted: entry.transitionsStarted ?? 0, reversedAt: entry.reversedAt ?? null, opacity: entry.opacity, visible: entry.visible, paused: entry.paused || [], color: entry.color ?? null, background: entry.background ?? null, transform: entry.transform ?? null, clock: status.uiClock }));
 }
 
 async function main() {
@@ -120,24 +120,38 @@ async function main() {
         const midHide = hide.filter((s) => s.transitionElapsed !== null && s.transitionElapsed > 0.05 && s.transitionElapsed < 0.95);
         result.cases = {
             longhand: { samples: longhand.length, beforeDelay: longhand.filter((s) => s.elapsed < 0.5).map((s) => s.opacity).slice(0, 3), afterEnd: longhand.filter((s) => s.elapsed >= 4.6).map((s) => s.opacity).slice(0, 3) },
-            paused: { samples: paused.length, allPaused: paused.every((s) => s.paused), opacities: [...new Set(paused.map((s) => Number(s.opacity.toFixed(4))))] },
+            paused: { samples: paused.length, allPaused: paused.every((s) => s.paused.every(Boolean)), opacities: [...new Set(paused.map((s) => Number(s.opacity.toFixed(4))))] },
             fade: { samples: fade.length, transitionSamples: fade.filter((s) => s.transitionElapsed !== null).length, settled: settledFade.map((s) => s.opacity).slice(0, 3) },
             hide: { samples: hide.length, transitionSamples: hide.filter((s) => s.transitionElapsed !== null).length, midVisible: midHide.length > 0 && midHide.every((s) => s.visible), settled: settledHide.map((s) => [s.opacity, s.visible]).slice(0, 3) },
         };
+        const slide = of('anTransform');
+        const mixed = of('ppMixed');
+        const reversal = of('trRev');
+        const reversed = reversal.filter((s) => s.reversedAt !== null);
+        const lastSlide = slide[slide.length - 1];
+        result.cases.transform = { samples: slide.length, last: lastSlide ? lastSlide.transform : null };
+        result.cases.mixed = { samples: mixed.length, pausedFlags: mixed[0]?.paused ?? null, colours: [...new Set(mixed.map((s) => JSON.stringify(s.color)))], opacityRange: mixed.length ? [Math.min(...mixed.map((s) => s.opacity)), Math.max(...mixed.map((s) => s.opacity))] : null };
+        result.cases.reversal = { samples: reversal.length, reversedSamples: reversed.length, reversedAt: reversed[0]?.reversedAt ?? null, transitionsStarted: reversal.length ? Math.max(...reversal.map((s) => s.transitionsStarted)) : 0, last: reversal[reversal.length - 1]?.opacity ?? null };
+        result.cases.directions = Object.fromEntries(['dirNormal', 'dirReverse', 'dirAlternate', 'dirAltReverse'].map((key) => [key, of(key).length]));
+        const extraOk = Boolean(lastSlide && lastSlide.transform && Math.abs(lastSlide.transform[0] - 60) < 1e-3 && Math.abs(lastSlide.transform[4] - Math.PI / 2) < 1e-4)
+            && mixed.length > 0 && mixed.every((s) => JSON.stringify(s.paused) === '[false,true]') && result.cases.mixed.colours.length === 1 && result.cases.mixed.opacityRange[1] - result.cases.mixed.opacityRange[0] > 0.5
+            && reversed.length > 0 && result.cases.reversal.transitionsStarted >= 2 && Math.abs(result.cases.reversal.last - 1) < 1e-4
+            && Object.values(result.cases.directions).every((count) => count > 0);
+        result.extraOk = extraOk;
         const anchorsOk = status.uiAnchorsInScene === expectedAnchors.length && status.uiAnchorsPlaced === expectedAnchors.length && inside.length === expectedAnchors.length && JSON.stringify(placedIds) === JSON.stringify([...expectedAnchors].sort());
         const bannerOk = Boolean(result.banner.first && result.banner.first.elapsed < 0.2 && result.banner.holdingAllOpaque && result.banner.afterFourAllHidden);
         const casesOk = longhand.length > 0
             && longhand.filter((s) => s.elapsed < 0.5).every((s) => Math.abs(s.opacity - 1) < 1e-4)
             && longhand.filter((s) => s.elapsed >= 4.6).length > 0
             && longhand.filter((s) => s.elapsed >= 4.6).every((s) => Math.abs(s.opacity - 0.2) < 1e-4)
-            && paused.length > 0 && paused.every((s) => s.paused && Math.abs(s.opacity - 0.3) < 1e-4)
+            && paused.length > 0 && paused.every((s) => s.paused.every(Boolean) && Math.abs(s.opacity - 0.3) < 1e-4)
             && settledFade.length > 0 && settledFade.every((s) => Math.abs(s.opacity - 0.25) < 1e-4)
             && settledHide.length > 0 && settledHide.every((s) => s.opacity === 0 && !s.visible)
             && result.cases.hide.midVisible;
         result.anchorsOk = anchorsOk;
         result.bannerOk = bannerOk;
         result.casesOk = casesOk;
-        result.ok = anchorsOk && bannerOk && casesOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended) && Boolean(result.bannerBackdrop && result.bannerBackdrop.maxChannelDelta <= 12);
+        result.ok = anchorsOk && bannerOk && casesOk && extraOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended) && Boolean(result.bannerBackdrop && result.bannerBackdrop.maxChannelDelta <= 12);
     } catch (error) {
         result.error = String(error.stack || error.message || error);
     } finally {

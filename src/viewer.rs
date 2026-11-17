@@ -475,7 +475,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     value["uiAnimations"] = serde_json::json!(animations
         .samples
         .iter()
-        .map(|sample| serde_json::json!({ "key": sample.key, "names": sample.names, "elapsed": sample.elapsed, "opacity": sample.opacity, "visible": sample.visible, "paused": sample.paused, "transitionElapsed": sample.transition_elapsed }))
+        .map(|sample| serde_json::json!({ "key": sample.key, "names": sample.names, "elapsed": sample.elapsed, "opacity": sample.opacity, "visible": sample.visible, "paused": sample.paused, "animationElapsed": sample.animation_elapsed, "transitionElapsed": sample.transition_elapsed, "transitionsStarted": sample.transitions_started, "reversedAt": sample.reversed_at, "color": sample.color, "background": sample.background, "transform": sample.transform }))
         .collect::<Vec<_>>());
     value["uiAnchorsInScene"] = serde_json::json!(ui.anchors);
     value["uiAnchorsSeen"] = serde_json::json!(anchors.total);
