@@ -66,7 +66,10 @@ async function main() {
             const status = readStatus();
             const sample = bannerSample(status);
             if (sample && (samples.length === 0 || sample.clock !== samples[samples.length - 1].clock)) samples.push(sample);
-            if (sample && sample.elapsed >= 1.0 && !shots.visible) shots.visible = screenshot('hud-fixture-1s');
+            if (sample && sample.elapsed >= 1.0 && !shots.visible) {
+                shots.visible = screenshot('hud-fixture-1s');
+                shots.bannerRect = ((status && status.uiLabelBoxes) || []).find((box) => box.text === 'NEXUS')?.rect ?? null;
+            }
             if (sample && sample.elapsed >= sampleUntil) {
                 shots.ended = screenshot('hud-fixture-6s');
                 break;
@@ -91,6 +94,19 @@ async function main() {
         };
         result.labels = { count: status.uiLabels, overlaps: status.uiLabelOverlaps, uncovered: status.uiUncoveredGlyphs };
         result.screenshots = shots;
+        if (shots.visible && shots.bannerRect) {
+            const probe = `
+from PIL import Image
+import json, sys
+im = Image.open(sys.argv[1]).convert('RGB')
+l, t, r, b = [int(round(v)) for v in json.loads(sys.argv[2])]
+inside = [im.getpixel((x, y)) for x, y in [(l + 1, t + 1), (r - 2, t + 1), (l + 1, b - 2), (r - 2, b - 2)]]
+outside = [im.getpixel((x, y)) for x, y in [(l - 4, t + 1), (r + 3, t + 1), (l - 4, b - 2), (r + 3, b - 2)]]
+delta = max(abs(a - c) for p, q in zip(inside, outside) for a, c in zip(p, q))
+print(json.dumps({'inside': inside, 'outside': outside, 'maxChannelDelta': delta}))
+`;
+            result.bannerBackdrop = JSON.parse(execFileSync('python3', ['-I', '-c', probe, path.join(repo, shots.visible), JSON.stringify(shots.bannerRect)], { encoding: 'utf8' }));
+        }
         result.samples = samples;
         const first = samples[0];
         const holding = samples.filter((s) => s.elapsed >= 0.7 && s.elapsed <= 2.9);
@@ -111,7 +127,7 @@ async function main() {
         const bannerOk = Boolean(first && first.elapsed < 0.2 && result.banner.holdingAllOpaque && result.banner.afterFourAllHidden);
         result.anchorsOk = anchorsOk;
         result.bannerOk = bannerOk;
-        result.ok = anchorsOk && bannerOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended);
+        result.ok = anchorsOk && bannerOk && status.uiLabelOverlaps === 0 && Boolean(shots.visible && shots.ended) && Boolean(result.bannerBackdrop && result.bannerBackdrop.maxChannelDelta <= 12);
     } catch (error) {
         result.error = String(error.message || error);
     } finally {

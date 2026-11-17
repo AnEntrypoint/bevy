@@ -14,6 +14,6 @@ export default function () {
 <div class="danc" data-world-anchor="fixture-district" data-anchor-offset="0 0.4 0"><div class="dtag">DISTRICT</div></div>
 <div data-world-anchor="fixture-event" data-anchor-offset="0 3 0" style="z-index:-1"><div class="ev-tag">EVENT</div></div>
 <div data-world-anchor="fixture-foe" data-anchor-offset="0 1 0"><div class="cow cofoe" style="position:relative"><b>FOE</b></div></div>
-<div data-world-anchor="fixture-pad" data-anchor-offset="2 4 0"><div class="cow cobeac" style="position:relative"><b>BEACON</b></div></div>
+<div data-world-anchor="fixture-pad" data-anchor-offset="-2 4 0"><div class="cow cobeac" style="position:relative"><b>BEACON</b></div></div>
 <div class="so-anc" data-world-anchor="fixture-ping" data-anchor-offset="0 1.6 0"><div class="so-tag so-ping">PING</div></div>`;
 }

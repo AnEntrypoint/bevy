@@ -46,7 +46,10 @@ pub struct HtmlAnimated {
 }
 
 #[derive(Component, Clone, Copy, Debug)]
-pub struct HtmlBaseAlpha(pub f32);
+pub struct HtmlTextAlpha(pub f32);
+
+#[derive(Component, Clone, Copy, Debug)]
+pub struct HtmlBackgroundAlpha(pub f32);
 
 #[derive(Resource, Default, Clone, Debug)]
 pub struct HtmlAnimationClock {
@@ -137,7 +140,7 @@ fn animate_html(
     clock: Res<HtmlAnimationClock>,
     animated: Query<(Entity, &HtmlAnimated)>,
     children: Query<&Children>,
-    mut paints: Query<(&HtmlBaseAlpha, Option<&mut TextColor>, Option<&mut BackgroundColor>)>,
+    mut paints: Query<(Option<&HtmlTextAlpha>, Option<&HtmlBackgroundAlpha>, Option<&mut TextColor>, Option<&mut BackgroundColor>)>,
     mut visibility: Query<&mut Visibility, Without<WorldAnchor>>,
     mut status: ResMut<HtmlAnimationStatus>,
 ) {
@@ -157,11 +160,11 @@ fn animate_html(
         }
         let mut stack = vec![entity];
         while let Some(node) = stack.pop() {
-            if let Ok((base, text, background)) = paints.get_mut(node) {
-                if let Some(mut text) = text {
+            if let Ok((text_alpha, background_alpha, text, background)) = paints.get_mut(node) {
+                if let (Some(base), Some(mut text)) = (text_alpha, text) {
                     text.0.set_alpha(base.0 * sampled.opacity);
                 }
-                if let Some(mut background) = background {
+                if let (Some(base), Some(mut background)) = (background_alpha, background) {
                     background.0.set_alpha(base.0 * sampled.opacity);
                 }
             }
@@ -340,7 +343,7 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
             let id = {
                 let mut entity = commands.spawn(style.node());
                 if let Some(background) = style.background {
-                    entity.insert((BackgroundColor(background), HtmlBaseAlpha(background.alpha())));
+                    entity.insert((BackgroundColor(background), HtmlBackgroundAlpha(background.alpha())));
                 }
                 if !style.animations.is_empty() {
                     entity.insert(HtmlAnimated { key: style.animation_key.clone().unwrap_or_default(), animations: style.animations.clone() });
@@ -361,7 +364,7 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
         UiSpec::Shape { style } => {
             let mut entity = commands.spawn(style.node());
             if let Some(fill) = style.fill {
-                entity.insert((BackgroundColor(fill), HtmlBaseAlpha(fill.alpha())));
+                entity.insert((BackgroundColor(fill), HtmlBackgroundAlpha(fill.alpha())));
             }
             if let Some(stroke) = style.stroke {
                 entity.insert(BorderColor::all(stroke));
@@ -377,7 +380,7 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 Text::new(text.clone()),
                 TextFont { font_size: FontSize::Px(*size), ..default() },
                 TextColor(color.unwrap_or(Color::WHITE)),
-                HtmlBaseAlpha(color.unwrap_or(Color::WHITE).alpha()),
+                HtmlTextAlpha(color.unwrap_or(Color::WHITE).alpha()),
             ))
             .id(),
     };
