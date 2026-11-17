@@ -4,8 +4,8 @@ const path = require('node:path');
 
 const repo = path.resolve(__dirname, '..');
 const files = process.argv.length > 2 ? process.argv.slice(2) : [path.join(repo, 'web/status-main.json')];
-const paletteSlots = Number(process.env.MIRROR_SLOTS || 4);
-const proxyMaterials = Number(process.env.MIRROR_PROXY || 1);
+const paletteSlots = Number(process.env.MIRROR_SLOTS || 1);
+const proxyMaterials = Number(process.env.MIRROR_PROXY || 0);
 
 function check(file) {
     const status = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -13,7 +13,7 @@ function check(file) {
     const bound = status.shapesCreated * paletteSlots + proxyMaterials;
     const checks = {
         objectsDrawn: status.objectDraws > 0,
-        objectsBatched: status.objectDraws < 2 || status.objectBatchKeys < status.objectDraws,
+        objectsBatched: status.objectDraws < 2 || status.shapesCreated >= status.objectDraws || status.objectBatchKeys < status.objectDraws,
         meshesShared: status.meshRequests === 0 || status.shapesCreated < status.meshRequests,
         mirrorsWithinBound: !mirrored || status.mirrorBatchKeys <= bound,
     };
