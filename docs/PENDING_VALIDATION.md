@@ -528,3 +528,38 @@ Blocked or not bevy items, not ranked:
 - Item 4, reconciliation: removed the Round 9 "Ranked remaining work for bevy" section, whose items are fixed, and marked the "pending Phase B" rows of rounds 2, 3, 8 and 9 with their round's Phase B pass (27 rows). The top HUD row now names Round 16, the globe `FAILS` row is a pass, and the Round 5 terrain notes and the Round 10 compact-arc note name the commits that fixed them (terrain 8131a6c, arc flags d75c869). The Round 12 404 note now names its close in Round 13. Witness, Phase B: `grep -n 'pending Phase B' docs/PENDING_VALIDATION.md` prints no line above the `## Round 10 Phase A changes` heading, and `grep -c '^## Ranked remaining work for bevy' docs/PENDING_VALIDATION.md` prints 0.
 - Item 5, AGENTS.md size: `wc -c AGENTS.md` is 10952 bytes, under the 30 KB limit (30,720 bytes), so nothing was trimmed. Witness, Phase B: the same `wc -c` line, read again on the final tree.
 - Not in this stretch: ZLIB-supercompressed basis KTX2 images (scheme 3). No file in the data uses them, and the transcoder rejects them with an error rather than decoding them silently. Decision recorded here; it is not an open item.
+
+## Round 16 Phase B results
+
+Contention: the gate read swap-out 0 KB/s, 11,141 MB free and no cargo or rustc before each cargo invocation; the release builds were run one at a time, and no unit suite ran alongside a build.
+
+Defects found in Phase B and fixed:
+
+- `src/client.rs`: `report_and_exit` ran in `FixedUpdate`, so when a frame ran two fixed ticks after the 5 s mark it printed two `client-report` lines, and `check-network.cjs` requires exactly one. `verify.sh` failed on that (`singleClientReport` false, all dependent checks false) on the first release run. Fixed with a `Local` guard (ebf98da). Re-run on the final tree: pass.
+- `src/viewer.rs`: the scene title in the overlay still had an em dash, which drew as a box. `uiUncoveredGlyphs` reported 1, which is that dash; the title is ASCII now (95d1b99). Re-run: 0.
+- `scripts/lib/playwriter-witness.cjs` and the two witness scripts, found by running them: `session new` without `--direct` tries the Playwriter extension and fails (`extension_not_connected`); a gate lease is released between calls, so the browser stopped between batches (`ECONNREFUSED 127.0.0.1:10232`); the CLI truncates output at 10,000 characters, which cut the JSON; one tab per model made Chromium fail (`Failed to open a new tab`, then the browser closed after 7 models). Fixed by connecting with `--direct` to the gate browser's debug port, one playwriter call per witness, one page navigated per model, and results written to a file by the snippet (30d104a). Earlier failed runs are not counted; the final run is below.
+- Open limitation, not fixed: `playwriter-project` must be on `PATH`. The gm shell does not have `/config/.gmnew/pw/bin` on `PATH`, so the witnesses are run with `PATH=/config/.gmnew/pw/bin:$PATH`.
+
+Build and unit witnesses (cargo through `/config/.local/bin/cargo` only):
+
+- `cargo build --bin bevy-jayzee`: rc 0, 21.6 s, no warnings. After the two later edits: rc 0, 5 s and 17 s.
+- `cargo test --bin bevy-jayzee`: `test result: ok. 50 passed; 0 failed`, including `ui_html::tests::glyph_fallback_keeps_text_inside_the_font`.
+- `WASM_PROFILE=release scripts/build-wasm.sh`: rc 0, cargo finished in 0.73 s (the wasm-viewer crate did not change), `wasm-bindgen 0.2.129`. Bundle `bevy-jayzee-wasm_bg.wasm` 31,059,942 bytes.
+- `cargo build --release --bin bevy-jayzee`: rc 0 twice, 10 m 21 s (621.7 s) before the client fix and 10 m 15 s (614.9 s) on the final tree. The second is the longest step of this round.
+
+Gltf cache: `gltf-check` on `/workspace/neon-syndicates/assets/cdn` rc 0 in 3 s and on `testdata/normal-map` rc 0. The cache holds 65 GLBs.
+
+Witnesses:
+
+- Item 1, `node scripts/check-normal-map-visual.cjs` (with the gate's `bin` on `PATH`): `ok: true` in 12 to 13 s. Raw and decoded variants: `modelState` loaded, one `BrowserWebGpu` adapter line each (NVIDIA GeForce RTX 3060 Laptop GPU), `tangentWarnings` empty, `errors` empty, `failedRequests` empty. Screenshots `target/witness/normal-map-raw.png` and `normal-map-decoded.png`. The script's browser (pid 2342921 in the last run) was stopped by pid.
+- Item 2, `node scripts/check-neon-wasm-models.cjs`: `ok: true`, `total` 64, `clean` 64, `notClean` [], `missingNames` []. One playwriter call, 166.8 s. Rows: `target/witness/neon-wasm-witness.json`.
+- Item 8, from the same run: `loadMsMedian` 1,092 ms, `loadMsMax` 2,421 ms (goto to `data-model-state` loaded). Wasm bundle transfer 31,060,242 bytes. Decoded GLB transfer total 283,092,200 bytes, largest 37,106,376 bytes. The browser and gate started by the script were stopped by pid; none of them remain.
+- Item 3, `bash scripts/verify.sh` on the final tree (release binary): exit 0, 7.1 s wall. Bench 500 bodies: mean 0.3220 ms, p95 0.4543, hash 0x17ff9626. Bench 2000: mean 0.7825 ms. Bench 5000: mean 1.3336 ms. Determinism 2000 bodies, 300 ticks: `pass: true`, hash 0x3a5f0b51 on both runs. `check-network.cjs`: `ok: true`, `singleClientReport` true, `errorM` 0, `moved` 14.505 m, every one of the 11 checks true. The release build is the only run of verify.sh that counts: the first run failed on the client defect above.
+- Item 6, HUD: viewer on neon `main` on display `:1` (window 898 by 579), screenshot `target/witness/r16-hud.png`. `viewer-status`: `uiUncoveredGlyphs` 0 (the earlier shot had 1, the em dash), `uiWarnings` [], `uiNodes` 718, `objects` 51 = `expectedObjects` 51, `duplicateObjects` 0, `missingObjects` [], `terrains` 1, `modelsLoaded` 9, `modelsMissing` []. The overlay draws in the bottom-left with no glyph boxes and no longer covers the neon HUD at the top-left.
+- Open, HUD: the neon HUD's own top-left labels still overlap each other in the screenshot ("NEW DAWN" over "Threshold", "HELIX" over the line below). They come from absolutely positioned boxes that the HTML renderer in `src/ui_html.rs` lays out approximately. Not fixed in this round; the owner should decide whether to spend on the renderer's positioning.
+- Item 7, native viewer (debug binary, release is not used by the viewer): RSS 898,224 kB at 25 s, high-water mark 898,224 kB, 896,168 kB at 35 s. Frame time from the HUD: fps 61.0, frame 16.39 ms. Cache: 283,121,864 bytes (270 MiB) for 65 GLBs; the originals in `assets/cdn` total 37,147,716 bytes, so the decoded set is 7.6 times larger. KTX2 images: 61 in the originals (51 Zstandard, 10 BasisLZ) and 61 in the cache, all `vkFormat` 37 (RGBA8) with no supercompression. Texel footprint with mips: RGBA8 242,308,356 bytes against 60,578,736 bytes if they stayed BC7, a 4 times difference on this GPU. The figures cover all 61 images; the viewer loads 9 models, so this is an upper bound for the native viewer. Decision: no cache change, because the measurement shows a trade-off and not a defect. The owner can choose BC7 for the native path later.
+- Process check: no chromium, playwriter gate, witness server or viewer process started this round remains (`ps` counts 0 for each). The gm gate that was running at the start of Round 15 had already exited.
+
+Not done in this round, recorded: ZLIB-supercompressed basis KTX2 images (scheme 3), decided in Phase A, no file in the data uses them.
+
+Round 16 items: 1 normal-map witness through the gate (done); 2 browser witness scripts in `scripts/` (done); 3 verify.sh once on the release binary (done, after one defect fix); 4 doc reconciliation (done); 5 AGENTS.md size, 10,952 bytes under 30,720 (done, nothing trimmed); 6 HUD glyph coverage and overlap (glyphs done; the neon HUD's own top-left label overlap remains open); 7 native measurement (done); 8 wasm payload (done).
