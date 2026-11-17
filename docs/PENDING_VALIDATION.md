@@ -1567,3 +1567,41 @@ Witness outcome: case A passes at the slack and fails at the floor. Case B fails
 Broken-sharing scope: case B is a shape split across three palette slots (material sharing broken). The mesh-sharing check (`meshesShared`) is a separate check and was not re-witnessed here, because no case in this round breaks mesh sharing.
 
 Processes: each viewer ended on its `timeout 60`; no viewer remains (checked); no browser or server was started in this round.
+
+## Round 33 Phase A: GPU adapter guard, bench medians and the ranked list
+
+Phase A is code, docs and local commits only. Nothing here was built, run or witnessed. Phase B builds, reproduces the panic and runs the bench.
+
+### 1. The `Unable to find a GPU` panic
+
+Code path that produces it: Bevy 0.20.1, `bevy_render-0.20.1/src/renderer/mod.rs`. `initialize_renderer` calls `instance.request_adapter(...).await.ok()`, and when that is `None` it runs `selected_adapter.expect(GPU_NOT_FOUND_ERROR_MESSAGE)` (line 308). The message is "Unable to find a GPU! Make sure you have installed required drivers! For extra information, see: .../linux_dependencies.md" on Linux. The browser path is the same call: `navigator.gpu.requestAdapter`, which Bevy's wasm build makes through wgpu.
+
+So the panic needs one thing: a null adapter from the request, for any reason (no driver, a transient failure, or a fallback adapter the browser declines). The one-off in the first ASTC gate run was a null adapter on the `?adapter=software` page. Its trigger is not known, because it was not reproduced in two later runs.
+
+Changes:
+
+- `src/main.rs`: `exit_when_no_gpu_adapter()` installs a panic hook. A panic whose message contains "Unable to find a GPU" prints one line that says no GPU adapter was found and exits with status 3. Every other panic goes to the default hook. The hook is installed first in `main`, so it covers every command, and `world`, `bench` and `det` never reach the GPU path. Commit b4fe35b.
+- `web/wasm-boot.js`: before it imports the wasm module, the page calls `navigator.gpu.requestAdapter()` itself. A null result (or a rejection) shows the boot-error box with "no WebGPU adapter" and does not import the module, so Bevy never reaches the `expect`. A non-null result loads the module as before. Commit 5e1c322. The copy in `web/wasm/` is refreshed in Phase B by `build-wasm.sh`'s verbatim copy, or by hand when no build runs.
+
+The reproduction and the guard's output are Phase B witnesses.
+
+### 2. Bench: median over several runs, with the load
+
+- `scripts/bench-vs-jayzee.sh`: runs each body count `RUNS` times (default 5, was one run). Before each run the script reads `/proc/loadavg`, and after the run it reads it again. Each row records `loadBefore`, `loadAfter`, `run` and both engines' output.
+- `scripts/bench-median.cjs` (new): aggregates the rows. A run is marked noisy when the 1-minute load moves by more than `LOAD_MOVE` (default 0.5) across the run, or when other runnable tasks (the `running` field of `/proc/loadavg`, minus the reader) reach half the core count at either reading. The table reports the median over all runs and the median over the quiet runs only, with the speedup of each, and the noisy-run count. The full rows, with every load reading, go to `target/witness/bench-vs-jayzee.json`.
+
+### 3. Ranked remaining work after Round 33
+
+Each item is either done in a round named here or left undone, with the reason.
+
+1. A real non-BC GPU. Open. This host has no adapter without BC: the NVIDIA adapter and SwiftShader both report it. The device-request path is witnessed instead, so this needs hardware that is not here.
+2. ASTC and ETC2 texel quality. Left as it is, by dispatcher decision. It needs a new block-decoder dependency, which is a dispatcher decision for later.
+3. The cross-adapter screenshot caveat: BC7 is compared with a hardware RGBA8 render, and ASTC and ETC2 with a SwiftShader RGBA8 render. Open. A SwiftShader BC7 set would remove the difference. Left undone: the BC7 reference already passes, and the queue did not ask for it.
+4. The one-off `Unable to find a GPU` in the first ASTC gate run. Guarded in Round 33 (the native hook and the browser pre-check), so the failure now reports a missing adapter and does not panic. The cause of the one-off is still unknown. Open: if it recurs, record the model and the adapter log.
+5. The bench on a quiet host. Partly done in Round 33: the bench reports medians over five runs and marks each noisy run with its load readings. Still open: this host is not quiet, so the medians need a quiet host to be a clean regression baseline. Left undone: needs an idle machine.
+6. The load gate on the other checks. Open: the device fallback and texture checks still compare single runs at a 1.1 tolerance (the flip in Round 26). Left undone: outside this queue; the bench is the only check changed here.
+7. The Round 23 list, unchanged: colour and transform transitions, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation. Left undone: each is a feature, not a witness, and the queue did not ask for them.
+
+Done since the Round 26 ranked list: the batching floor is now a measured slack of 1 (Round 32); the inspector panel no longer covers the header (Round 29); the strip and tab rows fit the panel (Round 30); the page no longer overflows at 1024x768 (Round 31).
+
+Changes, each a local commit by lanmower with no trailers: b4fe35b (`src/main.rs`), 5e1c322 (`web/wasm-boot.js`), the bench commit (`scripts/bench-median.cjs`, `scripts/bench-vs-jayzee.sh`), and the commit that carries this section.
