@@ -48,8 +48,13 @@ const out = {
   uiLabels: s.uiLabels,
   uiLabelOverlaps: s.uiLabelOverlaps,
   uiUncoveredGlyphs: s.uiUncoveredGlyphs,
+  uiWindowWidth: s.uiWindowWidth,
+  uiFullWidthLabels: s.uiFullWidthLabels,
+  textureTarget: s.textureTarget,
+  modelsLoaded: s.modelsLoaded,
+  modelsMissing: (s.modelsMissing || []).length,
   screenshot: process.argv[4],
-  ok: process.argv[3] === "1" && s.uiLabels > 0 && s.uiLabelOverlaps === 0 && s.uiUncoveredGlyphs === 0,
+  ok: process.argv[3] === "1" && s.uiLabels > 0 && s.uiLabelOverlaps === 0 && s.uiUncoveredGlyphs === 0 && s.uiFullWidthLabels === 0 && (s.modelsMissing || []).length === 0,
 };
 fs.writeFileSync(process.argv[5], JSON.stringify(out, null, 2));
 console.log(JSON.stringify(out, null, 2));

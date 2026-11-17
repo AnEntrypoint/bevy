@@ -103,6 +103,7 @@ pub struct BoxStyle {
     width: Val,
     height: Val,
     inset: Option<[Val; 4]>,
+    align_self: AlignSelf,
     background: Option<Color>,
 }
 
@@ -118,6 +119,7 @@ impl BoxStyle {
             width: Val::Auto,
             height: Val::Auto,
             inset: Some([Val::Px(0.0), Val::Px(0.0), Val::Px(0.0), Val::Px(0.0)]),
+            align_self: AlignSelf::Auto,
             background: None,
         }
     }
@@ -127,6 +129,7 @@ impl BoxStyle {
         Node {
             flex_direction: if self.row { FlexDirection::Row } else { FlexDirection::Column },
             align_items: self.align,
+            align_self: self.align_self,
             justify_content: self.justify,
             column_gap: Val::Px(self.column_gap),
             row_gap: Val::Px(self.row_gap),
@@ -849,7 +852,7 @@ fn box_style(scope: &Scope) -> BoxStyle {
     let width = scope.get("width").and_then(|value| parse_val(&value)).unwrap_or(Val::Auto);
     let height = scope.get("height").and_then(|value| parse_val(&value)).unwrap_or(Val::Auto);
     let position = scope.get("position").unwrap_or_default();
-    let inset = if position == "absolute" || position == "fixed" {
+    let mut inset = if position == "absolute" || position == "fixed" {
         let mut sides = scope.get("inset").and_then(|value| shorthand(&value, parse_val)).unwrap_or([Val::Auto, Val::Auto, Val::Auto, Val::Auto]);
         for (index, side) in ["top", "right", "bottom", "left"].iter().enumerate() {
             if let Some(value) = scope.get(side).and_then(|value| parse_val(&value)) {
@@ -860,6 +863,15 @@ fn box_style(scope: &Scope) -> BoxStyle {
     } else {
         None
     };
+    let shrinks = scope
+        .get("width")
+        .is_some_and(|value| matches!(value.trim(), "max-content" | "fit-content" | "min-content"));
+    let centred = shrinks && inset.is_some() && horizontal_margins_auto(scope);
+    if let Some(sides) = inset.as_mut().filter(|_| centred) {
+        sides[1] = Val::Auto;
+        sides[3] = Val::Auto;
+    }
+    let align_self = if centred { AlignSelf::Center } else { AlignSelf::Auto };
     let background = scope
         .get("background-color")
         .or_else(|| scope.get("background"))
@@ -876,8 +888,21 @@ fn box_style(scope: &Scope) -> BoxStyle {
         width,
         height,
         inset,
+        align_self,
         background,
     }
+}
+
+fn horizontal_margins_auto(scope: &Scope) -> bool {
+    let margin = scope.get("margin").unwrap_or_default();
+    let parts = margin.split_whitespace().collect::<Vec<_>>();
+    let shorthand = match parts.len() {
+        1 => parts[0] == "auto",
+        2 | 3 => parts[1] == "auto",
+        4 => parts[1] == "auto" && parts[3] == "auto",
+        _ => false,
+    };
+    shorthand || (scope.get("margin-left").as_deref() == Some("auto") && scope.get("margin-right").as_deref() == Some("auto"))
 }
 
 fn is_covered(c: char) -> bool {
@@ -1507,6 +1532,29 @@ mod tests {
     fn display_none_and_unsupported_elements_are_dropped() {
         let spec = build("<style>.gone{display:none}</style><div class=gone>x</div><svg><rect/></svg><div>y</div>").spec;
         assert_eq!(spec.count(), 5);
+    }
+
+    fn box_styles(spec: &UiSpec, out: &mut Vec<BoxStyle>) {
+        if let UiSpec::Box { style, children } = spec {
+            out.push(style.clone());
+            for child in children {
+                box_styles(child, out);
+            }
+        }
+    }
+
+    #[test]
+    fn max_content_boxes_with_auto_margins_shrink_and_centre() {
+        let built = build(r#"<div style="position:absolute;top:24%;left:0;right:0px;margin:0 auto;width:max-content">DOWNTOWN</div>"#);
+        let mut styles = Vec::new();
+        box_styles(&built.spec, &mut styles);
+        let banner = styles.iter().find(|style| style.align_self == AlignSelf::Center).expect("centred banner box");
+        let inset = banner.inset.clone().expect("absolute");
+        assert!(matches!(inset, [Val::Percent(top), Val::Auto, Val::Auto, Val::Auto] if top == 24.0));
+        let plain = build(r#"<div style="position:absolute;left:0;right:0">wide</div>"#);
+        let mut plain_styles = Vec::new();
+        box_styles(&plain.spec, &mut plain_styles);
+        assert!(plain_styles.iter().all(|style| style.align_self == AlignSelf::Auto));
     }
 
     #[test]
