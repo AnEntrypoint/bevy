@@ -1465,3 +1465,14 @@ Screenshots: docs/ui-layout/strip-before-1440x900.png, strip-after-1440x900.png,
 
 - Page-level horizontal overflow at 1024x768, outside the panel: document scrollWidth 1048 against clientWidth 1009. main is min(100vw, 1280px) wide plus 12 px padding each side (1048 px), and the stage is 1026 px. It predates this round and is not fixed here. A one-line fix would be box-sizing: border-box on main and the stage, to be done in its own round.
 - The inspector body (max-height 42vh) now scrolls vertically at 1024x768, because the wrapped tabs make the panel taller. That is the existing max-height rule working as designed.
+
+## Round 31 Phase A: page no longer wider than the viewport at 1024x768
+
+Defect: at 1024x768 the document scrollWidth was 1048 against a clientWidth of 1009. main was min(100vw, 1280px) plus 12 px padding on each side (1048 px with its content-box width), and the stage was 1026 px. Two causes: 100vw includes the 15 px vertical scrollbar that the document's client width excludes, and the stage's 2 px border was added to its width.
+
+Changes, in web/wasm-index.html (each committed as lanmower, no trailers):
+
+- main: box-sizing: border-box, and width min(100%, 1280px) in place of min(100vw, 1280px). The padding is now inside the width, and the width follows the parent, not the viewport.
+- #stage: box-sizing: border-box, and width 100% in place of min(100vw, 1280px). The border is inside the width, and the stage fills main's content box, so it cannot pass the viewport.
+
+Not changed: the stage height, the inspector panel, the header and the canvas. Phase B measures the document scrollWidth against clientWidth, the stage's right edge, and the header, status pill and toggle at both sizes.
