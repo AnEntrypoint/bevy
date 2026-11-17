@@ -1020,3 +1020,41 @@ Phase B plan, not run in Phase A:
 1. Probe. The witness's own control records the software adapter's features. If it exposes neither `texture-compression-astc` nor `texture-compression-etc2`, the witness stops with `reason` set and the feature list in `adapters.software.features`, and no format is claimed. The cause for that case would be the adapter's own feature set, recorded as observed.
 2. If it exposes one or both, the caches are generated with `gltf-check` for `etc2` and `astc4x4` (both are generated, so the witness can name the format the device picks), the wasm build is rebuilt, and the witness runs. Its numbers: loaded count, format count, fetches from the chosen cache and from none other, footprint against RGBA8 and BC7.
 3. Quality of the ETC2 and ASTC transcodes is not measured by this round: `texture-quality` compares BC7 and RGBA8 only. The footprint is measured; the image quality of the new formats is open.
+
+## Round 25 Phase B results
+
+Probe: the software adapter returned by `navigator.gpu.requestAdapter({ forceFallbackAdapter: true })` is `SwiftShader Device (Subzero)` (google, swiftshader). Its feature list includes `texture-compression-astc`, `texture-compression-astc-sliced-3d`, `texture-compression-etc2`, `texture-compression-bc`, `texture-compression-bc-sliced-3d` and `texture-compression-unaligned`. The hardware adapter (NVIDIA GeForce RTX 3060 Laptop GPU) exposes BC only, with no ASTC or ETC2. So the software adapter does expose both formats, and the device-request witness applies.
+
+Correction to the Phase A table: the row that says `?adapter=software` sets `WgpuSettings::force_fallback_adapter` was not effective. wgpu 30.0.2's web backend maps only `powerPreference` into `navigator.gpu.requestAdapter` (`src/backend/webgpu.rs`, `request_adapter`), so Bevy's flag never reached the browser. The first witness run was `ok: false`: the software query loaded all 64 models on the hardware adapter with BC removed, so each fell back to RGBA8 and none reported the ASTC or ETC2 format. The fix is in the page, not in Rust: `web/wasm-boot.js` wraps `navigator.gpu.requestAdapter` when `adapter=software` is in the query, passing `forceFallbackAdapter: true`. The wasm viewer no longer sets `force_fallback_adapter`; `device_request` takes only the BC switch. The viewer publishes the adapter name as `data-adapter`, and the witness requires it to name SwiftShader on every row.
+
+Witness `node scripts/check-device-format-fallback.cjs` (output `target/witness/device-format-fallback.json`), `ok: true`:
+- control on the hardware adapter: `bc7`, `bcSupported` true, fetched from the BC cache only.
+- expected format from the software adapter's features: `astc4x4`.
+- 64 of 64 models loaded with `?adapter=software&disable-bc=1` on `SwiftShader Device (Subzero)`; 64 of 64 report `astc4x4`; 64 of 64 fetch from `target/gltf-cache-astc`; 0 fetch from another cache; `bcSupported` false on all 64; `data-compressed-formats` is `astc etc2` on all 64; no console error or failed response.
+- footprint (texture bytes in the KTX2 payloads): RGBA8 242,308,356; BC7 60,578,736; ASTC 4x4 60,578,736. ASTC is 0.2500 of RGBA8 and 1.0 of BC7, as expected for 8 bits per texel in both. GLB bytes: RGBA8 283,092,200; ASTC 101,358,620 (0.358 of RGBA8).
+- load time median 4,075 ms on the software adapter. Not comparable with hardware loads.
+
+ETC2: `gltf-check` wrote `target/gltf-cache-etc2` (64 of 64 decoded and loaded by Bevy, 0 failures, 97 MB) and `target/gltf-cache-astc` (64 of 64, 0 failures, 97 MB). The device-request witness exercised ASTC only, because the format order is BC, ASTC, ETC2, RGBA8 and ASTC comes first. No ETC2 device row was made, so the ETC2 path is generated and loadable but not witnessed through an adapter. It is not claimed as loaded through a device.
+
+Regression set, all run on the final code:
+- `node scripts/check-device-bc-fallback.cjs`: `ok: true`; 64 of 64 on RGBA8 with BC disabled, all fetched from `target/gltf-cache-rgba8`; control on BC7 passes.
+- `node scripts/check-viewer-batching.cjs`: `ok: true`; `web/status-main.json` has 50 draws, 3 keys, 2 shapes, bound 2 (`objectsBatched` and `meshesShared` true).
+- `scripts/check-hud-overlap.sh`: exit 0, `ok: true`.
+- `node scripts/check-hud-fixture.cjs`: `ok: true`; 5 of 5 anchors placed, none unresolved.
+- `cargo test --bin bevy-jayzee` (dev build): 77 passed, 0 failed.
+- `/config/.local/bin/cargo build` (dev), `cargo build --release` and `WASM_PROFILE=debug scripts/build-wasm.sh`: all exit 0 with no warnings in their logs.
+- `scripts/verify.sh`: exit 0. Bench (mean ms, 300 ticks): 500 bodies 0.403, 2000 bodies 1.247, 5000 bodies 2.304. Determinism at 2000 bodies: `0x3a5f0b51` on both runs, `pass: true`. Network check (client prediction error 0 m against a limit of 0.05 m; all 11 checks true).
+- `node scripts/texture-footprint.cjs`: exit 0 and `complete` true, BC7 and RGBA8 totals unchanged by the helper move. Its decision is `rgba8`, because it reads `target/witness/texture-visual.json`, dated 05:12 on this run's day, before this round. That file reports `ok: false` with `psnrMin` 15.59 against a floor of 30. The Round 25 changes did not produce that file and this round did not regenerate it (see the ranked list).
+
+Bench note: the baseline recorded in AGENTS.md was measured back to back with jayzee on the same host. This run was not compared with jayzee. At 500 bodies the figure matches the baseline (0.40). At 2000 and 5000 bodies it is 20% and 23% above the baseline. It is recorded and not called a regression until it is measured back to back on a quiet host.
+
+Processes: the device regression run left four `playwriter-project` processes behind. They were stopped by PID (2526805, 2526798, 2526797, 2526648). No chromium was left running. `playwriter-ws-server` (PID 289316, 20 minutes old) and a `node` process from `playwriter-project` (PID 2354022, 6 hours old) were not started by this round's jobs and were left alone.
+
+Ranked remaining work after Round 25:
+
+1. ETC2 through a device request: the cache is generated and loads (64 of 64), but the SwiftShader adapter always takes ASTC first, so the device never selects ETC2. Open: needs a selector on the wasm query (for example `disable-astc=1`) and a witness row for ETC2 with the same numeric check. Reason: not in this round's queue, and ASTC took priority in the witness.
+2. Image quality of the non-BC transcodes: `texture-quality` compares BC7 with RGBA8 only. ASTC and ETC2 per-texel quality is unmeasured. Reason: the Round 25 queue asked for the footprint against RGBA8, which is measured.
+3. Texture visual witness: `target/witness/texture-visual.json` is from before this round and fails its PSNR floor (psnrMin 15.59 against 30), so the footprint decision stays `rgba8`. Open: regenerate through `check-neon-wasm-models.cjs` and `compare-screenshots.cjs` through the gate, then rerun the footprint decision. Reason: not run this round; it is outside the Round 25 queue and needs the gate.
+4. A real non-BC device: none on this host. The RTX 3060 and SwiftShader both report BC. SwiftShader stands in for the device request, and its feature list is recorded above. Reason unchanged from Round 24.
+5. The batching floor is (1, 0): on `main` and the fixture it is at the floor. The owner accepted it and can revert the `objectsBatched` scoping (see Round 25 Phase A). Raise `MIRROR_SLOTS` or `MIRROR_PROXY` only after measuring why.
+6. The Round 23 list is unchanged: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
