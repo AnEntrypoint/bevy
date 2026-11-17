@@ -34,6 +34,9 @@ pub struct HtmlUiStatus {
     pub anchors: usize,
 }
 
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct HtmlTranslated;
+
 #[derive(Component, Clone, Debug, PartialEq)]
 pub struct WorldAnchor {
     pub id: String,
@@ -133,6 +136,7 @@ pub struct BoxStyle {
     align_self: AlignSelf,
     background: Option<Color>,
     anchor: Option<WorldAnchor>,
+    translate: Option<(Val, Val)>,
 }
 
 impl BoxStyle {
@@ -150,6 +154,7 @@ impl BoxStyle {
             align_self: AlignSelf::Auto,
             background: None,
             anchor: None,
+            translate: None,
         }
     }
 
@@ -218,6 +223,9 @@ pub fn spawn(commands: &mut Commands, parent: Option<Entity>, spec: &UiSpec) -> 
                 }
                 if let Some(anchor) = &style.anchor {
                     entity.insert((anchor.clone(), Visibility::Hidden));
+                }
+                if let Some((x, y)) = style.translate {
+                    entity.insert((UiTransform::from_xy(x, y), HtmlTranslated));
                 }
                 entity.id()
             };
@@ -923,7 +931,32 @@ fn box_style(scope: &Scope) -> BoxStyle {
         align_self,
         background,
         anchor: None,
+        translate: scope.get("transform").and_then(|value| parse_translate(&value)),
     }
+}
+
+fn parse_translate(value: &str) -> Option<(Val, Val)> {
+    let mut x = None;
+    let mut y = None;
+    let mut rest = value;
+    while let Some(open) = rest.find('(') {
+        let Some(close) = rest[open..].find(')').map(|end| open + end) else {
+            break;
+        };
+        let name = rest[..open].trim();
+        let args = rest[open + 1..close].split(',').map(str::trim).collect::<Vec<_>>();
+        match name {
+            "translate" => {
+                x = args.first().and_then(|arg| parse_val(arg));
+                y = args.get(1).and_then(|arg| parse_val(arg)).or(Some(Val::Px(0.0)));
+            }
+            "translateX" => x = args.first().and_then(|arg| parse_val(arg)),
+            "translateY" => y = args.first().and_then(|arg| parse_val(arg)),
+            _ => {}
+        }
+        rest = &rest[close + 1..];
+    }
+    (x.is_some() || y.is_some()).then(|| (x.unwrap_or(Val::Px(0.0)), y.unwrap_or(Val::Px(0.0))))
 }
 
 fn horizontal_margins_auto(scope: &Scope) -> bool {
@@ -1588,6 +1621,19 @@ mod tests {
         let mut plain_styles = Vec::new();
         box_styles(&plain.spec, &mut plain_styles);
         assert!(plain_styles.iter().all(|style| style.align_self == AlignSelf::Auto));
+    }
+
+    #[test]
+    fn translate_transforms_map_to_node_relative_offsets() {
+        assert_eq!(parse_translate("translateX(-50%)"), Some((Val::Percent(-50.0), Val::Px(0.0))));
+        assert_eq!(parse_translate("translate(-50%,-190%)"), Some((Val::Percent(-50.0), Val::Percent(-190.0))));
+        assert_eq!(parse_translate("translate(4px)"), Some((Val::Px(4.0), Val::Px(0.0))));
+        assert_eq!(parse_translate("scale(2) translateY(-3px)"), Some((Val::Px(0.0), Val::Px(-3.0))));
+        assert_eq!(parse_translate("scale(2)"), None);
+        let built = build(r#"<div style="position:absolute;left:50%;transform:translateX(-50%)">c</div>"#);
+        let mut styles = Vec::new();
+        box_styles(&built.spec, &mut styles);
+        assert!(styles.iter().any(|style| style.translate == Some((Val::Percent(-50.0), Val::Px(0.0)))));
     }
 
     #[test]
