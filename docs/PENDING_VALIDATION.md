@@ -1389,3 +1389,37 @@ Defect: the Render Inspector was position: fixed (top 10, left 10, right 10, z-i
 Change, in web/wasm-index.html, the #render-inspector rule (commit on main, as lanmower, no trailers): position: fixed, top, left, right and z-index are removed, and margin: 10px 10px 0 places the panel in normal flow below the header. The open panel now pushes the stage down instead of covering the header. No z-index was changed to hide anything.
 
 Checked by reading only: no script or page script depends on the panel being fixed (grep of scripts/, web/*.js, web/*.html, src/ for render-inspector, inspector-toggle and app-status). Phase B witnesses the layout in the browser at 1440x900 and 1024x768.
+
+## Round 29 Phase B: inspector panel below the header, witnessed
+
+Viewer: http://127.0.0.1:8092/web/wasm/index.html?inspector=1&still=1 through gm's playwriter (debug port 10232), 20 s wait after each load, the inspector open. Measured with getBoundingClientRect and elementFromPoint at the centre of each element. Clicks use playwright's own click, which fails if another element covers the target.
+
+Defect found in witness: after load the bevy canvas takes focus (winit calls canvas.focus() when the window is active), and that focus scrolled the page by 117 px at 1024x768, so the header and the toggle sat at y -117 and the toggle was off-screen. Fix: web/wasm-boot.js overrides HTMLElement.prototype.focus for canvas elements only, so they focus with preventScroll: true. Other elements keep the default focus. The file is copied verbatim into web/wasm by build-wasm.sh, so no wasm rebuild is needed.
+
+### Element boxes (CSS px, scrollY 0 in every row)
+
+| Size | Element | x | y | w | h | right | bottom |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1440x900 | header | 0 | 0 | 1425 | 63 | 1425 | 63 |
+| 1440x900 | #inspector-toggle | 1091.9 | 14 | 93.2 | 34 | 1185.1 | 48 |
+| 1440x900 | #app-status | 1193.1 | 15 | 211.9 | 32 | 1405 | 47 |
+| 1440x900 | #render-inspector | 10 | 73 | 1405 | 405.2 | 1415 | 478.2 |
+| 1024x768 | header | 0 | 0 | 1009 | 63 | 1009 | 63 |
+| 1024x768 | #inspector-toggle | 675.9 | 14 | 93.2 | 34 | 769.1 | 48 |
+| 1024x768 | #app-status | 777.1 | 15 | 211.9 | 32 | 989 | 47 |
+| 1024x768 | #render-inspector | 10 | 73 | 989 | 468.1 | 999 | 541.1 |
+
+Overlap of toggle and status with the panel: 0 at both sizes. elementFromPoint at the toggle centre and the status centre returns the toggle and the status at both sizes. Clicking the toggle with the panel open closes it (data-inspector closed), and clicking again reopens it (open), at both sizes.
+
+Before (the old fixed rule injected over the new page, since the old file is no longer in the tree): panel at x 10, y 10, 1420 x 405.2 at 1440x900 and 989 x 468.1 at 1024x768. Overlap of the toggle with the panel: 3168.8 px2 at both sizes. Overlap of the status with the panel: 6780.8 px2 at both sizes. elementFromPoint at both centres returns a span inside the panel, so the toggle and status were not clickable.
+
+Screenshots: docs/ui-layout/before-1440x900.png, before-1024x768.png (old rule injected), after-1440x900.png, after-1024x768.png.
+
+### Other witnesses
+
+- scripts/check-inspector.cjs with CDP_URL=http://127.0.0.1:10232: exit 0, ok true, failures []. Output screenshot: docs/ui-layout/check-inspector.png.
+- scripts/check-hud-overlap.sh with DISPLAY=:1.0: exit 0, uiLabels 23, uiLabelOverlaps 0.
+
+### Open
+
+- The metric strip (.strip, min-width 720px) scrolls horizontally inside the panel at 1024x768. It does not cover the header, toggle or status. It is an existing narrow-width rule and was left as it is.
