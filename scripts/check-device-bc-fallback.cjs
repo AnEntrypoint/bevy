@@ -75,6 +75,15 @@ async function visit(page, name, query) {
 }
 const control = await context.newPage();
 result.control = await visit(control, models[0], '');
+result.adapters = await control.evaluate(async () => {
+  const describe = async (options) => {
+    const adapter = await navigator.gpu?.requestAdapter(options).catch(() => null);
+    if (!adapter) return null;
+    const info = adapter.info ?? {};
+    return { bc: adapter.features.has('texture-compression-bc'), isFallbackAdapter: adapter.isFallbackAdapter ?? null, vendor: info.vendor ?? null, architecture: info.architecture ?? null, description: info.description ?? null };
+  };
+  return { hardware: await describe({}), software: await describe({ forceFallbackAdapter: true }) };
+}).catch((error) => ({ error: String(error.message).slice(0, 160) }));
 await control.close();
 write();
 const page = await context.newPage();
@@ -108,6 +117,7 @@ function summarize(result, names) {
         notGood: names.filter((name) => !good.some((row) => row.name === name)),
         loadMsMedian: loads.length ? loads[Math.floor(loads.length / 2)] : null,
         controlOk,
+        adapters: result.adapters,
         control: control && { format: control.format, bcSupported: control.bcSupported, adapterHasBc: control.adapterHasBc, modelState: control.modelState, fetchedBc7: control.fetchedBc7 },
     };
 }
