@@ -1058,3 +1058,43 @@ Ranked remaining work after Round 25:
 4. A real non-BC device: none on this host. The RTX 3060 and SwiftShader both report BC. SwiftShader stands in for the device request, and its feature list is recorded above. Reason unchanged from Round 24.
 5. The batching floor is (1, 0): on `main` and the fixture it is at the floor. The owner accepted it and can revert the `objectsBatched` scoping (see Round 25 Phase A). Raise `MIRROR_SLOTS` or `MIRROR_PROXY` only after measuring why.
 6. The Round 23 list is unchanged: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
+
+## Round 26 Phase A
+
+Correction to Round 25. The Round 25 Phase B section says the footprint decision "still says rgba8" because `texture-visual.json` (PSNR 15.59) fails. That was wrong, and it is retracted. The footprint file as it stood before this round had `decision: "bc7"` with every reason true (`footprintWins`, `loadOk`, `cleanOk`, `visualOk`). Its `visualOk` came from `target/witness/texture-texel.json` (`ok` true, `psnrLevel0Min` 41.70), not from the screenshot file. `texture-visual.json` was never an input to the decision. Both files were written at 05:12, before Round 25, so the decision rested on a BC7-only texel run that this round had not regenerated, and on no screenshot judgement at all.
+
+Why ETC2 and ASTC are not judged. Three causes, each checked in the code:
+1. `src/texture_quality.rs` decodes only BC7 (`bcdec_rs::bc7`) and skips every image whose `vkFormat` is not BC7. An ETC2 or ASTC source therefore yields zero rows and `ok` false. No CPU ETC2 or ASTC block decoder is in this tree or in `Cargo.lock` (the only block decoder is `bcdec_rs`), so texel quality for those two formats is not measured by any CPU path.
+2. `scripts/compare-screenshots.cjs` compares only `neon-shots-rgba8` with `neon-shots-bc7`. ETC2 and ASTC never had a screenshot set to compare.
+3. `scripts/texture-footprint.cjs` ignored the screenshot witness: `visualOk` read the texel file only.
+
+Fix. A format is judged by what the GPU actually renders, not by a CPU decode. Each format's screenshots are compared with an RGBA8 render taken on the same SwiftShader adapter. RGBA8 needs no selector: the viewer loads a `gltf-cache-rgba8` path as-is on any adapter. The footprint decision reads this round's files for each format and records each file's timestamp. The BC7 default now also needs its screenshot judgement (64 pairs against RGBA8, PSNR 30 or higher), which the decision previously ignored. Whether BC7 passes it is decided by Phase B's measurement, not assumed here. BC7 texel quality stays a CPU measurement; ETC2 and ASTC texel quality stays open, because no decoder exists.
+
+Changes, each a local commit by lanmower with no trailers. Phase A ran no build, test, gate or witness; `node --check` was used only to parse the four edited scripts.
+
+| Change | Commit | Files | Phase B witness |
+| --- | --- | --- | --- |
+| Selectors. Native `VIEWER_DISABLE_ASTC=1` and wasm `?disable-astc=1` put `TEXTURE_COMPRESSION_ASTC` in `WgpuSettings::disabled_features` beside BC; `device_request(disable_bc, disable_astc)`, with the unit test `disabling_each_compressed_format_removes_only_that_feature_from_the_device_request` | dc4f9ed | `src/viewer.rs`, `wasm-viewer/src/lib.rs` | `cargo test` (alone); wasm build; ETC2 witness below |
+| `FORMAT=etc2 node scripts/check-device-format-fallback.cjs` writes `target/witness/device-format-fallback-etc2.json` with `?adapter=software&disable-bc=1&disable-astc=1`; the expected format is ETC2 only if SwiftShader exposes `texture-compression-etc2`. The ASTC run keeps its file name | 17032f9 | `scripts/check-device-format-fallback.cjs` | `FORMAT=etc2` run; ASTC run as a regression |
+| `NEON_TEXTURE` modes `bc7`, `rgba8`, `rgba8-software`, `astc4x4`, `etc2`. An unknown value now errors; before, any value other than `rgba8` silently ran BC7. `compare-screenshots.cjs` writes `texture-visual-<right>.json` | bc2c941 | `scripts/check-neon-wasm-models.cjs`, `scripts/compare-screenshots.cjs` | five gate runs; five comparisons |
+| `texture-footprint.cjs` writes a verdict per format. BC7 is usable only with footprint wins, load within 1.1 times the hardware RGBA8 witness, 64 of 64 clean, a visual file with 64 pairs and ok, and texel ok. ASTC and ETC2 are usable with footprint wins, load within 1.1 times the SwiftShader RGBA8 witness, clean, and visual ok; their texel is not required. `decision` keeps the BC7 default rule and `fallbackFormats` reports the other two. Each input's mtime is recorded | 568e608 | `scripts/texture-footprint.cjs` | `node scripts/texture-footprint.cjs` |
+| AGENTS.md: the non-BC device path names both selectors, the wgpu forced-fallback caveat, the witnesses, and the visual judging rule | (uncommitted at this point, next commit) | `AGENTS.md` | none |
+
+Phase B plan, not run in Phase A:
+1. `/config/.local/bin/cargo build` (dev) and `cargo test --bin bevy-jayzee` alone; wasm build (`WASM_PROFILE=debug scripts/build-wasm.sh`).
+2. `FORMAT=etc2 node scripts/check-device-format-fallback.cjs`, which writes the file the queue names, `device-format-fallback-etc2.json`.
+3. Regenerate `target/witness/texture-texel.json` with `target/debug/bevy-jayzee texture-quality <cdn>`. The current file is from 05:12.
+4. Regenerate the screenshot sets through the gate, one run each: `NEON_TEXTURE` = `rgba8`, `bc7`, `rgba8-software`, `astc4x4`, `etc2`. Then compare: BC7 against hardware RGBA8 (`SHOTS_LEFT=neon-shots-rgba8 SHOTS_RIGHT=neon-shots-bc7`), and ASTC and ETC2 each against `neon-shots-rgba8-software`.
+5. `node scripts/texture-footprint.cjs` gives the decision from those files.
+6. Bench, back to back on this host: `scripts/bench-vs-jayzee.sh` with the release binary, after one release build and `verify.sh`. Both the jayzee and the bevy numbers are recorded with the host load before and after.
+7. Regressions the device path could affect: `check-device-bc-fallback.cjs`, `check-device-format-fallback.cjs` (ASTC, the default), `check-viewer-batching.cjs`, `check-hud-fixture.cjs`.
+
+Process check for the Round 25 leftover. `ps -o pid,etime,args -p 2354022` returns no row, so PID 2354022 (the 6-hour `node` from `playwriter-project`) has exited. The same check listed `playwriter-ws-server` (PID 289316), age 20:36 at that time; it was not started by a Round 25 job that is still running, and it was not stopped.
+
+Ranked remaining work, updated for Round 26 Phase A (reasons for each item left undone):
+1. ETC2 through a device request: the Phase B witness decides it. Not claimed until `device-format-fallback-etc2.json` has `ok: true`.
+2. ASTC and ETC2 texel quality: not measured, because no CPU decoder exists in the tree. Reason: adding a decoder is a new dependency or a new decoder, out of scope for this round. The visual judgement stands in for it.
+3. BC7 visual judgement: the decision now requires it. Its result is recorded in Phase B; a failing BC7 visual would make the default `rgba8`, as designed.
+4. A real non-BC device on this host: none. The NVIDIA adapter reports BC, and SwiftShader reports BC, ASTC and ETC2. SwiftShader is the stand-in for the device request.
+5. The batching floor (1, 0) and the owner's note about reverting the `objectsBatched` scoping: unchanged.
+6. The Round 23 list is unchanged: transitions of colour and transform, `skew`, `matrix` and 3D transform functions, non-uniform scale with rotation, Oklab interpolation, and the jayzee bench on a quiet host.
