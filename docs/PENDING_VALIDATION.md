@@ -600,3 +600,39 @@ Phase B plan, in this order, one cargo at a time and no unit suite alongside a b
 Friction item for gm (recorded, not fixed in code):
 
 - `playwriter-project` lives in `/config/.gmnew/pw/bin`, but that directory is not on the gm shell's `PATH`. Repo witnesses (`scripts/lib/playwriter-witness.cjs`) look the binary up on `PATH`, so they fail with `spawnSync playwriter-project ENOENT` unless the caller prefixes `PATH=/config/.gmnew/pw/bin:$PATH`. The repo does not hardcode the path. gm's launcher should put the playwriter bin on `PATH` for the shell it runs repo commands in, or expose the gate binary path, so witnesses run without a manual prefix.
+
+## Round 17 Phase B results
+
+Contention: the gate read swap-out 0 KB/s, 10,551 MB free and no cargo before the first build, and 10,266 MB free before the release build. One cargo invocation ran at a time; no unit suite ran alongside a build.
+
+Defects found in Phase B and fixed:
+
+- Neon HUD overlap, root cause: the top-left compass and district tags are `data-world-anchor` elements. Their position comes from projecting a world point, which the native viewer does not do, so `ui_html` placed them all at the origin as full-width rows. The `calc()` insets from Phase A were not the cause; the first witness run still showed 23 overlapping pairs. Fix (7180a93): `convert` drops `data-world-anchor` elements and reports them as `unsupported element <div data-world-anchor> dropped (n)`. The native viewer therefore does not draw world-anchored tags; that is a recorded limitation, not an overlap.
+- Viewer overlay: the viewer's own bottom-left text box spanned the full width and covered the `?` chip. It is now anchored bottom-right with `max_width: 65%` (7180a93).
+- `scripts/texture-footprint.cjs`: `cleanOk` compared the 64-model BC7 witness with the 12-model row count, so it could not pass. Fixed in its own commit.
+
+Witnesses:
+
+- Overlap, `scripts/check-hud-overlap.sh` on neon `main` (native viewer, display `:1`): first run after the calc change: `uiLabels` 22, `uiLabelOverlaps` 23. After the anchor drop: 17 and 4 (the overlay colliding with the race block and the zone banner). After the overlay move, final: `uiLabels` 17, `uiLabelOverlaps` 0, `uiUncoveredGlyphs` 0, exit 0. Screenshot `target/witness/neon-hud.png`; numbers in `target/witness/hud-overlap-main.json`. Remaining width artifact, not an overlap: the zone banner `#dz` is a full-width box because `width: max-content` is not parsed, so its text is centred inside a 898 px box.
+- Neon browser witness, RGBA8 (`NEON_TEXTURE=rgba8`): `ok: true`, 64 of 64 clean, `loadMsMedian` 1,102 ms, `loadMsMax` 3,703 ms (the last of two runs; the first was 3,454), GLB encoded total 283,092,200 bytes. Witness `target/witness/neon-wasm-witness-rgba8.json`.
+- Neon browser witness, BC7 (`NEON_TEXTURE=bc7`): `ok: true`, 64 of 64 clean, `loadMsMedian` 1,112 ms, `loadMsMax` 1,933 ms, GLB encoded total 101,358,620 bytes. Witness `target/witness/neon-wasm-witness-bc7.json`. WebGPU accepted the BC7 KTX2 images in the browser (vkFormat 145 mapped to `Bc7RgbaUnorm`).
+- Native `gltf-check`: RGBA8 cache and BC7 cache both `bevy_loaded` 64, `bevy_failed` 0, `decode_failed` 0, `basisu_textures` 61, `ktx2_images` 61.
+- Footprint, the 12 Zstandard models (`scripts/texture-footprint.cjs`): texel payload 242,308,356 bytes RGBA8 against 60,578,736 BC7, ratio 0.2500. Cache GLB bytes 281,422,780 against 99,689,200.
+- Visual check, `scripts/compare-screenshots.cjs` over the 64 paired neon screenshots: BC7 against RGBA8 median 33.3 dB, minimum 15.8 dB, below the 30 dB threshold in some pairs. Three of the 12 Zstandard pairs in the first run were below 30 dB (28.0, 28.6, 28.6).
+- Control, the reason the visual check was not accepted: a second RGBA8 run compared with the first RGBA8 run gave median 29.4 dB, minimum 15.5 dB, and 36 of 64 pairs below 30 dB. The screenshots are timing-sensitive, so this metric measures run-to-run noise as much as codec error. It cannot show that BC7 holds. A texel-level comparison (decode BC7 and compare with the RGBA8 level 0) is the right measurement and is not done; it is recorded as open.
+- Normal-map witness, `scripts/check-normal-map-visual.cjs` through the gate: `ok: true`, raw and decoded variants `loaded`, one adapter each, no tangent warnings, no failed requests.
+
+BC7 decision: `rgba8`. The four criteria from Phase A: footprint wins (true), load within 1.10 times (true, 1,112 against 1,102), clean (true, 64 of 64), visual holds (false, and the control shows the check is not discriminative at 30 dB). Because the visual criterion does not hold, the decoded cache stays RGBA8. The footprint result is recorded: BC7 would cut texel memory by 4× and GLB transfer by 2.8×. Nothing was switched; `gltf-check` defaults and `glb::decode` are unchanged.
+
+Build and unit witnesses:
+
+- `/config/.local/bin/cargo build --bin bevy-jayzee`: rc 0, no warnings (25.5 s first build; 15.6 s and 5.6 s after edits).
+- `/config/.local/bin/cargo test --bin bevy-jayzee`: `test result: ok. 54 passed; 0 failed`, including `calc_insets_resolve_to_the_summed_terms`, `overlapping_pairs_counts_only_real_intersections`, `world_anchored_elements_are_dropped_with_a_warning`, `bc7_ktx2_declares_bc7_and_sizes_levels_in_blocks`.
+- `/config/.local/bin/cargo build --release --bin bevy-jayzee`: rc 0, 10 m 39 s.
+- `bash scripts/verify.sh` on the release binary, once: exit 0. Bench 500 bodies mean 0.3132 ms (hash 0x17ff9626); 2000 bodies mean 0.8208 ms; 5000 bodies mean 1.4545 ms. Determinism 2000 bodies: `hashA` = `hashB` = 0x3a5f0b51, `pass: true`. Network check: `ok: true`, `errorM` 0, `confirmedTick` 354, all 11 checks true. These bench means are not compared back-to-back with the Round 16 host numbers, so they are not called a regression or an improvement.
+
+Process check: every browser, gate and witness server started by this round's runs has exited (`ps` shows none of their PIDs). Processes belonging to gm's other run (gm worker `2026-11-17-02-11-29-7857f6`, its playwriter gate and Chromium under `/tmp/gm-first-open-*`) are running and were not touched.
+
+Untracked, not committed: `web/status-main.json`, written by the native viewer on every run. The viewer writes it and it is not in `.gitignore`; it is left in the working tree.
+
+Round 17 items: 1 neon HUD overlap, fixed and witnessed (0 overlaps; screenshot kept). 2 BC7 against RGBA8, measured; cache stays RGBA8 with the reason recorded; the texel-level visual measurement is open. 3 PATH, recorded as a gm friction item in Phase A; the witnesses still need `PATH=/config/.gmnew/pw/bin:$PATH`.
