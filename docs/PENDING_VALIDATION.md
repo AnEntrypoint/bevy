@@ -778,3 +778,28 @@ Not run this round, and why: the wasm build and the browser witnesses (neon mode
 Processes: the viewers (one per HUD run) were stopped by PID inside `check-hud-overlap.sh`; the release build PID 2449811 exited; no viewer, server or client from this round remains.
 
 Ranked list after this round: item 1 (translate) is done. Item 2 (anchors whose id is not a viewer object) did not occur on neon `main` at the witness moment (`uiAnchorsUnresolved` is empty), so it remains first and unproven rather than open. Items 3 to 6 are unchanged, for the reasons given in Round 20 Phase A.
+
+## Round 21 Phase A
+
+Dispatcher decisions applied: CSS animations and anchors on things other than scene objects are defects to fix in this stretch. ASTC/ETC2 for non-BC GPUs and a real non-BC device are recorded as open by the dispatcher (this host has neither).
+
+Note on the banner spec: the zone banner's keyframes are neon's own `@keyframes dzin{0%{opacity:0;...}15%{opacity:1;...}75%{opacity:1}100%{opacity:0;visibility:hidden}}` with `animation:dzin 4s forwards`. By CSS, opacity is 0 at t=0, rises to 1 by 15% (0.6 s), holds to 75% (3.0 s), and is 0 and hidden from 4.0 s. The witness therefore checks 0 at t=0 rather than 1, and the browser comparison decides what is correct.
+
+Changes, each a local commit by lanmower with no trailers; no build, test, gate or witness ran in Phase A:
+
+| Change | Commit | Files | Witness it needs (Phase B) |
+| --- | --- | --- | --- |
+| `css_anim`: `@keyframes` parsing (`from`, `to`, percent lists), the `animation` shorthand (lists, duration, delay, `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `steps()`, iteration count, fill mode), and sampling of `opacity` (eased interpolation, underlying 1 where a keyframe omits it) and `visibility` (CSS discrete rule: visible between a visible and a hidden end). Tests: `keyframes_and_shorthand_parse`, `ease_matches_the_css_curve`, `zone_banner_fades_in_holds_and_ends_hidden` | 6484d2d | `src/css_anim.rs`, `src/main.rs` | `cargo test` |
+| `ui_html`: boxes keep their `animation` list with keyframes attached and a clock key (the element `id`, else its tree path and names). `HtmlAnimationClock` keeps each key's start time across HUD rebuilds and drops keys that leave the HTML, so a re-entered banner restarts. `animate_html` sets the box's visibility and scales the text and background alpha of its whole subtree each frame (`HtmlBaseAlpha` holds the unanimated alpha). Test `animated_boxes_keep_their_keyframes_under_their_id` | 6484d2d | `src/ui_html.rs` | `cargo test`; fixture witness below |
+| Viewer status: `uiClock` and `uiAnimations` (key, names, elapsed, opacity, visible) | 6484d2d | `src/viewer.rs` | fixture witness below |
+| Fixture world `testdata/hud-fixture` (outside the game data): place `fixture` whose sim spawns five geometry-less entities (`fixture-district`, `fixture-event`, `fixture-foe`, `fixture-pad`, `fixture-ping`); `scripts/ui.js` renders one tag of each kind (district `.dtag`, event `.ev-tag`, coach foe `.cofoe`, coach beacon `.cobeac` with an x offset, social ping `.so-tag`) and the zone banner with neon's `dzin` keyframes; `browser.html` renders the same `ui.js` in a page | 36378d1 | `testdata/hud-fixture/*` | the two witnesses below |
+| `scripts/check-hud-fixture.cjs`: runs the native viewer on the fixture with `VIEWER_EYE=0,40,1`, polls `web/status-fixture.json` every 15 to 60 ms for the banner samples until 6 s, takes `hud-fixture-1s.png` and `hud-fixture-6s.png`, stops the viewer by PID. ok when 5 anchors are in the scene, 5 are placed, all 5 are inside the viewport with the expected ids, the first sample is before 0.2 s, every sample from 0.7 s to 2.9 s is opacity 1 and visible, every sample from 4.0 s is opacity 0 and hidden, and there are 0 label overlaps | 36378d1 | `scripts/check-hud-fixture.cjs` | `node scripts/check-hud-fixture.cjs` exit 0 |
+| `scripts/check-banner-browser.cjs` (gm playwriter): opens `browser.html`, pauses the banner's real CSS animation and seeks it to each native sample's elapsed time and to 0, 2, 4 and 6 s; ok when every native sample matches the browser's computed opacity within 0.02 and its visibility exactly, and the browser has opacity 0 and hidden at 4 s | 36378d1 | `scripts/check-banner-browser.cjs` | `node scripts/check-banner-browser.cjs` exit 0 (gm job) |
+| Ranked item 6: `scripts/bench-vs-jayzee.sh` runs jayzee's `scripts/bench.mjs` and the release `bench` back-to-back at 500, 2000 and 5000 bodies, 300 ticks, and writes `target/witness/bench-vs-jayzee.json` | d7bbd25 | `scripts/bench-vs-jayzee.sh` | release build, then the script |
+
+Still undone after this stretch, with reasons:
+
+- ASTC or ETC2 textures for non-BC GPUs, and a real non-BC device: open by dispatcher decision; this host's GPU has neither format and there is no such device.
+- CSS animation of properties other than `opacity` and `visibility` (for example `dzin`'s `transform: translateY(-4px)` on the first frames, or colour animations): the native path samples only those two. Not done because no witness on neon `main` or the fixture depends on them, and `transform` animation would need per-frame `UiTransform` writes that conflict with the static translate support; next candidate.
+- The `animation-*` longhands (`animation-name`, `animation-duration` and so on): not parsed; neon's HUD uses the shorthand everywhere it animates.
+- `transition`: not run. A transition needs the previous value of a property across HUD rebuilds, which the rebuild-from-HTML model does not keep.
