@@ -731,3 +731,25 @@ Regression witnesses on the final tree:
 - Processes: no Chromium on the repo profile, gate, witness server, viewer or build started this round remains.
 
 Open list after this round: none reachable. World-anchored HUD tags remain dropped in the native viewer (it has no projection for them); that is a stated limitation of the native viewer, not an open defect.
+
+## Round 20 Phase A
+
+Item 1, world-anchored HUD tags in the native viewer. Not a platform limit: the viewer has the 3D camera, so each tag is now placed every frame by projecting its object's world position plus `data-anchor-offset` to the screen.
+
+Ranked remaining work (this stretch does item 1 of the queue and ranked item 1 below; the rest are not done, with the reason):
+
+1. **CSS `transform: translate(...)` is ignored by `ui_html`.** HUD blocks positioned with `left:50%; transform:translateX(-50%)` (`#topc`, the clock and phase block) start at the window centre instead of being centred on it, and other translated boxes drift the same way. Reachable now; done in this stretch.
+2. **World-anchored tags whose id is not a viewer object.** Event tags (`E.uid`), coach markers (foe and pad ids) and social pings anchor to entity ids. The native viewer can only place a tag whose id is a `ViewerObject`. Not done: whether neon `main` produces any such tag at the witness moment is what the Phase B witness shows (`uiAnchorsUnresolved`); if it does, the fix is mapping those ids to their mirrored entities, which is the next round.
+3. **CSS animations and transitions.** `ui_html` ignores `animation` and `transition`, so time-limited banners (the zone banner's `dzin 4s forwards`, which ends hidden) stay visible in the native viewer. Not done: it needs keyframe parsing and a clock in `ui_html`, which is a larger change than this stretch.
+4. **A smaller texture format for GPUs without BC.** Such GPUs get the RGBA8 cache, 4x the BC7 texel memory; ASTC or ETC2 would be the right formats there. Not done: this host's WebGPU adapter (NVIDIA, desktop) has no ASTC or ETC2, so the result cannot be witnessed loading here.
+5. **A real non-BC device for the fallback witness.** The Round 19 witness hides `texture-compression-bc` with a script shim. Not done: no device without BC is available on this host.
+6. **Bench comparison back-to-back with jayzee.** AGENTS.md says a bench result is only a regression when compared back-to-back on the same host. Not done: it needs a jayzee run outside this repo, and no regression is suspected.
+
+Changes, each a local commit by lanmower with no trailers; no build, test, gate or witness ran in Phase A:
+
+| Change | Commit | Files | Witness it needs (Phase B) |
+| --- | --- | --- | --- |
+| `ui_html`: a `data-world-anchor` element is no longer dropped. It becomes an absolute box carrying `WorldAnchor { id, offset }` (offset from `data-anchor-offset`), spawned hidden; anchored inline elements skip the inline path; `HtmlUiStatus.anchors` counts them. Test `world_anchored_elements_become_anchored_absolute_boxes` replaces the old drop test | b4ea88d | `src/ui_html.rs` | `cargo test` |
+| Viewer: `place_world_anchors` projects each anchor's object position plus offset through the active 3D camera every frame and centres the box on the point; it hides the box when the id has no object (`unresolved`), the point is behind the camera, or the point is outside the viewport. `classify_anchor` holds the decision; test `anchors_are_placed_only_in_front_of_the_camera_and_inside_the_viewport`. Hidden text no longer counts as a label in the overlap check. Status fields: `uiAnchorsInScene`, `uiAnchorsSeen`, `uiAnchorsPlaced`, `uiAnchorsUnresolved`, `uiAnchorsBehind`, `uiAnchorsOffscreen`, `uiAnchorViewport`, `uiAnchorPositions` | b4ea88d | `src/viewer.rs` | `cargo test`; HUD witness below |
+| HUD witness requires `uiAnchorsInScene > 0`, `uiAnchorsPlaced == uiAnchorsInScene`, and every placed position inside the viewport | b1e3866 | `scripts/check-hud-overlap.sh` | `scripts/check-hud-overlap.sh` exit 0 with the anchor fields; screenshot `target/witness/neon-hud.png` |
+| Ranked item 1: `transform: translate(...)`, `translateX(...)`, `translateY(...)` (px or %) become a `UiTransform` translation (percent of the node's own size, as in CSS), with an `HtmlTranslated` marker. Test `translate_transforms_map_to_node_relative_offsets`. Status `uiTranslatedBoxes`; the HUD witness requires a translated box at the top (`#topc`) centred on the window within 2 px | the last Round 20 code commit | `src/ui_html.rs`, `src/viewer.rs`, `scripts/check-hud-overlap.sh` | `cargo test`; HUD witness `topCentreOffset` at most 2 |
