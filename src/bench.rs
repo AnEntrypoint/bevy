@@ -47,7 +47,7 @@ fn spawn_scene(mut commands: Commands, bodies: usize) {
     }
 }
 
-fn build_app(bodies: usize) -> App {
+fn build_app(bodies: usize, diagnostics: bool) -> App {
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
@@ -58,6 +58,9 @@ fn build_app(bodies: usize) -> App {
             .disable::<PhysicsInterpolationPlugin>()
             .disable::<IslandSleepingPlugin>(),
     ));
+    if diagnostics {
+        app.add_plugins(PhysicsDiagnosticsPlugin);
+    }
     app.insert_resource(Time::<Fixed>::from_hz(TICK_HZ));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(TICK));
     app.insert_resource(Gravity(Vec3::new(0.0, GRAVITY_Y, 0.0)));
@@ -84,7 +87,11 @@ fn state_hash(app: &mut App) -> u32 {
 }
 
 fn simulate(bodies: usize, warmup: usize, ticks: usize) -> (App, Vec<f64>) {
-    let mut app = build_app(bodies);
+    simulate_with(bodies, warmup, ticks, false)
+}
+
+fn simulate_with(bodies: usize, warmup: usize, ticks: usize, diagnostics: bool) -> (App, Vec<f64>) {
+    let mut app = build_app(bodies, diagnostics);
     app.finish();
     app.cleanup();
     for _ in 0..warmup {
@@ -105,14 +112,41 @@ pub fn run(bodies: usize, ticks: usize) {
     samples.sort_by(f64::total_cmp);
     let mean = samples.iter().sum::<f64>() / samples.len() as f64;
     let pick = |q: f64| samples[((samples.len() as f64 - 1.0) * q).round() as usize];
+    let threads = bevy::tasks::ComputeTaskPool::get().thread_num();
     println!(
-        "{{\"kind\":\"bench\",\"engine\":\"bevy-avian\",\"bodies\":{bodies},\"ticks\":{ticks},\"meanMs\":{:.4},\"p50Ms\":{:.4},\"p95Ms\":{:.4},\"p99Ms\":{:.4},\"ticksPerSecondAtMean\":{},\"hash\":\"0x{:08x}\"}}",
+        "{{\"kind\":\"bench\",\"engine\":\"bevy-avian\",\"bodies\":{bodies},\"ticks\":{ticks},\"threads\":{threads},\"meanMs\":{:.4},\"p50Ms\":{:.4},\"p95Ms\":{:.4},\"p99Ms\":{:.4},\"ticksPerSecondAtMean\":{},\"hash\":\"0x{:08x}\"}}",
         mean,
         pick(0.50),
         pick(0.95),
         pick(0.99),
         (1000.0 / mean).round() as u64,
         hash
+    );
+}
+
+pub fn phases(bodies: usize, ticks: usize) {
+    let (app, samples) = simulate_with(bodies, 30, ticks, true);
+    let threads = bevy::tasks::ComputeTaskPool::get().thread_num();
+    let mean = samples.iter().sum::<f64>() / samples.len() as f64;
+    let store = app.world().resource::<bevy::diagnostic::DiagnosticsStore>();
+    let mut phases: Vec<(String, f64, usize)> = store
+        .iter()
+        .filter_map(|diagnostic| {
+            let values: Vec<f64> = diagnostic.values().copied().collect();
+            (!values.is_empty()).then(|| {
+                let average = values.iter().sum::<f64>() / values.len() as f64;
+                (diagnostic.path().to_string(), average, values.len())
+            })
+        })
+        .collect();
+    phases.sort_by(|a, b| a.0.cmp(&b.0));
+    let entries: Vec<String> = phases
+        .iter()
+        .map(|(path, average, count)| format!("\"{path}\":{{\"meanMs\":{average:.4},\"samples\":{count}}}"))
+        .collect();
+    println!(
+        "{{\"kind\":\"bench-phases\",\"engine\":\"bevy-avian\",\"bodies\":{bodies},\"ticks\":{ticks},\"threads\":{threads},\"tickMeanMs\":{mean:.4},\"phases\":{{{}}}}}",
+        entries.join(",")
     );
 }
 
