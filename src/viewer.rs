@@ -1,5 +1,7 @@
 use bevy::diagnostic::{DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use bevy::render::settings::{RenderCreation, WgpuFeatures, WgpuSettings};
+use bevy::render::RenderPlugin;
 use bevy::ui::{ComputedNode, UiGlobalTransform};
 use bevy::window::{PrimaryWindow, WindowResolution};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -38,6 +40,7 @@ pub struct ViewerScene {
     pub marker_ids: Vec<String>,
     pub models_loaded: usize,
     pub texture_target: &'static str,
+    pub bc_supported: bool,
     pub models_missing: Vec<String>,
     pub proxies: usize,
     pub markers: usize,
@@ -164,7 +167,8 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
             }),
             ..default()
         })
-        .set(AssetPlugin { file_path: cache.display().to_string(), ..default() }))
+        .set(AssetPlugin { file_path: cache.display().to_string(), ..default() })
+        .set(RenderPlugin { render_creation: device_request(std::env::var("VIEWER_DISABLE_BC").is_ok_and(|value| value == "1")), ..default() }))
     .add_plugins((FrameTimeDiagnosticsPlugin::default(), EntityCountDiagnosticsPlugin::default(), LogDiagnosticsPlugin::default()))
     .insert_resource(ClearColor(Color::srgb(0.035, 0.045, 0.065)))
     .insert_resource(ViewerScene {
@@ -194,6 +198,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         marker_ids: Vec::new(),
         models_loaded: 0,
         texture_target: "",
+        bc_supported: false,
         models_missing: Vec::new(),
         proxies: 0,
         markers: 0,
@@ -352,6 +357,13 @@ fn orbit_camera(
     }
 }
 
+pub fn device_request(disable_bc: bool) -> RenderCreation {
+    RenderCreation::Automatic(Box::new(WgpuSettings {
+        disabled_features: disable_bc.then_some(WgpuFeatures::TEXTURE_COMPRESSION_BC),
+        ..default()
+    }))
+}
+
 pub fn fixed_eye(value: Option<&str>) -> Option<Vec3> {
     let parts = value?.split(',').map(|part| part.trim().parse::<f32>().ok()).collect::<Option<Vec<_>>>()?;
     match parts.as_slice() {
@@ -460,6 +472,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     value["textureTarget"] = serde_json::json!(scene.texture_target);
+    value["bcSupported"] = serde_json::json!(scene.bc_supported);
     value["uiWindowWidth"] = serde_json::json!(window_width);
     value["uiFullWidthLabels"] = serde_json::json!(full_width);
     value["uiLabelBoxes"] = serde_json::json!(label_boxes);
@@ -496,8 +509,19 @@ pub fn browser_report_path(_directory: &str, place: Option<&str>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{AnchorPlacement, classify_anchor, fixed_eye};
+    use super::{AnchorPlacement, classify_anchor, device_request, fixed_eye};
     use bevy::prelude::{Vec2, Vec3};
+    use bevy::render::settings::{RenderCreation, WgpuFeatures};
+
+    #[test]
+    fn disabling_bc_removes_only_that_feature_from_the_device_request() {
+        let requested = |disable| match device_request(disable) {
+            RenderCreation::Automatic(settings) => settings.disabled_features,
+            RenderCreation::Manual(_) => None,
+        };
+        assert_eq!(requested(true), Some(WgpuFeatures::TEXTURE_COMPRESSION_BC));
+        assert_eq!(requested(false), None);
+    }
 
     #[test]
     fn anchors_are_placed_only_in_front_of_the_camera_and_inside_the_viewport() {
