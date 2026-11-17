@@ -1,5 +1,5 @@
 const tabs = ['Performance','GPU Passes','Frame Graph','Scene','Memory','Textures','Multiplayer','Log','Jobs','Terrain','Fields','World','ECS','Physics','Vibes','Parameters','Diagnostic'];
-const colors = ['#22d3ee','#a3e635','#f472b6','#fbbf24','#60a5fa','#c084fc','#34d399'];
+const colors = ['var(--flag-green-text)','var(--flag-gold-text)','var(--flag-blue-text)','var(--flag-red-text)','var(--ui-text)','var(--ui-muted)','var(--flag-green-text)'];
 const q = (id) => document.getElementById(id);
 const root = q('render-inspector');
 const query = new URLSearchParams(location.search);
@@ -19,7 +19,7 @@ function setOpen(value) {
 function sparkline(values, color) {
   const max = Math.max(1, ...values.map(v => Math.abs(v || 0)));
   const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * 82},${13 - Math.min(13, Math.abs(v || 0) / max * 12)}`).join(' ');
-  return `<svg class="spark" viewBox="0 0 82 14" role="img" aria-label="sparkline"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+  return `<svg class="spark" viewBox="0 0 82 14" role="img" aria-label="sparkline"><polyline points="${pts}" style="fill:none;stroke:${color};stroke-width:1.5"/></svg>`;
 }
 function shown(snapshot, group) {
   return (snapshot.shown || []).filter(m => m.group === group);
