@@ -85,6 +85,17 @@ pub enum TextureTarget {
 }
 
 impl TextureTarget {
+    pub fn for_gpu(bc_supported: bool) -> Self {
+        if bc_supported { Self::Bc7 } else { Self::Rgba8 }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Rgba8 => "rgba8",
+            Self::Bc7 => "bc7",
+        }
+    }
+
     pub fn cache_dir(self) -> &'static str {
         match self {
             Self::Rgba8 => "target/gltf-cache-rgba8",
@@ -396,6 +407,14 @@ mod tests {
         assert_eq!(&bytes[level0..level0 + 32], &[7u8; 32]);
         assert_eq!(&bytes[level1..level1 + 8], &[9u8; 8]);
         assert!(level1 < level0);
+    }
+
+    #[test]
+    fn gpu_without_bc_falls_back_to_rgba8() {
+        assert_eq!(TextureTarget::for_gpu(true), TextureTarget::Bc7);
+        assert_eq!(TextureTarget::for_gpu(false), TextureTarget::Rgba8);
+        assert_eq!(TextureTarget::for_gpu(false).name(), "rgba8");
+        assert_eq!(TextureTarget::for_gpu(false).cache_dir(), "target/gltf-cache-rgba8");
     }
 
     #[test]

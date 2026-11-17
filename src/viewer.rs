@@ -37,6 +37,7 @@ pub struct ViewerScene {
     pub unmirrored_models: usize,
     pub marker_ids: Vec<String>,
     pub models_loaded: usize,
+    pub texture_target: &'static str,
     pub models_missing: Vec<String>,
     pub proxies: usize,
     pub markers: usize,
@@ -118,6 +119,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         unmirrored_models: 0,
         marker_ids: Vec::new(),
         models_loaded: 0,
+        texture_target: "",
         models_missing: Vec::new(),
         proxies: 0,
         markers: 0,
@@ -302,7 +304,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform)>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform)>, windows: Query<&Window, With<PrimaryWindow>>) {
     if report.path.is_empty() {
         return;
     }
@@ -319,6 +321,13 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         .collect::<Vec<_>>();
     let rects = boxes.iter().map(|(_, rect)| *rect).collect::<Vec<_>>();
     let overlaps = overlapping_pairs(&rects);
+    let window_width = windows.single().map(|window| window.physical_width() as f32).unwrap_or(0.0);
+    let full_width = rects.iter().filter(|rect| window_width > 0.0 && rect[2] - rect[0] >= window_width * 0.95).count();
+    let label_boxes = boxes
+        .iter()
+        .take(60)
+        .map(|(text, rect)| serde_json::json!({ "text": text.chars().take(40).collect::<String>(), "rect": rect }))
+        .collect::<Vec<_>>();
     let overlap_pairs = overlaps
         .iter()
         .take(40)
@@ -350,6 +359,7 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "unmirroredModels": scene.unmirrored_models,
         "markerIds": scene.marker_ids,
         "modelsLoaded": scene.models_loaded,
+        "textureTarget": scene.texture_target,
         "modelsMissing": scene.models_missing,
         "proxies": scene.proxies,
         "markers": scene.markers,
@@ -364,6 +374,9 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
         "uiLabels": rects.len(),
         "uiLabelOverlaps": overlaps.len(),
         "uiLabelOverlapPairs": overlap_pairs,
+        "uiWindowWidth": window_width,
+        "uiFullWidthLabels": full_width,
+        "uiLabelBoxes": label_boxes,
         "renderer": "bevy native window / winit / wgpu / pbr / ui",
     });
     let _ = std::fs::write(&report.path, serde_json::to_string_pretty(&value).unwrap_or_default());

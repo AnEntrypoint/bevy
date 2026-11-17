@@ -1,4 +1,6 @@
 use avian3d::prelude::{Collider, ColliderOf};
+use crate::basisu::TextureTarget;
+use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats};
 use bevy::asset::RenderAssetUsages;
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
@@ -48,7 +50,10 @@ pub fn mirror_world(
     mut proxy_material: Local<Option<Handle<StandardMaterial>>>,
     mut models: Local<HashMap<String, Option<Handle<WorldAsset>>>>,
     mut shapes: Local<HashMap<MeshShape, Handle<Mesh>>>,
+    formats: Option<Res<CompressedImageFormatSupport>>,
 ) {
+    let target = TextureTarget::for_gpu(formats.is_some_and(|support| support.0.contains(CompressedImageFormats::BC)));
+    scene.texture_target = target.name();
     let directory = PathBuf::from(&scene.directory);
     let world = runner.0.world_mut();
     let scripted: HashSet<Entity> = world
@@ -174,7 +179,7 @@ pub fn mirror_world(
             Drawn::Model(name) => {
                 let handle = models
                     .entry(name.clone())
-                    .or_insert_with(|| load_model(&directory, name, &cache.0, &asset_server, &mut scene))
+                    .or_insert_with(|| load_model(&directory, name, &cache.0, &asset_server, &mut scene, target))
                     .clone();
                 let Some(handle) = handle else {
                     unmirrored += 1;
@@ -301,6 +306,7 @@ fn load_model(
     cache: &Path,
     asset_server: &AssetServer,
     scene: &mut ViewerScene,
+    target: TextureTarget,
 ) -> Option<Handle<WorldAsset>> {
     let relative = name.trim_start_matches('/');
     let source = [directory.join(relative), directory.parent().unwrap_or(directory).join("assets").join(relative)]
@@ -310,7 +316,7 @@ fn load_model(
         scene.models_missing.push(format!("missing: {name}"));
         return None;
     };
-    let decoded = std::fs::read(&source).map_err(|error| error.to_string()).and_then(|bytes| crate::glb::decode(&bytes));
+    let decoded = std::fs::read(&source).map_err(|error| error.to_string()).and_then(|bytes| crate::glb::decode_with(&bytes, target));
     let Ok(decoded) = decoded else {
         scene.models_missing.push(format!("failed: {name}"));
         return None;

@@ -28,6 +28,7 @@ pub struct Decoded {
     pub ktx2_textures: Vec<usize>,
 }
 
+#[cfg(test)]
 pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
     decode_with(bytes, basisu::TextureTarget::Bc7)
 }

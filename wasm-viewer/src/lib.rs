@@ -1,4 +1,5 @@
 use bevy::asset::{AssetMetaCheck, AssetPlugin, LoadState};
+use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats};
 use bevy::prelude::*;
 use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
@@ -19,6 +20,9 @@ struct ReadySent(bool);
 
 #[derive(Resource)]
 struct ModelRequest(Option<String>);
+
+const BC7_CACHE: &str = "target/gltf-cache/";
+const RGBA8_CACHE: &str = "target/gltf-cache-rgba8/";
 
 #[derive(Resource)]
 struct ModelHandle(Handle<WorldAsset>);
@@ -64,8 +68,8 @@ pub fn start() {
     .insert_resource(ModelRequest(model))
     .insert_resource(ModelReported(false))
     .insert_resource(InspectorState { enabled: inspector_enabled, last_update: 0.0 })
-    .add_systems(Startup, (setup, spawn_model))
-    .add_systems(Update, (orbit, spin, mark_ready, report_model, publish_diagnostics));
+    .add_systems(Startup, setup)
+    .add_systems(Update, (spawn_model, orbit, spin, mark_ready, report_model, publish_diagnostics));
     app.run();
 }
 
@@ -147,10 +151,36 @@ fn model_request() -> Option<String> {
     (!path.is_empty() && !path.split('/').any(|part| part == "..")).then_some(path)
 }
 
-fn spawn_model(mut commands: Commands, asset_server: Res<AssetServer>, request: Res<ModelRequest>) {
-    let Some(path) = request.0.as_deref() else {
+fn texture_choice(path: &str, bc_supported: bool) -> (String, &'static str) {
+    match path.strip_prefix(BC7_CACHE) {
+        Some(rest) if !bc_supported => (format!("{RGBA8_CACHE}{rest}"), "rgba8"),
+        Some(_) => (path.to_string(), "bc7"),
+        None => (path.to_string(), "source"),
+    }
+}
+
+fn spawn_model(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut request: ResMut<ModelRequest>,
+    support: Option<Res<CompressedImageFormatSupport>>,
+    mut spawned: Local<bool>,
+) {
+    if *spawned {
+        return;
+    }
+    let Some(support) = support else {
         return;
     };
+    *spawned = true;
+    let Some(requested) = request.0.clone() else {
+        return;
+    };
+    let bc_supported = support.0.contains(CompressedImageFormats::BC);
+    let (path, format) = texture_choice(&requested, bc_supported);
+    publish_status_attribute("data-bc-supported", if bc_supported { "true" } else { "false" });
+    publish_status_attribute("data-texture-format", format);
+    publish_status_attribute("data-model-path", &path);
     let handle = asset_server.load::<WorldAsset>(format!("{path}#Scene0"));
     commands.spawn((
         WorldAssetRoot(handle.clone()),
@@ -158,6 +188,16 @@ fn spawn_model(mut commands: Commands, asset_server: Res<AssetServer>, request: 
         Name::new("wasm-model"),
     ));
     commands.insert_resource(ModelHandle(handle));
+    request.0 = Some(path);
+}
+
+fn publish_status_attribute(name: &str, value: &str) {
+    if let Some(element) = web_sys::window()
+        .and_then(|window| window.document())
+        .and_then(|document| document.get_element_by_id("app-status"))
+    {
+        let _ = element.set_attribute(name, value);
+    }
 }
 
 fn report_model(
