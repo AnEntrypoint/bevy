@@ -2007,3 +2007,72 @@ Still open after this reconciliation: rank 1 (viewer cost), rank 3 (release gate
 - `scripts/measure-viewer-resources.sh` (new): runs `bc7`, `rgba8` and `uastc` in turn on `PLACE` (default `main`), waits for `uiLabels`, settles for `SETTLE_S` (default 10 s), copies each status file, stops each viewer by PID, and writes `target/witness/viewer-resources-main.json`. A mode fails unless its `textureTarget` matches, every model loads, and both RSS and frame time are present.
 
 Phase A checks: no build or test was run, as the queue requires. `rustfmt --edition 2024 --check` reports only line-length diffs on the touched files, and the same diffs exist on HEAD. No parse errors.
+
+## Round 37 Phase B results
+
+Phase B supersedes the Phase A status above. The keep-basis (UASTC native) mode was removed in `91d163a`, after the run below showed it cannot load.
+
+### Build
+
+- `scripts/build-timed.sh build --release` on the keep-basis tree (`d1245c3`, before `91d163a`), through `/config/.local/bin/cargo`: rc 0, `Finished release profile in 18m 10s`, 0 warnings. The tree was then rebuilt on `91d163a`: rc 0, `Finished release profile in 18m 51s`, and that binary is the one measured below.
+- One unexplained failure: the first release rebuild of `91d163a` returned rc 101 in 0 compiled crates after `Compiling bevy-jayzee`, with no rustc diagnostic in `target/build-timed-last.log`. The same source built on the next invocation with no change. Its cause is not known; the kernel log shows no OOM kill.
+
+### 1. Release gate (`scripts/verify.sh` on `91d163a`)
+
+- `scripts/verify.sh` exit 0, with the bench, determinism and client/server output quoted from the run: bench 500 `meanMs` 0.2812 `hash` 0x17ff9626; 2000 `meanMs` 0.7946 `hash` 0x3a5f0b51; 5000 `meanMs` 1.3818 `hash` 0x38909cb0; det 2000 `hashA` and `hashB` 0x3a5f0b51, `pass` true; `check-network` `ok` true, `confirmedTick` 353, `errorM` 0.
+- Earlier run on the keep-basis build (`d1245c3` tree): also exit 0 (bench 500 0.3183, 2000 0.8004, 5000 1.4137). It is superseded.
+
+### 2. Native viewer, neon `main`: memory, texture bytes, frame time, decision
+
+Command: `scripts/measure-viewer-resources.sh` (`MODES` default `bc7 rgba8`), release binary `91d163a`, `VIEWER_EYE` 0,300,1, `SETTLE_S` 10, one run per mode. Output: `target/witness/viewer-resources-main.json`.
+
+| Mode | `textureTarget` | `processRssMiB` | `imageCount` | `imageMiB` (CPU `Image.data`) | `frameMsAverage` | `fpsAverage` | models loaded / missing / load errors |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| bc7 (default on this NVIDIA host) | bc7 | 646.9 | 35 | 29.94 | 16.664 | 60.27 | 9 / 0 / 0 |
+| rgba8 (`VIEWER_DISABLE_BC=1 VIEWER_DISABLE_ASTC=1`) | rgba8 | 818.4 | 35 | 90.73 | 16.667 | 60.96 | 9 / 0 / 0 |
+
+The UASTC-native row was measured first, on the keep-basis build, and is not valid: `textureTarget` basis-uastc, RSS 615.1 MiB, `imageCount` 23. Two models failed in Bevy's asset server with `Failed to load asset ... failed to decompress an image: Unsupported supercompression scheme: BasisLZ` (`target/witness/resources-uastc.err`). The status still reported `modelsMissing` 0, because the failure happens after the status is written. The mode was removed in `91d163a`.
+
+Decision: keep BC7 for devices with BC support, and RGBA8 only where BC is absent, as the runtime choice already does. Reasons, from the numbers: BC7 uses 171.5 MiB less RSS than RGBA8 (646.9 against 818.4), and its CPU image bytes are 60.8 MiB less, 67 percent below RGBA8 (29.94 against 90.73). Frame time does not separate the modes: both sit at the 60 Hz present cap (16.66 ms). This measurement cannot show GPU frame cost, which the render-stats counters would be needed for. UASTC native is rejected because Bevy 0.20.1 cannot read the BasisLZ payload, so no measurement of it is valid.
+
+Caveat: each mode is one run on one host. The keep-basis build's bc7 run gave 704.6 MiB, so RSS varies by about 60 MiB between runs.
+
+### 3. Wasm payload for the decoded neon copies, and the format decision
+
+Command: `PATH=/config/.gmnew/pw/bin:$PATH NEON_TEXTURE=<mode> node scripts/check-neon-wasm-models.cjs`, run through the gm gate, same session for each mode. The first BC7 attempt failed with `spawnSync playwriter-project ENOENT` because PATH lacked the gm playwriter bin; it was rerun with the path set.
+
+| Mode | 64 models | GLB encoded bytes (total) | GLB encoded bytes (largest model) | `loadMsMedian` | `loadMsMax` | wasm bundle encoded bytes |
+| --- | --- | --- | --- | --- | --- | --- |
+| bc7 | 64 clean | 101,358,620 | 11,940,336 | 1232 ms | 4451 ms | 31,140,873 |
+| rgba8 | 64 clean | 283,092,200 | 37,106,376 | 1404 ms | 2413 ms | 31,140,873 |
+| astc4x4 | 64 clean | not in the rows (0 by the witness) | not in the rows | 1267 ms | 5662 ms | 31,140,873 |
+
+BC7's byte count matches the Round 17 figure (101,358,620) exactly. The wasm bundle is the same across modes, so only the GLB copies differ.
+
+Decision: keep BC7 as the wasm copy format. From the numbers, BC7 is 2.79 times smaller than RGBA8 in total and its median load is faster (1232 against 1404 ms). ASTC 4x4 would not be smaller: it and BC7 both use 16 bytes per 4x4 block, so its copies would be about the same size. ASTC also has no GPU support on this desktop NVIDIA host, so it runs only through the `adapter=software` path, which the witness uses. Maximum load times vary between runs (4451 and 2413 ms, single runs), so the max is not used for the decision.
+
+### 4. The GPU panic (`Unable to find a GPU`, first ASTC gate run)
+
+Guard left in place: the native hook in `src/main.rs` (exit 3 with a message) and the browser pre-check in `web/wasm-boot.js` (`no WebGPU adapter`).
+
+Conditions tried, in the ledger's order:
+- First ASTC gate run (Round 33), before `still=1`: one model failed with `Unable to find a GPU`, `ready: false`. Cause unknown.
+- Rerun of that mode, same tree: 64 of 64 clean (Round 33).
+- The `still=1` run: 64 of 64 clean.
+- Round 37, `NEON_TEXTURE=astc4x4` on `91d163a`, `adapter=software&disable-bc=1&still=1`: 64 of 64 clean, `notClean` [], wall 391,850 ms. No model reported a missing adapter.
+
+The panic did not recur in four ASTC runs. It is still unexplained. If it recurs, record the model name and the gate's adapter log, which the witness row does not keep.
+
+### Ledger status after Round 37 Phase B
+
+| Rank | Status after Phase B |
+| --- | --- |
+| 1 Native viewer cost | Closed: BC7 and RGBA8 measured on the final binary; decision recorded above. UASTC native rejected (BasisLZ). |
+| 2 HUD text quality | Closed (as in Phase A). |
+| 3 Release gate | Closed: `scripts/verify.sh` exit 0 on `91d163a`. |
+| 4 Wasm payload | Closed: per-mode bytes and load time measured this round; BC7 kept. |
+| 5 to 7 | Closed (as in Phase A). |
+| 8 ZLIB supercompression | Open: no sample, no test. |
+| 9 AGENTS.md size | Closed (as in Phase A). |
+
+Still open: rank 8 (ZLIB, no sample), and the one-off GPU panic in the first ASTC run (cause unknown, guard in place).
