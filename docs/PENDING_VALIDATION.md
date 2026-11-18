@@ -1816,3 +1816,33 @@ No process from this round remains. The release builds and the bench runs exited
 1. The 500-body ratio at low host load is 1.057 against the 1.08 baseline, and the other two are below their baselines by 2 to 4%. Open. Needs a baseline binary from the dcc84d8 feature set, which needs a decision on building it outside the shared checkout (invariant 7 forbids a copy).
 2. Host load moves the bench ratio by a factor of about 1.3 at 500 bodies (0.87 to 1.06). The bench has no load gate that holds the medians steady. Open. Needs a quiet host or a load gate that the owner accepts.
 3. Integrate-velocities and contact update (the largest timed phases) per body: 0.16 µs and 0.10 µs. Recorded for a future engine-side review. Not a witnessed defect.
+
+## Round 35 Phase A: faster builds, measured before the change
+
+Phase A is config and docs only. The builds below were measured in Phase A as the queue asked (the "before" column). The one change is the iterate profile. Phase B re-measures the same builds for the "after" column.
+
+### Commands and the measured before times
+
+All builds through `/config/.local/bin/cargo`, one at a time, each into its own target directory where a cold build was needed. Wall times from `date`, written by `/tmp/timed-build.sh` and the experiment driver.
+
+| Build | Command | Target dir | Wall | Result |
+| --- | --- | --- | --- | --- |
+| Cold release, current config | `cargo build --release` | `target/timing-cold` | 1015 s (16 m 55 s) | rc 0, 0 warnings |
+| Cold dev, current config | `cargo build` | `target/exp-dev-base` | 654 s | rc 0, 0 warnings |
+| Incremental dev after a one-line change | edit `src/main.rs` usage line, `cargo build`, revert | `target/debug` | 3 s | rc 0; the binary contains the new string |
+| Wasm release, up to date | `WASM_PROFILE=release scripts/build-wasm.sh` | `target/wasm-viewer` | 4 s | rc 0 |
+| Wasm release, cold | the same, with the previous `target/wasm-viewer` moved to `target/wasm-viewer-prev` | `target/wasm-viewer` | 252 s (4 m 08 s), 312 crates | rc 0 |
+
+The incremental dev figure is for an edit that recompiles only the `bevy-jayzee` crate and relinks it. The wasm figure is for `wasm-viewer`, which has its own lock file.
+
+### Candidates measured and not adopted
+
+- rust-lld, `-C link-arg=-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld -C link-arg=-fuse-ld=lld` through `--config`. The sysroot's `gcc-ld` and `rust-lld` (LLD 23.1.1) are present. Results: cold dev 658 s against 654 s; incremental dev 4 s against 3 s; cold release 1110 s against 1015 s. The lld link gives no gain on any of the three, so it is not in the config. The incremental link is already short.
+- Dependency opt-level 0 in the dev profile (`profile.dev.package."*".opt-level=0`, `debug=0`). Cold dev 204 s against 654 s (3.2 times faster). But the same world check runs 1.91 to 2.00 s against 0.32 to 0.52 s with the opt-3 dependencies (about 4 to 6 times slower). Iterating on physics needs the opt-3 dependencies, so the dev profile keeps `opt-level = 3` for dependencies. Round 6 had already rejected opt 1 for the same reason.
+- A memory limit for each compile. `systemd-run` cannot work here (no systemd, no user bus), and `/sys/fs/cgroup` is root-owned and not writable by this user, so no cgroup limit can be set. The compile parallelism stays at cargo's default of 12. Round 6 recorded the same limit.
+
+### Change adopted
+
+- `Cargo.toml`: `[profile.iterate]`, inheriting release, with `lto = false`, `codegen-units = 16`, `incremental = true` and `strip = "none"`. Cold build 507 s with `incremental = false` (the first measurement) against 1015 s for release, so about half. Release is unchanged, and the performance witnesses keep using it. Phase B measures the cold build with the committed profile, and the incremental iterate build after a one-line change.
+
+Commit: the `Cargo.toml` change, as lanmower with no trailers.
