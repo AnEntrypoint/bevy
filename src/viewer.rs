@@ -157,7 +157,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     let runner = world_runner(directory, &name, &tree)?;
     let title = format!("bevy-jayzee viewer - {name}");
     let mut app = App::new();
-    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/viewer-cache");
+    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(if viewer_world::basis_kept() { "target/viewer-cache-uastc" } else { "target/viewer-cache" });
     app.add_plugins(DefaultPlugins
         .set(WindowPlugin {
             primary_window: Some(Window {
@@ -403,11 +403,15 @@ fn ms(value: Option<f64>) -> String {
     value.map_or_else(|| "unsupported".to_string(), |value| format!("{value:.2}ms"))
 }
 
-fn process_rss_mib() -> String {
+fn process_rss_kib() -> Option<u64> {
     std::fs::read_to_string("/proc/self/statm")
         .ok()
-        .and_then(|statm| statm.split_whitespace().nth(1).and_then(|pages| pages.parse::<f64>().ok()))
-        .map_or_else(|| "unsupported (no /proc/self/statm)".to_string(), |pages| format!("{:.1}MiB", pages * 4096.0 / 1048576.0))
+        .and_then(|statm| statm.split_whitespace().nth(1).and_then(|pages| pages.parse::<u64>().ok()))
+        .map(|pages| pages * 4)
+}
+
+fn process_rss_mib() -> String {
+    process_rss_kib().map_or_else(|| "unsupported (no /proc/self/statm)".to_string(), |kib| format!("{:.1}MiB", kib as f64 / 1024.0))
 }
 
 fn update_overlay(
@@ -461,7 +465,7 @@ fn primary_window_title(scene: Res<ViewerScene>, mut windows: Query<&mut Window,
     }
 }
 
-fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform, &InheritedVisibility)>, windows: Query<&Window, With<PrimaryWindow>>, anchors: Res<AnchorReport>, translated: Query<(&ComputedNode, &UiGlobalTransform, &InheritedVisibility), With<HtmlTranslated>>, animations: Res<HtmlAnimationStatus>, time: Res<Time>) {
+fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, report: Res<ViewerBrowserReport>, ui: Res<HtmlUiStatus>, overlay: Query<&Text, With<ViewerOverlay>>, labels: Query<(&Text, &ComputedNode, &UiGlobalTransform, &InheritedVisibility)>, windows: Query<&Window, With<PrimaryWindow>>, anchors: Res<AnchorReport>, translated: Query<(&ComputedNode, &UiGlobalTransform, &InheritedVisibility), With<HtmlTranslated>>, animations: Res<HtmlAnimationStatus>, time: Res<Time>, diagnostics: Res<DiagnosticsStore>, images: Res<Assets<Image>>) {
     if report.path.is_empty() {
         return;
     }
@@ -535,6 +539,11 @@ fn write_browser_report(scene: Res<ViewerScene>, objects: Query<&ViewerObject>, 
     });
     value["textureTarget"] = serde_json::json!(scene.texture_target);
     value["bcSupported"] = serde_json::json!(scene.bc_supported);
+    value["processRssKib"] = serde_json::json!(process_rss_kib());
+    value["frameMsAverage"] = serde_json::json!(diagnostics.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|diagnostic| diagnostic.average()));
+    value["fpsAverage"] = serde_json::json!(diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|diagnostic| diagnostic.average()));
+    value["imageCount"] = serde_json::json!(images.iter().count());
+    value["imageBytes"] = serde_json::json!(images.iter().map(|(_, image)| image.data.as_ref().map_or(0, Vec::len)).sum::<usize>());
     value["uiWindowWidth"] = serde_json::json!(window_width);
     value["uiFullWidthLabels"] = serde_json::json!(full_width);
     value["uiLabelBoxes"] = serde_json::json!(label_boxes);

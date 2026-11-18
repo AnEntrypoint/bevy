@@ -53,9 +53,9 @@ pub fn mirror_world(
     formats: Option<Res<CompressedImageFormatSupport>>,
 ) {
     let support = formats.map_or(CompressedImageFormats::empty(), |support| support.0);
-    let target = TextureTarget::for_gpu(support);
+    let target = (!basis_kept()).then(|| TextureTarget::for_gpu(support));
     scene.bc_supported = support.contains(CompressedImageFormats::BC);
-    scene.texture_target = target.name();
+    scene.texture_target = target.map_or("basis-uastc", |target| target.name());
     let directory = PathBuf::from(&scene.directory);
     let world = runner.0.world_mut();
     let scripted: HashSet<Entity> = world
@@ -308,7 +308,7 @@ fn load_model(
     cache: &Path,
     asset_server: &AssetServer,
     scene: &mut ViewerScene,
-    target: TextureTarget,
+    target: Option<TextureTarget>,
 ) -> Option<Handle<WorldAsset>> {
     let relative = name.trim_start_matches('/');
     let source = [directory.join(relative), directory.parent().unwrap_or(directory).join("assets").join(relative)]
@@ -318,7 +318,10 @@ fn load_model(
         scene.models_missing.push(format!("missing: {name}"));
         return None;
     };
-    let decoded = std::fs::read(&source).map_err(|error| error.to_string()).and_then(|bytes| crate::glb::decode_with(&bytes, target));
+    let decoded = std::fs::read(&source).map_err(|error| error.to_string()).and_then(|bytes| match target {
+        Some(target) => crate::glb::decode_with(&bytes, target),
+        None => crate::glb::decode_kept_basis(&bytes),
+    });
     let Ok(decoded) = decoded else {
         scene.models_missing.push(format!("failed: {name}"));
         return None;
@@ -327,6 +330,10 @@ fn load_model(
     std::fs::create_dir_all(cache).ok()?;
     std::fs::write(cache.join(&file), &decoded.bytes).ok()?;
     Some(asset_server.load(format!("{file}#Scene0")))
+}
+
+pub(crate) fn basis_kept() -> bool {
+    std::env::var("VIEWER_KEEP_BASIS").is_ok_and(|value| value == "1")
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
