@@ -500,6 +500,8 @@ Open: none for item 2.
 
 ## Round 15 ranked remaining work
 
+Superseded by "Round 37 Phase A: reconciliation of the Round 15 ranked list" at the end of this file, which states the status of each rank with its witness. The table below is the Round 15 record and is kept unchanged.
+
 Nothing below was started in Round 15. Each rank is the order I would work them, by the risk of a change already claimed as done and by how visible the gap is to the owner. The list is written as a local commit; it is not pushed until the next push.
 
 | Rank | Item | Why this rank | Witness that closes it |
@@ -1977,3 +1979,31 @@ Removed `target/debug/debug/` (3.1 GB), the nested tree from the driver mistake.
 ### Open
 
 None from this round.
+
+## Round 37 Phase A: reconciliation of the Round 15 ranked list
+
+Each Round 15 rank, with the round that closed it and the witness, or the reason it is still open.
+
+| Rank | Item | Status | Closed by, or what is still open |
+| --- | --- | --- | --- |
+| 1 | Native viewer memory and frame cost after the RGBA8 decode change | Open | Round 16 measured RSS 898,224 kB, fps 61.0 and frame 16.39 ms, on the debug binary and the RGBA8-era cache (line 562). That is not a before/after pair. Round 37 Phase B measures three modes with `scripts/measure-viewer-resources.sh`: `bc7`, `rgba8` (`VIEWER_DISABLE_BC=1`, the mode Round 23 witnessed as `textureTarget` rgba8 at line 986) and `uastc` (`VIEWER_KEEP_BASIS=1`). |
+| 2 | HUD text quality | Closed | Round 16 HUD glyph fix (`push_glyph` maps non-printable ASCII). Round 21 to 24 `scripts/check-hud-overlap.sh` runs, and the top-left overlap with them: Round 24 at line 985, `ok` true, 22 labels, 0 overlaps, 0 full-width, `topCentreOffset` 0, `textureTarget` bc7. The script's `ok` requires `uiUncoveredGlyphs` 0. No new PNG was viewed in Round 37. |
+| 3 | Release gate on the current tree | Open | Last `scripts/verify.sh` exit 0 was on the Round 16 tree and recorded in Round 17. Round 37 Phase B runs it on the current tree. |
+| 4 | Wasm payload for the decoded neon copies | Closed | Round 17: BC7 GLB encoded 101,358,620 bytes, `loadMsMedian` RGBA8 1,102 ms and BC7 1,112 ms. Round 25 Phase B footprint decision `bc7` (`target/witness/texture-footprint.json`). Per-model rows are in `target/witness/neon-wasm-witness.json`. Round 37 Phase B re-reads them. |
+| 5 | Commit the browser witnesses as a repo script | Closed | `9d0270e` adds the 64-model witness script to the repo, and `30d104a` routes it through the gate. Round 16 Phase B: 64 of 64 clean, `loadMsMedian` 1,092 ms. |
+| 6 | Move `scripts/check-normal-map-visual.cjs` onto gm's playwriter | Closed | `7ef0445`: the script requires `./lib/playwriter-witness.cjs` (`withGateWitness`). |
+| 7 | Reconcile `docs/PENDING_VALIDATION.md` | Closed | This section. The Round 15 table is marked superseded above, and its text is unchanged. |
+| 8 | ZLIB-supercompressed basis KTX2 | Open | No ZLIB sample exists in the data. `inflate_zstd_levels` inflates scheme 2 (Zstandard) only. Scheme 3 (ZLIB) is not tested, and the error it produces is not witnessed. Needs a sample or a unit test. |
+| 9 | AGENTS.md under 30 KB | Closed | `wc -c AGENTS.md` = 13616 bytes, under 30720, measured in Round 37 Phase A. |
+
+Still open after this reconciliation: rank 1 (viewer cost), rank 3 (release gate on this tree) and rank 8 (ZLIB). Round 16's neon HUD top-left overlap, which the Round 16 notes listed as open, is closed by the Round 21 to 24 overlap runs above.
+
+### Round 37 Phase A changes
+
+- `src/basisu.rs`: `transcode_basis_images` now calls `rewrite_basis_images(json, bin, Some(target))`. The new `keep_basis_images` calls it with `None`, which keeps the basis payload: Zstandard levels are inflated, and BasisLZ or UASTC payloads are left for Bevy to transcode at load. `basis_payload` selects the two paths.
+- `src/glb.rs`: `decode_with` and the new `decode_kept_basis` both call `decode_textures(bytes, Option<TextureTarget>)`.
+- `src/viewer_world.rs`: `basis_kept()` reads `VIEWER_KEEP_BASIS=1`. The viewer's target is `None` when it is set, and `load_model` then decodes with `decode_kept_basis`. The status `textureTarget` reads `basis-uastc`.
+- `src/viewer.rs`: keep-basis runs use the cache `target/viewer-cache-uastc`, so they cannot overwrite the transcoded cache. `write_browser_report` adds `processRssKib`, `frameMsAverage`, `fpsAverage`, `imageCount` and `imageBytes` (the CPU-side `Image.data` total, which holds the GPU texture bytes). `process_rss_kib` replaces the string-only RSS reader; the overlay text is unchanged.
+- `scripts/measure-viewer-resources.sh` (new): runs `bc7`, `rgba8` and `uastc` in turn on `PLACE` (default `main`), waits for `uiLabels`, settles for `SETTLE_S` (default 10 s), copies each status file, stops each viewer by PID, and writes `target/witness/viewer-resources-main.json`. A mode fails unless its `textureTarget` matches, every model loads, and both RSS and frame time are present.
+
+Phase A checks: no build or test was run, as the queue requires. `rustfmt --edition 2024 --check` reports only line-length diffs on the touched files, and the same diffs exist on HEAD. No parse errors.
