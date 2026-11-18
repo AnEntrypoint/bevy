@@ -1846,3 +1846,62 @@ The incremental dev figure is for an edit that recompiles only the `bevy-jayzee`
 - `Cargo.toml`: `[profile.iterate]`, inheriting release, with `lto = false`, `codegen-units = 16`, `incremental = true` and `strip = "none"`. Cold build 507 s with `incremental = false` (the first measurement) against 1015 s for release, so about half. Release is unchanged, and the performance witnesses keep using it. Phase B measures the cold build with the committed profile, and the incremental iterate build after a one-line change.
 
 Commit: the `Cargo.toml` change, as lanmower with no trailers.
+
+## Round 35 Phase B: build times after the change, and the witnesses
+
+Builds were run one at a time through `/config/.local/bin/cargo` (and `scripts/build-wasm.sh` with the wrapper first on PATH). Each run was gated on swap-out 0 and MemAvailable above 7 GB. The driver was `/tmp/phaseb.sh`, then `/tmp/phaseb2.sh`, after the first run stopped on a bug in the driver's own `oneline` helper (it passed the cargo path twice). That run's dev incremental build failed with `requires -Zscript` and was not used; its numbers are not in the table.
+
+### Before and after wall times
+
+| Build | Before (Phase A) | After (Phase B) | Change in config |
+| --- | --- | --- | --- |
+| Cold release (`target/timing-cold`) | 1015 s | 1097 s | none (release unchanged) |
+| Incremental dev, one-line edit | 3 s | 7 s | none |
+| Wasm release, cold | 252 s | 318 s | none |
+| Wasm release, up to date | 4 s | 5 s | none |
+| Iterate, cold (new profile) | not measured | 594 s | new profile |
+| Iterate, one-line edit | not measured | 18 s | new profile |
+| Release, one-line edit (fat LTO, no profile) | not measured | 808 s | none |
+
+The "after" column for release, dev and wasm is the same configuration rebuilt on this host, so those differences are host variance, not a gain. No change was made to them: every candidate for them measured no gain or lost run-time speed (below). The gain is in the iterate profile: a one-line rebuild falls from 808 s on release to 18 s on iterate, and a cold build from 1097 s to 594 s (about 46 percent less, measured in the same session). Phase A's cold iterate figure of 507 s used `incremental = false`; the committed profile has `incremental = true`, which costs about 87 s on the cold build and is what makes the one-line rebuild 18 s.
+
+### rust-lld linker result
+
+Measured with `--config 'target.x86_64-unknown-linux-gnu.rustflags=[...,"-C","link-arg=-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld","-C","link-arg=-fuse-ld=lld"]'`, each in its own target directory:
+
+- Cold dev: 658 s with lld, 654 s without.
+- Incremental dev, one-line edit: 4 s with lld, 3 s without.
+- Cold release: 1110 s with lld, 1015 s without.
+
+Result: no gain, and a small loss on the release build. lld is not in the config. The linker is not what limits a rebuild here; the compile is.
+
+### Candidates measured and not adopted
+
+- Dependency opt-level 0 in the dev profile: cold dev 204 s, but the world check runs 1.91 to 2.00 s against 0.32 to 0.52 s on the opt-3 binary. Iterating on physics needs the opt-3 dependencies, so the dev profile keeps them. Round 6 had rejected opt 1 for the same reason.
+- A memory limit for each compile: not possible here. `systemd-run` has no systemd or user bus to use, and `/sys/fs/cgroup` is root-owned and not writable by this user. Compile parallelism stays at cargo's default; Round 6 recorded that the jobs cap was not isolated.
+
+### Unexplained: a 452-crate dev rebuild
+
+The first dev build after the Phase A profile commits (`/tmp/phaseb.sh` `dev-sync`, untimed in the table above) recompiled 452 crates in 654 s. A manifest-only edit to the iterate profile was then tested and rebuilt one crate in 15 s, so the profile edit is not the cause. The cause is not identified. The source had been reverted from a probe edit and the dev target was otherwise current. If it recurs, record the first `Compiling` lines of that build.
+
+### Witnesses
+
+- Determinism rows, release binary built from the current code (`target/timing-cold/release/bevy-jayzee det N 300`): `det 500` `hashA 0x17ff9626`, `hashB 0x17ff9626`, pass true; `det 2000` `hashA 0x3a5f0b51`, `hashB 0x3a5f0b51`, pass true. The same hashes as Round 34.
+- Batching, native viewer on `testdata/spec-world test` with the iterate binary (`target/iterate-phaseb/iterate/bevy-jayzee`): rc 124 by the 60 s timeout (expected), 0 panics; `objectDraws` 8, `shapesCreated` 10, `mirrorBatchKeys` 8, `objectBatchKeys` 8, `modelsMissing` [], `missingObjects` [], `textureTarget` bc7. `scripts/check-viewer-batching.cjs web/status-test.json`: ok true, paletteSlots 1, proxyMaterials 0.
+- Warnings in every build log: 0.
+
+### Changes this round (all lanmower, no trailers)
+
+- b240064: `Cargo.toml`, the `[profile.iterate]` profile.
+- b61cc73: this document's Phase A section.
+- The Phase B section (this one) is the commit that carries it.
+
+### Disk
+
+Removed after measurement: `target/exp-dev-base`, `target/exp-dev-lld`, `target/exp-dev-deps0`, `target/exp-rel-lld`, `target/exp-iterate` and `target/wasm-viewer-prev` (all created in this round; about 17 GB). Kept: `target/timing-cold` (the current release binary used for the witnesses), `target/iterate-phaseb`, `target/debug`, `target/wasm-viewer`.
+
+### Open
+
+1. The 452-crate dev rebuild above is not explained. Open.
+2. A cold release build is 1097 s, unchanged. It is the witness build and is kept by decision.
+3. The compile memory limit cannot be set on this host (no systemd, no writable cgroup). Open, pending a host change.
