@@ -37,6 +37,13 @@ overflow-checks = false
 debug-assertions = false
 strip = "symbols"
 
+[profile.iterate]
+inherits = "release"
+lto = false
+codegen-units = 16
+incremental = true
+strip = "none"
+
 [profile.dev]
 opt-level = 1
 debug = "line-tables-only"
