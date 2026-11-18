@@ -175,21 +175,6 @@ unsafe extern "C" {
 }
 
 pub fn transcode_basis_images(json: &mut Value, bin: &mut Vec<u8>, target: TextureTarget) -> Result<usize, String> {
-    rewrite_basis_images(json, bin, Some(target))
-}
-
-pub fn keep_basis_images(json: &mut Value, bin: &mut Vec<u8>) -> Result<usize, String> {
-    rewrite_basis_images(json, bin, None)
-}
-
-fn basis_payload(source: &[u8], target: Option<TextureTarget>) -> Result<Option<Vec<u8>>, String> {
-    match target {
-        Some(target) => transcode_basis(source, target).map(Some),
-        None => inflate_zstd_levels(source),
-    }
-}
-
-fn rewrite_basis_images(json: &mut Value, bin: &mut Vec<u8>, target: Option<TextureTarget>) -> Result<usize, String> {
     let targets: Vec<(usize, usize)> = json
         .get("images")
         .and_then(Value::as_array)
@@ -223,19 +208,17 @@ fn rewrite_basis_images(json: &mut Value, bin: &mut Vec<u8>, target: Option<Text
         let new_view = match rewritten.get(&view_index) {
             Some(index) => *index,
             None => {
-                let Some(payload) = basis_payload(source, target).map_err(|error| format!("image {image_index}: {error}"))? else {
-                    continue;
-                };
+                let rgba = transcode_basis(source, target).map_err(|error| format!("image {image_index}: {error}"))?;
                 let buffer = view.get("buffer").and_then(Value::as_u64).unwrap_or(0);
                 let aligned = bin.len().next_multiple_of(4);
                 bin.resize(aligned, 0);
                 let new_offset = bin.len();
-                bin.extend_from_slice(&payload);
+                bin.extend_from_slice(&rgba);
                 let views_mut = json
                     .get_mut("bufferViews")
                     .and_then(Value::as_array_mut)
                     .ok_or("GLB has no bufferViews array")?;
-                views_mut.push(json!({"buffer": buffer, "byteOffset": new_offset, "byteLength": payload.len()}));
+                views_mut.push(json!({"buffer": buffer, "byteOffset": new_offset, "byteLength": rgba.len()}));
                 let index = views_mut.len() - 1;
                 rewritten.insert(view_index, index);
                 index

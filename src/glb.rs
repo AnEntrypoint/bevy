@@ -34,14 +34,6 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, String> {
 }
 
 pub fn decode_with(bytes: &[u8], target: basisu::TextureTarget) -> Result<Decoded, String> {
-    decode_textures(bytes, Some(target))
-}
-
-pub fn decode_kept_basis(bytes: &[u8]) -> Result<Decoded, String> {
-    decode_textures(bytes, None)
-}
-
-fn decode_textures(bytes: &[u8], target: Option<basisu::TextureTarget>) -> Result<Decoded, String> {
     let container = read_container(bytes)?;
     let meshopt = uses_extension(&container.json);
     let (mut json, mut bin, meshopt_views) = if meshopt {
@@ -50,10 +42,7 @@ fn decode_textures(bytes: &[u8], target: Option<basisu::TextureTarget>) -> Resul
         (container.json, container.bin.unwrap_or_default(), 0)
     };
     let basisu_textures = basisu::promote(&mut json);
-    let basis_images = match target {
-        Some(target) => basisu::transcode_basis_images(&mut json, &mut bin, target)?,
-        None => basisu::keep_basis_images(&mut json, &mut bin)?,
-    };
+    let basis_images = basisu::transcode_basis_images(&mut json, &mut bin, target)?;
     let quantization_retired = retire_extension(&mut json, MESH_QUANTIZATION);
     let floated_tangents = float_tangents(&mut json, &mut bin)?;
     let ktx2_textures = ktx2_texture_indices(&json);

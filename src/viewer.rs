@@ -157,7 +157,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     let runner = world_runner(directory, &name, &tree)?;
     let title = format!("bevy-jayzee viewer - {name}");
     let mut app = App::new();
-    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join(if viewer_world::basis_kept() { "target/viewer-cache-uastc" } else { "target/viewer-cache" });
+    let cache = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/viewer-cache");
     app.add_plugins(DefaultPlugins
         .set(WindowPlugin {
             primary_window: Some(Window {

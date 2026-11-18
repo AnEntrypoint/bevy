@@ -11,14 +11,13 @@ witness=target/witness
 status=web/status-$place.json
 export VIEWER_EYE="${VIEWER_EYE:-0,300,1}"
 mkdir -p "$witness"
-modes=${MODES:-bc7 rgba8 uastc}
+modes=${MODES:-bc7 rgba8}
 failed=0
 
 for mode in $modes; do
     case $mode in
         bc7) extra=() ;;
         rgba8) extra=(VIEWER_DISABLE_BC=1 VIEWER_DISABLE_ASTC=1) ;;
-        uastc) extra=(VIEWER_KEEP_BASIS=1) ;;
         *) echo "unknown mode $mode" >&2; exit 2 ;;
     esac
     rm -f "$status"
@@ -46,17 +45,19 @@ done
 node -e '
 const fs = require("node:fs");
 const [witness, place, modesText] = process.argv.slice(1);
-const expected = { bc7: "bc7", rgba8: "rgba8", uastc: "basis-uastc" };
+const expected = { bc7: "bc7", rgba8: "rgba8" };
 const rows = modesText.split(" ").map((mode) => {
   const path = `${witness}/resources-${mode}.json`;
   if (!fs.existsSync(path)) return { mode, ok: false, reason: "no status file" };
   const s = JSON.parse(fs.readFileSync(path, "utf8"));
+  const loadErrors = (fs.readFileSync(`${witness}/resources-${mode}.err`, "utf8").match(/Failed to load asset/g) || []).length;
   const row = {
     mode,
     textureTarget: s.textureTarget,
     bcSupported: s.bcSupported,
     modelsLoaded: s.modelsLoaded,
     modelsMissing: (s.modelsMissing || []).length,
+    loadErrors,
     objects: s.objects,
     processRssMiB: s.processRssKib == null ? null : +(s.processRssKib / 1024).toFixed(1),
     imageCount: s.imageCount,
@@ -64,8 +65,8 @@ const rows = modesText.split(" ").map((mode) => {
     frameMsAverage: s.frameMsAverage == null ? null : +s.frameMsAverage.toFixed(3),
     fpsAverage: s.fpsAverage == null ? null : +s.fpsAverage.toFixed(2),
   };
-  row.ok = s.textureTarget === expected[mode] && row.modelsLoaded > 0 && row.modelsMissing === 0 && row.processRssMiB !== null && row.frameMsAverage !== null;
-  if (!row.ok) row.reason = `textureTarget ${s.textureTarget} expected ${expected[mode]}, loaded ${row.modelsLoaded}, missing ${row.modelsMissing}`;
+  row.ok = s.textureTarget === expected[mode] && row.modelsLoaded > 0 && row.modelsMissing === 0 && row.loadErrors === 0 && row.processRssMiB !== null && row.frameMsAverage !== null;
+  if (!row.ok) row.reason = `textureTarget ${s.textureTarget} expected ${expected[mode]}, loaded ${row.modelsLoaded}, missing ${row.modelsMissing}, load errors ${row.loadErrors}`;
   return row;
 });
 const out = { kind: "viewer-resources", place, rows, ok: rows.every((row) => row.ok) };
