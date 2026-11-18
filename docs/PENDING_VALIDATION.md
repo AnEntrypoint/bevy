@@ -1880,9 +1880,9 @@ Result: no gain, and a small loss on the release build. lld is not in the config
 - Dependency opt-level 0 in the dev profile: cold dev 204 s, but the world check runs 1.91 to 2.00 s against 0.32 to 0.52 s on the opt-3 binary. Iterating on physics needs the opt-3 dependencies, so the dev profile keeps them. Round 6 had rejected opt 1 for the same reason.
 - A memory limit for each compile: not possible here. `systemd-run` has no systemd or user bus to use, and `/sys/fs/cgroup` is root-owned and not writable by this user. Compile parallelism stays at cargo's default; Round 6 recorded that the jobs cap was not isolated.
 
-### Unexplained: a 452-crate dev rebuild
+### The 452-crate dev rebuild
 
-The first dev build after the Phase A profile commits (`/tmp/phaseb.sh` `dev-sync`, untimed in the table above) recompiled 452 crates in 654 s. A manifest-only edit to the iterate profile was then tested and rebuilt one crate in 15 s, so the profile edit is not the cause. The cause is not identified. The source had been reverted from a probe edit and the dev target was otherwise current. If it recurs, record the first `Compiling` lines of that build.
+Explained in Round 36 Phase A: the build wrote a second tree at target/debug/debug because the driver set CARGO_TARGET_DIR to a profile directory. See the Round 36 section.
 
 ### Witnesses
 
@@ -1902,6 +1902,42 @@ Removed after measurement: `target/exp-dev-base`, `target/exp-dev-lld`, `target/
 
 ### Open
 
-1. The 452-crate dev rebuild above is not explained. Open.
+1. The 452-crate dev rebuild is explained in Round 36 (the driver set CARGO_TARGET_DIR to a profile directory). Closed.
 2. A cold release build is 1097 s, unchanged. It is the witness build and is kept by decision.
 3. The compile memory limit cannot be set on this host (no systemd, no writable cgroup). Open, pending a host change.
+
+## Round 36 Phase A: the 452-crate rebuild, and the helper that prevents it
+
+Phase A is reading, a helper script, and docs. Nothing was built or run.
+
+### Cause
+
+The 452-crate build was not a rebuild of the dependency graph in `target/debug`. It was a cold build into a new tree, caused by a wrong `CARGO_TARGET_DIR` in my own driver.
+
+- `/tmp/phaseb.sh` line 24 set `export CARGO_TARGET_DIR=/workspace/bevy/target/debug`. Cargo takes `CARGO_TARGET_DIR` as the target root and adds the profile directory itself, so that build wrote a complete second tree to `target/debug/debug/`.
+- The evidence: `target/debug/debug/` is dated 2026-11-18 08:57 to 09:04, holds 432 distinct packages (452 compile units with build scripts), and is 3.1 GB. The real `target/debug/.fingerprint` for `proc-macro2` is dated 2026-11-16 22:11 and was not written by that build.
+- The corrected driver (`/tmp/phaseb2.sh`) did not set the variable, and its dev incremental build used the real `target/debug` (7 s, one crate).
+
+### What was checked and ruled out
+
+- Build scripts. No build-script `output` file was rewritten in the 08:50 to 09:05 window; the newest is the `bevy-jayzee` one from 17 November 09:57. A rebuild cascading from a changed build script would have rewritten those files.
+- The first unit compiled was the leaf `proc-macro2`. A fingerprint change at a leaf with an unchanged build script means the leaf's own inputs changed. That is the case here only because it was a different target root: its fingerprint was not in the real tree at all.
+- Profile settings. A manifest-only edit to the `[profile.iterate]` section (`incremental` flipped and reverted) rebuilt one crate in 15 s. Adding the profile section did not invalidate the dependency graph.
+- The rustc identity. `target/.rustc_info.json` was last written on 14 November and records rustc 1.99.0 (b940084d7), the same compiler `rustc -Vv` reports now, so the compiler did not change.
+- Features. `Cargo.toml` features and `Cargo.lock` were not changed between the dev build of 17 November and this one, except for the Phase A profile addition.
+- Environment. The only environment difference between the two builds was the `CARGO_TARGET_DIR` export in the driver.
+
+### Fix
+
+`scripts/build-timed.sh` (commit 7ce35ff) runs cargo through `/config/.local/bin/cargo` and:
+
+- refuses a `CARGO_TARGET_DIR` whose last component is `debug` or `release`, so a profile directory cannot be used as a target root again (exit 2, no build);
+- prints one JSON line with the arguments, the exit code, the wall time, the number of crates compiled (lines beginning `Compiling`), the warning count and the target root;
+- keeps the full cargo log at `target/build-timed-last.log`.
+
+The nested `target/debug/debug/` tree is removed in Phase B, after the proof builds, once the check that refuses it is in place.
+
+### Corrections to earlier rounds
+
+- Round 35 Phase B said the 452-crate rebuild was unexplained. It is explained here. The "Open" item there is closed by this section.
+- The Round 35 "Unexplained" paragraph is replaced by a pointer to this section.
