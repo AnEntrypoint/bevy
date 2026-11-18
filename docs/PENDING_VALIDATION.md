@@ -1941,3 +1941,39 @@ The nested `target/debug/debug/` tree is removed in Phase B, after the proof bui
 
 - Round 35 Phase B said the 452-crate rebuild was unexplained. It is explained here. The "Open" item there is closed by this section.
 - The Round 35 "Unexplained" paragraph is replaced by a pointer to this section.
+
+## Round 36 Phase B: the rebuild proof
+
+Builds through `scripts/build-timed.sh`, which runs `/config/.local/bin/cargo` with the default target root (`target/`) and the dev profile. One build at a time. Gate before the first build: swap-out 0, MemAvailable 6.9 GB, SwapFree 15 GB.
+
+| Build | What changed | Wall | Crates compiled | rc |
+| --- | --- | --- | --- | --- |
+| 1 | source edit in `src/main.rs` (usage line gets `timing-probe`) | 9.1 s | 1 | 0 |
+| 2 | second source edit to the same line (`timing-probe-2`) | 3.8 s | 1 | 0 |
+| 3 | no change (no-op) | 0.4 s | 0 | 0 |
+| restore | the edit reverted to the committed source | 4.0 s | 1 | 0 |
+
+Each source-edit build recompiled only the `bevy-jayzee` crate. The dependency graph was not rebuilt.
+
+### Guard check
+
+`CARGO_TARGET_DIR=/workspace/bevy/target/debug scripts/build-timed.sh build` printed `build-timed: CARGO_TARGET_DIR must be a target root, not a profile directory: /workspace/bevy/target/debug` and exited 2, with no build.
+
+### Witnesses on the committed source
+
+- Determinism rows (dev binary): `det 500 300` `hashA 0x17ff9626` `hashB 0x17ff9626`, pass true. `det 2000 300` `hashA 0x3a5f0b51` `hashB 0x3a5f0b51`, pass true. The same hashes as Round 34 and Round 35.
+- Native viewer on `testdata/spec-world test` with the dev binary: rc 124 at the 60 s timeout (expected), 0 panics. `objectDraws` 8, `shapesCreated` 10, `mirrorBatchKeys` 8, `objectBatchKeys` 8, `modelsMissing` [], `missingObjects` [], `textureTarget` bc7. `scripts/check-viewer-batching.cjs web/status-test.json`: ok true, paletteSlots 1, proxyMaterials 0.
+
+### Cleanup
+
+Removed `target/debug/debug/` (3.1 GB), the nested tree from the driver mistake. The real `target/debug` is kept and is the one these builds used.
+
+### Commits
+
+- 7ce35ff: `scripts/build-timed.sh`.
+- 1f46baa: Phase A docs (the cause, the fix, the corrected open item).
+- This Phase B section is the commit that carries it.
+
+### Open
+
+None from this round.
