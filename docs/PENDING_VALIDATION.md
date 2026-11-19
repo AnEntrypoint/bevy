@@ -3734,3 +3734,24 @@ Witnesses, each once:
 - `scripts/check-build-roots.sh`: rc 0, wall 0.04 s, "no stale build roots under /tmp".
 
 No build ran in this window. Nothing was stopped.
+
+## Round 68 Phase A: ASTC load measurement through the footprint's reference path
+
+Item taken: ranked item 7, the ASTC footprint decision. It is decided at load ratio 1.21 against the 1.1 tolerance (ASTC 1267 ms, software RGBA8 reference 1048 ms; the stale reference 1250 ms had passed). The item asks for a new ASTC load measurement in a Phase B window to confirm or overturn that decision.
+
+Design:
+- `scripts/lib/astc-load-ratio.cjs`: `decideLoad` computes the ratio and the decision as `astcMs <= referenceMs * tolerance`, the same form as `loadOk` in `scripts/texture-footprint.cjs`. It rejects non-positive or non-finite inputs.
+- `scripts/measure-astc-load.cjs`: runs the existing driver, `scripts/check-neon-wasm-models.cjs`, with `NEON_TEXTURE=astc4x4`, its PID captured. A timer stops the driver's whole process tree by PID at `ASTC_RUN_TIMEOUT_S` (default 600 s); a 2 s sampler records the tree, and any survivor is stopped by PID. It then reruns `scripts/texture-footprint.cjs` and reads the ASTC load and the reference load from that footprint's `formats.astc4x4` (`witness` and `referenceWitness`, the `rgba8-software` reference) and its `loadTolerance`. It prints one line: `ASTC_LOAD run_ok=… astc_ms=… reference_ms=… ratio=… tolerance=… load_ok=… footprint_load_ok=… agrees=… astc_clean=… astc_wall_s=… run_pid=… timed_out=… stragglers=… archive=… reference_file=…`.
+- The old ASTC shots and witness are copied to `target/witness/astc-load-archive/<stamp>/`, and the old shots are put back after the run. The new run's shots are kept in the archive. So the visual record (`texture-visual-astc4x4.json`), which describes the old shots, stays consistent with the shots in place.
+- Why ASTC only: the ASTC run took 391.8 s and the software RGBA8 run took 304.9 s, so both in one ten-minute window would not fit. The reference stays the existing witness, from the Round 57 window (11-19 23:13). The ratio therefore compares across windows, which the footprint already does; this is the caveat, stated in the Phase B entry.
+
+Witness: `scripts/check-astc-load-ratio.cjs`, fixture timings. Cases: 1267 against 1048 gives ratio 1.209 and not usable; the stale 1250 reference makes 1267 usable; 1100 against 1000 is usable at the tolerance; 1101 against 1000 is not usable; equal loads give ratio 1; a null ASTC load and a zero reference load are rejected; and the result line has its fixed field order. Result: 9 of 9 ok, exit 0.
+
+Red check: the comparison was made strict (`astcMs < referenceMs * tolerance`). The witness exited 1 with one FAIL, "a load exactly at the tolerance is usable". The file was restored with `cmp`, and the witness exited 0 again.
+
+Runner tests, no browser, with stand-in drivers (`ASTC_LOAD_DRIVER`):
+- A driver that exits 0 and writes nothing: `run_ok=false fresh=false exit_code=0`, exit 1. The 64 ASTC shots were put back, and the witness is byte-identical to its copy (`cmp`).
+- A driver that hangs, with `ASTC_RUN_TIMEOUT_S=2`: `run_ok=false timed_out=true stragglers=0`, exit 1. The driver was stopped by PID, the 64 shots were put back, and the witness is byte-identical. No stand-in process was left (checked by PID).
+- Both test runs left archive folders under `target/witness/astc-load-archive/`, which holds only witness copies and driver logs. They are git-ignored and kept as evidence.
+
+Not changed: the footprint rule (`LOAD_TOLERANCE` 1.1), the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo ran. Local commit only; not pushed in Phase A.
