@@ -3380,3 +3380,34 @@ Downstream: `scripts/texture-footprint.cjs` (no code change) now gives ETC2 `vis
 Not taken, with reopen evidence:
 - ASTC and ETC2 texel quality: no ASTC or ETC2 decoder is on disk. There is no `astcenc` or `etcpak`, no ASTC or ETC2 crate in the cargo registry (only `bcdec_rs` for BC and container parsers), and no PIL or Python decoder. Reopen: a decoder present on disk, or a dispatcher decision to add one.
 - Second software RGBA8 run: a browser run, so it goes in Phase B under the gate.
+
+## Round 57 Phase B: the second software RGBA8 run, and a correction to the named finding
+
+Readings (`vmstat 1 2`, the second sample is the gate reading), one bounded window, one reading every 30 seconds:
+- 23:13:36 first reading, second sample: si 196, so 0, load1 2.19. Open; the run started.
+- 23:19:11 post-run: si 16, so 0, load1 4.89.
+- 23:20:44 after the processes stopped: si 3140, so 0, load1 3.12. Closed on swap-in.
+
+The run and its witnesses, each once with wall time:
+- `NEON_TEXTURE=rgba8-software node scripts/check-neon-wasm-models.cjs` on localhost 127.0.0.1:8092: wall 307.9 s, rc 0, 64 of 64 clean. The original set and witness files were copied aside (`-orig`), the repeat was moved to `neon-shots-rgba8-software-r57` and `neon-wasm-witness-rgba8-software-r57.json`, and the originals were copied back.
+- `node scripts/check-cross-adapter.cjs`: wall 20.9 s, rc 0, ok true, all checks true.
+- `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.03 s, rc 0, ok true.
+
+What the repeat shows:
+- Against hardware RGBA8 (`x57-sw-r57-vs-hw`): ok true, minimum 30.94, median 53.45, 0 failing. It is inside the 30 dB rule.
+- Against the original software RGBA8 set (`x57-sw-r57-vs-orig`): ok false, minimum 16.72, median 21.11, 64 failing.
+
+Pixel identity, 64 frames per set (SHA of decoded RGB): hardware RGBA8 and hardware BC7 match on 52; the new software RGBA8, software BC7 and software ASTC match each other on 52; the original software RGBA8 matches the ETC2 set on 52.
+
+Provenance, from file modification times (PNG `clip-die`):
+- hardware RGBA8, 11-18 21:12; its repeat in Round 55 (11-19) was pixel-identical, so the hardware reference reproduces in the current build.
+- hardware BC7, 11-19 08:21; ASTC, 11-18 21:15; new software RGBA8 and software BC7, 11-19.
+- original software RGBA8, 11-17 11:51; ETC2, 11-17 12:01; the `rgba8-a` set, 11-17 12:06. All three predate the current wasm build (11-18 09:21).
+
+Source. `wasm-viewer/src/lib.rs` `texture_choice` remaps only paths under `target/gltf-cache/`. The `rgba8` mode path is not remapped, so the RGBA8 mode loads RGBA8 textures in the current build. The ETC2 and ASTC modes go through the BC7 path and the device target, so they are current-build renders when run now.
+
+Correction, stated plainly. The named finding `software-rgba8-rendering-difference` (Round 56, Round 57 commit C) rests on the original software RGBA8 set, written before the current build. The current build's software RGBA8 run is within the 30 dB rule against hardware RGBA8. So the finding is not reproduced by the current build, and its premise is not established. The check `swRgba8DifferenceStandsAgainstReference` and the ETC2 check `etc2FailureIsSoftwareRgba8Finding` in `check-cross-adapter.cjs` assert the stale set, so they are not valid evidence for the current build. No code change was made in this phase; the decision is the dispatcher's.
+
+ETC2, provisional. The ETC2 verdict (fail, 16.81 / 21.11 against hardware RGBA8) reads a set written at 11-17 12:01, before the current build. It is not a current-build result. Reopen: a current-build ETC2 run (mode `etc2`, which remaps through the device target), with the move-aside method.
+
+Processes and tabs: the job, the witness script, the wasm server and the playwriter gate were stopped; PIDs 1151439, 1151442, 1151486 and 1151501 had no `/proc` entry afterwards.
