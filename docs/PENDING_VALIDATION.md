@@ -3562,3 +3562,25 @@ Result of the stopped build: exit 143 after 164.2 s wall (00:14:44 to 00:17:28).
 Reading after the stop: si 740, so 0, load1 11.00. Load was still decaying from the build's peak.
 
 Why this matters for the decision: the `jobs` decision needs a clean build that completes inside the gate. This attempt started on an open gate and then ran into the limit, because a clean build at `jobs = 12` pushes swap and load above the limit. The next attempt should be a window that is clear before the build and that the build can finish in. Whether to use `jobs = 4` or 12 is still open.
+
+## Round 62 Phase B: clean-build measurement at `jobs = 2`, stopped at the swap limit (open)
+
+The `jobs` decision stays open; no CLEAN_BUILD line was produced. The `jobs` setting is unchanged (repo `.cargo/config.toml`, 12).
+
+Choice of `jobs`: the host has 12 cores and 15.2 GB of memory. The load ceiling is 4, and a compiling `rustc` runs several threads, so `jobs = 2` was chosen as the first value. It leaves the most headroom under 4. Its line decides whether 3 or 4 is tried next.
+
+Readings (`vmstat 1 2`, second sample; heavy-job check reads full arguments of each high-CPU PID):
+- 00:21:15 (before the job): si 8632, so 0, load1 1.89. Closed. The only process above 20% was gm-core pid 1002562 at 69.3%, with `--handshake` (exempt).
+- 00:21:49: si 88, so 36, load1 1.73. Open, heavy clear.
+- Witness `scripts/check-clean-build-measure.sh`, once: rc 0, wall 0.34 s, 12 of 12 ok (00:21:49).
+- 00:21:52: si 24, so 0, load1 1.73. Open, heavy clear. Build started: `bash scripts/measure-clean-build.sh --jobs 2`, pid 1396970.
+- Build 00:21:53: si 308, so 116, load1 1.75. Within limits.
+- Build 00:22:02: si 1852, so 20760, load1 1.93. Swap-in above 1000 KB/s. Stop by PID.
+
+Stop: the stop rule (swap-in above 1000 KB/s or load above 4) stopped the measurement's own tree by PID: 1396970, 1396996, 1397001, 1397321, 1397325, 1397366 (6 PIDs; TERM, then a 5 s wait, then KILL for any survivor). Survivors: 0. No peer process was stopped.
+
+Result: exit 143, wall 15.1 s, stopped by swap-in. Its cargo log `/tmp/measure-clean-build.NgL14h.log` shows 8 `Compiling` lines and no `Finished` line. The partial target root `/tmp/bevy-clean.c2f3ZV` (29 MB, created by this build) was removed.
+
+Readings after the stop: si 272, so 0, load1 1.95. No measure, rustc or cc1plus processes remained.
+
+What the line says so far: at `jobs = 2` the first build seconds swapped at 20 MB/s out and 1.8 MB/s in, with load still at about 1.9. So the swap limit, not the load ceiling, is what tripped first. The swap came within the first 10 seconds of a clean build, which points at memory use by the cargo and rustc start-up rather than at the number of jobs. One stopped run does not separate the two. The next measurement needs to read the same readings, and the decision on `jobs` stays open until a line is read.
