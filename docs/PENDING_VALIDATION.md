@@ -3603,3 +3603,33 @@ Decision:
 What settles the `jobs = 2` question: the next Phase B build records tree RSS (`build_tree_sample` from `scripts/lib/build-rss.sh`) and the gm-core RSS total every 8 seconds, alongside the gate. If the build tree's RSS rises before the swap-out does, the swap is the build's own; if swap-out rises while the tree's RSS is flat, it is a neighbour's.
 
 Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the `jobs` setting. No cargo ran, no browser ran, and nothing was pushed in this Phase A.
+
+## Round 63 Phase B: clean-build memory sampling at `jobs = 2`, stopped at the swap limit (open)
+
+The `jobs` decision stays open. No CLEAN_BUILD line was produced, and the `jobs` setting is unchanged (repo `.cargo/config.toml`, 12). The answer to the Phase A question is in the next section.
+
+Window: opened 00:32:18 (first reading). Readings `vmstat 1 2` (second sample); heavy-job check reads full arguments of each high-CPU PID (gm-core `--handshake` exempt).
+- 00:32:18 si 24, so 0, load1 2.18. Gate open. Heavy busy: peer `zig test` pid 1400349 at 100%. Not ours; not stopped.
+- 00:32:45 si 144, so 0, load1 2.31. Gate open. Heavy busy: same peer.
+- 00:33:13 si 132, so 0, load1 2.43. Gate open. Heavy busy: peer `zig` pid 1406365 at 199%.
+- 00:33:40 si 16, so 0, load1 2.91. Gate open, heavy clear.
+- Witness `scripts/check-clean-build-measure.sh`, once: rc 0, wall 0.36 s, 12 of 12 ok (00:33:40).
+- 00:33:42 si 188, so 0, load1 2.91. Gate open. Heavy busy: `fx ask` pid 1407563 at 90% (peer).
+- 00:34:10 si 52, so 0, load1 2.43. Gate open, heavy clear. Build started: `measure-clean-build.sh --jobs 2`, pid 1409356.
+
+Build readings, every 8 s, with memory: time, si, so, load1, the build tree's RSS (`build_tree_sample`, `scripts/lib/build-rss.sh`), gm-core RSS, MemAvailable, swap in use:
+- 00:34:11 si 300, so 520, load1 2.43, tree 27 MiB, gm-core 1000 MiB, MemAvailable 7433 MiB, swap used 5557 MiB.
+- 00:34:20 si 3800, so 37168, load1 2.82, tree 920 MiB, gm-core 849 MiB, MemAvailable 7566 MiB, swap used 6266 MiB. Swap-in above 1000 KB/s. Stop by PID.
+
+Stop: the tree was stopped by PID (1409356, 1409433, 1409440, 1409886, 1409913, 1410243), TERM, then KILL for any survivor. Survivors: 0. No peer process was stopped.
+
+Result: exit 143, wall 15.2 s, stopped by swap-in. No CLEAN_BUILD line. The partial root was not logged; the build wrote a partial target root under `/tmp`, which is recorded here for the next stretch to check.
+
+Host and cgroup readings after the stop (read-only):
+- `/sys/fs/cgroup/memory.max` 12,884,901,888 bytes (12 GiB). `memory.current` 8.47 GB, then 7387 MiB at a later check. `memory.swap.max` 12 GiB, `memory.swap.current` 3.89 GB, then 3531 MiB.
+- Host `pswpout` rose by about 70 MB in one 5-second window with no build running (at 00:35), and by 0 in a 10-second window later with no build running. Swap-out is bursty and host-wide.
+- MemTotal is 15,584,988 kB, but the effective limit for this container is the cgroup's 12 GiB, not the host's 15.2 GB. Round 43's "15.2 GB" is the host figure, not this container's limit.
+
+Answer to the Phase A question, from this run: the spike is not explained by the build's own working set. At the 00:34:20 reading the build's tree was 920 MiB, and MemAvailable was 7.5 GB. The spike's swap-out (37 MB/s) and the swap in use (6266 MiB) came from host-wide reclaim, and the pages it moved belong to processes this file set cannot name, since the host has no per-process swap counter. Neighbours are the better-supported reading. The build's tree did grow 893 MiB in 9 s, so the build's allocation may trigger the reclaim, but the files do not show that the reclaimed pages were the build's own.
+
+Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the `jobs` setting. No peer process was stopped.
