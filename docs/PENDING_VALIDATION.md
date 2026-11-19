@@ -3633,3 +3633,30 @@ Host and cgroup readings after the stop (read-only):
 Answer to the Phase A question, from this run: the spike is not explained by the build's own working set. At the 00:34:20 reading the build's tree was 920 MiB, and MemAvailable was 7.5 GB. The spike's swap-out (37 MB/s) and the swap in use (6266 MiB) came from host-wide reclaim, and the pages it moved belong to processes this file set cannot name, since the host has no per-process swap counter. Neighbours are the better-supported reading. The build's tree did grow 893 MiB in 9 s, so the build's allocation may trigger the reclaim, but the files do not show that the reclaimed pages were the build's own.
 
 Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the `jobs` setting. No peer process was stopped.
+
+## Round 64 Phase B: clean-build memory sampling at `jobs = 2`, stopped at the swap limit (open)
+
+The `jobs` decision stays open. No CLEAN_BUILD line was produced. The `jobs` setting is unchanged (repo `.cargo/config.toml`, 12). The stop rule and the measurement script's stop logic are unchanged.
+
+Window: about ten minutes, from 00:41:22 (first reading) to the stop at 00:42:12. Readings `vmstat 1 2` (second sample); the heavy-job check reads full arguments of each high-CPU PID (gm-core `--handshake` exempt).
+- 00:41:22 si 8496, so 16, load1 1.48. Closed. Heavy clear.
+- 00:41:50 si 20, so 0, load1 1.62. Open. Heavy clear.
+- Witness `scripts/check-clean-build-measure.sh`, once: rc 0, wall 0.36 s, 12 of 12 ok (00:41:50).
+- 00:41:52 si 96, so 0, load1 1.62. Open, heavy clear. Build started: `measure-clean-build.sh --jobs 2`, pid 1488096.
+
+Build readings, every 8 s, with memory: time, si, so, load1, the build tree's RSS (`build_tree_sample`), gm-core RSS, MemAvailable, swap in use:
+- 00:41:53 si 4, so 0, load1 1.57, tree 26 MiB, gm-core 957 MiB, MemAvailable 7278 MiB, swap used 5610 MiB.
+- 00:42:02 si 672, so 0, load1 1.68, tree 904 MiB, gm-core 966 MiB, MemAvailable 7129 MiB, swap used 5636 MiB.
+- 00:42:12 si 3524, so 0, load1 2.04, tree 808 MiB, gm-core 951 MiB, MemAvailable 7131 MiB, swap used 5670 MiB. Swap-in above 1000 KB/s. Stop by PID.
+
+Stop: the build's own tree was stopped by PID (1488096, 1488122, 1488128, 1488406, 1488411, 1488633), TERM, then KILL for any survivor. Survivors: 0. No peer process was stopped.
+
+Result: exit 143, wall 24.3 s, stopped by swap-in. No CLEAN_BUILD line.
+
+Notes for the reading:
+- Swap-out stayed at 0 for the whole build. The spike was swap-in: pages returning from swap. The build's tree grows with fresh memory, so the returning pages are not its own. The owner of those pages is not recorded (host-wide vmstat, no per-process swap counter).
+- The build's tree grew to 904 MiB in 9 s, then fell to 808 MiB at the stop, while MemAvailable stayed at about 7.1 GB.
+- The container's cgroup has memory.max 12 GiB; memory.current was 7387 MiB at a later check.
+- This is the second clean build at `jobs = 2` stopped at the swap limit with a small tree (Round 63: swap-out 37168 KB/s at tree 920 MiB).
+
+Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, the `jobs` setting, and the stop rule.
