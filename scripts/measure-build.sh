@@ -14,13 +14,21 @@ meminfo_kib() {
     awk -v key="$1:" '$1 == key {print $2}' /proc/meminfo
 }
 
+swap_rates() {
+    local window=${GATE_WINDOW_S:-0.5} i0 o0 i1 o1
+    read -r i0 o0 < <(awk '$1 == "pswpin" {i = $2} $1 == "pswpout" {o = $2} END {print i, o}' /proc/vmstat)
+    sleep "$window"
+    read -r i1 o1 < <(awk '$1 == "pswpin" {i = $2} $1 == "pswpout" {o = $2} END {print i, o}' /proc/vmstat)
+    awk -v i0="$i0" -v i1="$i1" -v o0="$o0" -v o1="$o1" -v w="$window" 'BEGIN { printf "%d %d\n", (i1 - i0) * 4 / w, (o1 - o0) * 4 / w }'
+}
+
 waited=0
 while :; do
-    read -r gate so_now < <(vmstat 1 2 | tail -n 1 | awk '{print $7, $8}')
-    [ "$gate" -le 1000 ] && break
+    read -r gate so_now < <(swap_rates)
+    [ "$gate" -le 1000 ] && [ "$so_now" -le 1000 ] && break
     waited=$((waited + 1))
-    if [ "$waited" -ge 540 ]; then
-        echo "measure-build: swap-in stayed at ${gate} KiB/s for 540 s; not starting $label" >&2
+    if [ "$waited" -ge 1080 ]; then
+        echo "measure-build: swap-in ${gate} and swap-out ${so_now} KiB/s for 540 s; not starting $label" >&2
         exit 75
     fi
 done
@@ -74,7 +82,7 @@ if [ -n "$timings" ]; then
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v timings="${timings##*/}" 'BEGIN {
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"gateSwapInKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, gate, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, timings
 }' | tee -a "$record"
 exit "$rc"

@@ -2185,3 +2185,41 @@ Decisions:
 One run was lost: the first `codegen-units = 256` clean build was interrupted when the session ended at 12:03; it wrote no record. It was rerun in a fresh root (`bt-r39-cgu256b`), and that rerun is the one in the table.
 
 The driver logged a `vmstat` swap-in of 3532 KiB/s before the final clean build, which is above the 1000 KiB/s gate. The measurement script held the start until the reading fell, and the build began at 612 KiB/s, as its record shows.
+
+## Round 40 Phase A: the no-change floor, its split, and the ranked work
+
+### The floor, split (one measured run per part, `bt-r39-final`, the final config)
+
+| Part | Wall | How it was measured |
+| --- | --- | --- |
+| Swap gate (`vmstat 1 2`, the old check) | 1.009 s | `time vmstat 1 2` |
+| Fingerprint pass, `build-timed.sh build --profile iterate --timings` | 0.406 s | `time` around the call |
+| Fingerprint pass, same without `--timings` | 1.071 s | `time` around the call; run first, so the order is not controlled |
+| Cargo shim | 0.024 s (`--version`) | `time /config/.local/bin/cargo --version`; the real cargo took 0.058 s on its cold first call, so the shim adds nothing measurable |
+| `build-timed.sh` script itself | about 0.035 s | `build-timed.sh --version` (0.059 s) minus the shim `--version` (0.024 s) |
+| Link step | 0 s | `cargo build -v`: 0 `Running` lines, 0 link lines, 1 `Fresh bevy-jayzee` |
+| `measure-build.sh` overhead | about 0.09 s | 1.503 s total minus the gate (1.009 s) and build-timed (0.406 s) |
+| Shim queue wait when both slots are busy | 11.6 s for a no-change build (slots free: 0.93 s) | two `flock` holders on `/tmp/cargo-slots/1.lock` and `2.lock` for 8 s, then one no-change build; the holders exited (confirmed by pid) |
+
+The parts sum to the measured 1.5 s. The 15.9 s run, and the 7.1 s probe in this round, are the shim queue, not the build: the shim retries every 5 s while both slots are taken, and other cargo users on this host take them. The controlled test reproduces the same kind of outlier.
+
+### Change (Phase A)
+
+- `scripts/measure-build.sh`: the gate reads `pswpin` and `pswpout` from `/proc/vmstat` over `GATE_WINDOW_S` (default 0.5 s), and waits until both are at or below 1000 KB/s. It replaces the one-second `vmstat 1 2` sample, which cost 1.0 s per build. Each record now carries `gateSwapInKiBps` and `gateSwapOutKiBps`.
+- Witness: `bash -n` passes. The changed script ran three times: the probe (`r40-gate-probe`, 0 crates, gate in 632 and out 0 KiB/s); `r40-nochange` (cargo wall 0.5 s, 0 crates, gate in 56 and out 0 KiB/s); `r40-onefile` (cargo wall 8.7 s, 1 crate, link 2.0 s, gate in 24 and out 0 KiB/s). The live `vmstat` at the same time read `si` 196, `so` 0.
+- Not witnessed: the wait branch (readings above 1000). No real swap spike happened during these runs, so that branch has not been exercised.
+
+### Ranked remaining work
+
+1. The no-change floor. Now about 1.0 s: a 0.5 s gate, a 0.4 to 0.5 s fingerprint pass and a 0.04 s wrapper. Reopen with a no-change build above 3 s while both shim slots are free (a timed `flock` check, then `scripts/build-timed.sh build`).
+2. Clean build critical path, 452 s with the final config: `bevy_pbr` codegen (181 s), `basis-universal-sys` (160 s) and `bevy_render` (149 s). Reachable in this repo: a per-package profile override, measured against the final baseline. Reopen with a clean build more than 10 percent shorter in three runs.
+3. One-file rebuild: 8.7 s now, 4.0 s in the earlier `jobs = 12` run, against 9.6 s at `jobs = 4`. The game crate’s codegen is about 7 s and its link 1 to 2 s. Reopen with three repeated one-file runs showing a stable figure; the spread so far is larger than the change.
+4. Peak memory of a clean build at `jobs = 12`: 8.2 GB, against about 15.5 GB of host memory. Reopen with swap-in above 1000 KB/s during a clean build, or an OOM kill.
+5. Shim queue wait when both slots are busy (about 11 s measured). Held: the shim is the owner’s file. Reopen with the owner’s decision on the slot count or the retry interval.
+6. User-wide `jobs = 4` in `/config/.cargo/config.toml`. Held: the owner decides. Reopen with that decision.
+7. sccache and mold are not installed. Held: installing packages needs the owner’s approval. Reopen with that approval.
+8. Playwriter 0.9.0 against the extension’s required 0.11.0 (Round 38). Held: a package upgrade needs the owner’s approval. The witnesses still pass.
+9. ZLIB-supercompressed KTX2, Round 15 rank 8. Held: needs a sample file from the owner. Reopen when a sample exists.
+10. The one-off `Unable to find a GPU` in the first ASTC run. Held: no reproduction. Reopen if it recurs with the adapter log recorded.
+11. Reachable and not built yet: a SwiftShader BC7 reference set for the screenshot caveat, and three-run medians on the device and texture checks (Round 38 ranks 4 and 5). Reopen: none; they wait only on browser time.
+12. Reachable and not built yet: the bench load gate (refuse a ratio above 1-minute load 4.0 on 12 cores, Round 34). Reopen: none.
