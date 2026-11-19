@@ -2638,3 +2638,22 @@ Breaches and non-counted runs, disclosed:
 10. One-off GPU panic: held, no recurrence.
 11. Owner-held: user-wide `jobs = 4`, the shim, sccache or mold, the Playwriter 0.11 upgrade.
 12. Per-process swap delta: reachable, next change. Owner snapshot is peak-based, so `swapOwnersTop` names standing holders, not the process that caused a build's swap-out.
+
+## Round 47 Phase A: the 0.7 s no-change floor, split from the records
+
+Records used:
+- `r46-nochange-b` (counted quiet floor): `wallS` 0.7, `slotWaitS` 0.02, 0 crates, `swapNoisy` false, swap 0.1 MiB in and 0.1 MiB out, tree RSS 141.3 MiB. Its cargo timing report, `target/witness/timings-r46-nochange-b.html`, has "Total time 0.0s".
+- `split-nochange` (the 0.4 s quiet split, Round 39 root `bt-r39-final`): `wallS` 0.4, 0 crates, swap 0, same `build-timed` wrapper.
+
+What the existing fields give:
+- `slotWaitS` (0.02) is measured before `build-timed` starts its clock, so it is not in `wallS`. It does not explain any of the 0.7 s.
+- Cargo's own build clock reported 0.0 s (the timing report). So the 0.7 s is outside cargo's reported build time: the shim (`sh`, flock on the slots, `exec`), cargo's process start and config load before that clock, and cargo's exit.
+- The split between shim, cargo startup, and the fingerprint check cannot be made from the existing fields. The "Finished ... in X s" line that would give cargo's own elapsed time was in `target/build-timed-last.log`, and later builds overwrote it. No record before this change holds it.
+- The 0.4 s reference used the same wrapper and no slot wait; the slot wait is measured separately, so it cannot be the 0.3 s difference.
+
+Missing field, added as the change: `scripts/build-timed.sh` now records `cargoFinishedS`, the elapsed time from cargo's last "Finished ... in X s" line (0 when none is printed, e.g. a minute-scale line), and `outsideCargoS`, which is `wallS` minus `cargoFinishedS`. It also takes `CARGO_BIN` (default the shim), so a fixture can run a fake cargo.
+
+What the next quiet no-change record will show: if `outsideCargoS` stays near 0.7 with `cargoFinishedS` near 0, the time is outside cargo's Finished clock. The shim share is still not separated. A direct run through `/data/cache/cargo/bin/cargo` against the shim run would separate it (Phase B, gate open, no other cargo running).
+
+Witness: `scripts/check-build-split.sh` runs `build-timed.sh` with a fake cargo that sleeps 0.4 s, prints "Finished ... in 0.10s", and sleeps 0.2 s. Green: `{"ok":true,"rc":0,"wallS":0.6,"cargoFinishedS":0.1,"outsideCargoS":0.5}`, exit 0.
+Mutation: `"$wall" "$finished" "$outside"` replaced by `"$wall" 0 "$wall"` (the field is not parsed). Red: `cargoFinishedS` 0, `{"ok":false}`, exit 1. Restored from `/tmp/bt/build-timed.good`; green again, exit 0.
