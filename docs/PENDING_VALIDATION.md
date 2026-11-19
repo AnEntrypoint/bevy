@@ -2256,3 +2256,30 @@ The variance source, from the numbers: swap traffic on the host during the build
 The same split holds across the earlier one-file records. Every record with 6.6 MiB or less of swap-in during the build ran in 3.1 to 4.0 s (`q40-onefile` 3.4 s, `jobs12-onefile` 3.6 s and 4.0 s, `v40-onefile-3` 3.1 s). Every record with 13.0 MiB or more ran in 8.4 s or more (`final-onefile` 8.4 s at 13.0 MiB, `r40b-onefile` 10.8 s at 17.0 MiB, `v40-onefile-2` 14.1 s at 25.8 MiB, `v40-onefile-1` 16.3 s at 29.2 MiB, `p40-onefile` 10.7 s at 643.5 MiB). The 10 MiB threshold sits in the gap between the two groups on this host. It is not a general constant.
 
 The one-file figure of record is therefore the quiet floor, 3.1 to 4.0 s, and the 8.4 s and 10.8 s figures were noisy runs. The change is in the measurement, not the config: `scripts/measure-build.sh` now records `slotsAtStart` (the state of both shim slots) and `swapNoisy`, which is true when swap-in or swap-out during the build exceeds `NOISY_MIB` (default 10 MiB). Witness: `bash -n` passes; a `--version` run through the changed script wrote `slotsAtStart` "slot1=free slot2=free", `gateSwapInKiBps` 16, `gateSwapOutKiBps` 0 and `swapNoisy` false, rc 0.
+
+## Round 41 Phase A, item 2: a per-package override for the clean-build critical path
+
+The final clean report (`bt-r39-final`, 452.4 s) had three long units on the critical path. Their unit durations, from `target/witness/timings-final-clean.html`:
+
+- `bevy_pbr`: codegen 181.35 s, after a 36.78 s frontend.
+- `basis-universal-sys`: the build script run (`run-custom-build`), 160.21 s. Its Rust library unit takes 0.21 s. The 160 s is the C++ compile of the basis transcoder and encoder inside `build.rs` (`cc::Build`, which takes its optimization level from the profile through `OPT_LEVEL`).
+- `bevy_render`: codegen 148.9 s, after a 19.95 s frontend.
+
+The change is in `Cargo.toml`, scoped to those three packages under the iterate profile:
+
+```
+[profile.iterate.package.bevy_pbr]
+opt-level = 1
+
+[profile.iterate.package.bevy_render]
+opt-level = 1
+
+[profile.iterate.package.basis-universal-sys]
+opt-level = 1
+```
+
+Why opt-level and not codegen-units: the global `codegen-units = 256` run earlier gave a clean build of 881 s, which is inside the baseline spread, so more codegen units did not shorten the chain. `opt-level` is the lever that changes the codegen and C++ compile time directly. The release profile is unchanged, because the override sits under `profile.iterate`.
+
+The runtime cost is not measured. Iterate builds of the game will render and transcode textures more slowly, because `bevy_pbr`, `bevy_render` and the basis transcoder are optimized less. The verify and bench runs use release and are unaffected.
+
+Witness for Phase A: `cargo metadata --format-version 1 --no-deps` exits 0 and parses the manifest with the new keys (package list `bevy-jayzee`). The override is not witnessed as applied until the Phase B clean build: its verbose `rustc` lines must show `-C opt-level=1` for these three packages, and its unit durations are compared with 181.35 s, 160.21 s and 148.9 s.
