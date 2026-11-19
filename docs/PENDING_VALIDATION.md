@@ -2557,3 +2557,17 @@ Result: the quiet figure is 3.65 s from two quiet records, below the three the d
 9. SwiftShader BC7 and the browser load gate: reachable with browser time only.
 10. One-off GPU panic: held, no recurrence.
 11. Owner-held: user-wide `jobs = 4`, the shim, sccache or mold, the Playwriter 0.11 upgrade. Reopen on the owner's decision.
+
+## Round 46 Phase A: which process held the swapped-out pages
+
+The gap: a noisy record gave host-wide swap totals and the build's tree RSS, but nothing that names a process. The swapped-out pages of a noisy build could belong to any process on the host.
+
+Change:
+- `scripts/lib/swap-owners.sh` (new): `swap_owners_sample` lists the pid, name and VmSwap of each process on `$PROC_ROOT` (default `/proc`) that holds swapped-out pages. `swap_owners_top` ranks processes by their peak VmSwap across the samples of one build, and returns the top five.
+- `scripts/measure-build.sh`: the sampler takes a sample at its first tick and then every 2 s (every 4 ticks of 0.5 s), into a per-build file. The record gets `swapOwnersTop`, for example `"rustc(1234) 300.0 MiB; ..."`. An empty string means no process held swapped-out pages in any sample.
+
+Witness: `scripts/check-swap-owners.sh` builds a fake proc tree with two samples. `beta` peaks at 300 KiB and falls to 120; `gamma` is 50 then 290. A process with no VmSwap line (`kthread`) and one with zero VmSwap (`alpha`) must not appear. The expected top two are `300 200 beta` and `290 290 gamma`. Green: `{"ok":true}`, exit 0.
+
+Mutation, before its restore: `swap_owners_top` keeps each process's last sample instead of its peak. The top becomes `290 gamma; 120 beta`, `{"ok":false}`, exit 1. Restore: the lib is untracked, so `git checkout` could not restore it; the original text was written back. The check is green again.
+
+Field check: a no-change build through the changed `measure-build.sh` (`r46-field`, warm `bt-r43-off-1`): rc 0, wall 1 s, `swapNoisy` false, `swapOwnersTop` empty (no swap, so no holders), no temp file left.
