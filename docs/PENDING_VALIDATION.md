@@ -3782,3 +3782,22 @@ Witness, once, on the clear sample: `scripts/check-astc-load-ratio.cjs` rc 0, wa
 The ASTC run was not started. The rule needs at least 420 s left in the window, because the ASTC run took 391.8 s in the Round 58 record. The clear sample came with 89 s left, so no ASTC line was produced and the ASTC decision is unchanged (load ratio 1.21, not usable against the 1.1 tolerance).
 
 No push in this window, since the window did not complete the measurement. The Round 68 commits stay local.
+
+## Round 69 Phase A: a committed heavy-job checker
+
+Ranked remaining work at the start of this round is in the Round 69 REPORT. The item taken is the heavy-job rule, which every window so far has re-typed inline in its `/tmp` job script. It had no committed checker and no witness, so its counts were never tested. This item needs no window.
+
+Change:
+- `scripts/lib/heavy-jobs.cjs`: `parseTop` reads the last frame of `top -b -n 2`; `parsePs` reads `ps -eo pid=,rss=,args=`; `classify` applies the rule. A gm-core worker with `--handshake` is exempt. A cargo `test`, `check` or `nextest` run is `test-check`. A compiler (cc1plus, cc1, rustc, cargo, zig, cmake, ninja, collect2, clang, lld, mold, sccache) is `compile`. A Chromium renderer over 1 GB is `chromium-renderer`. Any other process above 20% CPU in top is `hot`, and a process is listed once.
+- `scripts/heavy-jobs.cjs`: the live reading, `HEAVY_JOBS clear` (exit 0) or `HEAVY_JOBS busy n=…` with one line per item (exit 1). It takes about 2 seconds.
+- `scripts/check-heavy-jobs.cjs`: fixture witness, 14 checks, 14 of 14 ok, exit 0.
+
+Two errors found while writing the witness, both fixed before this commit:
+- `cargo` is in the compiler set, so `cargo test` was labelled `compile`. The `test-check` branch now runs first. It counted before and after.
+- The first fixture gave top rows with no matching `ps` rows, so the hot cases could not fire. The fixture now lists each process in both.
+
+Red check: the 20% comparison was made inclusive (`>=`). The witness exited 1 with one FAIL, "exactly at the 20% limit does not count". The file was restored from its saved copy with `cmp`, and the witness exited 0 with 14 ok.
+
+Live check: `node scripts/heavy-jobs.cjs` at this stamp printed `HEAVY_JOBS busy n=1` (a peer `fx` process at 39% CPU, `hot`), exit 1. This is the same kind of peer that held the last two windows.
+
+Not changed: the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. The inline checks in earlier `/tmp` job scripts are not replaced; they stay as recorded. Local commit only; not pushed in Phase A.
