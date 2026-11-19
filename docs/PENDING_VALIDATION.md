@@ -2460,3 +2460,15 @@ Decision: 10 MiB total swap in plus out, for builds that compile at most one cra
 Change: `scripts/lib/swap-noisy.cjs` (new) holds `classify`, and its CLI prints `value|rule`. `scripts/measure-build.sh` takes the crate count from the build's JSON and writes `swapNoisy` and `swapRule`. `scripts/check-swap-noisy.cjs` (new) checks the classification against the 11 one-file records above (quiet band and elevated band), the multi-crate null, and the no-change edges (9 MiB quiet, 11 MiB noisy).
 
 Witness, Phase A: `node scripts/check-swap-noisy.cjs` exits 0 with 16 checks passing. Mutation (before its restore): the default threshold in `swap-noisy.cjs` raised from 10 to 20; the check then fails on `final-onefile` (13 MiB, wall 8.4 s), and exits 1.
+
+## Round 44 Phase A, change 2: the no-change floor residual, the slot wait
+
+The floor residual (Round 40 and Round 41): a no-change build measured 6.1 s (`q40-nochange`) and 8.7 s (`p40-nochange`) against about 1 s by split. Both swapped little (8.5 and 4.5 MiB), so the swap class (change 1) does not explain them.
+
+The mechanism: `/config/.local/bin/cargo` (the owner's shim, not changed here) tries each of its two slots with `flock -n`. If both are busy it sleeps 5 s and tries again. This happens inside the build's timer, so a build that arrives while both slots are held pays the 5 s quantum. Round 40 measured the queue directly: 11.6 s with both slots held, 0.93 s with them free. A wait of 6 s is one 5 s quantum plus about 1 s of work. That fits the two slow no-change records. It is a hypothesis for those two records; the witness below shows the mechanism, and Phase B records the floor with the wait split out.
+
+Change: `scripts/measure-build.sh` now waits for a free slot itself, polling both locks every 0.1 s, before it calls `build-timed.sh`. The wait is recorded as `slotWaitS` and is not in `wallS`. The shim is then called when a slot is free. It is bounded at 7200 s, like the shim. A race with another session can still cost the shim's 5 s quantum; that case is rare.
+
+Witness: `scripts/check-slot-wait.sh` holds both real slot locks for 3 s with `flock`, then runs `measure-build.sh --version`. It passes when `rc` is 0, `slotWaitS` is between 1.5 and 3.5 s, and the build's `wallS` is under 1 s. Green run: `slotWaitS` 2.26, `buildWallS` 0.1, rc 0.
+
+Mutation (before its restore): the wait loop replaced by `slot_wait=0`, which is the plain shim call. Expected: the shim takes its 5 s quantum, so `buildWallS` is about 5 s and the check fails.

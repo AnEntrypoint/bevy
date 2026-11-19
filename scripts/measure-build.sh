@@ -34,6 +34,18 @@ while :; do
     fi
 done
 echo "measure-build: $label gate swap-in ${gate} KiB/s, swap-out ${so_now} KiB/s" >&2
+mkdir -p /tmp/cargo-slots
+slot_wait_start=$(date +%s.%N)
+slot_tries=0
+until flock -n /tmp/cargo-slots/1.lock true || flock -n /tmp/cargo-slots/2.lock true; do
+    slot_tries=$((slot_tries + 1))
+    if [ "$slot_tries" -ge 72000 ]; then
+        echo "measure-build: no build slot free for 7200 s; not starting $label" >&2
+        exit 75
+    fi
+    sleep 0.1
+done
+slot_wait=$(awk -v s="$slot_wait_start" -v e="$(date +%s.%N)" 'BEGIN { printf "%.2f", e - s }')
 slots=""
 for s in 1 2; do if flock -n /tmp/cargo-slots/$s.lock -c true; then slots="$slots slot$s=free"; else slots="$slots slot$s=busy"; fi; done
 slots=${slots# }
@@ -105,7 +117,7 @@ if [ -n "$timings" ]; then
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v timings="${timings##*/}" 'BEGIN {
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, pin, pout, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v slotwait="$slot_wait" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"slotWaitS\":%s,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, slotwait, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, pin, pout, timings
 }' | tee -a "$record"
 exit "$rc"
