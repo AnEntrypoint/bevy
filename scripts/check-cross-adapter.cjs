@@ -22,6 +22,7 @@ const pairs = {
     astc4x4: [referenceOfRecord, 'sw-astc'],
     etc2: [referenceOfRecord, 'sw-etc2'],
     swBc7VsSwRgba8: ['sw-rgba8', 'sw-bc7'],
+    swEtc2VsSwRgba8: ['sw-rgba8', 'sw-etc2'],
 };
 fs.mkdirSync(linkDir, { recursive: true });
 const results = {};
@@ -36,6 +37,7 @@ for (const [key, [left, right]] of Object.entries(pairs)) {
     results[key] = JSON.parse(fs.readFileSync(path.join(witnessDir, `texture-visual-${key}.json`), 'utf8'));
 }
 const astcRecord = JSON.parse(fs.readFileSync(path.join(witnessDir, 'texture-visual-astc4x4.json'), 'utf8'));
+const etc2Record = JSON.parse(fs.readFileSync(path.join(witnessDir, 'texture-visual-etc2.json'), 'utf8'));
 const checks = {
     referenceOfRecordIsHardwareRgba8: referenceOfRecord === 'hw-rgba8',
     hwBc7PassesAgainstReference: results.hwBc7.ok === true,
@@ -43,6 +45,9 @@ const checks = {
     swRgba8DifferenceStandsAgainstReference: results.swRgba8.ok === false,
     astcRecordNamesReference: astcRecord.reference === sets[referenceOfRecord],
     astcPassesAgainstReference: astcRecord.ok === true && results.astc4x4.ok === true,
+    etc2RecordNamesReference: etc2Record.reference === sets[referenceOfRecord],
+    etc2FailsAgainstReference: etc2Record.ok === false && results.etc2.ok === false,
+    etc2FailureIsSoftwareRgba8Finding: results.swEtc2VsSwRgba8.ok === true && Math.abs(results.etc2.psnrMedian - results.swRgba8.psnrMedian) <= 1,
     supersededComparisonReproducesDifference: results.swBc7VsSwRgba8.ok === false && Math.abs(results.swBc7VsSwRgba8.psnrMedian - results.swRgba8.psnrMedian) <= 1,
 };
 const summary = Object.fromEntries(Object.entries(results).map(([key, value]) => [key, { reference: value.reference, ok: value.ok, psnrMin: value.psnrMin, psnrMedian: value.psnrMedian, failing: value.failing.length }]));
@@ -51,6 +56,7 @@ const finding = {
     reference: referenceOfRecord,
     psnrMedian: results.swRgba8.psnrMedian,
     psnrMin: results.swRgba8.psnrMin,
+    formatsFailingAgainstReference: ['etc2'].filter((format) => results[format].ok === false),
     reopen: 'a second hardware re-run of the software RGBA8 set, or a second adapter',
 };
 const ok = Object.values(checks).every(Boolean);

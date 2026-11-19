@@ -3362,3 +3362,21 @@ Witnesses, each run once with wall time (file-based, no browser, no cargo):
 - `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.04 s, rc 0, ok true.
 
 No browser ran in this phase, so no tabs or processes were started. The witness job (pid 1144864) has exited.
+
+## Round 57 Phase A: ETC2 against the hardware reference
+
+Reference of record: hardware RGBA8 (`neon-shots-rgba8`), for every texture set, as applied to ASTC in Round 56.
+
+ETC2 record. The old `texture-visual-etc2.json` (`ok` true, minimum 50.44, median 57.25, no reference) is kept as `texture-visual-etc2-unreferenced.json` in `target/witness` (not committed). The witness regenerated `texture-visual-etc2.json` against hardware RGBA8: `reference` `neon-shots-rgba8`, `ok` false, minimum 16.81, median 21.11, 64 of 64 failing.
+
+Named finding: ETC2 fails with the same named finding, `software-rgba8-rendering-difference`. ETC2 against software RGBA8 passes (minimum 50.44, median 57.25, ok), and its median against hardware equals the software set's median (21.11). Its failure is therefore the software-versus-hardware render difference, not an ETC2 texel fault.
+
+Witness: `node scripts/check-cross-adapter.cjs` now has `etc2RecordNamesReference`, `etc2FailsAgainstReference` and `etc2FailureIsSoftwareRgba8Finding` (ten checks in all). Green: `ok` true, exit 0, 21 s.
+
+Red check, before its restore: the ETC2 pair's reference switched to `sw-rgba8`. The verdict flipped to pass (`ok` true, minimum 50.44), and the witness went red: `etc2RecordNamesReference` and `etc2FailsAgainstReference` false, exit 1. Restored from a copy, `cmp` identical, green again (exit 0). The record is back to hardware RGBA8, `ok` false.
+
+Downstream: `scripts/texture-footprint.cjs` (no code change) now gives ETC2 `visualOk` false and `fallbackFormats.etc2` false. The decision stays `bc7`, and ASTC stays a fallback. The earlier output is kept as `texture-footprint-before-r57.json`.
+
+Not taken, with reopen evidence:
+- ASTC and ETC2 texel quality: no ASTC or ETC2 decoder is on disk. There is no `astcenc` or `etcpak`, no ASTC or ETC2 crate in the cargo registry (only `bcdec_rs` for BC and container parsers), and no PIL or Python decoder. Reopen: a decoder present on disk, or a dispatcher decision to add one.
+- Second software RGBA8 run: a browser run, so it goes in Phase B under the gate.
