@@ -2319,3 +2319,23 @@ Decision: the override in `1cb5677` stays, on the unit evidence. Its effect on t
 The change: each 0.5 s sample of the background loop now appends a timestamped swap counter line to a trace file. The trace starts with the counters read before the build and ends with the counters read after it. The record gets `swapPeakInKiBps` and `swapPeakOutKiBps`, the largest rate over any two consecutive trace lines.
 
 First witness attempt, same no-change build: the peaks came out as 0 with a total of 8.3 MiB out, because the trace had too few lines to form a pair. The trace now includes the start and end counters, and the rate uses the elapsed time. Second witness, `r42-sampler-check2` (`bt-r41-final`, no-change, wall 0.5 s): swapInMiB 0.1, swapOutMiB 13.7, `swapPeakInKiBps` 292, `swapPeakOutKiBps` 25780, `swapNoisy` true. The peak is non-zero where the total is non-zero, and no `sleep 0.5` process was left behind.
+
+## Round 42 Phase A, change 2: the bench load gate
+
+`scripts/bench-median.cjs` marked a run noisy when the 1-minute load moved by more than `LOAD_MOVE` or when other runnable tasks reached half the cores. It did not refuse anything: a size with only noisy runs still printed a speedup. The change:
+
+- A run is also noisy when its 1-minute load, before or after, is above `LOAD_LIMIT`, which defaults to 4 (the Round 34 limit, set for 12 cores). The limit is absolute, not scaled by cores.
+- `speedup` is now the ratio from quiet runs only. It is null, and `refused` is true, when a size has no quiet run. `refusal` says why. The old all-run ratio is gone (`quietSpeedup` had no consumers in the repo; the all-run medians are kept as `jayzeeMedianMs` and `bevyMedianMs`).
+
+`scripts/check-bench-load-gate.cjs` runs three fixtures through the script with `CORES=12`:
+
+- quiet rows (load 1.20, one to two runnable): speedup 1.075, not refused;
+- loaded rows (load 5.50, two runnable, so only the load limit can refuse them): refused, speedup null;
+- mixed rows (two quiet, one loaded): speedup 1.0875 from the two quiet rows, one noisy.
+
+Witness, Phase A:
+
+- `node scripts/check-bench-load-gate.cjs`: `ok` true, exit 0.
+- `LOAD_LIMIT=99 node scripts/check-bench-load-gate.cjs`: `ok` false, exit 1. The loaded and mixed cases fail (`refused expected true got false`, `quietRuns expected 0 got 3`, `speedup expected null got 1.075`). A gate that lets loaded rows through fails the check.
+
+The real run, `RUNS=5 scripts/bench-vs-jayzee.sh`, needs a release binary and is Phase B.
