@@ -2868,3 +2868,67 @@ Change: `swap_owners_tree_size tree` counts the distinct pids in the sampled tre
 Witness: `scripts/check-swap-split.sh` now also checks the tree size of its fixture tree (pids 200, 500, 400), expecting 3. Green: `{"ok":true,"split":"380 240","treeSize":3,"childInTree":true}`, exit 0.
 
 Mutation, before its restore: `swap_owners_tree_size` made to print 0 (`END { print 0 }`). Red: `"treeSize":0`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good5`; green again, exit 0.
+
+## Round 50 Phase B: the build-tree split, witnessed live
+
+Every gate reading taken, in order, from two jobs. The gate flapped, so the closed readings are kept with the open ones. `si` is swap-in and `so` swap-out, both in KiB/s.
+
+First job (before change 2, the tree-size field):
+- 21:23:00 si 776, so 0 (open): witness W-g
+- 21:23:01 si 176, so 0 (open): build `r50-onefile-1`
+- 21:23:13 si 2652, so 0 (closed)
+- 21:23:17 si 1776, so 0 (closed)
+- 21:23:21 si 1380, so 0 (closed)
+- 21:23:25 si 400, so 0 (open): build `r50-onefile-2`
+
+Second job (after change 2):
+- 21:24:16 si 8512, so 21804 (closed)
+- 21:24:20 si 6836, so 176 (closed)
+- 21:24:24 si 6436, so 0 (closed)
+- 21:24:28 si 9592, so 1240 (closed)
+- 21:24:32 si 10376, so 0 (closed)
+- 21:24:36 si 8132, so 0 (closed)
+- 21:24:40 si 956, so 0 (open): witness W-h
+- 21:24:41 si 3176, so 0 (closed)
+- 21:24:45 si 480, so 0 (open): build `r50b-onefile-1`
+- 21:25:02 si 520, so 0 (open): build `r50b-onefile-2`
+
+Witness, run once in the second job: `scripts/check-swap-split.sh`, wall 0.10 s, rc 0, `{"ok":true,"split":"380 240","treeSize":3,"childInTree":true}`. The first job's W-g run was 0.11 s with the same result, before change 2.
+
+First pair (`r50-onefile-*`, change 1 alone, no tree size):
+
+| Record | Build wall (s) | Swap out (MiB) | Build gain (MiB) | Other gain (MiB) | Build % | Other % | Unattributed % |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `r50-onefile-1` | 8.8 | 632.4 | 0 | 138.7 | 0 | 21.9 | 78.1 |
+| `r50-onefile-2` | 4.3 | 51.0 | 0 | 47.5 | 0 | 93.2 | 6.8 |
+
+A build-tree gain of 0 here could be a real zero or a missed tree, and this pair cannot say which.
+
+Second pair (`r50b-onefile-*`, change 2 in place):
+
+| Record | Build wall (s) | Swap in (MiB) | Swap out (MiB) | Tree pids | Build gain | Other gain | `swapNoisy` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `r50b-onefile-1` | 14.7 | 48.7 | 1.1 | 6 | 0 | 0 | true |
+| `r50b-onefile-2` | 5.1 | 1.3 | 0.8 | 6 | 0 | 0 | false |
+
+The tree was sampled in both builds: 6 distinct pids each, so the build-tree gain of 0 is a real zero. The build's own processes did not gain swapped pages.
+
+Why the unattributed share is 100% in the second pair: the host swapped out 1.1 and 0.8 MiB, and the net VmSwap gain of every process was 0 or negative. In `r50b-onefile-1` the host swapped 48.7 MiB back in, which reduces VmSwap of the processes that held those pages. So net per-process gain is a poor estimate of gross host swap-out when swap-in dominates. The gap is a property of the measure, not of the build.
+
+Longest step: `r50b-onefile-1`, 14.7 s build, while the gate was flapping (its own reading 3176 closed, then 480 open). What was done: nothing to the build; the swap-in during it is recorded, and the record marks it swap-noisy.
+
+### Round 50 ranked remaining work
+
+1. Gross per-process swap: held. Linux `/proc/<pid>/status` reports only the current VmSwap, so a gross figure (out minus in, per process) needs a counter the kernel does not expose here. Reopen when the owner or the kernel gives a per-process swap-out counter, or when a second estimator (for example per-cgroup memory events) is available.
+2. Clean-build swap at `jobs = 12`: held, owner decision on `jobs`. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB. Baseline: six Round 43 clean builds, 2857 to 8699 MiB swapped, 323 to 384 s wall. Running it as-is would repeat that evidence.
+3. 500-body bench size: held (Round 47). Reopen with five quiet pairs above 1 and a quiet mean of 1.05 or more, at 1-minute load 4 or less.
+4. No-change floor: explained (Round 47). Quiet median 0.4 s; cargo's dependency resolution is most of the cargo clock. Reopen with a quiet median above 0.5 s.
+5. Unlogged cargo stretch, about 0.085 s: held, inside cargo. Reopen if it grows above 0.2 s on repeated quiet runs.
+6. One-file variance: done (quiet median 3.0 s). The live builds in this round are noisy or quiet-but-unrepeated, and are not figures. Reopen with a quiet build above 4 s or below 3.5 s.
+7. Override's total effect: held, reverted in Round 43. Reopen with a method that does not depend on swap.
+8. Clean-build swap classification: held by decision (`swapNoisy` null for multi-crate builds). Reopen when a swap-to-wall relation is shown.
+9. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+10. ZLIB KTX2 (rank 8): held, no sample file.
+11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+12. One-off GPU panic: held, no recurrence.
+13. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
