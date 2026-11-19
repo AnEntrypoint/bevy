@@ -2076,3 +2076,22 @@ The panic did not recur in four ASTC runs. It is still unexplained. If it recurs
 | 9 AGENTS.md size | Closed (as in Phase A). |
 
 Still open: rank 8 (ZLIB, no sample), and the one-off GPU panic in the first ASTC run (cause unknown, guard in place).
+
+## Round 38 Phase A: ranked open work that needs no owner decision and no credential
+
+Ranked by how close each item is to a verified result. Items that wait on hardware, an owner decision or an unexplained recurrence are listed after the ranked rows.
+
+| Rank | Item | Ledger source | Change needed | Witness that closes it | Build? |
+| --- | --- | --- | --- | --- | --- |
+| 1 | The witness scripts need `playwriter-project` on PATH | line 543 (Round 16) and the Round 37 wasm run that failed with `spawnSync playwriter-project ENOENT` | `scripts/lib/playwriter-witness.cjs` puts the gm playwriter bin first on the gate child's PATH when it exists | `scripts/check-neon-wasm-models.cjs` (`NEON_TEXTURE=bc7`) run with a PATH that lacks the bin: 64 of 64 clean | No |
+| 2 | Bench load gate: refuse a ratio when 1-min load is above 4.0 on 12 cores | Round 34 dispatcher decision; line 1819 still open. `scripts/bench-median.cjs` only marks runs noisy | `bench-median.cjs` refuses the speedup of a size when no quiet run remains, and reports the refusal | A fixture witness (quiet rows give a speedup, loaded rows give a refusal) and a real `RUNS=5 scripts/bench-vs-jayzee.sh` run | No (node and the existing release binary) |
+| 3 | ZLIB-supercompressed basis KTX2 (rank 8) | Round 15 rank 8; Round 37 Phase B open | Reject scheme 3 with a named error, and add a unit test that builds a scheme-3 header | `cargo test` on the iterate profile, through `scripts/build-timed.sh`. The real sample still does not exist, so this closes the error path only | Yes |
+| 4 | SwiftShader BC7 reference for the cross-adapter screenshot caveat | lines 1181 and 1601 | None in code: a `bc7-software` witness mode, then `compare-screenshots.cjs` against `rgba8-software` | Two 64-model runs and the comparison output | No, browser only |
+| 5 | Load gate on the device-fallback and texture checks: three runs per mode, compared by median | lines 1177 and 1604 | Run each mode three times and compare medians | The three-run medians with each run's load | No, browser only |
+
+Not in the ranked list: a real non-BC device (no such device on this host: lines 804, 831, 944, 993); `dynamic_linking` (skipped by decision, line 152); the baseline binary from `dcc84d8` (needs a decision on building outside the shared checkout, line 1817); the cause of the one-off `Unable to find a GPU` panic (no reproduction path; it closes only if it recurs, and the adapter log must then be recorded).
+
+### Round 38 Phase A change
+
+- `scripts/lib/playwriter-witness.cjs`: `gateCli` runs `playwriter-project` with a PATH that starts with the gm playwriter bin (`PLAYWRITER_BIN`, default `/config/.gmnew/pw/bin`) when that directory holds the binary. The witnesses no longer need the caller to set PATH.
+- Phase B will record the witness output with and without the caller's PATH, and the wall time.

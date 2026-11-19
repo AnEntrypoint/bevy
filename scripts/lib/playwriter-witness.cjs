@@ -1,7 +1,15 @@
 const { execFileSync, spawn } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const gateBin = process.env.PLAYWRITER_BIN || '/config/.gmnew/pw/bin';
+
+function gatePath() {
+    const dirs = fs.existsSync(path.join(gateBin, 'playwriter-project')) ? [gateBin, process.env.PATH || ''] : [process.env.PATH || ''];
+    return dirs.join(path.delimiter);
+}
 
 function children(pid) {
     const rows = execFileSync('ps', ['-eo', 'pid=,ppid='], { encoding: 'utf8' }).trim().split('\n');
@@ -37,7 +45,7 @@ function gateCli(repo, args, timeout) {
         encoding: 'utf8',
         timeout,
         maxBuffer: 64 * 1024 * 1024,
-        env: { ...process.env, PLAYWRITER_PROJECT_DIR: repo, PLAYWRITER_WEBGPU: '1' },
+        env: { ...process.env, PATH: gatePath(), PLAYWRITER_PROJECT_DIR: repo, PLAYWRITER_WEBGPU: '1' },
     });
 }
 
