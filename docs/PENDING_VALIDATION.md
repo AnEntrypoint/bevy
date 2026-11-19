@@ -2728,3 +2728,17 @@ Inside cargo (diagnostic run, timestamps from cargo's own start, Finished 0.48 s
 Cause of the floor residual: almost all of the floor is cargo's dependency resolution, which runs on every invocation even when nothing compiles. measure-build and the shim add about 0.1 s (`outsideCargoS`). The fingerprint check is about 0.03 s of the cargo clock.
 
 Held: the resolution cost is cargo's own work for this workspace. It is reachable only by changing the workspace or lockfile shape, which the owner decides, and it is out of this stretch's scope. Reopen with a quiet no-change median above 0.5 s over repeats, or a `cargoFinishedS` above 0.5 s on a quiet run with `outsideCargoS` above 0.2 s.
+
+## Round 48 Phase A: per-process swap delta over a build
+
+The gap, from Round 46: `swapOwnersTop` is a peak snapshot. It names standing holders of swapped-out pages, but cannot say which process gained pages during a build. For `r46-onefile-1` (405.8 MiB out), the list was the same as in every other record.
+
+Change:
+- `scripts/lib/swap-owners.sh`: `swap_owners_growth before after` takes two samples from `swap_owners_sample` and prints the top five processes by positive change in VmSwap, as `KiB pid name`. A process absent from the first sample counts from zero. A process that shrank or exited is not listed.
+- `scripts/measure-build.sh`: samples just before the build launch and just after it returns. The record gets `swapOwnersGrowth`, for example `"name(pid) X MiB; ..."`. An empty string means no process gained swapped-out pages during the build.
+
+Witness: `scripts/check-swap-growth.sh` builds a fake proc tree with two samples. `beta` goes 0 to 300 KiB (+300), `gamma` 50 to 290 (+240), `late` is new at 80 (+80). `shrink` drops 500 to 100 and is excluded, as is `alpha` (0 to 0) and `kthread` (no VmSwap line). Expected output: `300 200 beta`, `240 290 gamma`, `80 500 late`. Green: `{"ok":true}`, exit 0.
+
+Mutation, before its restore: the delta `d = after[p] - before[p]` replaced by `d = after[p]`, which reports the post-build VmSwap. Red: `{"ok":false,"growth":"300 200 beta;290 290 gamma;100 400 shrink;80 500 late"}`, exit 1. The shrink and gamma values show the regression. Restored from `/tmp/bt/swap-owners.good`; green again, exit 0.
+
+Not yet witnessed on a real build. The field is checked in Phase B by a one-file build through `measure-build.sh`.
