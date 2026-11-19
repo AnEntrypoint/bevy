@@ -2502,3 +2502,19 @@ Mutation results, Phase A: change 1 red at `final-onefile` (expected true, got f
 9. SwiftShader BC7 reference, and the load gate for the device and texture checks: reachable only with browser time, not run here. Reopen when a browser window is scheduled.
 10. The one-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
 11. Owner-held: user-wide `jobs = 4` in `/config/.cargo/config.toml`, the cargo shim (its 5 s retry is the source of change 2's mechanism), sccache or mold, and the Playwriter 0.11 upgrade. Reopen on the owner's decision.
+
+## Round 45 Phase A: the no-change floor re-run, and the one-file figure
+
+Floor re-run, once, on the warm root `bt-r43-off-1` (the committed config; `Cargo.toml` and the repo cargo config unchanged since `d7f0af9`). The gate read swap-in 268 KiB/s, out 0 at 20:21:28. The measure-build gate at the start read 576 KiB/s in and 0 out.
+
+- `r45-nochange`: rc 0, 0 crates, build wall 1.0 s, slot wait 0.01 s, tree RSS 110.5 MiB.
+- `swapNoisy` true, rule "classified". The window that marks it is swap-out, not swap-in: 62.8 MiB out in total, with a peak window of 99174 KiB/s out, against 84 KiB/s in at peak. The host paged out during the build, from other processes.
+- So the floor is not quiet this round. Under the rule of change 1, the record is noisy, and the one-file variance is the next reachable item.
+
+One-file variance: the figure is taken only from quiet records. Round 41 named the source: host swap during the build (the quiet one-file records swapped at most 6.6 MiB, the elevated ones at least 13 MiB). A single build can start quiet and still be noisy, and a single noisy build is not a figure. So the figure is now selected:
+
+- `scripts/lib/quiet-figure.cjs` (new): `quietFigure(records)` takes the median wall of the records whose `swapNoisy` is exactly false. Noisy records, and records with `swapNoisy` null (more than one crate), are listed as rejected. With no quiet record it returns a null figure and a reason. The CLI reads a `build-measure.jsonl` file and a label prefix.
+- `scripts/one-file-quiet.sh` (new): touches `src/viewer.rs`, runs `measure-build.sh` for `<prefix>-N`, and stops once it has the wanted number of quiet records (default 3, up to 6 attempts), then prints the selected figure. Run it with `CARGO_TARGET_DIR` set to a warm root.
+- `scripts/check-quiet-figure.cjs` (new): fixture with 5 records (3 quiet at 3.1, 3.6 and 3.4 s, 2 noisy at 16.3 and 14.1 s). It expects the figure 3.4, 3 quiet, and rejected [b, d]. It also checks: no quiet record gives a null figure; a null `swapNoisy` is rejected; and an even count takes the mean of the two middle walls.
+
+Witness, Phase A: `node scripts/check-quiet-figure.cjs` exits 0 with 4 cases.
