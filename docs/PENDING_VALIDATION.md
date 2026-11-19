@@ -2411,3 +2411,13 @@ Witness: `scripts/check-build-rss-tree.sh` starts a 200 MB perl process outside 
 An earlier fixture used node, which renames its process to `node`. The host-wide filter then matched nothing, so the reverted run failed for the wrong reason. The fixture now uses perl and checks that the child's comm is `rustc`.
 
 Every peak RSS figure recorded before this change is host-wide. The ledger entries for Rounds 39 to 42 should be read that way.
+
+## Round 43 Phase B: decision rule for the override (recorded before the arms run)
+
+- ON arm: the committed `Cargo.toml`, with the iterate override for `bevy_pbr`, `bevy_render` and `basis-universal-sys`.
+- OFF arm: the same command with `--config profile.iterate.package.<name>.opt-level=3` for those three packages. The committed file is not changed.
+- Each attempt is one clean build through `measure-build.sh`, in a new target root, with the swap gate at start (both directions below 1000 KiB/s) and the sampler across the whole build. Attempts alternate ON and OFF, up to three per arm.
+- A record with `swapNoisy` true is marked noisy and is not compared.
+- Metric: the build's `wallS` from the quiet records.
+- Keep the override only if both arms have at least one quiet record and the quiet ON wall is lower than the quiet OFF wall. Otherwise revert the override in `Cargo.toml`, and record the numbers.
+- A revert is a local commit. It does not touch the user-wide config or the cargo shim.
