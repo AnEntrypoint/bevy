@@ -2472,3 +2472,33 @@ Change: `scripts/measure-build.sh` now waits for a free slot itself, polling bot
 Witness: `scripts/check-slot-wait.sh` holds both real slot locks for 3 s with `flock`, then runs `measure-build.sh --version`. It passes when `rc` is 0, `slotWaitS` is between 1.5 and 3.5 s, and the build's `wallS` is under 1 s. Green run: `slotWaitS` 2.26, `buildWallS` 0.1, rc 0.
 
 Mutation (before its restore): the wait loop replaced by `slot_wait=0`, which is the plain shim call. Expected: the shim takes its 5 s quantum, so `buildWallS` is about 5 s and the check fails.
+
+## Round 44 Phase B: the witnesses, once each
+
+Gate readings. The reading taken before this phase, by `vmstat 1 2`, was swap-in 64 KiB/s and swap-out 0 KiB/s at 20:05:45, and the gate was open. Each build's own gate (`measure-build.sh`, 0.5 s window) also passed: `r44-b-nochange` and `r44-b-nochange2` read 328 KiB/s in and 0 out at their start.
+
+| Witness | Command | Wall (s) | Result |
+| --- | --- | --- | --- |
+| W1, swap classification | `node scripts/check-swap-noisy.cjs` | 0.03 | rc 0, 16 checks |
+| W2, slot wait | `bash scripts/check-slot-wait.sh` | 3.35 | rc 0, `slotWaitS` 2.25, `buildWallS` 0 |
+| W3, no-change floor | `measure-build.sh r44-b-nochange2 build --profile iterate --timings -v` | 2.9 build, 0.03 slot wait | rc 0, 0 crates, `swapNoisy` true (28.5 MiB in, peak 50293 KiB/s in), tree RSS 138 MiB |
+
+W3 was run twice. The first run, `r44-b-nochange`, was a warm-up and not a floor measurement: root `bt-r43-off-1` was built with `--config` for the three packages, and the committed manifest gives different profile identities. It recompiled 37 crates in 259.3 s (classified null: more than one crate), and then the root matched the current config. The second run is the floor witness.
+
+The floor witness is noisy. It took 2.9 s with 28.5 MiB swapped in during the build, so its wall is not a quiet floor. The quiet floor from the Round 44 split (`split-nochange`, 0.4 s) is the figure to compare against. The 2.9 s run is a clean record of the mechanism, not a new floor.
+
+Mutation results, Phase A: change 1 red at `final-onefile` (expected true, got false); change 2 red at `buildWallS` 5.1 s, the shim's 5 s quantum, with the wait loop replaced by `slot_wait=0`. Both restored green.
+
+### Round 44 ranked remaining work
+
+1. No-change floor (6.1 s and 8.7 s records against about 0.4 to 1 s quiet): reachable. Phase A removed the shim's 5 s quantum from the measured wall (change 2, witnessed red then green). The residual that remains is host swap during a build (W3, 2.9 s noisy). Reopen with a no-change build above 1.5 s and `swapNoisy` false, which is a quiet-window measurement.
+2. Bench real run (`RUNS=5 scripts/bench-vs-jayzee.sh`): reachable when 1-minute load is 4 or less. Round 42 was refused at every size under load 9 to 20. Current load at this round is 15.85 9.00 9.51. Reopen with a run where the gate gives a speedup at every size.
+3. One-file rebuild variance: reachable. The variance is host swap during the build (Round 41), and the class in change 1 now separates it. Reopen with a one-file build whose `swapNoisy` is false and whose wall is above 6 s, or a quiet build below 4 s, to test the band again.
+4. Clean-build swap at `jobs = 12`: held, an owner decision on memory and parallelism. Reopen when the owner changes `jobs` or the memory footprint, and a clean build shows total swap below 1 GB.
+5. Override's total effect: held. It was reverted in Round 43. Reopen only with an owner decision on a comparison method that does not depend on swap, since clean builds now carry `swapNoisy` null. Repeated paired runs with the spread would be such a method.
+6. Clean-build swap classification: held by decision (change 1, `swapNoisy` null). Reopen when a swap-to-wall relation is found for builds of more than one crate.
+7. Release build (`r42-b-release`, 862.7 s, 16.9 GB in): held, the same memory cause. Reopen with the owner's jobs decision.
+8. ZLIB-supercompressed KTX2 (rank 8): held, no sample file. Reopen when a sample exists.
+9. SwiftShader BC7 reference, and the load gate for the device and texture checks: reachable only with browser time, not run here. Reopen when a browser window is scheduled.
+10. The one-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
+11. Owner-held: user-wide `jobs = 4` in `/config/.cargo/config.toml`, the cargo shim (its 5 s retry is the source of change 2's mechanism), sccache or mold, and the Playwriter 0.11 upgrade. Reopen on the owner's decision.
