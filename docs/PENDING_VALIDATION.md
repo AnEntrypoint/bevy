@@ -3311,3 +3311,20 @@ Correction to the record. texture-visual-astc4x4.json (ok, minimum 51.90, median
 Not closed from files: why the SwiftShader RGBA8 render differs from hardware RGBA8 by 21 dB. The set rgba8-a is not described in this ledger, so it cannot show whether 21 dB is run-to-run noise. Reopen with a Phase B run: a repeat of the hardware RGBA8 run (or a documented rgba8-a). If that repeat differs by about 21 dB too, the 30 dB rule is measuring run-to-run noise.
 
 Red check, before its restore: the hardware-vs-software BC7 pair's left reference changed to the SwiftShader RGBA8 set. Red: `swBc7MatchesHwRgba8` false, exit 1. Restored from a copy, `cmp` identical, green again (exit 0). `git status` after the restore lists only the new witness and this ledger line.
+
+## Round 55 Phase B: the hardware RGBA8 repeat, and the witnesses rerun
+
+Readings (`vmstat 1 2`, the second sample is the gate reading):
+- 22:54:40 first check: second sample si 236, so 0, load1 3.05. Open.
+- 22:54:54 job gate, second sample: si 536, so 0, load1 2.90. Open; the run started.
+- 22:58:24 post-run: si 4, so 0, load1 3.25.
+
+Witnesses, each run once with wall time:
+- `NEON_TEXTURE=rgba8 node scripts/check-neon-wasm-models.cjs` (repeat of the hardware RGBA8 run, on localhost 127.0.0.1:8092 only): wall 180.8 s, rc 0, 64 of 64 clean, load median 1086 ms. The original set was copied aside first, the repeat was moved to `neon-shots-rgba8-repeat`, and the original was copied back, so the cross-adapter witness reads the same reference as before.
+- `compare-screenshots.cjs`, original against repeat: `ok` true, PSNR minimum and median both null, 0 failing. All 64 hardware RGBA8 frames are pixel-identical between the two runs.
+- `node scripts/check-cross-adapter.cjs`: wall 25.7 s, rc 0. Unchanged from Phase A: the software BC7 against hardware RGBA8 gives minimum 30.94 and median 53.45.
+- `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.03 s, rc 0.
+
+What this answers: the 21 dB gap between the software and hardware RGBA8 sets is not run-to-run noise. The hardware RGBA8 render repeats exactly. The gap is a real difference between the SwiftShader RGBA8 render and the hardware RGBA8 render. The question left from Phase A is closed: the failing comparison is that reference difference, and the BC7 set on SwiftShader matches the hardware reference.
+
+Processes and tabs: one page in the gate's context, closed at the end. Processes started: the job, the witness node script, the wasm server, the playwriter gate and its Chromium tree. Their PIDs (1075781, 1076110, 1076169, 1076725, 1077079, 1077457) had no `/proc` entry afterwards, and port 8092 is free. Other sessions' processes were not touched.
