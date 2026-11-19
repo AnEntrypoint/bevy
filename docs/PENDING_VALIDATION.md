@@ -3720,3 +3720,17 @@ Red checks, each one mutation, restored with `cmp`:
 Not changed: the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo was run. The witness still runs with a fake cargo.
 
 Local commit only; not pushed in Phase A.
+
+## Round 67 Phase B: file-based witnesses for ee6bf11, after a clear window
+
+Window: about ten minutes from 01:02 (first reading 01:03:02), one reading about every 30 seconds (`vmstat 1 2`, second sample is the gate reading; the heavy-job check reads full arguments of each high-CPU PID, gm-core `--handshake` workers exempt).
+- 01:03:02 si 1660, so 16136, load1 2.23. Closed (swap-in and swap-out above 1000 KB/s). Heavy clear.
+- 01:03:31 si 332, so 0, load1 2.10. Gate open. Heavy busy: a peer Claude session (pid 2225, 38.6% CPU, `--model claude-haiku-5-5`). It is not ours and was not stopped.
+- 01:03:59 si 1520, so 0, load1 1.92. Closed. Heavy clear.
+- 01:04:27 si 308, so 0, load1 1.81. Open. Heavy clear. Both witnesses started on this sample.
+
+Witnesses, each once:
+- `scripts/check-clean-build-measure.sh`: rc 0, wall 0.51 s, 15 of 15 ok (the two new checks pass: the result line ends with tree peak RSS, MemAvailable and the cgroup limit; the run log name carries a timestamp and the PID).
+- `scripts/check-build-roots.sh`: rc 0, wall 0.04 s, "no stale build roots under /tmp".
+
+No build ran in this window. Nothing was stopped.
