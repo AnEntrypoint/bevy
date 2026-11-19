@@ -23,10 +23,11 @@ status shrink 400 100
 status late 500 80
 PROC_ROOT="$proc" swap_owners_sample > "$after"
 got=$(swap_owners_growth "$before" "$after")
+total=$(swap_owners_growth_total "$before" "$after")
 rm -rf "$proc" "$before" "$after"
 want='300 200 beta
 240 290 gamma
 80 500 late'
-[ "$got" = "$want" ] && ok=true || ok=false
-echo "{\"ok\":$ok,\"growth\":\"$(printf '%s' "$got" | tr '\n' ';')\"}"
+[ "$got" = "$want" ] && [ "$total" = "620" ] && ok=true || ok=false
+echo "{\"ok\":$ok,\"growth\":\"$(printf '%s' "$got" | tr '\n' ';')\",\"total\":$total}"
 $ok

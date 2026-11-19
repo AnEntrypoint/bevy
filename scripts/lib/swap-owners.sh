@@ -8,3 +8,6 @@ swap_owners_top() {
 swap_owners_growth() {
     awk 'FILENAME == ARGV[1] { before[$1] = $3; next } { after[$1] = $3; name[$1] = $2 } END { for (p in after) { d = after[p] - before[p]; if (d > 0) print d, p, name[p] } }' "$1" "$2" | sort -rn | head -n 5
 }
+swap_owners_growth_total() {
+    awk 'FILENAME == ARGV[1] { before[$1] = $3; next } { after[$1] = $3 } END { for (p in after) { d = after[p] - before[p]; if (d > 0) sum += d } printf "%d\n", sum + 0 }' "$1" "$2"
+}

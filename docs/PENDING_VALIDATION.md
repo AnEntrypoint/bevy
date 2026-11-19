@@ -2777,3 +2777,17 @@ Longest step: the 8.3 s live one-file build. What was done: nothing to the build
 11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run. Reopen when a browser window is scheduled.
 12. One-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
 13. Owner-held: user-wide `jobs = 4`, the cargo shim (5 s retry), sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 49 Phase A: the full positive-delta total and the top-five share
+
+Change:
+- `scripts/lib/swap-owners.sh`: `swap_owners_growth_total before after` sums every positive VmSwap delta, in KiB. It is the total the top five are drawn from.
+- `scripts/measure-build.sh`: the record gets `swapOwnersGrowthMiB` (the total of positive deltas, in MiB) and `swapOwnersTop5Pct` (the top five's KiB as a percentage of `swapOutMiB`, computed as top KiB × 100 / (swap-out pages × 4)). The percentage is 0 when no page was swapped out.
+
+Units and meaning, stated so the number is read correctly: VmSwap is net per process (pages swapped out minus pages swapped back in), and `swapOutMiB` is the host's gross `pswpout` count. So the top-five percentage is the net gain of the top five over the gross host swap-out. It is a share, not an exact partition of the swap-out.
+
+Witness: `scripts/check-swap-growth.sh` (the Round 48 fixture, with the total added). The same fake proc tree gives positive deltas beta +300, gamma +240, late +80, so the total is 620 KiB. Green: `{"ok":true,"growth":"300 200 beta;240 290 gamma;80 500 late","total":620}`, exit 0.
+
+Mutation, before its restore: the positive-only guard `if (d > 0) sum += d` removed, so the negative delta of `shrink` (-400) is summed. Red: `"total":220`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good2`; green again, `"total":620`, exit 0.
+
+Not covered by the fixture: the percentage formula in `measure-build.sh`. It is checked on live records in Phase B, with the arithmetic reproduced from the record fields.

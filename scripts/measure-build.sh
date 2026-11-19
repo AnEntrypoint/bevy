@@ -118,6 +118,8 @@ rm -f "$trace_file"
 owners=$(swap_owners_top "$owners_file" | awk '{ printf "%s(%s) %.1f MiB; ", $3, $2, $1 / 1024 }')
 rm -f "$owners_file"
 growth=$(swap_owners_growth "$owners_before" "$owners_after" | awk '{ printf "%s(%s) %.1f MiB; ", $3, $2, $1 / 1024 }')
+growth_total=$(swap_owners_growth_total "$owners_before" "$owners_after")
+growth_top=$(swap_owners_growth "$owners_before" "$owners_after" | awk '{ s += $1 } END { printf "%d", s + 0 }')
 rm -f "$owners_before" "$owners_after"
 
 crates=$(printf '%s' "$json" | grep -o '"cratesCompiled":[0-9]*' | cut -d: -f2)
@@ -130,7 +132,7 @@ if [ -n "$timings" ]; then
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v slotwait="$slot_wait" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v owners="$owners" -v growth="$growth" -v timings="${timings##*/}" 'BEGIN {
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"slotWaitS\":%s,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapOwnersTop\":\"%s\",\"swapOwnersGrowth\":\"%s\",\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, slotwait, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, owners, growth, pin, pout, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v slotwait="$slot_wait" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v owners="$owners" -v growth="$growth" -v gtot="$growth_total" -v gtop="$growth_top" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"slotWaitS\":%s,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapOwnersTop\":\"%s\",\"swapOwnersGrowth\":\"%s\",\"swapOwnersGrowthMiB\":%.1f,\"swapOwnersTop5Pct\":%.1f,\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, slotwait, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, owners, growth, gtot / 1024, (so > 0 ? gtop * 100 / (so * 4) : 0), pin, pout, timings
 }' | tee -a "$record"
 exit "$rc"
