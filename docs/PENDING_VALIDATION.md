@@ -3660,3 +3660,17 @@ Notes for the reading:
 - This is the second clean build at `jobs = 2` stopped at the swap limit with a small tree (Round 63: swap-out 37168 KB/s at tree 920 MiB).
 
 Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, the `jobs` setting, and the stop rule.
+
+## Round 65 Phase A: measurement logs kept under target/witness, not in /tmp
+
+Item taken from the ranked list: the measurement logs left in `/tmp` by each run (ranked item 7). Why this one: the cargo log is the only record of how far a stopped build got (Round 61: 342 `Compiling` lines; Round 62: 8). Deleting logs at the end of a run would lose that evidence, so the log is kept in a git-ignored place instead.
+
+Change: `scripts/measure-clean-build.sh` writes its log to `${CLEAN_BUILD_LOG_DIR:-$repo/target/witness/clean-build-logs}/<timestamp>-<pid>.log` and names the path on stderr. The result line, the gate and the stop rule are unchanged.
+
+Witness: `scripts/check-clean-build-measure.sh`, now 13 checks, 13 of 13 ok, exit 0. The new check runs a successful build and requires its log to be a file under `CLEAN_BUILD_LOG_DIR` and named on stderr. The witness sets `CLEAN_BUILD_LOG_DIR` to its own scratch directory, so no witness logs land in the repo.
+
+Red check: the `logdir` line was replaced with a `mktemp` directory under `/tmp`. The witness exited 1, with one FAIL: "the run log is kept in CLEAN_BUILD_LOG_DIR and named on stderr". The script was restored with `cmp` against its saved copy, and the witness then exited 0 with 13 ok (its own file also checked with `cmp`).
+
+Not changed: the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the stop rule. The earlier logs in `/tmp` (Rounds 60 to 64) remain, since they are the evidence for those rounds.
+
+Local commit only; not pushed in Phase A.

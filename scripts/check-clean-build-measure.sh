@@ -31,6 +31,7 @@ echo " 0  0      0 100000   1000 200000 $FAKE_SI $FAKE_SO     0     0  100   200
 EOF
 chmod +x "$work/fake-cargo" "$work/bin/vmstat"
 export FAKE_LOG="$work/fake.log"
+export CLEAN_BUILD_LOG_DIR="$work/logs"
 out="$work/out.txt"
 cfg=$(sed -n 's/^jobs = \([0-9][0-9]*\)$/\1/p' "$repo/.cargo/config.toml" | head -n 1)
 
@@ -59,6 +60,10 @@ t=false; [ -d "$work/root" ] && t=true; report "--keep keeps the target root" $t
 
 MEASURE_NO_GATE=1 CARGO_BIN="$work/fake-cargo" bash "$script" --jobs 7 --target-root "$work/root2" > "$out" 2>/dev/null
 t=false; [ ! -e "$work/root2" ] && t=true; report "without --keep the target root is removed" $t
+
+MEASURE_NO_GATE=1 CARGO_BIN="$work/fake-cargo" bash "$script" --jobs 7 --target-root "$work/root5" > "$out" 2> "$work/err"
+logpath=$(sed -n 's/^measure-clean-build: log //p' "$work/err")
+t=false; [ -f "$logpath" ] && case "$logpath" in "$work/logs/"*) t=true ;; esac; report "the run log is kept in CLEAN_BUILD_LOG_DIR and named on stderr" $t
 
 MEASURE_NO_GATE=1 CARGO_BIN="$work/fake-cargo" bash "$script" --target-root "$work/root3" > "$out" 2>/dev/null
 t=false; grep -Eq "^CLEAN_BUILD jobs=$cfg rc=0 " "$out" && t=true; report "default jobs comes from the repo .cargo/config.toml ($cfg)" $t

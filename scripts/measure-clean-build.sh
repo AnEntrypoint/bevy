@@ -74,7 +74,9 @@ if [ -z "${MEASURE_NO_GATE:-}" ]; then
 else
   load_before=$(cut -d' ' -f1 /proc/loadavg)
 fi
-log=$(mktemp /tmp/measure-clean-build.XXXXXX.log)
+logdir=${CLEAN_BUILD_LOG_DIR:-$repo/target/witness/clean-build-logs}
+mkdir -p "$logdir" || exit 2
+log="$logdir/$(date +%Y%m%d-%H%M%S)-$.log"
 samples=$(mktemp /tmp/measure-clean-build.XXXXXX.load)
 (while :; do cut -d' ' -f1 /proc/loadavg >> "$samples"; sleep 1; done) > /dev/null 2>&1 &
 sampler=$!
