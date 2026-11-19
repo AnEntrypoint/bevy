@@ -14,3 +14,6 @@ swap_owners_growth_total() {
 swap_owners_growth_split() {
     awk 'FILENAME == ARGV[1] { tree[$1] = 1; next } FILENAME == ARGV[2] { before[$1] = $3; next } { d = $3 - before[$1]; if (d > 0) { if ($1 in tree) b += d; else o += d } } END { printf "%d %d\n", b + 0, o + 0 }' "$3" "$1" "$2"
 }
+swap_owners_tree_size() {
+    awk 'END { print NR + 0 }' "$1"
+}

@@ -2858,3 +2858,13 @@ Witness: `scripts/check-swap-split.sh`. A fake proc tree gives gains beta +300 (
 Mutation, before its restore: the class assignment swapped (`if ($1 in tree) o += d; else b += d`). Red: `"split":"240 380"`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good4`; green again, exit 0.
 
 Bug caught by the fixture on the first run, now fixed: awk reads the files in argument order, and the tree file was passed last, so the tree was empty when the gains were classified. The first run gave `0 620`, and the witness reported `ok:false`. The tree file is now passed first, and the awk rules name it as ARGV[1].
+
+## Round 50 Phase A, change 2: the build-tree pid count in the record
+
+The first live pair of one-file builds, run with change 1 alone, gave a build-tree gain of 0 in both records (`r50-onefile-1` and `-2`). A 0 can mean the build's processes never swapped, or that the tree sampling missed them, and the record could not tell the two apart.
+
+Change: `swap_owners_tree_size tree` counts the distinct pids in the sampled tree. `measure-build.sh` records it as `swapOwnersTreePids`. A count of 1 or 2 for a one-crate build would mean only the wrapper and cargo were seen, which the witness and the live record can then show.
+
+Witness: `scripts/check-swap-split.sh` now also checks the tree size of its fixture tree (pids 200, 500, 400), expecting 3. Green: `{"ok":true,"split":"380 240","treeSize":3,"childInTree":true}`, exit 0.
+
+Mutation, before its restore: `swap_owners_tree_size` made to print 0 (`END { print 0 }`). Red: `"treeSize":0`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good5`; green again, exit 0.

@@ -26,6 +26,7 @@ status late 500 80
 PROC_ROOT="$proc" swap_owners_sample > "$after"
 printf '200\n500\n400\n' > "$tree"
 split=$(swap_owners_growth_split "$before" "$after" "$tree")
+treesize=$(swap_owners_tree_size "$tree")
 rm -rf "$proc" "$before" "$after" "$tree"
 sleep 30 &
 child=$!
@@ -34,6 +35,6 @@ kill "$child" 2>/dev/null
 wait "$child" 2>/dev/null
 tree_ok=false
 printf '%s\n' "$pids" | grep -qx "$child" && tree_ok=true
-[ "$split" = "380 240" ] && $tree_ok && ok=true || ok=false
-echo "{\"ok\":$ok,\"split\":\"$split\",\"childInTree\":$tree_ok}"
+[ "$split" = "380 240" ] && [ "$treesize" = "3" ] && $tree_ok && ok=true || ok=false
+echo "{\"ok\":$ok,\"split\":\"$split\",\"treeSize\":$treesize,\"childInTree\":$tree_ok}"
 $ok
