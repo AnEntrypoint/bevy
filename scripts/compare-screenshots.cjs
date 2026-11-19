@@ -99,6 +99,7 @@ function main() {
     const finite = pairs.map((pair) => pair.psnr).filter((value) => typeof value === 'number');
     const result = {
         ok: pairs.length > 0 && pairs.every((pair) => pair.ok),
+        reference: path.basename(left),
         minPsnr,
         pairs: pairs.length,
         psnrMin: finite.length ? Math.min(...finite) : null,

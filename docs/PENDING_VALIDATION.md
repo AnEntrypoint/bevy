@@ -3328,3 +3328,9 @@ Witnesses, each run once with wall time:
 What this answers: the 21 dB gap between the software and hardware RGBA8 sets is not run-to-run noise. The hardware RGBA8 render repeats exactly. The gap is a real difference between the SwiftShader RGBA8 render and the hardware RGBA8 render. The question left from Phase A is closed: the failing comparison is that reference difference, and the BC7 set on SwiftShader matches the hardware reference.
 
 Processes and tabs: one page in the gate's context, closed at the end. Processes started: the job, the witness node script, the wasm server, the playwriter gate and its Chromium tree. Their PIDs (1075781, 1076110, 1076169, 1076725, 1077079, 1077457) had no `/proc` entry afterwards, and port 8092 is free. Other sessions' processes were not touched.
+
+## Round 56 Phase A, commit A: the reference is written into every comparison record
+
+`scripts/compare-screenshots.cjs` now writes `reference`, the name of the left set, into each `texture-visual-<right>.json`. The verdict is unchanged: `ok` still means every pair passes the 30 dB rule (or is identical).
+
+Red check, before its restore: the `reference` line removed from `compare-screenshots.cjs`, then `node scripts/check-cross-adapter.cjs` run. Red: `astcRecordNamesReference` false, exit 1. Restored from a copy, `cmp` identical, green again, exit 0.
