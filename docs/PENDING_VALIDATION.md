@@ -3451,3 +3451,37 @@ Red checks, each restored from a copy with `cmp` identical:
 - `etc2` pointed at the stale set (`sw-etc2-stale`, `stale-before-r58/neon-shots-etc2`): exit 1, `setsAreCurrentBuild` false.
 
 State at this commit: the witness is red, for one reason only: `setsAreCurrentBuild`, because the ETC2 set is in the stale folder until the Phase B regeneration. Every other check is true, and the witness regenerated `texture-visual-astc4x4.json`, `hwBc7` and `swBc7` with `source`.
+
+## Round 58 Phase B: the ETC2 set regenerated, the records checked, the footprint rerun
+
+Readings (`vmstat 1 2`, the second sample is the gate reading), one bounded window, one reading every 30 seconds:
+- 23:36:36 first reading, second sample: si 76, so 0, load1 2.55. Open; the regeneration started.
+- 23:41:47 post-run: si 456, so 0, load1 6.31.
+
+Witnesses and runs, each once, with wall time:
+- `NEON_TEXTURE=etc2 node scripts/check-neon-wasm-models.cjs` (regeneration of the ETC2 set, on localhost 127.0.0.1:8092 only): wall 294.7 s, rc 0, 64 of 64 clean, load median 955 ms. Moved aside before the run: `stale-before-r58/neon-shots-etc2`.
+- `node scripts/check-cross-adapter.cjs`: wall 15.2 s, rc 0, ok true, all checks true, including `setsAreCurrentBuild`.
+- `node scripts/check-texture-provenance.cjs`: wall 0.04 s, rc 0, every record current.
+- `node scripts/texture-footprint.cjs`: wall 1.07 s, rc 0.
+- `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.03 s, rc 0.
+
+Before and after, per set and record (hardware RGBA8 is the reference of record):
+- ETC2 set. Before (11-17 12:01, stale): ok false, minimum 16.81, median 21.11, 64 failing. After (new run, current build): ok true, minimum 30.94, median 52.81, 0 failing. The ETC2 verdict is now a pass, written from the new run. The earlier fail rested on the stale set.
+- Software RGBA8 (`neon-shots-rgba8-software`). Before (11-17 11:51, stale): ok false, minimum 16.81, median 21.11. After (the Round 57 run, 11-19 23:13, now canonical): ok true, minimum 30.94, median 53.45, 0 failing.
+- BC7 record `texture-visual-bc7.json`. Before (11-17 12:10, no reference): ok true, minimum 65.12, median 69.39. After (reference `neon-shots-rgba8`, source `neon-shots-bc7`): ok true, minimum 65.09, median 69.34.
+- RGBA8 record `texture-visual-rgba8.json`. Before (11-17 12:10, no reference): ok true, identical. After (hardware RGBA8 against its repeat, source `neon-shots-rgba8-repeat`): ok true, identical.
+- Texel record `texture-texel.json`. Before (11-17 10:56): ok true, minimum 41.70, median 53.51, 61 images. After (regenerated): ok true, the same figures.
+- ASTC record `texture-visual-astc4x4.json`. Before (Round 56, no source field): ok true, minimum 30.94, median 53.45. After (witness rerun, source `neon-shots-astc4x4`, current): ok true, the same figures.
+
+Footprint, `texture-footprint.cjs`, before and after (the before file is `texture-footprint-before-r58.json`):
+- Decision: `bc7` before and after. BC7 usable in both.
+- ETC2: before not usable (visual fail, fallback false). After usable (visual ok, load 955 ms against the software RGBA8 reference of 1048 ms, inside 1.1×). The fallback is now true.
+- ASTC: before usable (fallback true, load 1267 ms against a reference of 1250 ms). After not usable: load 1267 ms against 1048 ms (1.21×, over the 1.1× tolerance). The ASTC data did not change. The cause is the reference swap: the software RGBA8 witness now has the current build's load time. The fallback is now false.
+
+Not regenerated in this window, moved to `stale-before-r58`, each needs its own browser run (one run per set) or is not reproducible:
+- `neon-shots-rgba8-control` and its record `texture-visual-control.json` (11-17 04:29): the mode is not recorded, so it cannot be regenerated faithfully.
+- `neon-shots-rgba8-a` and `texture-visual-x56-rgba8a.json` (11-17 12:06): the configuration is not recorded.
+- `texture-visual-bc7-run1.json` (11-17 04:29): the configuration is not recorded.
+- The three no-still records (`bc7-nostill`, `astc4x4-nostill`, `etc2-nostill`, 11-17 11:33): the mode without `still=1` can be regenerated, one run each.
+
+Processes and tabs: the job, the witness script and the wasm server were stopped; the job exited. Port 8092 is free.
