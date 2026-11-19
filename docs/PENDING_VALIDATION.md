@@ -3674,3 +3674,15 @@ Red check: the `logdir` line was replaced with a `mktemp` directory under `/tmp`
 Not changed: the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the stop rule. The earlier logs in `/tmp` (Rounds 60 to 64) remain, since they are the evidence for those rounds.
 
 Local commit only; not pushed in Phase A.
+
+## Round 66 Phase A: correction to the Round 63 Phase B entry, and a witness for stale build roots
+
+Item taken from the ranked list: the Round 63 Phase B entry said the partial root of its stopped build was left under `/tmp` for the next stretch to check. The root was not left. It was `/tmp/bevy-clean.TEfZTA` (28 MB, created 00:34:12 by that build), and it was removed in the same stretch, right after the entry was written. Correction: no stale build root remains from Round 63. Why this item: it is the only ranked item that can be closed from files already on disk without a browser or cargo.
+
+Witness: `scripts/check-build-roots.sh`. It lists any `/tmp/bevy-clean.*` root and exits 1 if one exists, 0 if none does. It is the check a stopped measurement needs, since the script removes its root only on a normal finish.
+- Green: "no stale build roots under /tmp", exit 0.
+- Red check: a `/tmp/bevy-clean.redcheck` directory was created. The witness listed it ("stale build root: /tmp/bevy-clean.redcheck") and exited 1. The directory was removed, and the witness exited 0 again.
+
+Not changed: the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the stop rule. The Round 63 entry is not rewritten; this entry corrects it.
+
+Local commit only; not pushed in Phase A.
