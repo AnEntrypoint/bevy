@@ -2311,3 +2311,11 @@ The override itself is witnessed on the three packages. The verbose `rustc` line
 The three units shortened by 77.3 s in total, which is the direct effect of the override. The report wall rose by 17.9 s because the unrelated units above ran slower under swap. A witness that the override shortens the whole build needs one clean build with the swap gate met through the build, and that run is not in this round. This is the open item.
 
 Decision: the override in `1cb5677` stays, on the unit evidence. Its effect on the total build wall is not shown, and this round does not claim it. Item 2 is open until that run is made.
+
+## Round 42 Phase A, change 1: swap peaks through the build in measure-build
+
+`scripts/measure-build.sh` already sampled the build's length (its background loop runs until the build exits), and it compared swap counters from before and after the build. The record therefore carried `swapNoisy` for the whole build. What it did not carry was the timeline: a burst inside the build averages into the total. The Phase B clean build had a 3384 KiB/s sample that no field recorded.
+
+The change: each 0.5 s sample of the background loop now appends a timestamped swap counter line to a trace file. The trace starts with the counters read before the build and ends with the counters read after it. The record gets `swapPeakInKiBps` and `swapPeakOutKiBps`, the largest rate over any two consecutive trace lines.
+
+First witness attempt, same no-change build: the peaks came out as 0 with a total of 8.3 MiB out, because the trace had too few lines to form a pair. The trace now includes the start and end counters, and the rate uses the elapsed time. Second witness, `r42-sampler-check2` (`bt-r41-final`, no-change, wall 0.5 s): swapInMiB 0.1, swapOutMiB 13.7, `swapPeakInKiBps` 292, `swapPeakOutKiBps` 25780, `swapNoisy` true. The peak is non-zero where the total is non-zero, and no `sleep 0.5` process was left behind.
