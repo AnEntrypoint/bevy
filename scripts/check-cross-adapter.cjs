@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '..');
 const witnessDir = path.join(repo, 'target', 'witness');
 const linkDir = path.join(witnessDir, 'cross-adapter');
+const referenceOfRecord = 'hw-rgba8';
 const sets = {
     'hw-rgba8': 'neon-shots-rgba8',
     'sw-rgba8': 'neon-shots-rgba8-software',
@@ -15,14 +16,12 @@ const sets = {
     'sw-etc2': 'neon-shots-etc2',
 };
 const pairs = {
-    hwBc7VsHwRgba8: ['hw-rgba8', 'hw-bc7'],
-    swBc7VsHwRgba8: ['hw-rgba8', 'sw-bc7'],
-    swRgba8VsHwRgba8: ['hw-rgba8', 'sw-rgba8'],
+    hwBc7: [referenceOfRecord, 'hw-bc7'],
+    swBc7: [referenceOfRecord, 'sw-bc7'],
+    swRgba8: [referenceOfRecord, 'sw-rgba8'],
+    astc4x4: [referenceOfRecord, 'sw-astc'],
+    etc2: [referenceOfRecord, 'sw-etc2'],
     swBc7VsSwRgba8: ['sw-rgba8', 'sw-bc7'],
-    swAstcVsHwRgba8: ['hw-rgba8', 'sw-astc'],
-    swAstcVsSwRgba8: ['sw-rgba8', 'sw-astc'],
-    swEtc2VsHwRgba8: ['hw-rgba8', 'sw-etc2'],
-    swEtc2VsSwRgba8: ['sw-rgba8', 'sw-etc2'],
 };
 fs.mkdirSync(linkDir, { recursive: true });
 const results = {};
@@ -36,13 +35,24 @@ for (const [key, [left, right]] of Object.entries(pairs)) {
     });
     results[key] = JSON.parse(fs.readFileSync(path.join(witnessDir, `texture-visual-${key}.json`), 'utf8'));
 }
+const astcRecord = JSON.parse(fs.readFileSync(path.join(witnessDir, 'texture-visual-astc4x4.json'), 'utf8'));
 const checks = {
-    hwBc7MatchesHwRgba8: results.hwBc7VsHwRgba8.ok === true,
-    swBc7MatchesHwRgba8: results.swBc7VsHwRgba8.ok === true,
-    swRgba8DeviatesFromHwRgba8: results.swRgba8VsHwRgba8.ok === false,
-    swBc7FailureIsReferenceDeviation: results.swBc7VsSwRgba8.ok === false && Math.abs(results.swBc7VsSwRgba8.psnrMedian - results.swRgba8VsHwRgba8.psnrMedian) <= 1,
+    referenceOfRecordIsHardwareRgba8: referenceOfRecord === 'hw-rgba8',
+    hwBc7PassesAgainstReference: results.hwBc7.ok === true,
+    swBc7PassesAgainstReference: results.swBc7.ok === true,
+    swRgba8DifferenceStandsAgainstReference: results.swRgba8.ok === false,
+    astcRecordNamesReference: astcRecord.reference === sets[referenceOfRecord],
+    astcPassesAgainstReference: astcRecord.ok === true && results.astc4x4.ok === true,
+    supersededComparisonReproducesDifference: results.swBc7VsSwRgba8.ok === false && Math.abs(results.swBc7VsSwRgba8.psnrMedian - results.swRgba8.psnrMedian) <= 1,
 };
-const summary = Object.fromEntries(Object.entries(results).map(([key, value]) => [key, { ok: value.ok, psnrMin: value.psnrMin, psnrMedian: value.psnrMedian, failing: value.failing.length }]));
+const summary = Object.fromEntries(Object.entries(results).map(([key, value]) => [key, { reference: value.reference, ok: value.ok, psnrMin: value.psnrMin, psnrMedian: value.psnrMedian, failing: value.failing.length }]));
+const finding = {
+    name: 'software-rgba8-rendering-difference',
+    reference: referenceOfRecord,
+    psnrMedian: results.swRgba8.psnrMedian,
+    psnrMin: results.swRgba8.psnrMin,
+    reopen: 'a second hardware re-run of the software RGBA8 set, or a second adapter',
+};
 const ok = Object.values(checks).every(Boolean);
-console.log(JSON.stringify({ ok, checks, summary }, null, 2));
+console.log(JSON.stringify({ ok, checks, finding, summary }, null, 2));
 process.exit(ok ? 0 : 1);
