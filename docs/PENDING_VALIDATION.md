@@ -2223,3 +2223,18 @@ The parts sum to the measured 1.5 s. The 15.9 s run, and the 7.1 s probe in this
 10. The one-off `Unable to find a GPU` in the first ASTC run. Held: no reproduction. Reopen if it recurs with the adapter log recorded.
 11. Reachable and not built yet: a SwiftShader BC7 reference set for the screenshot caveat, and three-run medians on the device and texture checks (Round 38 ranks 4 and 5). Reopen: none; they wait only on browser time.
 12. Reachable and not built yet: the bench load gate (refuse a ratio above 1-minute load 4.0 on 12 cores, Round 34). Reopen: none.
+
+### Round 40 Phase B results
+
+Phase B rule: the `vmstat 1 2` reading is taken and recorded before each build, and both swap-in and swap-out must be below 1000 KB/s. The final config is `cd576ce` (`jobs = 12`).
+
+| Run | Recorded `vmstat` before the start | Cargo wall | Crates | Peak RSS | Link | Used as the Phase B figure? |
+| --- | --- | --- | --- | --- | --- | --- |
+| `q40-nochange` | si 824, so 0 (the wait loop saw si 880, so 0 at 17:15:51) | 6.1 s | 0 | 136 MiB | 0 s | yes |
+| `r40b-onefile` | si 552, so 0 (17:16:48, after the wait loop saw si 1004 and 5872 earlier) | 10.8 s | 1 | 1462 MiB | 1 s | yes |
+| `q40-onefile` | si 1300, so 0; the measurement script then read 96 KiB/s | 3.4 s | 1 | 1670 MiB | 1 s | no: the recorded reading was above 1000 |
+| `p40-nochange`, `p40-onefile` | si 2964, so 0; not waited for | 8.7 s, 10.7 s | 0, 1 | 2927 MiB, 3494 MiB | 0 s, 2 s | no: the reading was above 1000 |
+
+Against the earlier figures: no-change 6.1 s, against 9.6 s at `jobs = 4` and 15.9 s in the final round before this change. One-file 10.8 s in the Phase B run, against 4.0 s in the earlier `jobs = 12` run. The one-file figure is not restored: the same code and target root gave 3.4 s, 10.7 s and 10.8 s, and the Phase B run also swapped out 768 KB/s during the build. The 15.9 s regression is not reproduced, and the one-file figure stays unexplained.
+
+Decision: the gate change in `42dde55` stays: it halves the gate per build (1.0 s to 0.5 s), and it checks both swap directions. The no-change figure of 6.1 s is above the 0.4 to 1.1 s measured for the same parts in the split run. This round did not split that run, so the difference is unexplained; the shim slot queue is the only component measured to exceed a second. Reopen item 1 (above) with a split of a single no-change run taken under the same readings. The one-file figure reopens as item 3.
