@@ -3485,3 +3485,14 @@ Not regenerated in this window, moved to `stale-before-r58`, each needs its own 
 - The three no-still records (`bc7-nostill`, `astc4x4-nostill`, `etc2-nostill`, 11-17 11:33): the mode without `still=1` can be regenerated, one run each.
 
 Processes and tabs: the job, the witness script and the wasm server were stopped; the job exited. Port 8092 is free.
+
+## Round 59 Phase A: the stale sets, their configs, and the ASTC exclusion
+
+ASTC exclusion from the fallback list (dispatcher ruling, recorded here). The footprint rule is a load tolerance of 1.1 times the software RGBA8 witness. The rule and the 1.1 tolerance stand. ASTC's ratio is 1.21: its load median is 1267 ms (`neon-wasm-witness-astc4x4.json`, 11-18 21:22), against 1048 ms for the current software RGBA8 witness (`neon-wasm-witness-rgba8-software.json`, the Round 57 run). The exclusion comes from the reference swap, not the ASTC data: the earlier software reference was the stale set at 1250 ms, against which ASTC's 1267 ms passed. Nothing in the ASTC set changed.
+
+The stale sets, one by one:
+- `neon-shots-rgba8-software` as originally written (11-17 11:51). Config recorded: `NEON_TEXTURE=rgba8-software` (the `rgba8-software` mode of `scripts/check-neon-wasm-models.cjs`, query `&adapter=software&still=1`), logged in the Round 17 and Round 26 ledger lines. It was regenerated against the current build by the Round 57 run, the same command, and that run is now the canonical set (11-19 23:13). No new run is needed. The original stays in `stale-before-r58`.
+- `neon-shots-rgba8-a` (11-17 12:06). Config not recorded: no script, ledger line, job output or commit names its command or mode. The Round 55 description ("a second software RGBA8 run") was an inference from its pixels, and it is withdrawn. Not regenerated. It stays in `stale-before-r58`. Dependent record withdrawn: `texture-visual-x56-rgba8a.json` (in `stale-before-r58`).
+- `neon-shots-rgba8-control` (11-17 04:29). Config not recorded verbatim. The ledger describes it as "RGBA8 against a second RGBA8 render (before the fix)", which is the render before `still=1`. The current script always passes `still=1`, so the pre-fix render can't be reproduced without a new mode, and that would be a guess. It is superseded: the current build's hardware RGBA8 against its repeat is 64 of 64 identical with `still=1` (the `rgba8` record). Not regenerated. It stays in `stale-before-r58`. Dependent record withdrawn: `texture-visual-control.json` (in `stale-before-r58`).
+
+Nothing in this commit changes code. No red check is needed for a ledger-only commit; the checks it relies on are `check-texture-provenance.cjs` and `check-cross-adapter.cjs`, which are unchanged.
