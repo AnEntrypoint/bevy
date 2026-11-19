@@ -10,6 +10,7 @@ const modes = {
     bc7: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache', query: '&still=1' },
     rgba8: { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&still=1' },
     'rgba8-software': { urlDir: 'gltf-cache-rgba8', decodedDir: 'gltf-cache-rgba8', query: '&adapter=software&still=1' },
+    'bc7-software': { urlDir: 'gltf-cache', decodedDir: 'gltf-cache', query: '&adapter=software&still=1' },
     astc4x4: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-astc', query: '&adapter=software&disable-bc=1&still=1' },
     etc2: { urlDir: 'gltf-cache', decodedDir: 'gltf-cache-etc2', query: '&adapter=software&disable-bc=1&disable-astc=1&still=1' },
 };

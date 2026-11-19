@@ -3248,3 +3248,15 @@ Every gate and load reading taken this round, in order:
 Witness, run once: `node scripts/check-bench-criterion.cjs`, wall 0.05 s, rc 0, `{"n":18,"mean":1.0307,"sd":0.0318,"t":2.11,"lower":1.0148,"upper":1.0465,"above1":14,"maxLoad":3.92,"criterionMet":true}`.
 
 No bench and no cargo ran in this Phase B. The witness reads the recorded pairs and starts no build.
+
+## Round 55 Phase A: a SwiftShader BC7 reference for the screenshot caveat
+
+The cross-adapter caveat (Round 26 ledger, item 3 of the ranked list) is that BC7 was compared with a hardware RGBA8 render, while ASTC and ETC2 were compared with a SwiftShader RGBA8 render. A SwiftShader BC7 set removes that difference. SwiftShader reports `texture-compression-bc` in its feature list, so BC7 can run on the software adapter.
+
+Change: `scripts/check-neon-wasm-models.cjs` gets a `bc7-software` mode, with the BC7 cache (`gltf-cache`) and `&adapter=software&still=1`. The other modes are unchanged.
+
+Witness: `node scripts/check-neon-bc7-software-mode.cjs` checks that the mode line is exact and that it does not disable BC. Green: `{"present":true,"disablesBc":false,"ok":true}`, exit 0.
+
+Mutation, before its restore: `&adapter=software` removed from the `bc7-software` line. Red: `{"present":false,"disablesBc":false,"ok":false}`, exit 1. Restored from a copy, checked with `cmp` (identical), green again, exit 0. `git status` after the restore shows the mode file modified and the witness file new, nothing else.
+
+Phase B, not run in Phase A: `NEON_TEXTURE=bc7-software node scripts/check-neon-wasm-models.cjs` (the witness through the gate, on localhost 127.0.0.1:8092 only), then `SHOTS_LEFT=target/witness/neon-shots-rgba8-software SHOTS_RIGHT=target/witness/neon-shots-bc7-software node scripts/compare-screenshots.cjs`.
