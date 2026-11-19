@@ -2518,3 +2518,42 @@ One-file variance: the figure is taken only from quiet records. Round 41 named t
 - `scripts/check-quiet-figure.cjs` (new): fixture with 5 records (3 quiet at 3.1, 3.6 and 3.4 s, 2 noisy at 16.3 and 14.1 s). It expects the figure 3.4, 3 quiet, and rejected [b, d]. It also checks: no quiet record gives a null figure; a null `swapNoisy` is rejected; and an even count takes the mean of the two middle walls.
 
 Witness, Phase A: `node scripts/check-quiet-figure.cjs` exits 0 with 4 cases.
+
+## Round 45 Phase B: the witnesses, once each
+
+Gate readings, `vmstat 1 2`: 20:21:28 swap-in 268 KiB/s, out 0 (floor re-run); 20:22:20 swap-in 172 KiB/s, out 0 (W-a); 20:22:26 swap-in 180 KiB/s, out 0 (W-b). All open.
+
+| Witness | Wall (s) | Result |
+| --- | --- | --- |
+| Floor re-run, `r45-nochange` (warm `bt-r43-off-1`) | 1.0 build, 0.01 slot wait | rc 0, 0 crates, `swapNoisy` true (62.8 MiB out, peak 99174 KiB/s out). Not quiet |
+| W-a, `check-quiet-figure.cjs` | 0.03 | rc 0, 4 cases |
+| W-b, `one-file-quiet.sh r45-onefile` (6 one-file builds, `CARGO_TARGET_DIR` warm) | 33.1 total | selected figure 3.65 s from n=2 quiet; target was 3 quiet, so the driver ran all 6 attempts |
+
+The six one-file builds:
+
+| Record | Wall (s) | Swap in / out (MiB) | `swapNoisy` |
+| --- | --- | --- | --- |
+| `r45-onefile-1` | 7.8 | 20.3 / 698.7 | true |
+| `r45-onefile-2` | 3.8 | 35.7 / 2.1 | true |
+| `r45-onefile-3` | 3.8 | 8.4 / 0 | false |
+| `r45-onefile-4` | 3.5 | 9.5 / 0.2 | false |
+| `r45-onefile-5` | 3.2 | 35.2 / 0 | true |
+| `r45-onefile-6` | 3.3 | 2.7 / 63.2 | true |
+
+The one-file variance is smaller this round, 3.2 to 7.8 s, than the 3.1 to 17 s of Round 41. The rule works in one direction: the two quiet records are fast, and the slow record (`r45-onefile-1`, 7.8 s) is noisy. But `r45-onefile-5` (3.2 s, swap-in 35.2 MiB) and `r45-onefile-2` (3.8 s, 35.7 MiB) are noisy and fast, so the rule rejects fast builds too. It is conservative, and it never reports a noisy build as quiet.
+
+Result: the quiet figure is 3.65 s from two quiet records, below the three the driver wanted. The floor has no quiet run this round.
+
+### Round 45 ranked remaining work
+
+1. No-change floor: reachable, still open. The mechanism is fixed (`597e4d1`). The only floors measured are noisy: `r44-b-nochange2` 2.9 s (28.5 MiB in) and `r45-nochange` 1.0 s (62.8 MiB out). Reopen with a no-change build with `swapNoisy` false, which needs a quiet window.
+2. One-file variance: reachable, with a figure of 3.65 s from n=2 quiet records (`27565e5`). Reopen with a third quiet record, which the driver can take if it waits between attempts for the gate to open. That is the next change.
+3. Bench real run: reachable only at 1-minute load 4 or less. Reopen with a run where every size gives a speedup.
+4. Clean-build swap at `jobs = 12`: held, owner decision on memory and parallelism. Reopen when the owner changes `jobs` and total swap for a clean build falls below 1 GB.
+5. Override's total effect: held; reverted in Round 43. Reopen with a comparison method that does not depend on swap.
+6. Clean-build swap classification: held by decision (`swapNoisy` null). Reopen when a swap-to-wall relation is found for builds of more than one crate.
+7. Release build, 862.7 s with 16.9 GB swapped in: held, same memory cause.
+8. ZLIB-supercompressed KTX2 (rank 8): held, no sample file.
+9. SwiftShader BC7 and the browser load gate: reachable with browser time only.
+10. One-off GPU panic: held, no recurrence.
+11. Owner-held: user-wide `jobs = 4`, the shim, sccache or mold, the Playwriter 0.11 upgrade. Reopen on the owner's decision.
