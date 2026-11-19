@@ -2970,3 +2970,103 @@ Identity, so the two parts add up: the window's host flow (swap-out minus swap-i
 Witness: `scripts/check-swap-net.sh` now also checks `swap_gone_flow_kib 100 300 220`, which must give 580: (300 − 100) × 4 − 220. Green: `{"ok":true,"net":220,"treePeak":880,"gone":580}`, exit 0. (The fixture's first version expected 180, which was my arithmetic error; the function was correct, and the expectation is now fixed.)
 
 Mutation, before its restore: the sign of the net term flipped (`* 4 + $3`). Red: `"gone":1020`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good8`; green again, `"gone":580`, exit 0.
+
+## Round 51 Phase B: the attribution, witnessed live, and the decision
+
+Every gate reading taken, in order. The gate flapped, and the closed readings are kept with the open ones. `si` is swap-in and `so` swap-out, both in KiB/s.
+
+First job (change 1 fields, `swapExitFreedMiB`, now renamed to the gone flow):
+- 21:33:13 si 8232, so 50284 (closed)
+- 21:33:17 si 11144, so 123980 (closed)
+- 21:33:21 si 80216, so 80960 (closed)
+- 21:33:25 si 53000, so 0 (closed)
+- 21:33:29 si 24020, so 352632 (closed)
+- 21:33:33 si 13420, so 284940 (closed)
+- 21:33:37 si 46588, so 310424 (closed)
+- 21:33:41 si 12092, so 0 (closed)
+- 21:33:45 si 34780, so 253220 (closed)
+- 21:33:49 si 18420, so 245452 (closed)
+- 21:33:53 si 212528, so 363596 (closed)
+- 21:33:57 si 25636, so 190984 (closed)
+- 21:34:01 si 13856, so 10992 (closed)
+- 21:34:05 si 4608, so 0 (closed)
+- 21:34:10 si 39564, so 27932 (closed)
+- 21:34:14 si 4652, so 239020 (closed)
+- 21:34:18 si 60380, so 116984 (closed)
+- 21:34:22 si 221816, so 131836 (closed)
+- 21:34:26 si 32048, so 334660 (closed)
+- 21:34:30 si 19604, so 40120 (closed)
+- 21:34:34 si 10444, so 146176 (closed)
+- 21:34:38 si 17972, so 87184 (closed)
+- 21:34:42 si 158816, so 13068 (closed)
+- 21:34:46 si 32108, so 0 (closed)
+- 21:34:50 si 15916, so 0 (closed)
+- 21:34:54 si 38328, so 0 (closed)
+- 21:34:58 si 1860, so 0 (closed)
+- 21:35:02 si 4524, so 0 (closed)
+- 21:35:06 si 6100, so 0 (closed)
+- 21:35:10 si 13168, so 0 (closed)
+- 21:35:14 si 9204, so 0 (closed)
+- 21:35:18 si 46896, so 0 (closed)
+- 21:35:22 si 372, so 0 (open): witness W-i
+- 21:35:24 si 5748, so 0 (closed)
+- 21:35:28 si 1808, so 0 (closed)
+- 21:35:32 si 6996, so 0 (closed)
+- 21:35:36 si 8116, so 0 (closed)
+- 21:35:40 si 2600, so 0 (closed)
+- 21:35:44 si 1152, so 0 (closed)
+- 21:35:48 si 4128, so 0 (closed)
+- 21:35:52 si 736, so 0 (open): build `r51-onefile-1`
+- 21:36:01 si 1092, so 0 (open)
+- 21:36:05 si 1336, so 0 (open)
+- 21:36:09 si 1564, so 0 (open)
+- 21:36:13 si 1388, so 0 (open)
+- 21:36:17 si 916, so 0 (open): build `r51-onefile-2`
+
+Second job (renamed fields):
+- 21:37:19 si 264, so 0 (open): witness W-j
+- 21:37:20 si 492, so 0 (open): build `r51b-onefile-1`
+- 21:37:26 si 156, so 0 (open): build `r51b-onefile-2`
+
+Witnesses, each run once in the second job: `scripts/check-swap-net.sh`, wall 0.09 s, rc 0, `{"ok":true,"net":220,"treePeak":880,"gone":580}`. The first job's W-i run was 0.10 s, before the rename.
+
+Live builds (warm root `bt-r43-off-1`, one crate each, rc 0). The first job's builds are kept as superseded; they carry the same numbers under the old name.
+
+| Record | Build wall (s) | Swap in (MiB) | Swap out (MiB) | Net, alive at end (MiB) | Gone flow (MiB) | Tree pids | Tree peak (MiB) | `swapNoisy` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `r51-onefile-1` (old name) | 6.5 | 5.4 | 0 | −1.1 | −4.3 | 6 | 0 | false |
+| `r51-onefile-2` (old name) | 3.0 | 2.4 | 0 | −0.7 | −1.8 | 6 | 0 | false |
+| `r51b-onefile-1` | 3.4 | 0.4 | 0 | 0 | −0.3 | 6 | 0 | false |
+| `r51b-onefile-2` | 4.3 | 1.6 | 0 | −0.9 | −0.7 | 6 | 0 | false |
+
+The identity holds in each row: host flow (out minus in) equals net plus gone flow. For `r51b-onefile-1`, the flow is −0.4 and the sum is −0.3; the 0.1 difference is the rounding of the displayed swap-in, since the record stores the exact KiB.
+
+### Decision: what can be attributed, and what cannot
+
+Attributable from these records:
+- The signed net of each process alive at the end, per pid. In the quiet builds all of it is survivors' swap-in, not swap-out.
+- The build tree's residency: its pids held 0 swapped pages at every 2 s sample, in all four builds. So the build's own processes did not hold any swap in these builds, and they did not swap out.
+
+Not attributable from these records:
+- The gone flow, the swap of processes absent from the end sample, is a number but has no pid. In the quiet builds it is swap-in only (−0.3 to −0.7 MiB). Which processes produced it is not recorded.
+- Gross swap-out and swap-in per process. The kernel gives no per-process counter, and there is one root `memory.stat`, so there is no per-group split either.
+- A swap-out share for a build. The quiet builds have swap-out 0, so the percentage fields read 0 there, and mean "undefined", not "no share".
+
+So the Round 49 question, whose processes did the swap-out of a noisy build, is not answered by these records. The new fields answer it only for a build with swap-out, and no such build has been measured with them.
+
+### Round 51 ranked remaining work
+
+1. Gross per-process swap: held. Reopen when the kernel or owner exposes a per-process swap-out counter, or a per-group `pswpout` (the root `memory.stat` is the only one here).
+2. Attribution of a noisy build's swap-out: held. Reopen with a build whose swap-out is above 100 MiB, measured with the new fields. A noisy build cannot be started while the gate is closed, and the gate has been closed for most of this round.
+3. Clean-build swap at `jobs = 12`: held, owner decision on `jobs`. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB. Baseline: six Round 43 clean builds, 2857 to 8699 MiB swapped, 323 to 384 s wall.
+4. 500-body bench size: held (Round 47). Reopen with five quiet pairs above 1 and a quiet mean of 1.05 or more, at 1-minute load 4 or less.
+5. No-change floor: explained (Round 47). Quiet median 0.4 s, with cargo's dependency resolution as most of the cargo clock. Reopen with a quiet median above 0.5 s.
+6. Unlogged cargo stretch, about 0.085 s: held, inside cargo. Reopen if it grows above 0.2 s on repeated quiet runs.
+7. One-file variance: done (quiet median 3.0 s, Round 46). Reopen with a quiet build above 4 s or below 3.5 s.
+8. Override's total effect: held, reverted in Round 43. Reopen with a method that does not depend on swap.
+9. Clean-build swap classification: held by decision (`swapNoisy` null for multi-crate builds). Reopen when a swap-to-wall relation is shown for multi-crate builds.
+10. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+11. ZLIB KTX2 (rank 8): held, no sample.
+12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+13. One-off GPU panic: held, no recurrence.
+14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
