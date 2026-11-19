@@ -2106,3 +2106,45 @@ Rank 1 (the gate's PATH) is closed. No Rust changed in Round 38, so no cargo bui
 - Observed, not changed: the gate prints `Playwriter 0.9.0 is outdated (extension requires 0.11.0)`. The witness still passes. Upgrading the playwriter package is outside this round.
 
 Ranks 2 to 5 are open and unchanged from the Phase A table.
+
+## Round 39 Phase A: build-time measurement and the candidate changes
+
+### Facts read before any build
+
+- Installed: no `mold`, no `ld.lld`, no `sccache`, no `clang`. Recorded, nothing installed. The toolchain's `rust-lld` (`/data/cache/rustup/toolchains/1.99.0-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld`) and `gcc-ld` are present.
+- `/config/.cargo/config.toml` sets `[build] jobs = 4` for every build on this host. The ledger lines 48, 87, 111, 272 and 280 record that the cap was never confirmed by sampling. Round 39 tests it with `CARGO_BUILD_JOBS`.
+- `Cargo.toml` `[profile.iterate]`: inherits release, `lto = false`, `codegen-units = 16`, `incremental = true`, `strip = "none"`. The debug info is off.
+- `target/iterate` does not exist yet, so the first iterate build in the default target root is a clean build.
+- The cargo timings report gives the game crate (`bevy-jayzee`) as one `bin` unit without sections, so its link time is not in the report. The Round 39 measurement samples linker processes to get it.
+
+### Measurement
+
+`scripts/measure-build.sh <label> <build-timed args...>` runs `scripts/build-timed.sh` and records one JSON line in `target/witness/build-measure.jsonl`:
+
+- `build`: the `build-timed` line (wall time, crates compiled, warnings, target root);
+- `peakRssMiB`: the largest sum of resident memory across cargo, rustc, the C compiler, the linkers and build scripts, sampled every 0.5 s;
+- `linkS`: the time with a linker process running, from the same samples (0.5 s resolution);
+- `swapInPages`, `swapOutPages`, `swapInMiB`, `swapOutMiB`: deltas of `pswpin` and `pswpout` in `/proc/vmstat`;
+- `memAvailStartMiB`, `memAvailEndMiB`, `swapFreeStartMiB`, `swapFreeEndMiB`: `MemAvailable` and `SwapFree` from `/proc/meminfo`, read before and after;
+- `timings`: the cargo timings report from this run, copied to `target/witness/timings-<label>.html`.
+
+The script waits, up to 540 s, for swap-out under 1 MB/s before it starts a build. If the wait runs out, it exits 75 and starts nothing.
+
+`scripts/build-timings-summary.cjs <report.html> [n]` prints the top units by duration and the game crate's unit from a timings report. The Round 39 Phase B record uses it on each run's report.
+
+### Plan
+
+1. Baseline with the current configuration: a clean build in the default target root (`target/`), a no-change rebuild, and a one-file rebuild after `touch src/viewer.rs`.
+2. Find the dominant cost in each: the timings report, and `linkS` for the link.
+3. One change at a time, each measured against the baseline on the same three builds, with each change applied through an environment override (`CARGO_BUILD_JOBS`, `CARGO_PROFILE_ITERATE_*`, `RUSTFLAGS`), so the baseline stays in place:
+   - `CARGO_BUILD_JOBS` 12 against the global 4;
+   - `CARGO_PROFILE_ITERATE_CODEGEN_UNITS` 256 against 16;
+   - `CARGO_PROFILE_ITERATE_INCREMENTAL` false, against true;
+   - the toolchain's `rust-lld`, through `-C link-arg=-fuse-ld=lld` with `gcc-ld` in the sysroot, if the link dominates;
+   - split debuginfo, if any debug info is on;
+   - sccache: not installed, so it is recorded as rejected without a test.
+4. Keep a change only when its gain repeats: each kept change runs twice more, and a gain under 15 percent on a clean build is treated as noise.
+
+The dependency cache stays warm because the target root does not change and the profile setting is part of each artifact's hash, so a rejected experiment leaves the baseline's artifacts in place.
+
+Phase B: each measurement runs once per configuration, and the full iterate build runs once after the last change. Each build waits for swap-out to clear before it starts.
