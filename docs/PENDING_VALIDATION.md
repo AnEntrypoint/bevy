@@ -3514,3 +3514,19 @@ Footprint decisions, before (`texture-footprint-before-r59.json`) and after: unc
 Correction to the Phase A line. It said the `rgba8-software` config was logged in the Round 17 and Round 26 ledger lines. The verified record is the `rgba8-software` mode in `scripts/check-neon-wasm-models.cjs` and the Round 26 witness line that lists `rgba8-software` at 64 of 64 clean. Nothing in Round 17 records that mode.
 
 Processes and tabs: none started in this phase. The job (pid 1285583) had exited, no workspace Chromium is running, and no wasm server is running.
+
+## Round 60 Phase A: clean-build measurement script for the `jobs` change (no cargo run)
+
+`scripts/measure-clean-build.sh` runs one clean `cargo build --jobs N` of the native debug target through the shared slot shim (`/config/.local/bin/cargo`, or `CARGO_BIN`). It builds into a fresh empty target root (default: a mktemp directory under /tmp, removed afterwards unless `--keep`), so `target/debug` is never touched and the profile-directory mistake from Round 36 is refused by name. `--jobs` defaults to the repo `.cargo/config.toml` value (12). Before building it reads `vmstat 1 2` (second sample) and `/proc/loadavg` and refuses to run (exit 3, no cargo call) unless both directions are below 1000 KB/s and load1 is at most 4. It samples `/proc/loadavg` once per second during the build and prints exactly one result line:
+
+`CLEAN_BUILD jobs=N rc=R wall_s=W cargo_finished_s=F peak_load1=P gate_si=I gate_so=O load1_before=L target_root=DIR`
+
+The result line is the measurement. Its jobs value is the value passed to cargo, not a guess from the environment. The jobs change itself stays open. Its reopen evidence stays a clean-build measurement under cargo, to be run in a Phase B window with this script.
+
+`scripts/check-clean-build-measure.sh` is the witness. It runs the script with a fake cargo and a fake `vmstat` (`MEASURE_NO_GATE` skips the real gate only in the witness), so no cargo runs. It checks: unknown argument, `--jobs 0`, non-numeric `--jobs`, and a profile directory as target root exit 2; a closed gate exits 3 before any cargo call; a successful run prints exactly one line, exit 0, the fixed field order, `cargo build --jobs 7` in the given target root, `--keep` keeps the root, a run without `--keep` removes it; the default jobs comes from `.cargo/config.toml`; a failing cargo is reported as rc 3 and exits 3. Result: 12 of 12 ok, exit 0, 0.49 s.
+
+Red check: the result-line prefix was changed to `CLEAN-BUILD jobs=`. The witness exited 1 with 3 FAIL lines (result line format, default jobs from config, failing cargo rc). The script was restored with `cmp` against the saved copy, and the witness then exited 0 with 12 ok.
+
+Found and fixed in this round: under `set -u` the first draft read `$CARGO_BIN` and `$MEASURE_NO_GATE` directly, so an unset variable aborted the script (rc 1) before the gate. Both now default to empty (`${CARGO_BIN:-}`, `${MEASURE_NO_GATE:-}`). The gate-closed witness case caught it.
+
+Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, the stale sets (still in `stale-before-r58`). No cargo was run, no browser was started, and nothing was pushed. Each run leaves its log under `/tmp/measure-clean-build.*.log` (stderr names the path); the script does not delete logs.
