@@ -3279,3 +3279,35 @@ Comparisons already on file, for scale: ASTC against the same SwiftShader RGBA8 
 What the 21 dB is. Both sets hold 60 distinct frames of 64, and the same frames repeat, so neither set is blank. Per pair, 3.7% of pixels differ by more than 32 levels (median; max 7.0%). The bounding box of those pixels covers 96.8% of the frame, so the difference is scattered, not a missing model. Median mean absolute luma difference 4.99.
 
 Result. The SwiftShader BC7 set does not match the SwiftShader RGBA8 set within the 30 dB rule. ASTC and ETC2 pass against that same reference, so the RGBA8 reference is not the outlier. The cause is not determined: it may be BC7 decoding on SwiftShader or software shading precision. The threshold was not changed, and the run was not repeated (the witness runs once). The cross-adapter caveat is measured now, not closed. The BC7 default rule still requires a visual pass on hardware, and the hardware BC7 pass (65.12 dB) is unchanged.
+
+## Round 55 Phase A: the cross-adapter finding, from files on disk
+
+Question: is the failing BC7-on-SwiftShader comparison (64 of 64 under 30 dB, median 21.1 dB) a BC7 defect on SwiftShader, or a property of the SwiftShader RGBA8 reference?
+
+Witness: `node scripts/check-cross-adapter.cjs` runs the repo's `compare-screenshots.cjs` on eight pairs through symlinks in `target/witness/cross-adapter/`. It writes new `texture-visual-<pair>.json` files and asserts four checks. Green: `ok` true, all four checks true, exit 0, wall 24 s.
+
+Repo comparison numbers (the witness output, not the Python re-measure):
+
+| Pair (left reference, right set) | ok | PSNR min | PSNR median | failing of 64 |
+| --- | --- | --- | --- | --- |
+| hw RGBA8 vs hw BC7 | true | 65.09 | 69.34 | 0 |
+| hw RGBA8 vs sw BC7 | true | 30.94 | 53.45 | 0 |
+| hw RGBA8 vs sw RGBA8 | false | 16.81 | 21.11 | 64 |
+| sw RGBA8 vs sw BC7 | false | 16.72 | 21.11 | 64 |
+| hw RGBA8 vs sw ASTC | true | 30.94 | 53.45 | 0 |
+| sw RGBA8 vs sw ASTC | false | 16.72 | 21.11 | 64 |
+| hw RGBA8 vs sw ETC2 | false | 16.81 | 21.11 | 64 |
+| sw RGBA8 vs sw ETC2 | true | 50.44 | 57.25 | 0 |
+
+Per-pixel and frame evidence, from the same files (Python, same decoded pixels):
+- Distinct frame hashes per set: 60 of 64 for hw RGBA8, sw RGBA8, hw BC7, sw BC7, ASTC, ETC2 and rgba8-a; 64 for the control set.
+- Pixel-identical frames: hw BC7 against hw RGBA8, 52 of 64 (the rest at 65.09 dB or more); sw ETC2 against sw RGBA8, 52 of 64 (the rest at 50.44 dB or more); sw ASTC against sw BC7, 52 of 64 (the rest at 50.90 dB or more).
+- Per-pixel scatter in the failing pairs: 3.7% of pixels differ by more than 32 levels (median), and the bounding box covers 97% of the frame, so the difference is not a missing model.
+
+Closed, as asked: the BC7 software set does not fail the 30 dB rule against the hardware reference. It passes all 64 frames (minimum 30.94, median 53.45). The failing comparison used the SwiftShader RGBA8 set as its reference, and that set itself differs from the hardware RGBA8 set at the same level (median 21.11, minimum 16.81). So the failure is the reference's deviation from hardware, not BC7 decoding. The threshold is unchanged.
+
+Correction to the record. texture-visual-astc4x4.json (ok, minimum 51.90, median 69.76) does not reproduce from the current files. Against the SwiftShader RGBA8 set, the ASTC set fails (minimum 16.72, median 21.11), and it passes only against the hardware RGBA8 set (30.94 and 53.45). The reference used for that old file is not recorded in it, so its ok flag is not supported by the current files. ETC2 does reproduce exactly (50.44, 57.25, ok against the SwiftShader RGBA8 set).
+
+Not closed from files: why the SwiftShader RGBA8 render differs from hardware RGBA8 by 21 dB. The set rgba8-a is not described in this ledger, so it cannot show whether 21 dB is run-to-run noise. Reopen with a Phase B run: a repeat of the hardware RGBA8 run (or a documented rgba8-a). If that repeat differs by about 21 dB too, the 30 dB rule is measuring run-to-run noise.
+
+Red check, before its restore: the hardware-vs-software BC7 pair's left reference changed to the SwiftShader RGBA8 set. Red: `swBc7MatchesHwRgba8` false, exit 1. Restored from a copy, `cmp` identical, green again (exit 0). `git status` after the restore lists only the new witness and this ledger line.
