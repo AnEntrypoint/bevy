@@ -3235,3 +3235,16 @@ Data: `scripts/data/bench-500-quiet.json` lists the 18 quiet pairs with their ro
 Witness: `scripts/check-bench-criterion.cjs` reads the data, applies the criterion, and exits 0 when it is met. Green: `{"n":18,"mean":1.0307,"sd":0.0318,"t":2.11,"lower":1.0148,"upper":1.0465,"above1":14,"maxLoad":3.92,"criterionMet":true}`, exit 0.
 
 Mutation, before its restore: the minimum count `MIN_N` changed from 15 to 20. Red: `"criterionMet":false`, exit 1. Restored from a copy, checked with `cmp` (identical), green again, exit 0. `git status` after the restore shows only the new files.
+
+## Round 54 Phase B: the 500-body criterion, witnessed
+
+Every gate and load reading taken this round, in order:
+- 22:11:29 si 916, so 0, load1 6.53 (open on swap; the load was above 4, and the witness is a node check that starts no cargo or bench)
+- one reading from the inspection call, with no timestamp recorded, si 56, so 3368 (closed)
+- 22:12:44 si 3472, so 768, load1 4.90 (closed)
+- 22:12:48 si 216, so 0, load1 4.90 (open): witness W-k
+- post 22:12:48 si 252, so 0, load1 4.90 (open)
+
+Witness, run once: `node scripts/check-bench-criterion.cjs`, wall 0.05 s, rc 0, `{"n":18,"mean":1.0307,"sd":0.0318,"t":2.11,"lower":1.0148,"upper":1.0465,"above1":14,"maxLoad":3.92,"criterionMet":true}`.
+
+No bench and no cargo ran in this Phase B. The witness reads the recorded pairs and starts no build.
