@@ -100,6 +100,7 @@ function main() {
     const result = {
         ok: pairs.length > 0 && pairs.every((pair) => pair.ok),
         reference: path.basename(left),
+        source: fs.existsSync(right) ? path.basename(fs.realpathSync(right)) : null,
         minPsnr,
         pairs: pairs.length,
         psnrMin: finite.length ? Math.min(...finite) : null,
