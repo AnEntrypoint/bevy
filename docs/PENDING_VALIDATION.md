@@ -2249,7 +2249,7 @@ Three one-file runs on the current config (`cd576ce` plus the 0.5 s gate), root 
 | 2 | si 296, so 0 (17:33:22) | 14.1 s | 8.00 s, 5.74 s | 1.0 s | 25.8 MiB / 0 | 1423 MiB |
 | 3 | si 644, so 0 (17:33:49) | 3.1 s | 0.37 s, 2.62 s | 1.0 s | 1.8 MiB / 0 | 1405 MiB |
 
-Run 2 first tried at 17:23 and stopped when the gate held for nine minutes on a swap storm (si 22156, so 30896 at 17:32:35). It was rerun as the second and third runs above.
+The first job ran run 1, then its wait for run 2 held for nine minutes on a swap storm: its wait loop ended at 17:32:35 with swap-in 22156 and swap-out 30896 KiB/s, so run 2 was not measured. Runs 2 and 3 come from a second job with the same gate, started after swap eased to about 1000 KiB/s.
 
 The variance source, from the numbers: swap traffic on the host during the build, not the shim queue. The slots were free in every run. Run 1 swapped 716.5 MiB out during the game crate’s compile, and that compile took 14.75 s against 2.62 s in run 3. Run 2 swapped 25.8 MiB in, and its game unit did not start until 8.0 s, which is cargo’s own startup under the same page-ins (the mechanism is inferred from the timing, not measured directly). The other Claude sessions on this host hold about 300 MB each and produced the swap.
 
@@ -2278,8 +2278,36 @@ opt-level = 1
 opt-level = 1
 ```
 
-Why opt-level and not codegen-units: the global `codegen-units = 256` run earlier gave a clean build of 881 s, which is inside the baseline spread, so more codegen units did not shorten the chain. `opt-level` is the lever that changes the codegen and C++ compile time directly. The release profile is unchanged, because the override sits under `profile.iterate`.
+Why opt-level and not codegen-units: the one `codegen-units = 256` clean build on record (`bt-r39-cgu256b`) took 881 s, and it was not run under the final config, so it does not show that more codegen units shorten this chain. The choice of opt-level rests on the unit durations above: the codegen and the C++ compile time are the parts it changes directly. The release profile is unchanged, because the override sits under `profile.iterate`.
 
 The runtime cost is not measured. Iterate builds of the game will render and transcode textures more slowly, because `bevy_pbr`, `bevy_render` and the basis transcoder are optimized less. The verify and bench runs use release and are unaffected.
 
 Witness for Phase A: `cargo metadata --format-version 1 --no-deps` exits 0 and parses the manifest with the new keys (package list `bevy-jayzee`). The override is not witnessed as applied until the Phase B clean build: its verbose `rustc` lines must show `-C opt-level=1` for these three packages, and its unit durations are compared with 181.35 s, 160.21 s and 148.9 s.
+
+## Round 41 Phase B results
+
+Phase B rule: `vmstat 1 2` is read before each build, and both swap-in and swap-out must be below 1000 KiB/s. Target root `bt-r41-final`, final config (`d49a2e5` measurement change, `1cb5677` override). Each build ran once.
+
+| Build | Recorded reading before start | Wall (measure-build) | Crates | Peak RSS | Link | Swap in / out during build | `swapNoisy` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `r41-clean` (`build --profile iterate --timings -v`) | si 168, so 0 (17:36:19); slots free | 470.3 s | 452 | 6932 MiB | 17.0 s | 1899.8 / 1912.6 MiB | true |
+| `r41-onefile` | si 896, so 92 (17:44:12); slots free | 17.2 s | 1 | 1727 MiB | 4.5 s | 27.1 / 493.9 MiB | true |
+
+The clean build's mid-build `vmstat` sample read si 3384 KiB/s, which the gate before the build did not see: the gate protects the start of a build, not its middle.
+
+Against the comparison points:
+
+- Clean: 470.3 s against 452.4 s (`final-clean`, `bt-r39-final`). The build was 17.9 s slower, but the comparison is confounded. `final-clean` swapped 1197.3 MiB in and 3377.2 MiB out, and `r41-clean` swapped 1899.8 MiB in and 1912.6 MiB out, so both runs were swap-heavy and the swap volumes differ. Unrelated units were slower in `r41-clean`: `moxcms` +47.3 s, `rquickjs-sys` build script +43.5 s, `image` +43.1 s, `pxfm` +27.3 s. None of these packages is in the override. The wall difference therefore does not measure the override.
+- One-file: 17.2 s against the item 1 quiet floor of 3.1 to 4.0 s. This run is `swapNoisy` (27.1 MiB in, 493.9 MiB out during the build), so it is not a floor witness. It is also not a clean comparison with the quiet runs. It belongs to the noisy group in item 1 (16.3 s, 14.1 s), and the noisy group's rule still holds.
+
+The override itself is witnessed on the three packages. The verbose `rustc` lines in `/tmp/bt/r41-clean.log` show `-C opt-level=1` for `bevy_pbr`, `bevy_render` and `basis_universal_sys`, and `basis_universal` stayed at `opt-level=3`. The unit durations, from the timings reports, against `final-clean`:
+
+| Unit | `final-clean` (452 s) | `r41-clean` (470 s) | Change |
+| --- | --- | --- | --- |
+| `bevy_pbr` codegen unit | 181.3 s | 149.1 s | -32.2 s |
+| `bevy_render` codegen unit | 148.9 s | 125.1 s | -23.8 s |
+| `basis-universal-sys` build-script run | 160.2 s | 138.9 s | -21.3 s |
+
+The three units shortened by 77.3 s in total, which is the direct effect of the override. The report wall rose by 17.9 s because the unrelated units above ran slower under swap. A witness that the override shortens the whole build needs one clean build with the swap gate met through the build, and that run is not in this round. This is the open item.
+
+Decision: the override in `1cb5677` stays, on the unit evidence. Its effect on the total build wall is not shown, and this round does not claim it. Item 2 is open until that run is made.
