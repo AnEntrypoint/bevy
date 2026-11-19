@@ -17,3 +17,9 @@ swap_owners_growth_split() {
 swap_owners_tree_size() {
     awk 'END { print NR + 0 }' "$1"
 }
+swap_owners_net() {
+    awk 'FILENAME == ARGV[1] { before[$1] = $3; next } { d = $3 - before[$1]; sum += d } END { printf "%d\n", sum + 0 }' "$1" "$2"
+}
+swap_owners_tree_peak() {
+    awk 'FILENAME == ARGV[1] { tree[$1] = 1; next } ($1 in tree) { if ($3 > max[$1]) max[$1] = $3 } END { for (p in max) sum += max[p]; printf "%d\n", sum + 0 }' "$1" "$2"
+}

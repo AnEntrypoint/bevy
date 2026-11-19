@@ -118,6 +118,7 @@ echo "$(date +%s.%N) $swap_in1 $swap_out1" >> "$trace_file"
 read -r peak_in peak_out < <(awk 'NR > 1 { dt = $1 - pt; if (dt > 0) { di = ($2 - pi) * 4 / dt; dout = ($3 - po) * 4 / dt; if (di > mi) mi = di; if (dout > mo) mo = dout } } { pt = $1; pi = $2; po = $3 } END { printf "%d %d\n", mi + 0, mo + 0 }' "$trace_file")
 rm -f "$trace_file"
 owners=$(swap_owners_top "$owners_file" | awk '{ printf "%s(%s) %.1f MiB; ", $3, $2, $1 / 1024 }')
+grow_tree_peak=$(swap_owners_tree_peak "$tree_file" "$owners_file")
 rm -f "$owners_file"
 growth=$(swap_owners_growth "$owners_before" "$owners_after" | awk '{ printf "%s(%s) %.1f MiB; ", $3, $2, $1 / 1024 }')
 growth_total=$(swap_owners_growth_total "$owners_before" "$owners_after")
@@ -125,6 +126,7 @@ growth_top=$(swap_owners_growth "$owners_before" "$owners_after" | awk '{ s += $
 sort -u -o "$tree_file" "$tree_file"
 read -r grow_build grow_other < <(swap_owners_growth_split "$owners_before" "$owners_after" "$tree_file")
 grow_tree=$(swap_owners_tree_size "$tree_file")
+grow_net=$(swap_owners_net "$owners_before" "$owners_after")
 rm -f "$tree_file"
 rm -f "$owners_before" "$owners_after"
 
@@ -138,7 +140,7 @@ if [ -n "$timings" ]; then
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v slotwait="$slot_wait" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v owners="$owners" -v growth="$growth" -v gtot="$growth_total" -v gtop="$growth_top" -v gbuild="$grow_build" -v gother="$grow_other" -v gtree="$grow_tree" -v timings="${timings##*/}" 'BEGIN {
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"slotWaitS\":%s,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapOwnersTop\":\"%s\",\"swapOwnersGrowth\":\"%s\",\"swapOwnersGrowthMiB\":%.1f,\"swapOwnersTop5Pct\":%.1f,\"swapOwnersBuildPct\":%.1f,\"swapOwnersOtherPct\":%.1f,\"swapOwnersUnattributedPct\":%.1f,\"swapOwnersBuildMiB\":%.1f,\"swapOwnersOtherMiB\":%.1f,\"swapOwnersTreePids\":%d,\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, slotwait, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, owners, growth, gtot / 1024, (so > 0 ? gtop * 100 / (so * 4) : 0), (so > 0 ? gbuild * 100 / (so * 4) : 0), (so > 0 ? gother * 100 / (so * 4) : 0), (so > 0 ? 100 - gbuild * 100 / (so * 4) - gother * 100 / (so * 4) : 0), gbuild / 1024, gother / 1024, gtree, pin, pout, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v slotwait="$slot_wait" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v owners="$owners" -v growth="$growth" -v gtot="$growth_total" -v gtop="$growth_top" -v gbuild="$grow_build" -v gother="$grow_other" -v gtree="$grow_tree" -v gnet="$grow_net" -v gtpeak="$grow_tree_peak" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"slotWaitS\":%s,\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapOwnersTop\":\"%s\",\"swapOwnersGrowth\":\"%s\",\"swapOwnersGrowthMiB\":%.1f,\"swapOwnersTop5Pct\":%.1f,\"swapOwnersBuildPct\":%.1f,\"swapOwnersOtherPct\":%.1f,\"swapOwnersUnattributedPct\":%.1f,\"swapOwnersBuildMiB\":%.1f,\"swapOwnersOtherMiB\":%.1f,\"swapOwnersTreePids\":%d,\"swapOwnersNetMiB\":%.1f,\"swapExitFreedMiB\":%.1f,\"swapExitFreedPct\":%.1f,\"swapOwnersTreePeakMiB\":%.1f,\"swapAttribution\":\"net per pid, exit-freed residual, tree peak sampled at 2 s\",\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, slotwait, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, owners, growth, gtot / 1024, (so > 0 ? gtop * 100 / (so * 4) : 0), (so > 0 ? gbuild * 100 / (so * 4) : 0), (so > 0 ? gother * 100 / (so * 4) : 0), (so > 0 ? 100 - gbuild * 100 / (so * 4) - gother * 100 / (so * 4) : 0), gbuild / 1024, gother / 1024, gtree, gnet / 1024, ((so - si) * 4 / 1024) - gnet / 1024, (so > 0 ? (((so - si) * 4 / 1024) - gnet / 1024) * 100 / (so * 4 / 1024) : 0), gtpeak / 1024, pin, pout, timings
 }' | tee -a "$record"
 exit "$rc"

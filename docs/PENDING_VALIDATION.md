@@ -2932,3 +2932,27 @@ Longest step: `r50b-onefile-1`, 14.7 s build, while the gate was flapping (its o
 11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
 12. One-off GPU panic: held, no recurrence.
 13. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 51 Phase A: what the swap records can attribute, and what they cannot
+
+Decision, from the records and the kernel's interfaces, before any new field:
+
+Attributable per process:
+- The signed VmSwap change of each process alive at both samples, and of each new process (`swapOwnersNetMiB`). Exited processes are not in the end sample, so they are left out.
+- The build tree's residency peak: the sum, over build-tree pids, of the largest VmSwap seen in the 2 s owner samples (`swapOwnersTreePeakMiB`). It is a sampled lower bound on the swapped pages the build's processes held at once. It is not a swap-out count.
+
+Not attributable from these records:
+- Gross swap-out and swap-in per process. The kernel gives no per-process counter. `/proc/vmstat` and the root `memory.stat` carry only host-wide `pswpin` and `pswpout`. This shell is in the root cgroup (`0::/`), and `/sys/fs/cgroup` holds one `memory.stat`, the root one, so there is no per-group swap counter to read.
+- Pages freed when a process exits. Host flow (out minus in) equals the net change of the processes that survive or start, plus the pages released by exits. The residual is `swapExitFreedMiB` = host flow minus `swapOwnersNetMiB`. It is a number, but it does not name the process that exited. Pages of the build's own processes that exit before the end sample belong here, and the tree peak shows only how large they got, sampled every 2 s.
+
+So the unattributed share is split into two measured parts: the exit-freed residual (a number, with no pid) and the swap-in offset already inside the signed net. Nothing is guessed. Each record carries a `swapAttribution` string that says this.
+
+Change:
+- `scripts/lib/swap-owners.sh`: `swap_owners_net before after` sums the signed change of pids in the after sample (exited pids are not in it). `swap_owners_tree_peak tree owners` sums each tree pid's largest VmSwap across the owner samples.
+- `scripts/measure-build.sh`: records `swapOwnersNetMiB`, `swapExitFreedMiB` (host flow minus net, MiB), `swapExitFreedPct` (of swap-out), `swapOwnersTreePeakMiB` and `swapAttribution`. The tree peak is computed before the owner samples are removed.
+
+Witness: `scripts/check-swap-net.sh`. The fixture has survivors beta +300, gamma +240, shrink −400, late +80 (new), alpha 0, and an exited pid 600 (120 KiB before, gone after). Net = 220, and the exited pid is excluded. The tree pids 200, 500 and 400 have peaks 300, 80 and 500, so the tree peak = 880. Green: `{"ok":true,"net":220,"treePeak":880}`, exit 0.
+
+Mutation, before its restore: the net sums only positive changes (`if (d > 0) sum += d`). Red: `"net":620`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good6`; green again, exit 0.
+
+The identity behind `swapExitFreedMiB` holds only as well as the counters are aligned. The host counters are read a few milliseconds before the owner sample, so the residual carries that small offset.
