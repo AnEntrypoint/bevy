@@ -95,6 +95,8 @@ echo "$(date +%s.%N) $swap_in1 $swap_out1" >> "$trace_file"
 read -r peak_in peak_out < <(awk 'NR > 1 { dt = $1 - pt; if (dt > 0) { di = ($2 - pi) * 4 / dt; dout = ($3 - po) * 4 / dt; if (di > mi) mi = di; if (dout > mo) mo = dout } } { pt = $1; pi = $2; po = $3 } END { printf "%d %d\n", mi + 0, mo + 0 }' "$trace_file")
 rm -f "$trace_file"
 
+crates=$(printf '%s' "$json" | grep -o '"cratesCompiled":[0-9]*' | cut -d: -f2)
+IFS='|' read -r nz rule < <(node "$repo/scripts/lib/swap-noisy.cjs" "${crates:-0}" "$((swap_in1 - swap_in0))" "$((swap_out1 - swap_out0))")
 target_root=${CARGO_TARGET_DIR:-$repo/target}
 timings=$(find "$target_root"/cargo-timings -name 'cargo-timing-*.html' -newer "$marker" 2>/dev/null | sort | tail -n 1)
 rm -f "$marker"
@@ -103,8 +105,7 @@ if [ -n "$timings" ]; then
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v pin="$peak_in" -v pout="$peak_out" -v nm="${NOISY_MIB:-10}" -v timings="${timings##*/}" 'BEGIN {
-    nz = (si * 4 / 1024 > nm || so * 4 / 1024 > nm) ? "true" : "false"
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, pin, pout, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v gateout="$so_now" -v slots="$slots" -v pin="$peak_in" -v pout="$peak_out" -v nz="$nz" -v rule="$rule" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"slotsAtStart\":\"%s\",\"gateSwapInKiBps\":%d,\"gateSwapOutKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"rssScope\":\"build process tree\",\"swapScope\":\"host\",\"swapNoisy\":%s,\"swapRule\":\"%s\",\"swapPeakInKiBps\":%d,\"swapPeakOutKiBps\":%d,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, slots, gate, gateout, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, nz, rule, pin, pout, timings
 }' | tee -a "$record"
 exit "$rc"

@@ -2442,3 +2442,21 @@ The premise of the rule does not hold on this host. Every clean build with these
 Decision (the rule's "otherwise" branch): revert the override in `Cargo.toml`. `Cargo.toml` now equals its content at `d49a2e5`, the commit before `1cb5677`. The diff against `0e2cd03` removes exactly the three `[profile.iterate.package.*]` blocks. The Round 41 unit durations for those three packages (`bevy_pbr` 181.3 to 149.1 s, `bevy_render` 148.9 to 125.1 s, `basis-universal-sys` 160.2 to 138.9 s) are unit evidence from one noisy build; they are not a total. Restoring the override is a single revert of this commit, if the owner decides the unit evidence is enough, or if a clean build can be made quiet.
 
 Open: the total effect is still unmeasured. A rule that a clean build can satisfy would need the threshold or the gate to allow clean builds (for example, a jobs setting that keeps the tree under RAM), which is an owner decision.
+
+## Round 44 Phase A, change 1: the swapNoisy threshold, decided from the records
+
+The defect: the 10 MiB threshold was applied to every build. The records show it works for builds of at most one crate and does not work for clean builds.
+
+Evidence, from `build-measure.jsonl`, total swap in plus out per build:
+
+- One-file builds, quiet band (wall 4.0 s or less): 1.4 to 6.6 MiB (4 records: `jobs12-onefile` 3.6 s and 4.0 s, `q40-onefile` 3.4 s, `v40-onefile-3` 3.1 s).
+- One-file builds, elevated band (wall 8.4 s or more): 13 to 717 MiB (7 records, including `final-onefile` 8.4 s at 13 MiB and `r40-onefile` 8.7 s at 144 MiB).
+- The gap is between 6.6 and 13 MiB. 10 MiB sits inside it, so the threshold stays at 10 MiB, for builds that compile at most one crate. Applied to every existing one-file record, it gives the class the wall time shows.
+- Clean builds in the final config, six from Round 43: total swap 2857 to 8699 MiB, wall 323.1 to 384.1 s. The lowest total (`r43-on-2`, 2857 MiB) has a wall of 371.3 s; the highest (`r43-on-3`, 8699 MiB) has 362.5 s. No trend. A swap level does not predict the wall time of a clean build in the range recorded, so no threshold can separate a quiet clean build from a noisy one with this instrument. Clean builds are therefore not classified: `swapNoisy` is null.
+- No-change builds: the 10 MiB class matches most records, but it misses `q40-nochange` (6.1 s at 8.5 MiB) and `p40-nochange` (8.7 s at 4.5 MiB). Both were slow with little swap, which is the shim's slot wait (Round 40, and change 2 below), not swap. The class is therefore not a measure of their wall time.
+
+Decision: 10 MiB total swap in plus out, for builds that compile at most one crate (including no-change builds). Builds that compile more than one crate get `swapNoisy` null, with the reason in `swapRule`. The rule applies to future records only. The six Round 43 records and all earlier records keep their stored `swapNoisy` values, and are not reclassified.
+
+Change: `scripts/lib/swap-noisy.cjs` (new) holds `classify`, and its CLI prints `value|rule`. `scripts/measure-build.sh` takes the crate count from the build's JSON and writes `swapNoisy` and `swapRule`. `scripts/check-swap-noisy.cjs` (new) checks the classification against the 11 one-file records above (quiet band and elevated band), the multi-crate null, and the no-change edges (9 MiB quiet, 11 MiB noisy).
+
+Witness, Phase A: `node scripts/check-swap-noisy.cjs` exits 0 with 16 checks passing. Mutation (before its restore): the default threshold in `swap-noisy.cjs` raised from 10 to 20; the check then fails on `final-onefile` (13 MiB, wall 8.4 s), and exits 1.
