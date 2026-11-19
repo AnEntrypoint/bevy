@@ -15,3 +15,16 @@ build_tree_sample() {
             print total + 0, link + 0
         }'
 }
+build_tree_pids() {
+    ps -eo pid=,ppid= | awk -v root="$1" '
+        { pid[NR] = $1; ppid[NR] = $2 }
+        END {
+            tree[root] = 1
+            grew = 1
+            while (grew) {
+                grew = 0
+                for (i = 1; i <= NR; i++) if (!(pid[i] in tree) && (ppid[i] in tree)) { tree[pid[i]] = 1; grew = 1 }
+            }
+            for (p in tree) print p
+        }'
+}

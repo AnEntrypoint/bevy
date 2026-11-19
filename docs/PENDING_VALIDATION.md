@@ -2838,3 +2838,23 @@ Longest step: `r49-onefile-2`, 11.6 s build (cargo clock 11.35 s), with 883 MiB 
 11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
 12. One-off GPU panic: held, no recurrence.
 13. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 50 Phase A: the swap gain split between the build tree and the rest
+
+The gap: `swapOwnersGrowthMiB` is one total. It did not say how much of the gain belonged to the build's own processes, so the share of swap-out that no process explains could not be stated.
+
+Change:
+- `scripts/lib/build-rss.sh`: `build_tree_pids root` prints the pid of the root and of every descendant, one per line.
+- `scripts/measure-build.sh`: the sampler appends the build tree's pids to a temp file on each 0.5 s tick. After the build, the file is sorted and deduplicated, and the gain is split.
+- `scripts/lib/swap-owners.sh`: `swap_owners_growth_split before after tree` sums the positive VmSwap gains of pids in the tree (build) and of all other pids (other), in KiB.
+- Record fields: `swapOwnersBuildMiB`, `swapOwnersOtherMiB`, `swapOwnersBuildPct` and `swapOwnersOtherPct` (each as a percentage of `swapOutMiB`, using the same formula as the total), and `swapOwnersUnattributedPct` = 100 − build % − other %.
+
+Limits, stated so the numbers are read correctly:
+- A process that starts and exits between samples is not in the before or after sample, so its swap is invisible to the gain. The unattributed share includes that.
+- VmSwap is net (out minus in, per process), against the host's gross `pswpout`. A negative unattributed share means the net gain is larger than the host's gross swap-out in that build, and it is printed as is.
+
+Witness: `scripts/check-swap-split.sh`. A fake proc tree gives gains beta +300 (pid 200, in the tree), late +80 (pid 500, in the tree), gamma +240 (pid 290, not in the tree); shrink (400) is in the tree but has a negative delta, and is excluded. Expected split `380 240`. The second check runs `build_tree_pids` on this shell with a `sleep 30` child, and expects the child's pid in the tree. Green: `{"ok":true,"split":"380 240","childInTree":true}`, exit 0.
+
+Mutation, before its restore: the class assignment swapped (`if ($1 in tree) o += d; else b += d`). Red: `"split":"240 380"`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good4`; green again, exit 0.
+
+Bug caught by the fixture on the first run, now fixed: awk reads the files in argument order, and the tree file was passed last, so the tree was empty when the gains were classified. The first run gave `0 620`, and the witness reported `ok:false`. The tree file is now passed first, and the awk rules name it as ARGV[1].
