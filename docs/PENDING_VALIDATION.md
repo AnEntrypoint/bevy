@@ -3070,3 +3070,54 @@ So the Round 49 question, whose processes did the swap-out of a noisy build, is 
 12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
 13. One-off GPU panic: held, no recurrence.
 14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 52 Phase B: the 500-body bench, decided at parity
+
+Phase A: no code change this round. The bench was already instrumented, so the work was the run and the decision.
+
+Gate and load readings (`vmstat 1 2`, and the 1-minute load):
+- 21:40:55 si 1512, so 0, load1 2.91 (closed: swap-in above 1000)
+- 21:41:05 si 528, so 20, load1 3.01 (open, load within 4): the bench job started here
+- 21:41:49 si 56, so 6000, load1 5.12 (after the run; closed on swap-out; the bench had finished)
+
+Run, once, with `RUNS=10 scripts/bench-vs-jayzee.sh`, rc 0, wall 44.2 s. The bench output is `/tmp/bt/r52-bench.json`.
+
+500-body pairs (jayzee mean over bevy mean):
+
+| Run | jayzee ms | bevy ms | ratio | `noisy` |
+| --- | --- | --- | --- | --- |
+| 1 | 0.331 | 0.3064 | 1.0803 | false |
+| 2 | 0.340 | 0.3191 | 1.0655 | true |
+| 3 | 0.331 | 0.3190 | 1.0376 | true |
+| 4 | 0.320 | 0.3214 | 0.9956 | false |
+| 5 | 0.329 | 0.3273 | 1.0052 | true |
+| 6 | 0.309 | 0.3182 | 0.9711 | false |
+| 7 | 0.320 | 0.3239 | 0.9880 | true |
+| 8 | 0.305 | 0.3068 | 0.9941 | false |
+| 9 | 0.338 | 0.3217 | 1.0507 | false |
+| 10 | 0.319 | 0.3117 | 1.0234 | false |
+
+This round's quiet pairs (6): mean ratio 1.0192, sd 0.0406, 3 of 6 above 1. All ten pairs: mean 1.0212, 6 of 10 above 1.
+
+The Round 46 quiet pairs (1.068, 1.030, 1.042) and this round's quiet pairs together (9): mean 1.0284, sd 0.0362, 6 of 9 above 1. Its t-interval (t of 2.306 for 8 degrees of freedom) is about [1.000, 1.056]. Its sign test (6 of 9 above 1, one-sided) gives p 0.254.
+
+Decision: held at parity. The 500-body size shows no speedup that these pairs can separate from 1. The mean is 2 to 3% above 1, but the lower bound of its interval touches 1, and the sign test is far from significant. The earlier reading of 1.04 (Round 46) was within this same spread.
+
+Other sizes, for reference: 2000 bodies, 2.52 from 9 quiet pairs. 5000 bodies, 3.40 from one quiet pair (9 of 10 noisy). The 5000 speedup of 4.56 from Round 46, with 5 quiet pairs, stands; this round's 5000 run is too noisy to add to it.
+
+### Round 52 ranked remaining work
+
+1. 500-body bench size: held at parity (above). Reopen with at least 15 quiet pairs at 500 bodies whose t-interval lower bound on the mean ratio is above 1.0, at 1-minute load 4 or less. The bench is reachable now, so this is a measurement, not an owner decision.
+2. Gross per-process swap: held. The kernel exposes only host-wide `pswpin` and `pswpout`, and the root `memory.stat` is the only cgroup counter here. Reopen with a per-process or per-group swap-out counter.
+3. Attribution of a noisy build's swap-out: held. Reopen with a build whose swap-out is above 100 MiB, measured with the new fields. Such a build cannot be started while the gate is closed.
+4. Clean-build swap at `jobs = 12`: held, owner decision on `jobs`. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB. Baseline: six Round 43 clean builds, 2857 to 8699 MiB swapped, 323 to 384 s wall.
+5. No-change floor: explained (Round 47). Reopen with a quiet median above 0.5 s.
+6. Unlogged cargo stretch, about 0.085 s: held, inside cargo. Reopen if it grows above 0.2 s on repeated quiet runs.
+7. One-file variance: done (quiet median 3.0 s, Round 46). Reopen with a quiet build above 4 s or below 3.5 s.
+8. Override's total effect: held, reverted in Round 43. Reopen with a method that does not depend on swap.
+9. Clean-build swap classification: held by decision. Reopen when a swap-to-wall relation is shown for multi-crate builds.
+10. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+11. ZLIB KTX2 (rank 8): held, no sample.
+12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+13. One-off GPU panic: held, no recurrence.
+14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
