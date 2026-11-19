@@ -3350,3 +3350,15 @@ Correction, ASTC record. `texture-visual-astc4x4.json` had `ok` true with no ref
 Flag, ETC2 (not changed here). Against hardware RGBA8, the ETC2 set fails all 64 frames: minimum 16.81, median 21.11. Its recorded pass (`texture-visual-etc2.json`, minimum 50.44, median 57.25, ok) reproduces only against software RGBA8. ETC2's usability therefore depends on the reference. The `etc2` record has no `reference` field. Reopen: a dispatcher ruling on which reference the ETC2 verdict uses.
 
 Red checks, before each restore: (1) `referenceOfRecord` set to `sw-rgba8`: exit 1, five of seven checks false. Restored from a copy, `cmp` identical, green (exit 0, 18 s). (2) The reference field removed from `compare-screenshots.cjs`: see commit A.
+
+## Round 56 Phase B: the file-based witnesses, one window
+
+Readings (`vmstat 1 2`, the second sample is the gate reading), one window of about ten minutes, one reading every 30 seconds:
+- 23:04:58 first reading, second sample: si 20, so 0, load1 2.37. Open; the witnesses started.
+- 23:05:17 post-run: si 8, so 0, load1 2.34.
+
+Witnesses, each run once with wall time (file-based, no browser, no cargo):
+- `node scripts/check-cross-adapter.cjs`: wall 18.5 s, rc 0, ok true. All seven checks true; reference of record `neon-shots-rgba8`; software BC7 minimum 30.94, median 53.45; the ASTC record `reference` `neon-shots-rgba8`, ok true, minimum 30.94, median 53.45, 0 failing; ETC2 against the same reference ok false, minimum 16.81, median 21.11, 64 failing (flagged in commit B, not changed here).
+- `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.04 s, rc 0, ok true.
+
+No browser ran in this phase, so no tabs or processes were started. The witness job (pid 1144864) has exited.
