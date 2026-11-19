@@ -2791,3 +2791,50 @@ Witness: `scripts/check-swap-growth.sh` (the Round 48 fixture, with the total ad
 Mutation, before its restore: the positive-only guard `if (d > 0) sum += d` removed, so the negative delta of `shrink` (-400) is summed. Red: `"total":220`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good2`; green again, `"total":620`, exit 0.
 
 Not covered by the fixture: the percentage formula in `measure-build.sh`. It is checked on live records in Phase B, with the arithmetic reproduced from the record fields.
+
+## Round 49 Phase B: the full swap gain and the top-five share, witnessed live
+
+Gate readings (`vmstat 1 2`). Closed readings are listed because they blocked a run, not as ledger evidence:
+- 21:12:07 si 40, so 75980 (closed)
+- 21:12:18 si 68, so 0 (open; the wait job found it)
+- 21:12:39 si 2848, so 0 (closed)
+- 21:12:49 si 980, so 0 (open; witness W-f)
+- 21:12:50 si 2780, so 0 (closed; `onefile1` skipped by its own gate)
+- 21:12:51 si 332, so 0 (open; build `r49-onefile-2`)
+- 21:13:39 si 524, so 0 (open; build `r49-onefile-3`)
+
+Witness, run once: `scripts/check-swap-growth.sh`, wall 0.13 s, rc 0, `{"ok":true,"growth":"300 200 beta;240 290 gamma;80 500 late","total":620}`.
+
+Live one-file builds through `measure-build.sh`, warm root `bt-r43-off-1`, one crate each, rc 0:
+
+| Record | Build wall (s) | Cargo clock (s) | Swap in (MiB) | Swap out (MiB) | Gain total (MiB) | Gain total / swap out | Top five (MiB) | Top five / swap out |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `r49-onefile-2` | 11.6 | 11.35 | 180.8 | 883.2 | 772.9 | 87.5% | 521.7 | 59.1% |
+| `r49-onefile-3` | 8.4 | 8.28 | 16.1 | 703.1 | 686.2 | 97.6% | 542.9 | 77.2% |
+
+Both builds were swap-noisy (`swapNoisy` true, above 10 MiB in plus out).
+
+The arithmetic, from the record fields: the top-five share is the top-five KiB times 100 over (swap-out pages times 4 KiB). Record 2: 521.7 / 883.2 = 59.1%. Record 3: 542.9 / 703.1 = 77.2%. The gain total is the sum of all positive VmSwap changes, and it is a net figure (swapped out minus swapped in, per process) against the host's gross swap-out, so these shares are approximate.
+
+What the numbers show:
+- Positive gains across all processes account for 87.5% and 97.6% of the host swap-out. The top five account for 59 to 77%.
+- The gaining processes are `gm-core` and `chromium.real` instances (other sessions' processes), plus `claude` in record 2. The build's own `rustc` is not in either top five.
+- The record does not split the total into the build's process tree and the rest, so it cannot say how much of the 686 to 773 MiB the build's own processes gained. That split is the next step.
+
+Longest step: `r49-onefile-2`, 11.6 s build (cargo clock 11.35 s), with 883 MiB swapped out. What was done: nothing to the build. The record shows the swap went to other processes, and the rule for noisy records (Round 44) already marks it.
+
+### Round 49 ranked remaining work
+
+1. Split the gain total into the build's process tree and everything else: reachable. The gain total is now recorded (87 to 98% of swap-out), but not by owner. Next change: classify each gaining pid against the build's tree pids. Reopen with a per-build split where the build's share is a number.
+2. Clean-build swap at `jobs = 12`: held, owner decision. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB. The Round 43 records (six clean builds, 2857 to 8699 MiB, 323 to 384 s) are the baseline; running the clean build as-is would repeat them.
+3. 500-body bench size: held (Round 47). Reopen with five quiet pairs above 1 and a quiet mean of 1.05 or more, at 1-minute load 4 or less.
+4. No-change floor: explained (Round 47). Quiet median 0.4 s; cargo's dependency resolution is most of the cargo clock. Reopen with a quiet median above 0.5 s.
+5. Unlogged cargo stretch, about 0.085 s: held, inside cargo. Reopen if it grows above 0.2 s on repeated quiet runs.
+6. One-file variance: done (quiet median 3.0 s). The two live builds here are noisy and not figures. Reopen with a quiet build above 4 s or below 3.5 s.
+7. Override's total effect: held, reverted in Round 43. Reopen with a method that does not depend on swap.
+8. Clean-build swap classification: held by decision (`swapNoisy` null for multi-crate builds). Reopen when a swap-to-wall relation is shown.
+9. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+10. ZLIB KTX2 (rank 8): held, no sample file.
+11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+12. One-off GPU panic: held, no recurrence.
+13. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
