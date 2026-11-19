@@ -2397,3 +2397,17 @@ Result for the gate. Witness B shows the check fails when the limit is raised, a
 Result for the sampler. Witness A is the first recorded no-change build whose peak window (1013 KiB/s in) is visible in the record. The earlier version had no per-window peak, which is why the Phase B clean build's 3384 KiB/s sample went unrecorded.
 
 Open: the override's total effect (item 1 of this round) is still unmeasured; see the Phase A section above.
+
+## Round 43 Phase A, item 3: per-build RSS attribution
+
+`scripts/lib/build-rss.sh` (new) defines `build_tree_sample ROOT`. It prints the RSS in KiB of ROOT and all its descendants, and 1 if a linker is among them. `scripts/measure-build.sh` now starts the build in the background and passes its pid to the sampler, so the sampler sums the build's own tree. It used to sum every matching process on the host. The swap counters stay host-wide, and each record now says so: `rssScope: "build process tree"`, `swapScope: "host"`.
+
+Witness: `scripts/check-build-rss-tree.sh` starts a 200 MB perl process outside any build, and a bash root with a 60 MB perl child. It checks that the child runs as `rustc`, then that the attributed RSS of the root's tree is within 16 MiB of the two processes' own VmRSS.
+
+- Current code: `ok` true, exit 0. Outside 414960 KiB, inside 132244 KiB, attributed 132244 KiB.
+- Reverted (`BUILD_RSS_LIB=/tmp/bt/build-rss-hostwide.sh`, the old host-wide sum): `ok` false, exit 1. Attributed 543488 KiB, which includes the outside process.
+- Integration: `r43-tree-check`, a no-change build through the changed `measure-build`: rc 0, wall 1.1 s, `rssScope` build process tree, `peakRssMiB` 103.4. The earlier no-change build `r42-b-sampler` recorded 1718.4 MiB under the host-wide sum.
+
+An earlier fixture used node, which renames its process to `node`. The host-wide filter then matched nothing, so the reverted run failed for the wrong reason. The fixture now uses perl and checks that the child's comm is `rustc`.
+
+Every peak RSS figure recorded before this change is host-wide. The ledger entries for Rounds 39 to 42 should be read that way.
