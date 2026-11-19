@@ -23,3 +23,6 @@ swap_owners_net() {
 swap_owners_tree_peak() {
     awk 'FILENAME == ARGV[1] { tree[$1] = 1; next } ($1 in tree) { if ($3 > max[$1]) max[$1] = $3 } END { for (p in max) sum += max[p]; printf "%d\n", sum + 0 }' "$1" "$2"
 }
+swap_gone_flow_kib() {
+    echo $(( ($2 - $1) * 4 - $3 ))
+}

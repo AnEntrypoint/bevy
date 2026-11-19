@@ -2956,3 +2956,17 @@ Witness: `scripts/check-swap-net.sh`. The fixture has survivors beta +300, gamma
 Mutation, before its restore: the net sums only positive changes (`if (d > 0) sum += d`). Red: `"net":620`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good6`; green again, exit 0.
 
 The identity behind `swapExitFreedMiB` holds only as well as the counters are aligned. The host counters are read a few milliseconds before the owner sample, so the residual carries that small offset.
+
+## Round 51 Phase A, change 2: the residual is the flow of pids gone at the end, not freed pages
+
+Correction to change 1 (`97c4062`). Its ledger text called the host flow minus the signed net "pages freed by exits". That is wrong. Freeing a swap slot on exit does not change `pswpin` or `pswpout`, so it is not in the flow. The residual is the swap flow (swap-out minus swap-in) of processes that are absent from the end sample: their own out and in events during the window, which the net leaves out by construction.
+
+The first live pair (`r51-onefile-*`, change 1) gave a residual of −4.3 and −1.8 MiB. The sign is consistent with those pids having swapped in more than out. It is not a freed-page count.
+
+Change: the record field `swapExitFreedMiB` is renamed to `swapGoneFlowMiB`, and `swapExitFreedPct` to `swapGoneFlowPct`. The formula is unchanged. `swap_gone_flow_kib si so net` returns `(so - si) * 4 - net` in KiB, and `measure-build.sh` records it, with its share of swap-out. The `swapAttribution` string now says: net per pid alive at the end, gone flow not per pid, tree peak sampled at 2 s.
+
+Identity, so the two parts add up: the window's host flow (swap-out minus swap-in, in KiB) = `swapOwnersNetMiB` + `swapGoneFlowMiB`, to within the counter alignment noted in change 1.
+
+Witness: `scripts/check-swap-net.sh` now also checks `swap_gone_flow_kib 100 300 220`, which must give 580: (300 − 100) × 4 − 220. Green: `{"ok":true,"net":220,"treePeak":880,"gone":580}`, exit 0. (The fixture's first version expected 180, which was my arithmetic error; the function was correct, and the expectation is now fixed.)
+
+Mutation, before its restore: the sign of the net term flipped (`* 4 + $3`). Red: `"gone":1020`, `{"ok":false}`, exit 1. Restored from `/tmp/bt/swap-owners.good8`; green again, `"gone":580`, exit 0.

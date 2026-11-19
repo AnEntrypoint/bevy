@@ -30,7 +30,8 @@ printf '200\n500\n400\n' > "$tree"
 printf '200 beta 50\n200 beta 300\n500 late 80\n400 shrink 500\n400 shrink 100\n290 gamma 290\n' > "$owners"
 net=$(swap_owners_net "$before" "$after")
 peak=$(swap_owners_tree_peak "$tree" "$owners")
+gone=$(swap_gone_flow_kib 100 300 "$net")
 rm -rf "$proc" "$before" "$after" "$tree" "$owners"
-[ "$net" = "220" ] && [ "$peak" = "880" ] && ok=true || ok=false
-echo "{\"ok\":$ok,\"net\":$net,\"treePeak\":$peak}"
+[ "$net" = "220" ] && [ "$peak" = "880" ] && [ "$gone" = "580" ] && ok=true || ok=false
+echo "{\"ok\":$ok,\"net\":$net,\"treePeak\":$peak,\"gone\":$gone}"
 $ok
