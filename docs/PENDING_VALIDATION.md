@@ -3756,7 +3756,7 @@ Runner tests, no browser, with stand-in drivers (`ASTC_LOAD_DRIVER`):
 
 Not changed: the footprint rule (`LOAD_TOLERANCE` 1.1), the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo ran. Local commit only; not pushed in Phase A.
 
-## Round 68 Phase B: the window cleared too late for the ASTC run (open)
+## Round 68 Phase B: the window cleared too late for the ASTC run (superseded by Round 70)
 
 Correction to the Round 68 Phase A entry: the witness `scripts/check-astc-load-ratio.cjs` has 7 cases plus one line-format check, so its output is 8 of 8 ok, not 9 of 9. Its exit codes and the red check stand.
 
@@ -3779,9 +3779,9 @@ Window: 01:14:29 to 01:24:29 (ten minutes), one reading about every 30 seconds (
 
 Witness, once, on the clear sample: `scripts/check-astc-load-ratio.cjs` rc 0, wall 0.04 s, 8 of 8 ok.
 
-The ASTC run was not started. The rule needs at least 420 s left in the window, because the ASTC run took 391.8 s in the Round 58 record. The clear sample came with 89 s left, so no ASTC line was produced and the ASTC decision is unchanged (load ratio 1.21, not usable against the 1.1 tolerance).
+The ASTC run could not start in this window: the rule needs at least 420 s left, and the first clear sample came with 89 s left. The run completed in the Round 70 window below.
 
-No push in this window, since the window did not complete the measurement. The Round 68 commits stay local.
+The Round 68 commits are pushed with the Round 70 entry.
 
 ## Round 69 Phase A: a committed heavy-job checker
 
@@ -3801,3 +3801,38 @@ Red check: the 20% comparison was made inclusive (`>=`). The witness exited 1 wi
 Live check: `node scripts/heavy-jobs.cjs` at this stamp printed `HEAVY_JOBS busy n=1` (a peer `fx` process at 39% CPU, `hot`), exit 1. This is the same kind of peer that held the last two windows.
 
 Not changed: the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. The inline checks in earlier `/tmp` job scripts are not replaced; they stay as recorded. Local commit only; not pushed in Phase A.
+
+## Round 70 Phase B: the ASTC load measurement, completed
+
+Window: 01:42:11 (first reading) to 01:48:07, about ten minutes. The measurement started at 01:42:39 on a clear sample: swap-in 12, swap-out 0, load 2.93, heavy clear, 569 s left (at least 420 required). The heavy-job check is `scripts/heavy-jobs.cjs` (committed as 637de88, message amended to 495fff6), read once per reading. Readings `vmstat 1 2` (second sample is the gate reading):
+- 01:42:11: si 56, so 36, load 2.93. Gate open. Heavy busy: a peer `zig test` (pid 1612103) at 100%.
+- 01:42:39: si 12, so 0, load 2.93. Gate open. Heavy clear. Started `measure-astc-load.cjs` (pid 1621922) with a 571 s timeout.
+- 01:42:41: si 784, so 144, load 3.02. Gate open. Heavy busy: our playwriter helper (pid 1622001) at 45.5%.
+- 01:43:09: si 3004, so 28, load 3.54. Gate closed (swap-in). Heavy busy: peer zig (1612103) at 88%, and our Chromium.
+- 01:43:36: si 28, so 0, load 5.86. Gate closed (load). Heavy busy: a peer Claude session (pid 2707) at 21%, and peer zig.
+- 01:44:04: si 36, so 0, load 5.87. Gate closed (load). Heavy busy: peer zig at 100%.
+- 01:44:31: si 40, so 0, load 4.52. Gate closed (load). Heavy busy: peer zig at 98%.
+- 01:44:58: si 32, so 0, load 7.49. Gate closed (load). Heavy busy: peer zig at 99%.
+- 01:45:26: si 468, so 0, load 10.39. Gate closed (load). Heavy busy: our Chromium (pid 1622117) at 111%.
+- 01:45:53: si 232, so 17096, load 11.62. Gate closed. Heavy busy: our Chromium at 182%.
+- 01:46:20: si 552, so 0, load 10.76. Gate closed. Heavy busy: a peer Claude session (pid 1998) at 25%.
+- 01:46:48: si 496, so 16700, load 8.16. Gate closed. Heavy busy: our Chromium at 104%.
+- 01:47:15: si 680, so 4612, load 6.71. Gate closed. Heavy busy: our Chromium at 543%.
+- 01:47:42: si 276, so 0, load 7.49. Gate closed. Heavy busy: our Chromium at 561%.
+- 01:48:07: the runner exited, rc 0.
+
+The Chromium rows are the run's own browser, which the heavy rule counts. The peer `zig test` (1612103) ran throughout and was not stopped.
+
+Result line (`scripts/measure-astc-load.cjs`, through the existing reference path):
+`ASTC_LOAD run_ok=true astc_ms=1045 reference_ms=1048 ratio=0.997 tolerance=1.1 load_ok=true footprint_load_ok=true agrees=true astc_clean=64/64 astc_wall_s=310.0 run_pid=1621938 timed_out=false stragglers=0 archive=target/witness/astc-load-archive/2026-11-19T23-42-39-517Z reference_file=neon-wasm-witness-rgba8-software.json`
+
+Wall times: the measurement step 328.5 s (runner start to exit, including the footprint rerun); the browser run itself 310.0 s (`astc_wall_s`).
+
+The stop rule: the runner ended on its own (rc 0, `timed_out=false`, no stragglers). Afterwards, none of the run's PIDs (1621922, 1621938, 1622117) was still alive. Nothing was stopped by PID in this window.
+
+Footprint, rerun by the runner: decision `bc7` (unchanged). `fallbackFormats.astc4x4` is now true; before this run it was false (the Round 59 exclusion at 1.21). The ASTC entry: usable true, footprintWins true, loadOk true, cleanOk true, visualOk true, texelOk null (ASTC is not texel-judged). The footprint output is not committed, so the decision is recorded here, not in code.
+
+Reading the result, with its limits:
+- ASTC load is now 1045 ms against the 1048 ms reference, ratio 0.997, inside the 1.1 tolerance. Under the footprint's own rule, this overturns the Round 59 exclusion (1.21).
+- The reference is the Round 57 software RGBA8 witness, from another window. The ASTC run was in a window with heavy host load (readings up to load 11.6, our Chromium at 561%). One ASTC load from a different window is not a same-window pair, so these files cannot show how much of the difference is the format and how much is the window.
+- A same-window pair (ASTC run, then reference run) takes about 11.5 minutes (392 s and 305 s in the Round 58 and Round 57 records), so one ten-minute window cannot hold both. The owner decides whether a paired run is required before ASTC re-enters the fallback list.
