@@ -3121,3 +3121,99 @@ Other sizes, for reference: 2000 bodies, 2.52 from 9 quiet pairs. 5000 bodies, 3
 12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
 13. One-off GPU panic: held, no recurrence.
 14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 53 Phase B: the 500-body bench, more quiet pairs
+
+Phase A: no code change this round.
+
+Every gate and load reading taken by the job, in order. `si` and `so` are swap-in and swap-out in KiB/s; `load1` is the 1-minute load. A reading counts as open when both are below 1000 and load1 is 4 or less. The bench started on the first open reading, at 22:07:22.
+
+```
+start reading 21:51:10 si=1148 so=928 load1=5.11
+reading 21:51:12 si=836 so=0 load1=5.11
+reading 21:51:16 si=596 so=0 load1=5.10
+reading 21:51:20 si=116 so=0 load1=5.10
+reading 21:51:25 si=128 so=4700 load1=5.02
+reading 21:51:29 si=3784 so=16752 load1=5.41
+reading 21:51:33 si=592 so=26760 load1=5.30
+reading 21:51:37 si=1136 so=38276 load1=5.60
+reading 21:51:41 si=5900 so=244 load1=5.60
+reading 21:51:45 si=10044 so=440 load1=5.71
+reading 21:51:49 si=3280 so=452 load1=5.57
+reading 21:51:53 si=1808 so=0 load1=5.45
+reading 21:51:57 si=16716 so=0 load1=5.73
+reading 21:52:01 si=4696 so=0 load1=5.73
+reading 21:52:05 si=464 so=0 load1=5.99
+reading 21:52:09 si=796 so=0 load1=5.99
+reading 21:52:13 si=2852 so=0 load1=6.00
+reading 21:52:17 si=5024 so=84 load1=6.00
+reading 21:52:21 si=1684 so=48312 load1=6.00
+reading 21:52:25 si=1388 so=0 load1=6.40
+[gm: ...]
+[gm: ...]
+reading 22:06:14 si=25492 so=0 load1=7.37
+reading 22:06:18 si=5300 so=0 load1=6.86
+reading 22:06:22 si=62216 so=0 load1=6.39
+reading 22:06:26 si=4484 so=0 load1=6.39
+reading 22:06:30 si=1576 so=0 load1=5.96
+reading 22:06:34 si=1244 so=0 load1=5.80
+reading 22:06:38 si=46916 so=0 load1=5.50
+reading 22:06:42 si=1116 so=0 load1=5.13
+reading 22:06:46 si=2824 so=0 load1=5.13
+reading 22:06:50 si=2960 so=0 load1=4.80
+reading 22:06:54 si=1208 so=0 load1=4.82
+reading 22:06:58 si=4316 so=0 load1=4.59
+reading 22:07:02 si=2228 so=0 load1=4.39
+reading 22:07:06 si=33624 so=0 load1=4.27
+reading 22:07:10 si=1848 so=0 load1=4.27
+reading 22:07:14 si=9184 so=0 load1=4.17
+reading 22:07:18 si=8348 so=0 load1=4.00
+reading 22:07:22 si=692 so=0 load1=3.92
+bench rc=0 wall=40.3 s
+post 22:08:03 load=4.94 5.70 5.44 2/2320 1003123 gate=1620/0
+
+[gm: kept 40 of 241 lines; dropped 202; 10037 chars; use raw:true or the job log for the full output]
+[gm: full output at /workspace/bevy/runs/2026-11-19-14-01-09-579a1e/outputs/bc72ddeb5b9e-run_shell.txt; page with gm.read_file({ path: "/workspace/bevy/runs/2026-11-19-14-01-09-579a1e/outputs/bc72ddeb5b9e-run_shell.txt", unit: "chars", offset: 0, limit: 20000 })]
+```
+
+Run, once: `RUNS=10 scripts/bench-vs-jayzee.sh`, rc 0, wall 40.3 s. The bench started at 22:07:22 (si 692, so 0, load1 3.92). After it finished, the reading at 22:08:03 was si 1620, so 0, load1 4.94.
+
+500-body pairs of this run (jayzee mean over bevy mean):
+
+| Run | Ratio | `noisy` |
+| --- | --- | --- |
+| 1 | 0.9880 | true |
+| 2 | 1.0128 | false |
+| 3 | 1.0789 | false |
+| 4 | 1.0003 | false |
+| 5 | 1.0434 | false |
+| 6 | 1.0346 | false |
+| 7 | 1.0314 | false |
+| 8 | 1.0367 | false |
+| 9 | 0.9912 | false |
+| 10 | 1.0673 | false |
+
+Counting for the rule in this round:
+- New quiet pairs at 500 bodies: 9. Of those, 8 are above 1. The one below is run 9, at 0.9912.
+- Pooled quiet pairs since Round 46 (18): mean 1.0307, sd 0.0318, 14 above 1. The 95% t-interval (t 2.110, 17 degrees of freedom) is [1.0148, 1.0465]. The one-sided sign test gives p 0.0154.
+
+Decision: held, by the rule as written. The rule holds the size at parity unless five or more new quiet pairs all sit above 1. This round gave 9 new quiet pairs, and not all of them are above 1, so the rule is not met.
+
+Stated for the owner, not acted on: the Round 52 reopen criterion (15 quiet pairs with the t-interval lower bound above 1.0) is now met, with 18 pairs and a lower bound of 1.0148. The pooled data indicate a speedup of about 3% at 500 bodies. That is a decision about the rule, and it is the owner's to make. The rule above is the one applied here.
+
+### Round 53 ranked remaining work
+
+1. 500-body bench size: held by the rule, with 9 new quiet pairs, 8 above 1. Reopen with five new quiet pairs at 500 bodies, all above 1, as the rule requires. The owner may instead accept the pooled criterion (18 quiet pairs, lower bound 1.0148), which is met now.
+2. Gross per-process swap: held. The kernel exposes only host-wide `pswpin` and `pswpout`, and the root `memory.stat` is the only cgroup counter here. Reopen with a per-process or per-group swap-out counter.
+3. Attribution of a noisy build's swap-out: held. Reopen with a build whose swap-out is above 100 MiB, measured with the new fields. Such a build can't start while the gate is closed.
+4. Clean-build swap at `jobs = 12`: held, owner decision on `jobs`. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB. Baseline: six Round 43 clean builds, 2857 to 8699 MiB swapped, 323 to 384 s.
+5. No-change floor: explained (Round 47). Reopen with a quiet median above 0.5 s.
+6. Unlogged cargo stretch, about 0.085 s: held, inside cargo. Reopen if it grows above 0.2 s on repeated quiet runs.
+7. One-file variance: done (quiet median 3.0 s, Round 46). Reopen with a quiet build above 4 s or below 3.5 s.
+8. Override's total effect: held, reverted in Round 43. Reopen with a method that does not depend on swap.
+9. Clean-build swap classification: held by decision. Reopen when a swap-to-wall relation is shown for multi-crate builds.
+10. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+11. ZLIB KTX2 (rank 8): held, no sample.
+12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+13. One-off GPU panic: held, no recurrence.
+14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
