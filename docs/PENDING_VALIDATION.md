@@ -2155,3 +2155,33 @@ Phase B: each measurement runs once per configuration, and the full iterate buil
 - Swap gate: the first version of `measure-build.sh` gated on swap-out (`vmstat` column `so`). It now gates on swap-in (column `si`) at or below 1000 KB/s and records the reading as `gateSwapInKiBps`. Witness: a fake `vmstat` reporting swap-in 0 gave `gate swap-in 0 KiB/s` and a record with `gateSwapInKiBps` 0, rc 0.
 - Uncommitted before this round, now included: the timings report is read from `$CARGO_TARGET_DIR` when it is set, so an experiment in its own target root records its own report.
 - Live reading at the start of this round: `vmstat` `si` 8916 KB/s, `so` 816 KB/s, which keeps the gate closed. No build started.
+
+### Round 39 Phase B results
+
+Every build below ran through `scripts/measure-build.sh` with `build --profile iterate --timings` and `/config/.local/bin/cargo`, one at a time, in its own target root. `gateSwapInKiBps` is the `vmstat` swap-in reading the script waited for before the build started. Each row is one run unless it says otherwise.
+
+| Configuration | Clean wall | Crates | Peak RSS | Link | No-change | One-file | Gate KiB/s (clean, one-file) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Baseline, `jobs = 4` (global config) | 773.4 s (this round); 678.0 s and 1093.6 s (earlier runs, `bt-base2` and `target/`) | 452 | 5128 MiB | 10.5 s | 9.6 s, 0 crates | 9.6 s, 1 crate | 196, 968 |
+| `CARGO_BUILD_JOBS=12` | 369.3 s, 516.0 s, 438.6 s (mean 441.3 s) | 452 | 7207 to 8121 MiB | 6 to 20 s | not measured in this round | 4.0 s (3.6 s earlier) | 976, 244 |
+| `codegen-units = 256` (rejected) | 881 s | 452 | 3753 MiB | 7 s | not measured | 17.8 s | 0, 12 |
+| `incremental = false` (rejected) | 977.5 s | 452 | 5267 MiB | 21 s | not measured | 35.2 s | 48, 972 |
+| Linker `rust-lld` through `-fuse-ld=lld` (rejected, no change) | 662.8 s | 452 | 3856 MiB | 5.5 s | not measured | 6.0 s | 0, 128 |
+| Kept: `jobs = 12` in `.cargo/config.toml` (commit `cd576ce`), final build | 452.4 s | 452 | 8184 MiB | 21.5 s | 15.9 s, 0 crates | 8.4 s, 1 crate | 612, 272 |
+
+Average concurrency of a clean build (sum of unit durations divided by the report wall time): 3.57 at `jobs = 4`, 9.92 at `jobs = 12` (`bt-jobs12`), 10.27 in the final build.
+
+Dominant cost, from the cargo timings report: a clean build is limited by its longest codegen chain. In the baseline clean report the largest units were `bevy_pbr` (codegen 207 s after 21 s of frontend), `avian3d` (codegen 173 s after 30 s), `bevy_ui` (99 s) and `bevy_render` (about 110 s). In the final report the largest were `bevy_pbr` (181 s), `basis-universal-sys` (160 s) and `bevy_render` (149 s). A one-file build spends its time in the game crate, `bevy-jayzee`, which takes about 7 s of codegen, then a link of 1 to 2 s. The 8 to 10 s of a no-change build are the swap gate (`vmstat 1 2`, about 2 s) and cargo's fingerprint check, not a compile.
+
+Decisions:
+
+- Kept: `jobs = 12` in the repo `.cargo/config.toml`. The clean gain is consistent over three pairs: 441 s against 848 s, about 48 percent shorter. The one-file gain is not established: 4.0 s, 3.6 s and 8.4 s against 9.6 s and 7.7 s, so the one-file rebuild is not claimed as faster. Cost: peak RSS 7.3 to 8.2 GB against 3.7 to 5.2 GB, with about 15 GB of host memory.
+- Rejected, `codegen-units = 256`: clean 881 s is within the baseline spread, and one-file rose from 9.6 s to 17.8 s.
+- Rejected, `incremental = false`: clean 977.5 s, and one-file rose from 9.6 s to 35.2 s.
+- Rejected, linker: the default linker is already LLD. The baseline binary and the `rust-lld` binary both carry `Linker: LLD 23.1.1` in `.comment` (`readelf -p .comment`), so the flag changed nothing. The 662.8 s and 6.0 s figures are host noise on an identical binary.
+- Rejected without a test, split debuginfo: the iterate profile carries no debug info, so there is nothing to split.
+- Rejected without a test, sccache: not installed on this host.
+
+One run was lost: the first `codegen-units = 256` clean build was interrupted when the session ended at 12:03; it wrote no record. It was rerun in a fresh root (`bt-r39-cgu256b`), and that rerun is the one in the table.
+
+The driver logged a `vmstat` swap-in of 3532 KiB/s before the final clean build, which is above the 1000 KiB/s gate. The measurement script held the start until the reading fell, and the build began at 612 KiB/s, as its record shows.
