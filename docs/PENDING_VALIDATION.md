@@ -3530,3 +3530,35 @@ Red check: the result-line prefix was changed to `CLEAN-BUILD jobs=`. The witnes
 Found and fixed in this round: under `set -u` the first draft read `$CARGO_BIN` and `$MEASURE_NO_GATE` directly, so an unset variable aborted the script (rc 1) before the gate. Both now default to empty (`${CARGO_BIN:-}`, `${MEASURE_NO_GATE:-}`). The gate-closed witness case caught it.
 
 Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, the stale sets (still in `stale-before-r58`). No cargo was run, no browser was started, and nothing was pushed. Each run leaves its log under `/tmp/measure-clean-build.*.log` (stderr names the path); the script does not delete logs.
+
+## Round 61 Phase B: clean-build measurement under cargo, stopped at the load limit (open)
+
+The `jobs` measurement is not obtained. No CLEAN_BUILD line was produced, and the `jobs` setting is unchanged (repo `.cargo/config.toml`, 12). The decision stays open until a later stretch reads the line.
+
+Window: opened 00:11:14. Readings `vmstat 1 2` (second sample), taken about every 25 seconds, with the heavy-job check (top >20% CPU, compilers, test/check runs, Chromium renderer over 1 GB; gm-core `--handshake` workers exempt):
+- 00:11:14 si 996, so 0, load1 0.55. Open. Heavy: only a `--handshake` gm-core worker at 100%, exempt.
+- 00:12:25 si 780, so 76, load1 2.31. Open, heavy clear. Witness started.
+- 00:12:27 si 1920, so 0, load1 2.31. Closed.
+- 00:12:54 si 20, so 68, load1 2.80. Open, heavy busy: gm-core pid 1380537 at 100%, no `--handshake` in the line the job captured. The process had exited before its arguments could be read.
+- 00:13:22 si 5096, so 0, load1 2.69. Closed.
+- 00:13:49 si 588, so 4248, load1 2.15. Closed.
+- 00:14:16 si 208, so 1724, load1 1.96. Closed.
+- 00:14:44 si 368, so 0, load1 1.70. Open, heavy clear. Build started (pid 1383202).
+
+Witness, once: `scripts/check-clean-build-measure.sh` rc 0, 0.35 s, 12 of 12 ok (ran at 00:12:25, in the open window).
+
+Build during the window, readings at each sample:
+- 00:14:46 si 260, so 0, load1 1.65. Open, heavy busy (ours).
+- 00:15:13 si 1080, so 0, load1 6.50. Closed.
+- 00:15:41 si 200, so 13204, load1 9.58. Closed.
+- 00:16:08 si 3368, so 9944, load1 11.21. Closed.
+- 00:16:35 si 4516, so 20120, load1 13.52. Closed.
+- 00:17:03 si 11696, so 9580, load1 14.42. Closed.
+
+The build was stopped by PID at about 00:17:25, after the 00:17:03 reading. Reason: the standing limit is no cargo while swap-in is above 1000 KB/s or load is above 4, and the build had put the host above both. The stop covered only the measurement's own process tree, 16 PIDs: the measure script (1383202), its subshell, cargo (1383236) and 12 rustc children, plus the rest of the tree. Stop order was TERM, a 5 s wait, then KILL for any survivor. Survivors: 0. No peer process was stopped.
+
+Result of the stopped build: exit 143 after 164.2 s wall (00:14:44 to 00:17:28). Its cargo log `/tmp/measure-clean-build.nlkxoV.log` shows 342 `Compiling` lines and no `Finished` line. The partial target root `/tmp/bevy-clean.9ACQ4r` (1.3 GB, debug only, created by this build's mktemp) was removed.
+
+Reading after the stop: si 740, so 0, load1 11.00. Load was still decaying from the build's peak.
+
+Why this matters for the decision: the `jobs` decision needs a clean build that completes inside the gate. This attempt started on an open gate and then ran into the limit, because a clean build at `jobs = 12` pushes swap and load above the limit. The next attempt should be a window that is clear before the build and that the build can finish in. Whether to use `jobs = 4` or 12 is still open.
