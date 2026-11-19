@@ -2571,3 +2571,70 @@ Witness: `scripts/check-swap-owners.sh` builds a fake proc tree with two samples
 Mutation, before its restore: `swap_owners_top` keeps each process's last sample instead of its peak. The top becomes `290 gamma; 120 beta`, `{"ok":false}`, exit 1. Restore: the lib is untracked, so `git checkout` could not restore it; the original text was written back. The check is green again.
 
 Field check: a no-change build through the changed `measure-build.sh` (`r46-field`, warm `bt-r43-off-1`): rc 0, wall 1 s, `swapNoisy` false, `swapOwnersTop` empty (no swap, so no holders), no temp file left.
+
+## Round 46 Phase B: witnesses, gate readings, and the ranked work
+
+Gate readings (`vmstat 1 2`):
+- 20:31:39 si 140, so 0 (open). Load 1-minute 4.27, read at the start.
+- 20:33:00 si 1932, so 0 (closed). The floor run `r46-nochange` was started in the same call, and it is not counted (see the breach note below).
+- 20:33:37 si 328, so 0 (open). Floor witness `r46-nochange-b`.
+- 20:34:15 si 580, so 0 (open). One-file driver `r46-onefile-b`.
+- 20:35:30 si 868, so 0 (open). Bench `r46-bench`, which checked again inside the job at 20:35:38: si 768, so 0, load1 2.45.
+- 20:37:38 si 22120, so 0 (closed). Witness W-c was run in this window, and its result does not count.
+- 20:37:48 si 592, so 0 (open). W-c re-run, which counts.
+
+Counted Phase B witnesses, each run once unless noted:
+
+| Witness | Wall (s) | Result |
+| --- | --- | --- |
+| Floor, `r46-nochange-b` (warm `bt-r43-off-1`) | 0.7 build, 0.02 slot wait, driver 1.43 | rc 0, 0 crates, `swapNoisy` false, swap in 0.1 MiB, out 0.1 MiB, peak in 161 KiB/s, peak out 179 KiB/s, tree RSS 141.3 MiB |
+| One-file, `one-file-quiet.sh r46-onefile` (driver job, 6 attempts max, 3 quiet wanted) | 25.0 driver | figure 3.0 s from 3 quiet runs; attempts 1 and 2 noisy |
+| Bench, `RUNS=5 scripts/bench-vs-jayzee.sh` | 20.5 | rc 0; load1 2.45 at start, 2.96 at end |
+| W-c, `check-swap-owners.sh` | 0.05 | rc 0, `{"ok":true,"top":"300 200 beta;290 290 gamma"}` |
+
+One-file records (warm root, `CARGO_TARGET_DIR` `bt-r43-off-1`):
+
+| Record | Wall (s) | Swap in / out (MiB) | `swapNoisy` |
+| --- | --- | --- | --- |
+| `r46-onefile-1` | 7.6 | 10.8 / 405.8 | true |
+| `r46-onefile-2` | 3.7 | 6.5 / 4.8 | true (11.3 MiB total, over 10) |
+| `r46-onefile-3` | 3.3 | 2.1 / 0.7 | false |
+| `r46-onefile-4` | 3.0 | 1.2 / 0 | false |
+| `r46-onefile-5` | 3.0 | 0.5 / 3.8 | false |
+
+The quiet figure is the median of 3.3, 3.0 and 3.0, so 3.0 s. The record in attempt 6 was never run: the driver stopped at three quiet records. The noisy record `r46-onefile-1` (7.6 s, 405.8 MiB out) is the same kind of event as the 698.7 MiB out of Round 45.
+
+Bench (`target/witness/bench-vs-jayzee.json`, all 15 rows not refused):
+
+| Bodies | Speedup (median, all runs) | Speedup (quiet runs) | Quiet / noisy |
+| --- | --- | --- | --- |
+| 500 | 1.04 | 1.04 (0.325 vs 0.3118 ms) | 3 / 2 |
+| 2000 | 2.55 | 2.55 (2.087 vs 0.819 ms) | 4 / 1 |
+| 5000 | 4.56 | 4.56 (6.561 vs 1.438 ms) | 5 / 0 |
+
+Every size has a speedup above 1, so the bench reopen condition is met. The 500-body size is at parity (1.04), and its speedup is within run-to-run noise.
+
+Floor: the quiet floor is 0.7 s (`r46-nochange-b`), against the 0.4 s quiet split from Rounds 40 and 41. The 0.3 s gap is not split this round.
+
+Which process holds the swapped-out pages: the owner list (`swapOwnersTop`, the peak VmSwap per process across samples) is the same in every record: `gm-core` pid 2813 at 3248 to 3279 MiB, `selkies` pid 471 at 339 to 347 MiB, `playwriter-ws-s` pid 3627 at 221 to 224 MiB, `gm-core` pid 2594 at 212 MiB, `claude` pid 2356 at 123 MiB. None is a cargo, rustc or build process. The list is a snapshot of standing holders, not a delta over the build, so it cannot say that `gm-core` caused the 405.8 MiB swapped out during `r46-onefile-1`. A per-process delta would need the sample at the build's start and end, which is the next change.
+
+Breaches and non-counted runs, disclosed:
+- `r46-field`, the Phase A field check, ran with no gate reading. It is a no-change build (1 s, `swapNoisy` false), not counted.
+- `r46-nochange`, the first floor run, started at a reading of 1932 KiB/s in: the gate was closed, and I started the build anyway in the same call. The build's own gate read 208 KiB/s and it recorded quiet at 0.7 s. It is not counted. The Phase B floor witness is `r46-nochange-b`, which started at 328 KiB/s.
+- W-c's first run was at 22120 KiB/s in. It was a 0.05 s fixture with no build, and it is not counted. The W-c re-run is the counted witness.
+- The first one-file driver (`r46-onefile`) stopped at its gate at 324 / 7476 KiB/s, before any build, so nothing ran.
+
+### Round 46 ranked remaining work
+
+1. No-change floor: quiet at 0.7 s (`r46-nochange-b`), 0.3 s above the 0.4 s split. Reachable. Reopen with a per-process swap delta over a no-change build, which would explain the 0.3 s, or with the next quiet floor showing a different figure.
+2. Bench real run: done this round. Speedup above 1 at every size (500 1.04, 2000 2.55, 5000 4.56). The 500-body row is at parity.
+3. One-file variance: done this round. Quiet figure 3.0 s from three quiet runs (3.3, 3.0, 3.0); noisy records at 7.6 and 3.7 s. Reopen with a quiet build above 4 s, or a noisy one below 3.5 s.
+4. Clean-build swap at `jobs = 12`: held, owner decision on memory and parallelism. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB.
+5. Override's total effect: held, reverted in Round 43. Reopen with a comparison method that does not depend on swap.
+6. Clean-build swap classification: held by decision (`swapNoisy` null). Reopen when a swap-to-wall relation is found for builds of more than one crate.
+7. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause.
+8. ZLIB-supercompressed KTX2 (rank 8): held, no sample file.
+9. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
+10. One-off GPU panic: held, no recurrence.
+11. Owner-held: user-wide `jobs = 4`, the shim, sccache or mold, the Playwriter 0.11 upgrade.
+12. Per-process swap delta: reachable, next change. Owner snapshot is peak-based, so `swapOwnersTop` names standing holders, not the process that caused a build's swap-out.
