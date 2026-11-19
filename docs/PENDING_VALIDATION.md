@@ -3260,3 +3260,22 @@ Witness: `node scripts/check-neon-bc7-software-mode.cjs` checks that the mode li
 Mutation, before its restore: `&adapter=software` removed from the `bc7-software` line. Red: `{"present":false,"disablesBc":false,"ok":false}`, exit 1. Restored from a copy, checked with `cmp` (identical), green again, exit 0. `git status` after the restore shows the mode file modified and the witness file new, nothing else.
 
 Phase B, not run in Phase A: `NEON_TEXTURE=bc7-software node scripts/check-neon-wasm-models.cjs` (the witness through the gate, on localhost 127.0.0.1:8092 only), then `SHOTS_LEFT=target/witness/neon-shots-rgba8-software SHOTS_RIGHT=target/witness/neon-shots-bc7-software node scripts/compare-screenshots.cjs`.
+
+## Round 55 Phase B: the SwiftShader BC7 set, measured against the SwiftShader RGBA8 set
+
+Readings, in order (`vmstat 1 2`, the second sample is the gate reading):
+- 22:21:12 pre-check, not the Phase B gate: si 200, so 0, load1 3.84.
+- 22:22:52 Phase B first check: second sample si 1240, so 0, load1 3.63. Closed on swap-in; the run was not started.
+- 22:23:04 job poll, second sample: si 804, so 0, load1 3.46. Open; the witness started.
+- 22:28:25 post-run: si 9184, so 0, load1 8.83. After the run, not a gate reading.
+- post-run check, after the tabs were closed: si 556, so 12264, load1 5.76. After the run.
+
+Witness, run once: `NEON_TEXTURE=bc7-software node scripts/check-neon-wasm-models.cjs`. Wall 321.4 s, rc 0. Witness `ok` true: 64 of 64 rows, all 64 loaded and clean, load median 1069 ms, max 3094 ms. The page ran on `http://127.0.0.1:8092/web/wasm/index.html` only; no request went to any other host. Tabs: one page in the gate's context, closed at the end. Processes started: the job, the witness node script, the wasm server, the playwriter gate and its Chromium tree. All were gone at the check, and PIDs 1014292, 1014313, 1014329, 1014349, 1014376, 1014512 and 1014519 had no `/proc` entry. Other sessions' Chromium and playwriter processes were not touched.
+
+Screenshot comparison, once: `SHOTS_LEFT=neon-shots-rgba8-software SHOTS_RIGHT=neon-shots-bc7-software node scripts/compare-screenshots.cjs`. `texture-visual-bc7-software.json`: `ok` false, 64 pairs, PSNR min 16.72, median 21.11, 64 failing at the 30 dB rule.
+
+Comparisons already on file, for scale: ASTC against the same SwiftShader RGBA8 set min 51.90, median 69.76, ok; ETC2 min 50.44, median 57.25, ok; BC7 on hardware against hardware RGBA8 min 65.12, median 69.39, ok; the no-still noise floor min 14 to 16, median 28 to 30.
+
+What the 21 dB is. Both sets hold 60 distinct frames of 64, and the same frames repeat, so neither set is blank. Per pair, 3.7% of pixels differ by more than 32 levels (median; max 7.0%). The bounding box of those pixels covers 96.8% of the frame, so the difference is scattered, not a missing model. Median mean absolute luma difference 4.99.
+
+Result. The SwiftShader BC7 set does not match the SwiftShader RGBA8 set within the 30 dB rule. ASTC and ETC2 pass against that same reference, so the RGBA8 reference is not the outlier. The cause is not determined: it may be BC7 decoding on SwiftShader or software shading precision. The threshold was not changed, and the run was not repeated (the witness runs once). The cross-adapter caveat is measured now, not closed. The BC7 default rule still requires a visual pass on hardware, and the hardware BC7 pass (65.12 dB) is unchanged.
