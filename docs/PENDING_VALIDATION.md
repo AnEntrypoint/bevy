@@ -3755,3 +3755,30 @@ Runner tests, no browser, with stand-in drivers (`ASTC_LOAD_DRIVER`):
 - Both test runs left archive folders under `target/witness/astc-load-archive/`, which holds only witness copies and driver logs. They are git-ignored and kept as evidence.
 
 Not changed: the footprint rule (`LOAD_TOLERANCE` 1.1), the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo ran. Local commit only; not pushed in Phase A.
+
+## Round 68 Phase B: the window cleared too late for the ASTC run (open)
+
+Correction to the Round 68 Phase A entry: the witness `scripts/check-astc-load-ratio.cjs` has 7 cases plus one line-format check, so its output is 8 of 8 ok, not 9 of 9. Its exit codes and the red check stand.
+
+Window: 01:14:29 to 01:24:29 (ten minutes), one reading about every 30 seconds (`vmstat 1 2`, second sample is the gate reading; the heavy-job check reads full arguments of each high-CPU PID, gm-core `--handshake` workers exempt). None of the heavy processes below is ours, and none was stopped.
+- 01:14:29 to 01:16:22: gate open; heavy busy, a peer `zig test` (pid 1514462) at 27 to 100% CPU.
+- 01:16:51: si 2364, so 0, gate closed; the same peer at 47%.
+- 01:17:19: si 12444, so 19392, gate closed; a peer `zig test` (pid 1523262) at 98%.
+- 01:17:47: si 776, so 16944, gate closed; heavy clear.
+- 01:18:15: si 128, so 0, gate open; a peer `fx` (pid 1525976) at 100%.
+- 01:18:44: si 1388, so 0, gate closed; heavy clear.
+- 01:19:12: si 6808, so 3968, gate closed; heavy clear.
+- 01:19:40: si 7392, so 0, gate closed; a peer `fx` (pid 1534337) at 102%.
+- 01:20:08: si 82492, so 24456, gate closed; a peer `fx` (pid 1542656) at 91%.
+- 01:20:37: si 916, so 132684, load 3.51, gate closed; a Chromium renderer (pid 1549721, RSS 1.47 GB) and its GPU process (pid 1549130) at 218%.
+- 01:21:05: si 7696, so 133532, load 6.04, gate closed; the renderer at RSS 5.67 GB.
+- 01:21:33: si 7332, so 0, gate closed; heavy clear.
+- 01:22:02: si 22548, so 0, gate closed; a peer `fx` (pid 1570759) at 98%.
+- 01:22:30: si 1856, so 0, gate closed; a peer `fx` (pid 1578123) at 80%.
+- 01:22:58: si 268, so 0, load 3.73, gate open; heavy clear. This is the first clear sample. Remaining in the window: 89 s.
+
+Witness, once, on the clear sample: `scripts/check-astc-load-ratio.cjs` rc 0, wall 0.04 s, 8 of 8 ok.
+
+The ASTC run was not started. The rule needs at least 420 s left in the window, because the ASTC run took 391.8 s in the Round 58 record. The clear sample came with 89 s left, so no ASTC line was produced and the ASTC decision is unchanged (load ratio 1.21, not usable against the 1.1 tolerance).
+
+No push in this window, since the window did not complete the measurement. The Round 68 commits stay local.
