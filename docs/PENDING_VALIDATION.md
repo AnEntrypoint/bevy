@@ -2128,7 +2128,7 @@ Ranks 2 to 5 are open and unchanged from the Phase A table.
 - `memAvailStartMiB`, `memAvailEndMiB`, `swapFreeStartMiB`, `swapFreeEndMiB`: `MemAvailable` and `SwapFree` from `/proc/meminfo`, read before and after;
 - `timings`: the cargo timings report from this run, copied to `target/witness/timings-<label>.html`.
 
-The script waits, up to 540 s, for swap-out under 1 MB/s before it starts a build. If the wait runs out, it exits 75 and starts nothing.
+The script waits, up to 540 s, for swap-in at or below 1000 KB/s (`vmstat` column `si`, one-second sample) before it starts a build; the reading is kept as `gateSwapInKiBps` in each record. If the wait runs out, it exits 75 and starts nothing.
 
 `scripts/build-timings-summary.cjs <report.html> [n]` prints the top units by duration and the game crate's unit from a timings report. The Round 39 Phase B record uses it on each run's report.
 
@@ -2147,4 +2147,11 @@ The script waits, up to 540 s, for swap-out under 1 MB/s before it starts a buil
 
 The dependency cache stays warm because the target root does not change and the profile setting is part of each artifact's hash, so a rejected experiment leaves the baseline's artifacts in place.
 
-Phase B: each measurement runs once per configuration, and the full iterate build runs once after the last change. Each build waits for swap-out to clear before it starts.
+Phase B: each measurement runs once per configuration, and the full iterate build runs once after the last change. Each build waits for swap-in to be at or below 1000 KB/s before it starts.
+
+### Round 39 Phase A addendum (this round)
+
+- `cf225a2` contains `scripts/measure-build.sh`, `scripts/build-timings-summary.cjs` and the Round 39 Phase A plan. Its witness before commit was a dry run, `scripts/measure-build.sh selftest --version`, which started no build and wrote its record to a temporary file; the summary script was run on the Round 37 timing report. Neither result was recorded in this ledger, so this addendum records the witness that ran after it.
+- Swap gate: the first version of `measure-build.sh` gated on swap-out (`vmstat` column `so`). It now gates on swap-in (column `si`) at or below 1000 KB/s and records the reading as `gateSwapInKiBps`. Witness: a fake `vmstat` reporting swap-in 0 gave `gate swap-in 0 KiB/s` and a record with `gateSwapInKiBps` 0, rc 0.
+- Uncommitted before this round, now included: the timings report is read from `$CARGO_TARGET_DIR` when it is set, so an experiment in its own target root records its own report.
+- Live reading at the start of this round: `vmstat` `si` 8916 KB/s, `so` 816 KB/s, which keeps the gate closed. No build started.

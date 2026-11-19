@@ -16,14 +16,15 @@ meminfo_kib() {
 
 waited=0
 while :; do
-    so=$(vmstat 1 2 | tail -n 1 | awk '{print $8}')
-    [ "$so" -lt 1000 ] && break
+    read -r gate so_now < <(vmstat 1 2 | tail -n 1 | awk '{print $7, $8}')
+    [ "$gate" -le 1000 ] && break
     waited=$((waited + 1))
     if [ "$waited" -ge 540 ]; then
-        echo "measure-build: swap-out stayed at ${so} KiB/s for 540 s; not starting $label" >&2
+        echo "measure-build: swap-in stayed at ${gate} KiB/s for 540 s; not starting $label" >&2
         exit 75
     fi
 done
+echo "measure-build: $label gate swap-in ${gate} KiB/s, swap-out ${so_now} KiB/s" >&2
 
 marker=$(mktemp)
 swap_in0=$(vmstat_value pswpin)
@@ -65,14 +66,15 @@ peak_kib=$(cat "$peak_file")
 link_samples=$(cat "$link_file")
 rm -f "$peak_file" "$link_file"
 
-timings=$(find "$repo"/target/cargo-timings -name 'cargo-timing-*.html' -newer "$marker" 2>/dev/null | sort | tail -n 1)
+target_root=${CARGO_TARGET_DIR:-$repo/target}
+timings=$(find "$target_root"/cargo-timings -name 'cargo-timing-*.html' -newer "$marker" 2>/dev/null | sort | tail -n 1)
 rm -f "$marker"
 if [ -n "$timings" ]; then
     cp "$timings" "$repo/target/witness/timings-$label.html"
 fi
 
 awk -v label="$label" -v rc="$rc" -v json="$json" -v peak="$peak_kib" -v si="$((swap_in1 - swap_in0))" -v so="$((swap_out1 - swap_out0))" \
-    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v timings="${timings##*/}" 'BEGIN {
-    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, timings
+    -v a0="$avail0" -v a1="$avail1" -v f0="$swapfree0" -v f1="$swapfree1" -v ls="$link_samples" -v gate="$gate" -v timings="${timings##*/}" 'BEGIN {
+    printf "{\"label\":\"%s\",\"rc\":%d,\"build\":%s,\"peakRssMiB\":%.1f,\"sampleS\":0.5,\"gateSwapInKiBps\":%d,\"linkS\":%.1f,\"swapInPages\":%d,\"swapOutPages\":%d,\"swapInMiB\":%.1f,\"swapOutMiB\":%.1f,\"memAvailStartMiB\":%.1f,\"memAvailEndMiB\":%.1f,\"swapFreeStartMiB\":%.1f,\"swapFreeEndMiB\":%.1f,\"timings\":\"%s\"}\n", label, rc, json, peak / 1024, gate, ls * 0.5, si, so, si * 4 / 1024, so * 4 / 1024, a0 / 1024, a1 / 1024, f0 / 1024, f1 / 1024, timings
 }' | tee -a "$record"
 exit "$rc"
