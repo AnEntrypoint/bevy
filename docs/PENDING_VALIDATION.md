@@ -2238,3 +2238,21 @@ Phase B rule: the `vmstat 1 2` reading is taken and recorded before each build, 
 Against the earlier figures: no-change 6.1 s, against 9.6 s at `jobs = 4` and 15.9 s in the final round before this change. One-file 10.8 s in the Phase B run, against 4.0 s in the earlier `jobs = 12` run. The one-file figure is not restored: the same code and target root gave 3.4 s, 10.7 s and 10.8 s, and the Phase B run also swapped out 768 KB/s during the build. The 15.9 s regression is not reproduced, and the one-file figure stays unexplained.
 
 Decision: the gate change in `42dde55` stays: it halves the gate per build (1.0 s to 0.5 s), and it checks both swap directions. The no-change figure of 6.1 s is above the 0.4 to 1.1 s measured for the same parts in the split run. This round did not split that run, so the difference is unexplained; the shim slot queue is the only component measured to exceed a second. Reopen item 1 (above) with a split of a single no-change run taken under the same readings. The one-file figure reopens as item 3.
+
+## Round 41 Phase A, item 1: the one-file rebuild variance
+
+Three one-file runs on the current config (`cd576ce` plus the 0.5 s gate), root `bt-r39-final`. Each run started after a `vmstat 1 2` reading with swap-in and swap-out both below 1000 KiB/s, and both shim slots free with no other cargo or rustc process at the start.
+
+| Run | Start reading | Cargo wall | Game unit (start, duration) | Link | Swap in / out during the build | Peak RSS |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | si 628, so 384 (17:21:38) | 16.3 s | 1.36 s, 14.75 s | 6.0 s | 29.2 MiB / 716.5 MiB | 1672 MiB |
+| 2 | si 296, so 0 (17:33:22) | 14.1 s | 8.00 s, 5.74 s | 1.0 s | 25.8 MiB / 0 | 1423 MiB |
+| 3 | si 644, so 0 (17:33:49) | 3.1 s | 0.37 s, 2.62 s | 1.0 s | 1.8 MiB / 0 | 1405 MiB |
+
+Run 2 first tried at 17:23 and stopped when the gate held for nine minutes on a swap storm (si 22156, so 30896 at 17:32:35). It was rerun as the second and third runs above.
+
+The variance source, from the numbers: swap traffic on the host during the build, not the shim queue. The slots were free in every run. Run 1 swapped 716.5 MiB out during the game crate’s compile, and that compile took 14.75 s against 2.62 s in run 3. Run 2 swapped 25.8 MiB in, and its game unit did not start until 8.0 s, which is cargo’s own startup under the same page-ins (the mechanism is inferred from the timing, not measured directly). The other Claude sessions on this host hold about 300 MB each and produced the swap.
+
+The same split holds across the earlier one-file records. Every record with 6.6 MiB or less of swap-in during the build ran in 3.1 to 4.0 s (`q40-onefile` 3.4 s, `jobs12-onefile` 3.6 s and 4.0 s, `v40-onefile-3` 3.1 s). Every record with 13.0 MiB or more ran in 8.4 s or more (`final-onefile` 8.4 s at 13.0 MiB, `r40b-onefile` 10.8 s at 17.0 MiB, `v40-onefile-2` 14.1 s at 25.8 MiB, `v40-onefile-1` 16.3 s at 29.2 MiB, `p40-onefile` 10.7 s at 643.5 MiB). The 10 MiB threshold sits in the gap between the two groups on this host. It is not a general constant.
+
+The one-file figure of record is therefore the quiet floor, 3.1 to 4.0 s, and the 8.4 s and 10.8 s figures were noisy runs. The change is in the measurement, not the config: `scripts/measure-build.sh` now records `slotsAtStart` (the state of both shim slots) and `swapNoisy`, which is true when swap-in or swap-out during the build exceeds `NOISY_MIB` (default 10 MiB). Witness: `bash -n` passes; a `--version` run through the changed script wrote `slotsAtStart` "slot1=free slot2=free", `gateSwapInKiBps` 16, `gateSwapOutKiBps` 0 and `swapNoisy` false, rc 0.
