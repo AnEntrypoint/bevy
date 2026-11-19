@@ -2657,3 +2657,42 @@ What the next quiet no-change record will show: if `outsideCargoS` stays near 0.
 
 Witness: `scripts/check-build-split.sh` runs `build-timed.sh` with a fake cargo that sleeps 0.4 s, prints "Finished ... in 0.10s", and sleeps 0.2 s. Green: `{"ok":true,"rc":0,"wallS":0.6,"cargoFinishedS":0.1,"outsideCargoS":0.5}`, exit 0.
 Mutation: `"$wall" "$finished" "$outside"` replaced by `"$wall" 0 "$wall"` (the field is not parsed). Red: `cargoFinishedS` 0, `{"ok":false}`, exit 1. Restored from `/tmp/bt/build-timed.good`; green again, exit 0.
+
+## Round 47 Phase A: the 500-body bench size, decided from the records
+
+Record used: `target/witness/bench-vs-jayzee.json` from `r46-bench` (Round 46, 15 rows, `RUNS=5`, load1 2.45 to 2.96). It is the only bench output on disk; each bench run overwrites it.
+
+Paired ratios at 500 bodies (jayzee mean over bevy mean, same run pair):
+
+| Run | jayzee ms | bevy ms | ratio | `noisy` |
+| --- | --- | --- | --- | --- |
+| 1 | 0.336 | 0.3314 | 1.014 | true (other runnable tasks reached 6 or more) |
+| 2 | 0.331 | 0.3338 | 0.992 | true (same reason) |
+| 3 | 0.342 | 0.3203 | 1.068 | false |
+| 4 | 0.321 | 0.3115 | 1.030 | false |
+| 5 | 0.325 | 0.3118 | 1.042 | false |
+
+Quiet pairs (3, 4, 5): ratios 1.068, 1.030, 1.042, all above 1. All five pairs: mean 1.029, one below 1 (run 2, noisy).
+
+Decision: hold. The evidence does not settle it.
+- Three quiet pairs out of three all above 1 is a sign-test result of p 0.125 (one-sided). It does not clear 0.05.
+- The per-run spread at 500 bodies is about 7% (bevy 0.3115 to 0.3338 ms). The quiet ratio of 3 to 7% sits inside that spread.
+- The two noisy runs are the ones with the bevy time above the quiet median, and run 2 is below 1. Dropping noisy runs is the rule the ledger has used, but it leaves only three pairs.
+- The 2000 and 5000 sizes are unaffected. Their quiet ratios are 2.40 to 2.63 and 4.35 to 4.70, far outside the spread.
+
+Reopen evidence (held): five quiet pairs at 500 bodies, each with the jayzee over bevy ratio above 1 (5 of 5 gives p 0.031), and a quiet mean ratio of 1.05 or more. Or a 500-body run whose ratio falls outside the five-run spread of its own sizes. Both need `load1` 4 or less at the start of the run.
+
+### Round 47 ranked remaining work
+
+1. No-change floor residual: reachable. Quiet floor 0.7 s (`r46-nochange-b`), 0.3 s above the 0.4 s split. Phase A (`4a19f73`) records `cargoFinishedS` and `outsideCargoS`. Phase B floor run shows how much is outside cargo's clock. Shim share needs a direct-binary run against the shim run.
+2. Per-process swap delta over a build: reachable. The owner list is a peak snapshot, so `swapOwnersTop` names standing holders (`gm-core` pid 2813 at about 3.25 GB), not the process behind a build's swap-out. Reopen when the delta is recorded.
+3. 500-body bench: held (above). Reopen with five quiet pairs at 500 bodies above 1 and a quiet mean of 1.05 or more, at load1 4 or less.
+4. One-file variance: done in Round 46 (figure 3.0 s from three quiet runs, 3.3, 3.0, 3.0). Reopen with a quiet build above 4 s, or below 3.5 s.
+5. Clean-build swap at `jobs = 12`: held, owner decision on memory and parallelism. A clean build peaks about 7 GB in its own tree and swaps GBs on this host. Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB.
+6. Override's total effect: held, reverted in Round 43. Reopen with a comparison method that does not depend on swap, such as paired runs with the spread.
+7. Clean-build swap classification: held by decision (`swapNoisy` null for builds of more than one crate). Reopen when a swap-to-wall relation is shown for multi-crate builds.
+8. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+9. ZLIB-supercompressed KTX2 (rank 8): held, no sample file. Reopen when a sample exists.
+10. SwiftShader BC7 reference and the browser load gate: reachable with browser time only, not run. Reopen when a browser window is scheduled.
+11. One-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
+12. Owner-held: user-wide `jobs = 4`, the cargo shim (5 s retry), sccache or mold, and the Playwriter 0.11 upgrade.
