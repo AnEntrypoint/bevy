@@ -2696,3 +2696,35 @@ Reopen evidence (held): five quiet pairs at 500 bodies, each with the jayzee ove
 10. SwiftShader BC7 reference and the browser load gate: reachable with browser time only, not run. Reopen when a browser window is scheduled.
 11. One-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
 12. Owner-held: user-wide `jobs = 4`, the cargo shim (5 s retry), sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 47 Phase B: the floor split, with a correction to 4a19f73
+
+Correction: the Phase A note in `4a19f73` said the 0.7 s floor was outside cargo's build clock, based on the timing report's "Total time 0.0s". That report counts compile units only. The new field shows cargo's own Finished clock holds most of the floor time. `outsideCargoS` (shim, cargo process start, exit) is 0.1 s on every run.
+
+Gate readings (`vmstat 1 2`), all open, swap-out 0 each time: 20:48:17 si 216; 20:48:32 si 72 (W-d); 20:48:33 si 4 (floor); 20:48:49 si 120 (diagnostic); 20:49:29 si 4, 20:49:31 si 40, 20:49:33 si 36 (repeats).
+
+Witness, run once: `scripts/check-build-split.sh`, wall 0.73 s, rc 0, `{"ok":true,"rc":0,"wallS":0.6,"cargoFinishedS":0.1,"outsideCargoS":0.5}`.
+
+No-change floor, warm root `bt-r43-off-1`, 0 crates, swap 0 in and 0 out on every run:
+
+| Run | wallS | cargoFinishedS | outsideCargoS | swapNoisy |
+| --- | --- | --- | --- | --- |
+| `r46-nochange-b` (counted in Round 46, before the field) | 0.7 | not recorded | not recorded | false |
+| `r47-nochange` (first counted run after the field) | 1.1 | 0.97 | 0.1 | false |
+| diagnostic (`CARGO_LOG=cargo=debug`, direct `build-timed`) | 0.6 | 0.48 | 0.1 | not measured |
+| `r47-nochange-rep1` | 0.4 | 0.30 | 0.1 | false |
+| `r47-nochange-rep2` | 0.4 | 0.31 | 0.1 | false |
+| `r47-nochange-rep3` | 0.4 | 0.31 | 0.1 | false |
+
+Median of the four quiet runs with the field: 0.4 s (`r47-nochange-rep1` to rep3 and the 1.1 s run give 0.4, 0.4, 0.4, 1.1; `r46-nochange-b` 0.7 has no cargo field). The reference split is 0.4 s (`split-nochange`). The 0.3 s gap of Round 46 is inside the spread of identical runs on this root: 0.4 to 1.1 s, with zero swap. It is cargo's clock running slow, not swap, and not the shim.
+
+Inside cargo (diagnostic run, timestamps from cargo's own start, Finished 0.48 s):
+- config and workspace load: 0.000 to 0.006 s.
+- dependency resolution (`resolve_with_previous` and `resolve`, 8466 and 7733 resolver calls): 0.006 to 0.354 s, about 0.35 s. This is about 73% of cargo's time.
+- `check_collisions`: 0.354 to 0.373 s, 517 lines.
+- unlogged stretch between `check_collisions` and execute: 0.373 to 0.458 s, about 0.085 s, not logged, so not assigned.
+- `compile:execute` (fingerprint decisions for 452 Fresh units, timing report, linking): 0.458 to 0.489 s, about 0.03 s.
+
+Cause of the floor residual: almost all of the floor is cargo's dependency resolution, which runs on every invocation even when nothing compiles. measure-build and the shim add about 0.1 s (`outsideCargoS`). The fingerprint check is about 0.03 s of the cargo clock.
+
+Held: the resolution cost is cargo's own work for this workspace. It is reachable only by changing the workspace or lockfile shape, which the owner decides, and it is out of this stretch's scope. Reopen with a quiet no-change median above 0.5 s over repeats, or a `cargoFinishedS` above 0.5 s on a quiet run with `outsideCargoS` above 0.2 s.
