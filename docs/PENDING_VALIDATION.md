@@ -3584,3 +3584,22 @@ Result: exit 143, wall 15.1 s, stopped by swap-in. Its cargo log `/tmp/measure-c
 Readings after the stop: si 272, so 0, load1 1.95. No measure, rustc or cc1plus processes remained.
 
 What the line says so far: at `jobs = 2` the first build seconds swapped at 20 MB/s out and 1.8 MB/s in, with load still at about 1.9. So the swap limit, not the load ceiling, is what tripped first. The swap came within the first 10 seconds of a clean build, which points at memory use by the cargo and rustc start-up rather than at the number of jobs. One stopped run does not separate the two. The next measurement needs to read the same readings, and the decision on `jobs` stays open until a line is read.
+
+## Round 63 Phase A: is the clean-build swap the build's own working set or a neighbour's? (answer from files)
+
+Answer: decided for `jobs = 12`, not decided for `jobs = 2`.
+
+Evidence, from the files:
+- Round 43 (ledger, the override section, the six clean builds): the tree-scoped peak RSS, taken by `scripts/lib/build-rss.sh` over the build's own process tree (not host-wide), was 6980.3 to 7153.2 MiB at `jobs = 12`, on a host with 15,220 MiB of RAM. The host swap during those builds was 1190 to 8699 MiB (vmstat deltas). The ledger records that a clean build at `jobs = 12` cannot stay under the swap threshold on this host.
+- Round 43's swap totals are host-wide, so they include neighbours. The ledger's held items list "gross per-process swap" as unavailable: `/proc/vmstat` has only host-wide pswpin and pswpout.
+- Round 62 (`jobs = 2`): the job recorded host swap, load and the gate only. `scripts/measure-clean-build.sh` logs no RSS. So no tree RSS exists for the 00:21:52 to 00:22:02 build, and the files cannot give its working set.
+- Host memory now (read-only check, Round 63): MemTotal 15,584,988 kB, MemAvailable 7,861,520 kB, SwapTotal 20,971,512 kB, SwapFree 15,383,396 kB, so 5,588,116 kB (about 5.3 GiB) is in swap. Round 62's check at 00:21:15 read used 7987 MB, free 1282 MB, available 7231 MB.
+- Neighbours: ten gm-core workers started with `--handshake`, RSS 982 MiB in total (one of them, pid 1002562, about 743 MiB). They are the only large resident neighbours in the files.
+
+Decision:
+- `jobs = 12`: the swap is the build's own working set. Round 43 puts the build's tree at about 7 GB, and MemAvailable at the time was 7.2 to 7.9 GB, so the build alone uses up what the host has free and swap follows. That is decided from the Round 43 records.
+- `jobs = 2`: not decided. The files record no tree RSS for that build, and the spike came in its first 10 seconds with 8 crates compiled. Its working set at start is not in the files. The swap could be the build's own start-up memory, or the neighbours' pages being reclaimed for it.
+
+What settles the `jobs = 2` question: the next Phase B build records tree RSS (`build_tree_sample` from `scripts/lib/build-rss.sh`) and the gm-core RSS total every 8 seconds, alongside the gate. If the build tree's RSS rises before the swap-out does, the swap is the build's own; if swap-out rises while the tree's RSS is flat, it is a neighbour's.
+
+Not changed: `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the `jobs` setting. No cargo ran, no browser ran, and nothing was pushed in this Phase A.
