@@ -2349,7 +2349,7 @@ Setup. Two clean builds at `--profile iterate --timings -v`, each in a new targe
 
 Configuration witness, from the verbose logs. ON: `bevy_pbr`, `bevy_render`, `basis_universal_sys` at `opt-level=1`, `basis_universal` at 3. OFF: all four at 3.
 
-Result: no quiet window. All eight attempts were `swapNoisy` true, and the host's 1-minute load was 4.2 at the first start and between 9.8 and 20.2 at every later start and end sample. The clean build itself puts about 7 to 8 GB resident across ~450 `rustc` processes at `jobs = 12` on a 15.2 GB host, and other sessions on the host add a `zig test` and a `gm-core` worker. The raw records, not compared:
+Result: no quiet window. All eight attempts were `swapNoisy` true, and the host's 1-minute load was 4.2 at the first start and between 9.8 and 20.2 at every later start and end sample. The host's matching `rustc`, `cargo` and linker processes summed to 7 to 8 GB resident during these builds (this sum is host-wide, see the correction below). This round's clean builds ran about 450 `rustc` processes at `jobs = 12` on a 15.2 GB host, and other sessions on the host added a `zig test` and a `gm-core` worker. The raw records, not compared:
 
 | Record | Wall | Swap in / out (MiB) | Peak in / out (KiB/s) | Peak RSS (MiB) |
 | --- | --- | --- | --- | --- |
@@ -2377,3 +2377,23 @@ Note on order: the bench gate (change 2, `841d52a`) was built while these arms w
 7. ZLIB-supercompressed KTX2 (rank 8): held, no sample file.
 8. SwiftShader BC7 reference, and the load gate for the browser device-fallback and texture checks: browser only, not reachable without a browser run.
 9. Held for the owner: user-wide `jobs = 4` in `/config/.cargo/config.toml`, the cargo shim, sccache or mold, the Playwriter 0.11 upgrade, and the one-off GPU panic (reopen on recurrence).
+
+## Round 42 Phase B results
+
+Phase B rule: `vmstat 1 2` read before each build and each bench, with swap-in and swap-out both below 1000 KiB/s. Recorded readings: witness A si 168, so 0 (18:45:17); release build si 276, so 0 (18:45:33); bench si 400, so 0 (19:00:10).
+
+Correction to earlier figures. `scripts/measure-build.sh` line 54 sums the RSS of every process whose name matches `rustc`, `cargo`, the linkers or `build-script-*` on the whole host, not the build's own process tree. Swap counters (`pswpin`, `pswpout`) are host-wide too. So `peakRssMiB`, `swapInMiB` and `swapOutMiB` in every record are host-wide figures. They measure what the host did during the build, which is what the swap gate needs, but they are not one build's own memory. The clean-build peak RSS figures in Rounds 39 to 42 should be read this way. A per-build sum needs the build's process tree (for example, the children of the cargo pid). That is ranked below.
+
+| Witness | Command | Wall | Result |
+| --- | --- | --- | --- |
+| A, sampler | `measure-build.sh r42-b-sampler build --profile iterate --timings -v` (no-change, `bt-r41-final`) | 5.7 s | `swapNoisy` false; 1.0 MiB in, 0 out; peak window 1013 KiB/s in, 0 out |
+| B, gate, positive | `node scripts/check-bench-load-gate.cjs` | 0.76 s | exit 0, `ok` true |
+| B, gate, negative | `LOAD_LIMIT=99 node scripts/check-bench-load-gate.cjs` | 0.66 s | exit 1, `ok` false |
+| C, release build | `measure-build.sh r42-b-release build --release --timings` (needed for the bench binary) | 862.7 s | `swapNoisy` true; 16954.7 MiB in, 19862.8 MiB out; peak window 365705 in, 512976 out KiB/s. Not a benchmark figure |
+| C, bench | `RUNS=5 scripts/bench-vs-jayzee.sh` | 21.0 s | all three sizes refused. Every one of the 15 runs was noisy: 1-minute load above 4 (load 9.8 to 20 in the arms, and 14 to 20 here). The medians printed are not a result |
+
+Result for the gate. Witness B shows the check fails when the limit is raised, and witness C shows the real run refusing every size on this host. A quiet speedup needs a host where the 1-minute load is 4 or less; the gate does not invent one. The bench result for this round is therefore "refused", not a number.
+
+Result for the sampler. Witness A is the first recorded no-change build whose peak window (1013 KiB/s in) is visible in the record. The earlier version had no per-window peak, which is why the Phase B clean build's 3384 KiB/s sample went unrecorded.
+
+Open: the override's total effect (item 1 of this round) is still unmeasured; see the Phase A section above.
