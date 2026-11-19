@@ -64,6 +64,8 @@ t=false; [ ! -e "$work/root2" ] && t=true; report "without --keep the target roo
 MEASURE_NO_GATE=1 CARGO_BIN="$work/fake-cargo" bash "$script" --jobs 7 --target-root "$work/root5" > "$out" 2> "$work/err"
 logpath=$(sed -n 's/^measure-clean-build: log //p' "$work/err")
 t=false; [ -f "$logpath" ] && case "$logpath" in "$work/logs/"*) t=true ;; esac; report "the run log is kept in CLEAN_BUILD_LOG_DIR and named on stderr" $t
+t=false; grep -Eq ' peak_tree_rss_mib=[0-9]+ mem_avail_before_mib=[0-9]+ cgroup_max_mib=(na|[0-9]+)$' "$out" && t=true; report "the result line ends with tree peak RSS, MemAvailable and the cgroup limit" $t
+t=false; echo "$(basename "$logpath")" | grep -Eq '^[0-9]{8}-[0-9]{6}-[0-9]+[.]log$' && t=true; report "the run log name carries a timestamp and the PID" $t
 
 MEASURE_NO_GATE=1 CARGO_BIN="$work/fake-cargo" bash "$script" --target-root "$work/root3" > "$out" 2>/dev/null
 t=false; grep -Eq "^CLEAN_BUILD jobs=$cfg rc=0 " "$out" && t=true; report "default jobs comes from the repo .cargo/config.toml ($cfg)" $t

@@ -3697,3 +3697,26 @@ Window: about ten minutes from 00:51:19, one reading about every 30 seconds (`vm
 No build ran in this window. Nothing was stopped. No peer process was stopped.
 
 Pushed with this entry: the local commits since 05250b4, namely 73e49b1 (the log location and its witness) and 44726e8 (the stale-root witness and the Round 63 correction).
+
+## Round 67 Phase A: the result line carries the tree peak RSS, MemAvailable and the cgroup limit
+
+Ranked remaining work at the start of this round, each marked reachable or blocked, is in the Round 67 REPORT. The item taken is the top reachable one: the result line lacked the figures the owner's stop-scope question needs (the build's tree peak RSS, MemAvailable before the build, and the cgroup's `memory.max`). It needs no cargo and no window.
+
+Change, `scripts/measure-clean-build.sh`:
+- It sources `scripts/lib/build-rss.sh`. The sampler records `build_tree_sample $$` (this script's own tree, which contains cargo and rustc) once per second, so `peak_tree_rss_mib` is the tree's peak at one-second resolution.
+- `mem_avail_before_mib` is MemAvailable from `/proc/meminfo` before the build starts.
+- `cgroup_max_mib` is `/sys/fs/cgroup/memory.max` in MiB, or `na` when it is not a number.
+- The result line ends with `peak_tree_rss_mib=… mem_avail_before_mib=… cgroup_max_mib=…`. The gate, the stop rule and the earlier fields are unchanged.
+
+Bug found and fixed in the same change: the Round 65 log name was `…-$.log`, not `…-$$.log`. The cause was `String.replace`, which reads `$$` in its replacement as one `$`. Names could collide within a second, and the witness did not catch it. The log name now carries the PID.
+
+Witness, `scripts/check-clean-build-measure.sh`: 15 checks, 15 of 15 ok, exit 0. Two new checks: the result line ends with the three fields in the expected form, and the run log name matches `YYYYMMDD-HHMMSS-<pid>.log`.
+
+Red checks, each one mutation, restored with `cmp`:
+- The result field name changed to `peak_tree_rss_mb`. The witness exited 1, with one FAIL: "the result line ends with tree peak RSS, MemAvailable and the cgroup limit".
+- The log name without the PID, `-$.log`. The witness exited 1, with one FAIL: "the run log name carries a timestamp and the PID".
+- After both restores, the scripts match their saved copies (`cmp`) and the witness exited 0 with 15 ok. `git status` shows only the two scripts as modified.
+
+Not changed: the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo was run. The witness still runs with a fake cargo.
+
+Local commit only; not pushed in Phase A.

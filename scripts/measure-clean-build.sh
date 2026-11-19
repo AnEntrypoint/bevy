@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -u
 repo=$(cd "$(dirname "$0")/.." && pwd)
+. "$repo/scripts/lib/build-rss.sh"
 cargo_bin=${CARGO_BIN:-}
 [ -n "$cargo_bin" ] || cargo_bin=/config/.local/bin/cargo
 jobs=""
@@ -76,9 +77,13 @@ else
 fi
 logdir=${CLEAN_BUILD_LOG_DIR:-$repo/target/witness/clean-build-logs}
 mkdir -p "$logdir" || exit 2
-log="$logdir/$(date +%Y%m%d-%H%M%S)-$.log"
+log="$logdir/$(date +%Y%m%d-%H%M%S)-$$.log"
 samples=$(mktemp /tmp/measure-clean-build.XXXXXX.load)
-(while :; do cut -d' ' -f1 /proc/loadavg >> "$samples"; sleep 1; done) > /dev/null 2>&1 &
+treesamples=$(mktemp /tmp/measure-clean-build.XXXXXX.tree)
+mem_avail=$(awk '/MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo)
+cgmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null)
+case "$cgmax" in ''|*[!0-9]*) cgmax_mib=na ;; *) cgmax_mib=$((cgmax / 1048576)) ;; esac
+(while :; do cut -d' ' -f1 /proc/loadavg >> "$samples"; build_tree_sample $$ | awk '{print $1 / 1024}' >> "$treesamples"; sleep 1; done) > /dev/null 2>&1 &
 sampler=$!
 start=$(date +%s.%N)
 (cd "$repo" && CARGO_TARGET_DIR="$root" "$cargo_bin" build --jobs "$jobs") > "$log" 2>&1
@@ -91,7 +96,9 @@ finished=$(grep -E '^ *Finished ' "$log" | tail -n 1 | sed -n 's/.* in \([0-9.]*
 [ -n "$finished" ] || finished=0
 peak=$(awk 'BEGIN { m = 0 } $1 + 0 > m { m = $1 + 0 } END { printf "%.2f", m }' "$samples")
 rm -f "$samples"
-printf 'CLEAN_BUILD jobs=%s rc=%s wall_s=%s cargo_finished_s=%s peak_load1=%s gate_si=%s gate_so=%s load1_before=%s target_root=%s\n' "$jobs" "$rc" "$wall" "$finished" "$peak" "$si" "$so" "$load_before" "$root"
+peak_tree=$(awk 'BEGIN { m = 0 } $1 + 0 > m { m = $1 + 0 } END { printf "%.0f", m }' "$treesamples")
+rm -f "$treesamples"
+printf 'CLEAN_BUILD jobs=%s rc=%s wall_s=%s cargo_finished_s=%s peak_load1=%s gate_si=%s gate_so=%s load1_before=%s target_root=%s peak_tree_rss_mib=%s mem_avail_before_mib=%s cgroup_max_mib=%s\n' "$jobs" "$rc" "$wall" "$finished" "$peak" "$si" "$so" "$load_before" "$root" "$peak_tree" "$mem_avail" "$cgmax_mib"
 echo "measure-clean-build: log $log" >&2
 if [ "$keep" -eq 0 ]; then
   rm -rf "$root"
