@@ -2742,3 +2742,38 @@ Witness: `scripts/check-swap-growth.sh` builds a fake proc tree with two samples
 Mutation, before its restore: the delta `d = after[p] - before[p]` replaced by `d = after[p]`, which reports the post-build VmSwap. Red: `{"ok":false,"growth":"300 200 beta;290 290 gamma;100 400 shrink;80 500 late"}`, exit 1. The shrink and gamma values show the regression. Restored from `/tmp/bt/swap-owners.good`; green again, exit 0.
 
 Not yet witnessed on a real build. The field is checked in Phase B by a one-file build through `measure-build.sh`.
+
+## Round 48 Phase B: the per-process swap delta, witnessed live
+
+Gate readings, `vmstat 1 2` (both directions below 1000 KiB/s, open): 21:01:34 si 228, so 0; 21:02:46 si 8, so 0 (witness); 21:02:48 si 48, so 0 (live build).
+
+Witness, run once: `scripts/check-swap-growth.sh`, wall 0.08 s, rc 0, `{"ok":true,"growth":"300 200 beta;240 290 gamma;80 500 late"}`.
+
+Live one-file build through `measure-build.sh` (`r48-onefile`, warm root `bt-r43-off-1`, `touch src/viewer.rs`), run once:
+- wall 8.3 s build (cargo's clock 8.1 s, outside cargo 0.2 s), 1 crate, rc 0.
+- `swapNoisy` true, rule "classified": 54.1 MiB in, 523.6 MiB out.
+- `swapOwnersGrowth`: `gm-core(2813) 45.4 MiB; claude(755372) 20.2 MiB; claude(2109) 18.9 MiB; claude(2510) 14.6 MiB; claude(2707) 8.9 MiB`.
+- `swapOwnersTop` (peak snapshot, for comparison): `gm-core(2813) 3275.6 MiB; selkies(471) 393.1 MiB; gm-core(2594) 248.9 MiB; playwriter-ws-s(3627) 208.2 MiB; hyperagent(1719) 51.4 MiB`.
+
+What the growth shows:
+- The build's own `rustc` does not appear in the growth list. The processes that gained swapped-out pages during the build were `gm-core` and `claude` sessions on this host.
+- The top five account for about 108 MiB of the 523.6 MiB swapped out. The remaining 416 MiB is not named. Either it sits in processes outside the top five, or in processes that exited between samples, which the delta cannot see. The field is top-five by design, so this is a gap in the record, not a finding about the build.
+- Reopen for the gap: widen the list to all processes with a positive delta and record the total, so the top-five share is a number rather than a guess.
+
+Longest step: the 8.3 s live one-file build. What was done: nothing to the build. It was classified swap-noisy by the rule from Round 44, and the growth field attributes the swap-out to other processes. No change to the build or the rule.
+
+### Round 48 ranked remaining work
+
+1. Per-process swap delta: done (`adf28bb`), witnessed live. Top five explain 108 of 523.6 MiB. Reachable next: record the full positive-delta total, so the share is a number.
+2. Clean-build swap at `jobs = 12`: held, owner decision. Measuring it again as-is would repeat the Round 43 records (six clean builds, 2857 to 8699 MiB swapped, 323 to 384 s wall). Reopen when the owner changes `jobs` and a clean build's total swap falls below 1 GB.
+3. 500-body bench size: held (Round 47 decision). Reopen with five quiet pairs above 1 and a quiet mean of 1.05 or more, at 1-minute load 4 or less.
+4. No-change floor residual: explained (Round 47). Cargo's dependency resolution is about 0.35 s of the 0.48 s cargo clock; quiet median 0.4 s. Held as cargo's own cost. Reopen with a quiet median above 0.5 s.
+5. Unlogged cargo stretch, about 0.085 s between `check_collisions` and execute: held. It is inside cargo, with no hook to time it without patching cargo. Reopen only if it grows above 0.2 s on repeated quiet runs.
+6. One-file variance: done (Round 46, quiet median 3.0 s from three runs). The live noisy one-file build here, 8.3 s, is a noisy record and is not a quiet figure. Reopen with a quiet build above 4 s or below 3.5 s.
+7. Override's total effect: held, reverted in Round 43. Reopen with a comparison method that does not depend on swap.
+8. Clean-build swap classification: held by decision (`swapNoisy` null for multi-crate builds). Reopen when a swap-to-wall relation is shown for multi-crate builds.
+9. Release build (862.7 s, 16.9 GB swapped in): held, same memory cause. Reopen with the owner's `jobs` decision.
+10. ZLIB-supercompressed KTX2 (rank 8): held, no sample file. Reopen when a sample exists.
+11. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run. Reopen when a browser window is scheduled.
+12. One-off GPU panic: held, no recurrence. Reopen on recurrence, with the adapter log.
+13. Owner-held: user-wide `jobs = 4`, the cargo shim (5 s retry), sccache or mold, and the Playwriter 0.11 upgrade.
