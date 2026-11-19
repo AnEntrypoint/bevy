@@ -3217,3 +3217,21 @@ Stated for the owner, not acted on: the Round 52 reopen criterion (15 quiet pair
 12. SwiftShader BC7 and the browser load gate: reachable with browser time only, not run.
 13. One-off GPU panic: held, no recurrence.
 14. Owner-held: user-wide `jobs = 4`, the cargo shim, sccache or mold, and the Playwriter 0.11 upgrade.
+
+## Round 54 Phase A: the 500-body size recorded as a speedup under the Round 52 criterion
+
+Decision, by the dispatcher, under the Round 52 criterion. It replaces the rule I applied in Round 53, which the dispatcher withdrew as my own wording. The criterion is: at least 15 quiet pairs at 500 bodies, the t-interval lower bound on the mean ratio above 1.0, and 1-minute load at 4 or less.
+
+Pooled quiet pairs, 18 in all (Round 46: 3; Round 52: 6; Round 53: 9). The ratio is jayzee mean over bevy mean for the same run pair:
+- n 18, mean 1.0307, sd 0.0318.
+- t 2.110 (17 degrees of freedom); 95% interval [1.0148, 1.0465].
+- 14 of 18 above 1; one-sided sign test p 0.0154.
+- Load1 at each pair's start: 2.45 (Round 46), 3.01 to 3.17 (Round 52), 3.92 (Round 53). The highest is 3.92, which is within 4.
+
+Criterion met. The 500-body size is recorded as a speedup of about 3% (jayzee over bevy at 500 bodies), with its interval above 1. The Round 52 and 53 entries that held the size at parity are superseded by this line.
+
+Data: `scripts/data/bench-500-quiet.json` lists the 18 quiet pairs with their round, run, ratio and load1.
+
+Witness: `scripts/check-bench-criterion.cjs` reads the data, applies the criterion, and exits 0 when it is met. Green: `{"n":18,"mean":1.0307,"sd":0.0318,"t":2.11,"lower":1.0148,"upper":1.0465,"above1":14,"maxLoad":3.92,"criterionMet":true}`, exit 0.
+
+Mutation, before its restore: the minimum count `MIN_N` changed from 15 to 20. Red: `"criterionMet":false`, exit 1. Restored from a copy, checked with `cmp` (identical), green again, exit 0. `git status` after the restore shows only the new files.

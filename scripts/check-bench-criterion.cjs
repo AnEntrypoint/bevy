@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const MIN_N = 15;
+const MAX_LOAD = 4;
+const T975 = { 14: 2.145, 15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086, 21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045 };
+const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'bench-500-quiet.json'), 'utf8'));
+const pairs = data.pairs;
+const n = pairs.length;
+const ratios = pairs.map((p) => p.ratio);
+const mean = ratios.reduce((s, r) => s + r, 0) / n;
+const sd = Math.sqrt(ratios.reduce((s, r) => s + (r - mean) ** 2, 0) / (n - 1));
+const t = T975[n - 1] ?? 2.042;
+const lower = mean - t * sd / Math.sqrt(n);
+const upper = mean + t * sd / Math.sqrt(n);
+const above1 = ratios.filter((r) => r > 1).length;
+const maxLoad = Math.max(...pairs.map((p) => p.load1));
+const criterionMet = n >= MIN_N && maxLoad <= MAX_LOAD && lower > 1.0;
+console.log(JSON.stringify({ n, mean: +mean.toFixed(4), sd: +sd.toFixed(4), t, lower: +lower.toFixed(4), upper: +upper.toFixed(4), above1, maxLoad, criterionMet }));
+process.exit(criterionMet ? 0 : 1);
