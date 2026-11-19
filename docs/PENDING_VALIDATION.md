@@ -2095,3 +2095,14 @@ Not in the ranked list: a real non-BC device (no such device on this host: lines
 
 - `scripts/lib/playwriter-witness.cjs`: `gateCli` runs `playwriter-project` with a PATH that starts with the gm playwriter bin (`PLAYWRITER_BIN`, default `/config/.gmnew/pw/bin`) when that directory holds the binary. The witnesses no longer need the caller to set PATH.
 - Phase B will record the witness output with and without the caller's PATH, and the wall time.
+
+## Round 38 Phase B results
+
+Rank 1 (the gate's PATH) is closed. No Rust changed in Round 38, so no cargo build was run; the Phase A change is in `scripts/lib/playwriter-witness.cjs`, and its witness is the browser run below.
+
+- Before: the Round 37 BC7 run with the caller's PATH lacking `/config/.gmnew/pw/bin` failed with `spawnSync playwriter-project ENOENT` (recorded in the Round 37 Phase B section above). A probe in this round confirmed the lookup: a bare PATH gives `ENOENT`.
+- After: `PATH=/data/cache/node/current/bin:/usr/bin:/bin NEON_TEXTURE=bc7 node scripts/check-neon-wasm-models.cjs`, run through the gate, rc 0, `wallMs` 165,778, `total` 64, `rows` 64, `clean` 64, `notClean` 0, `missingNames` 0, `glbEncodedBytesTotal` 101,358,620, wasm `encodedBodySize` 31,140,873, `loadMsMedian` 853 ms, `loadMsMax` 2868 ms. The median is lower than the 1232 ms of Round 37; the two sessions differ in host load, so the times are not compared across sessions.
+- A first attempt used `env -i`, which removed the environment the browser's sandbox check reads: `browser refused to start: no usable sandbox`. That was the probe's error, not the change, and the witness was rerun with only PATH overridden.
+- Observed, not changed: the gate prints `Playwriter 0.9.0 is outdated (extension requires 0.11.0)`. The witness still passes. Upgrading the playwriter package is outside this round.
+
+Ranks 2 to 5 are open and unchanged from the Phase A table.
