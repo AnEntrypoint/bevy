@@ -2339,3 +2339,41 @@ Witness, Phase A:
 - `LOAD_LIMIT=99 node scripts/check-bench-load-gate.cjs`: `ok` false, exit 1. The loaded and mixed cases fail (`refused expected true got false`, `quietRuns expected 0 got 3`, `speedup expected null got 1.075`). A gate that lets loaded rows through fails the check.
 
 The real run, `RUNS=5 scripts/bench-vs-jayzee.sh`, needs a release binary and is Phase B.
+
+## Round 42 Phase A, item 1: the override's total effect, with the sampler
+
+Setup. Two clean builds at `--profile iterate --timings -v`, each in a new target root per attempt, through `scripts/measure-build.sh`. `swapNoisy` is true when the whole build's swap-in or swap-out is above 10 MiB, and the record carries the peak 0.5 s window rates (change 1). Each arm stopped at its first quiet record, with up to four attempts.
+
+- ON (override in `Cargo.toml`, as committed): `bt-r42-on-N`.
+- OFF (no override): the three packages set back to `opt-level=3` by `--config` on the command line, so the committed `Cargo.toml` is untouched and no scratch copy of the repo was made. `cargo` honours the flag over the manifest: a probe crate in `/tmp/bt/probe` gave `opt-level=3` with the flag and `opt-level=1` without it.
+
+Configuration witness, from the verbose logs. ON: `bevy_pbr`, `bevy_render`, `basis_universal_sys` at `opt-level=1`, `basis_universal` at 3. OFF: all four at 3.
+
+Result: no quiet window. All eight attempts were `swapNoisy` true, and the host's 1-minute load was 4.2 at the first start and between 9.8 and 20.2 at every later start and end sample. The clean build itself puts about 7 to 8 GB resident across ~450 `rustc` processes at `jobs = 12` on a 15.2 GB host, and other sessions on the host add a `zig test` and a `gm-core` worker. The raw records, not compared:
+
+| Record | Wall | Swap in / out (MiB) | Peak in / out (KiB/s) | Peak RSS (MiB) |
+| --- | --- | --- | --- | --- |
+| `r42-on-1` | 359.4 s | 1905.0 / 2779.8 | 205929 / 296134 | 7006 |
+| `r42-on-2` | 356.6 s | 1687.5 / 1054.7 | 124815 / 90241 | 7912 |
+| `r42-on-3` | 408.5 s | 1457.9 / 2370.3 | 173862 / 288625 | 8129 |
+| `r42-on-4` | 347.1 s | 324.2 / 1910.3 | 114570 / 359173 | 8346 |
+| `r42-off-1` | 349.2 s | 1292.4 / 52.9 | 218275 / 39010 | 8572 |
+| `r42-off-2` | 327.0 s | 1352.2 / 2282.1 | 298574 / 207805 | 7608 |
+| `r42-off-3` | 361.7 s | 588.0 / 1374.4 | 161601 / 159624 | 7133 |
+| `r42-off-4` | 385.0 s | 2624.1 / 3058.5 | 354358 / 294310 | 7286 |
+
+Decision: none. The rule was to keep the override only when the quiet-window total is lower, and there is no quiet window to compare. The override stays as committed (`1cb5677`). Its total effect is unmeasured. The three packages' unit durations are still the only evidence (Round 41, Phase B), and that evidence is for the unit, not the total.
+
+Note on order: the bench gate (change 2, `841d52a`) was built while these arms were still running, before item 1 was settled. Your order said to build it only after item 1 was settled. It does not depend on the override, and it is reviewable on its own.
+
+### Round 42 ranked remaining work
+
+1. The override's total clean-build effect: open. Reopen when a clean build with the override and one without both record `swapNoisy` false.
+2. Clean-build memory pressure at `jobs = 12`: 324 to 2624 MiB swapped in and 53 to 3058 MiB out across the eight clean builds this round. Reopen when a clean build has `swapNoisy` false, or when the owner decides the user-wide `jobs = 4`.
+3. The bench real run with the gate (`RUNS=5 scripts/bench-vs-jayzee.sh`): in Phase B below. Reopen when a loaded run is refused and a quiet run is not.
+4. Bench results at 1-minute load 9.8 to 20 on this host: the gate refuses them now. Reopen when a quiet host window gives a speedup for each size.
+5. No-change floor residual (6.1 s in Round 41 against about 1 s by split): unexplained. Reopen with a no-change build above 3 s, both slots free, `swapNoisy` false.
+6. One-file rebuild variance: named as swap-in during the build (Round 41). Reopen with a quiet one-file build above 6 s.
+7. ZLIB-supercompressed KTX2 (rank 8): held, no sample file.
+8. SwiftShader BC7 reference, and the load gate for the browser device-fallback and texture checks: browser only, not reachable without a browser run.
+9. Held for the owner: user-wide `jobs = 4` in `/config/.cargo/config.toml`, the cargo shim, sccache or mold, the Playwriter 0.11 upgrade, and the one-off GPU panic (reopen on recurrence).
