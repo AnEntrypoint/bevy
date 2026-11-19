@@ -44,15 +44,6 @@ codegen-units = 16
 incremental = true
 strip = "none"
 
-[profile.iterate.package.bevy_pbr]
-opt-level = 1
-
-[profile.iterate.package.bevy_render]
-opt-level = 1
-
-[profile.iterate.package.basis-universal-sys]
-opt-level = 1
-
 [profile.dev]
 opt-level = 1
 debug = "line-tables-only"

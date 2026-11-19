@@ -2421,3 +2421,24 @@ Every peak RSS figure recorded before this change is host-wide. The ledger entri
 - Metric: the build's `wallS` from the quiet records.
 - Keep the override only if both arms have at least one quiet record and the quiet ON wall is lower than the quiet OFF wall. Otherwise revert the override in `Cargo.toml`, and record the numbers.
 - A revert is a local commit. It does not touch the user-wide config or the cargo shim.
+
+## Round 43 Phase B: the override's total effect, and the decision
+
+Arms, as the rule above says: ON is the committed `Cargo.toml` with the override, OFF is the same command with `--config` setting `opt-level=3` for the three packages. Up to three attempts per arm, alternating. Each build passed the gate at its start (both directions at or below 1000 KiB/s; the start readings were swap-in 168 to 528 and swap-out 0), and the sampler ran across the whole build. Logs confirm the arms: ON shows `opt-level=1` for `bevy_pbr` and `basis_universal_sys` in all three attempts, OFF shows `opt-level=3` in all three.
+
+| Record | Arm | Wall (s) | Swap in / out (MiB) | Peak window in / out (KiB/s) | Tree peak RSS (MiB) | `swapNoisy` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `r43-on-1` | ON | 323.1 | 2021.0 / 4369.1 | 228785 / 224201 | 7153.2 | true |
+| `r43-off-1` | OFF | 351.1 | 3023.8 / 3825.3 | 342923 / 249655 | 7140.6 | true |
+| `r43-on-2` | ON | 371.3 | 1190.9 / 1666.4 | 103593 / 193249 | 7120.0 | true |
+| `r43-off-2` | OFF | 384.1 | 2656.8 / 3785.5 | 206538 / 167180 | 7002.5 | true |
+| `r43-on-3` | ON | 362.5 | 2410.0 / 6288.8 | 156456 / 616403 | 6980.3 | true |
+| `r43-off-3` | OFF | 349.1 | 3012.3 / 3019.0 | 177788 / 294890 | 7045.1 | true |
+
+Result: no quiet record for either arm. Six of six were `swapNoisy`, so none is compared. The wall times above are recorded, not compared.
+
+The premise of the rule does not hold on this host. Every clean build with these records swapped more than 10 MiB: `final-clean` and `r41-clean` from Round 41, and all six records here. The clean build's own tree reaches about 7 GB resident (the tree-scoped peak above), on a host with 15.2 GB of RAM. So `swapNoisy` false is not reachable for a clean build at `jobs = 12` in this environment, whichever arm it runs. The rule is therefore decided by its absence branch, not by a measured total.
+
+Decision (the rule's "otherwise" branch): revert the override in `Cargo.toml`. `Cargo.toml` now equals its content at `d49a2e5`, the commit before `1cb5677`. The diff against `0e2cd03` removes exactly the three `[profile.iterate.package.*]` blocks. The Round 41 unit durations for those three packages (`bevy_pbr` 181.3 to 149.1 s, `bevy_render` 148.9 to 125.1 s, `basis-universal-sys` 160.2 to 138.9 s) are unit evidence from one noisy build; they are not a total. Restoring the override is a single revert of this commit, if the owner decides the unit evidence is enough, or if a clean build can be made quiet.
+
+Open: the total effect is still unmeasured. A rule that a clean build can satisfy would need the threshold or the gate to allow clean builds (for example, a jobs setting that keeps the tree under RAM), which is an owner decision.
