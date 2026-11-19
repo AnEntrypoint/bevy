@@ -3686,3 +3686,14 @@ Witness: `scripts/check-build-roots.sh`. It lists any `/tmp/bevy-clean.*` root a
 Not changed: the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, the cargo shim, and the stop rule. The Round 63 entry is not rewritten; this entry corrects it.
 
 Local commit only; not pushed in Phase A.
+
+## Round 66 Phase B: file-based witness for 73e49b1, after a clear window
+
+Window: about ten minutes from 00:51:19, one reading about every 30 seconds (`vmstat 1 2`, second sample is the gate reading; the heavy-job check reads full arguments of each high-CPU PID, gm-core `--handshake` workers exempt).
+- 00:51:19 si 888, so 14552, load1 1.55. Closed (swap-out above 1000 KB/s). Heavy clear.
+- 00:51:47 si 280, so 0, load1 1.77. Open. Heavy clear. The witness started on this sample.
+- Witness `scripts/check-clean-build-measure.sh`, once: rc 0, wall 0.44 s, 13 of 13 ok. The new check (the run log is kept in `CLEAN_BUILD_LOG_DIR` and named on stderr) passed.
+
+No build ran in this window. Nothing was stopped. No peer process was stopped.
+
+Pushed with this entry: the local commits since 05250b4, namely 73e49b1 (the log location and its witness) and 44726e8 (the stale-root witness and the Round 63 correction).
