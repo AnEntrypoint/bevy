@@ -3496,3 +3496,21 @@ The stale sets, one by one:
 - `neon-shots-rgba8-control` (11-17 04:29). Config not recorded verbatim. The ledger describes it as "RGBA8 against a second RGBA8 render (before the fix)", which is the render before `still=1`. The current script always passes `still=1`, so the pre-fix render can't be reproduced without a new mode, and that would be a guess. It is superseded: the current build's hardware RGBA8 against its repeat is 64 of 64 identical with `still=1` (the `rgba8` record). Not regenerated. It stays in `stale-before-r58`. Dependent record withdrawn: `texture-visual-control.json` (in `stale-before-r58`).
 
 Nothing in this commit changes code. No red check is needed for a ledger-only commit; the checks it relies on are `check-texture-provenance.cjs` and `check-cross-adapter.cjs`, which are unchanged.
+
+## Round 59 Phase B: the file-based witnesses rerun, no regeneration needed
+
+Readings (`vmstat 1 2`, the second sample is the gate reading), one bounded window, one reading every 30 seconds:
+- 23:52:21 first reading, second sample: si 52, so 0, load1 3.25. Open.
+- 23:52:42 post-run: si 724, so 0, load1 4.57.
+
+No browser run was needed: the one set that had a recorded config was already regenerated from the current build (Round 57), and the other two have no recorded config and stay aside. Witnesses, each once with wall time:
+- `node scripts/check-texture-provenance.cjs`: wall 0.06 s, rc 0, every record and the texel record current.
+- `node scripts/check-cross-adapter.cjs`: wall 19.1 s, rc 0, ok true.
+- `node scripts/check-neon-bc7-software-mode.cjs`: wall 0.03 s, rc 0, ok true.
+- `node scripts/texture-footprint.cjs` (rerun, not a witness): wall 1.28 s, rc 0.
+
+Footprint decisions, before (`texture-footprint-before-r59.json`) and after: unchanged. Decision `bc7`. BC7 usable, load ok, visual ok, clean ok. ETC2 usable, load ok, visual ok, fallback true. ASTC not usable, load not ok, visual ok, clean ok, fallback false. The ASTC exclusion comes from the reference swap, as recorded in the Round 59 Phase A line: the load ratio is 1267 ms against 1048 ms, which is 1.21, above the 1.1 tolerance.
+
+Correction to the Phase A line. It said the `rgba8-software` config was logged in the Round 17 and Round 26 ledger lines. The verified record is the `rgba8-software` mode in `scripts/check-neon-wasm-models.cjs` and the Round 26 witness line that lists `rgba8-software` at 64 of 64 clean. Nothing in Round 17 records that mode.
+
+Processes and tabs: none started in this phase. The job (pid 1285583) had exited, no workspace Chromium is running, and no wasm server is running.
