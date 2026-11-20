@@ -404,7 +404,7 @@ pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut ca
 pub const CENSUS_ENV: &str = "BEVY_JAYZEE_CENSUS";
 pub const CENSUS_OUT_ENV: &str = "BEVY_JAYZEE_CENSUS_OUT";
 const CENSUS_FREEZE_S: f64 = 10.0;
-const CENSUS_CAPTURE_FRAME: u32 = 660;
+const CENSUS_CAPTURE_FRAME: u32 = 1500;
 
 #[derive(Resource)]
 pub struct CensusMode {
