@@ -1,0 +1,436 @@
+{
+ "spoint": "5f43c86c",
+ "relief": [
+  {
+   "reliefScale": 0.001,
+   "value": 0.001
+  },
+  {
+   "reliefScale": null,
+   "value": 0.01
+  },
+  {
+   "reliefScale": "absent",
+   "value": 0.01
+  },
+  {
+   "reliefScale": 0,
+   "value": 0
+  },
+  {
+   "reliefScale": 0.25,
+   "value": 0.25
+  }
+ ],
+ "reanchor": {
+  "before": {
+   "chartEpoch": 0,
+   "anchorHeight": 61.4,
+   "anchorSurfaceWorld": [
+    3852.8399999999997,
+    0,
+    5137.12
+   ],
+   "localToDir": [
+    [
+     0.6124859012262875,
+     -0.007861635220125786,
+     0.7904424175679642
+    ],
+    [
+     0.6123369339019488,
+     -0.007767145976269316,
+     0.790558758615034
+    ]
+   ],
+   "localToWorld": [
+    [
+     3852.8399999999997,
+     0,
+     5137.12
+    ],
+    [
+     3935.8399999999997,
+     50,
+     5081.12
+    ]
+   ],
+   "groundHeightLocal": [
+    5,
+    4.302085549630974
+   ]
+  },
+  "returned": [
+   0,
+   1,
+   0
+  ],
+  "after": {
+   "chartEpoch": 1,
+   "anchorHeight": 25,
+   "anchorSurfaceWorld": [
+    0,
+    6385,
+    0
+   ],
+   "localToDir": [
+    [
+     -0.007861635220125786,
+     0.999845474790144,
+     0.015723270440251572
+    ],
+    [
+     -0.007811308179883533,
+     0.9998474470250922,
+     0.015622616359767066
+    ]
+   ],
+   "localToWorld": [
+    [
+     0,
+     6385,
+     0
+    ],
+    [
+     50,
+     6390,
+     100
+    ]
+   ],
+   "groundHeightLocal": [
+    5,
+    3.8300147084991387
+   ]
+  },
+  "returnedAgain": [
+   0.6,
+   0,
+   0.8
+  ],
+  "back": {
+   "chartEpoch": 2,
+   "anchorHeight": 61.4,
+   "anchorSurfaceWorld": [
+    3852.8399999999997,
+    0,
+    5137.12
+   ],
+   "localToDir": [
+    [
+     0.6124859012262875,
+     -0.007861635220125786,
+     0.7904424175679642
+    ],
+    [
+     0.6123369339019488,
+     -0.007767145976269316,
+     0.790558758615034
+    ]
+   ],
+   "localToWorld": [
+    [
+     3852.8399999999997,
+     0,
+     5137.12
+    ],
+    [
+     3935.8399999999997,
+     50,
+     5081.12
+    ]
+   ],
+   "groundHeightLocal": [
+    5,
+    4.302085549630974
+   ]
+  }
+ },
+ "memo": [
+  {
+   "x": 0,
+   "z": 0,
+   "value": 5,
+   "error": null,
+   "stats": {
+    "hits": 0,
+    "misses": 1,
+    "evictions": 0,
+    "epochStale": 0,
+    "cellCollisions": 0
+   }
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "value": 5,
+   "error": null,
+   "stats": {
+    "hits": 1,
+    "misses": 1,
+    "evictions": 0,
+    "epochStale": 0,
+    "cellCollisions": 0
+   }
+  },
+  {
+   "x": 0.1,
+   "z": 0,
+   "value": 5.000162740819839,
+   "error": null,
+   "stats": {
+    "hits": 1,
+    "misses": 2,
+    "evictions": 1,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 1024,
+   "z": 0,
+   "value": -75.73980068621005,
+   "error": null,
+   "stats": {
+    "hits": 1,
+    "misses": 3,
+    "evictions": 2,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "value": 5,
+   "error": null,
+   "stats": {
+    "hits": 1,
+    "misses": 4,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 100,
+   "z": 50,
+   "value": 4.302085549630974,
+   "error": null,
+   "stats": {
+    "hits": 1,
+    "misses": 5,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 100,
+   "z": 50,
+   "value": 4.302085549630974,
+   "error": null,
+   "stats": {
+    "hits": 2,
+    "misses": 5,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 7000,
+   "z": 0,
+   "value": null,
+   "error": "ChartRangeError",
+   "stats": {
+    "hits": 2,
+    "misses": 6,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 7000,
+   "z": 0,
+   "value": null,
+   "error": "ChartRangeError",
+   "stats": {
+    "hits": 3,
+    "misses": 6,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": null,
+   "z": 0,
+   "value": null,
+   "error": "SurfaceSolveArgumentError",
+   "stats": {
+    "hits": 3,
+    "misses": 6,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "reanchor": [
+    0,
+    1,
+    0
+   ],
+   "chartEpoch": 1,
+   "stats": {
+    "hits": 3,
+    "misses": 6,
+    "evictions": 3,
+    "epochStale": 0,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "value": 5,
+   "error": null,
+   "stats": {
+    "hits": 3,
+    "misses": 7,
+    "evictions": 4,
+    "epochStale": 1,
+    "cellCollisions": 1
+   }
+  },
+  {
+   "x": 100,
+   "z": 50,
+   "value": 3.8300147084991387,
+   "error": null,
+   "stats": {
+    "hits": 3,
+    "misses": 8,
+    "evictions": 5,
+    "epochStale": 2,
+    "cellCollisions": 1
+   }
+  }
+ ],
+ "sources": {
+  "initial": {
+   "names": [
+    "cpu-solve"
+   ],
+   "source": "cpu-solve",
+   "cpu": 4.302085549630974
+  },
+  "gpu": {
+   "names": [
+    "cpu-solve",
+    "gpu"
+   ],
+   "source": "gpu",
+   "values": [
+    1.5,
+    -0.5
+   ]
+  },
+  "gpuThrows": {
+   "names": [
+    "cpu-solve",
+    "gpu"
+   ],
+   "source": "gpu",
+   "value": null,
+   "error": "SurfaceSolveError"
+  },
+  "emptyName": {
+   "names": [
+    "cpu-solve",
+    "gpu"
+   ],
+   "source": "gpu",
+   "value": null,
+   "error": "TypeError"
+  },
+  "nullishSource": {
+   "names": [
+    "cpu-solve",
+    "gpu"
+   ],
+   "source": "gpu",
+   "value": null,
+   "error": "TypeError"
+  },
+  "groundSourceOfGpu": {
+   "value": "function",
+   "error": null
+  },
+  "groundSourceOfMissing": {
+   "value": null,
+   "error": "Error"
+  },
+  "anonymousA": {
+   "names": [
+    "cpu-solve",
+    "gpu",
+    "substituted"
+   ],
+   "source": "substituted",
+   "values": [
+    1.1
+   ]
+  },
+  "anonymousB": {
+   "names": [
+    "cpu-solve",
+    "gpu",
+    "substituted",
+    "substituted#2"
+   ],
+   "source": "substituted#2"
+  },
+  "cpuSetter": {
+   "names": [
+    "cpu-solve",
+    "gpu",
+    "substituted",
+    "substituted#2"
+   ],
+   "source": "cpu-solve",
+   "values": [
+    4.302085549630974
+   ]
+  }
+ },
+ "cpuWarning": {
+  "divergentGpu": {
+   "messages": 1,
+   "text": "[terrain] elevationAtDir is reading the CPU height sampler while this frame takes its ground from another source: at terrain hashVersion 2 the CPU sampler and any GPU terrain disagree by a measured 1.4 m mean / 4.1 m max over 256 m, so this elevation describes ground nobody walks on -- read the frame ground height and convert it with elevationAtLocal, or seed a solve with cpuElevationAtDir",
+   "values": [
+    56.04268904316414,
+    56.04268904316414
+   ]
+  },
+  "plainGpu": {
+   "messages": 0,
+   "text": null,
+   "values": [
+    56.04268904316414,
+    56.04268904316414
+   ]
+  },
+  "divergentCpu": {
+   "messages": 0,
+   "text": null,
+   "values": [
+    56.04268904316414,
+    56.04268904316414
+   ]
+  }
+ },
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

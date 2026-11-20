@@ -169,12 +169,13 @@ pub fn raycast_ground_local(ground: impl Fn(f64, f64) -> Option<f64>, origin: V3
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SurfaceSolve {
     Tolerance,
     ChartRange,
     NoGround,
     NoConvergence { residual: f64 },
+    Argument,
 }
 
 const SURFACE_SOLVE_MAX_EVALS: usize = 64;
@@ -254,20 +255,89 @@ fn render_y_on_sphere(r2: f64, elevation: f64, anchor_height: f64, radius: f64) 
     (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation)
 }
 
+const GROUND_MEMO_SLOTS: usize = 4096;
+const GROUND_MEMO_CELLS_PER_M: f64 = 4.0;
+const GROUND_MEMO_HASH_X: i32 = 73_856_093;
+const GROUND_MEMO_HASH_Z: i32 = 19_349_663;
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MemoStats {
+    pub hits: u64,
+    pub misses: u64,
+    pub evictions: u64,
+    pub epoch_stale: u64,
+    pub cell_collisions: u64,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Clone)]
+struct GroundMemoSlot {
+    x: f64,
+    z: f64,
+    height: f64,
+    epoch: i64,
+    failure: Option<SurfaceSolve>,
+}
+
+impl GroundMemoSlot {
+    fn empty() -> Self {
+        Self { x: f64::NAN, z: 0.0, height: 0.0, epoch: -1, failure: None }
+    }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub type GroundFn = Box<dyn Fn(f64, f64, Option<f64>) -> Result<f64, SurfaceSolve>>;
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, PartialEq)]
+pub enum GroundSourceError {
+    EmptyName,
+    NotFinite,
+    Probe(SurfaceSolve),
+}
+
+const CPU_SOLVE_SOURCE: &str = "cpu-solve";
+
 #[cfg_attr(not(test), allow(dead_code))]
 pub struct ChartFrame {
     basis: Basis,
     radius: f64,
     anchor_height: f64,
     offset_y: f64,
+    relief_scale: f64,
+    chart_epoch: u32,
+    memo: Vec<GroundMemoSlot>,
+    memo_stats: MemoStats,
+    ground_sources: Vec<(String, GroundFn)>,
+    active_source: String,
+    anonymous_installs: u32,
+    cpu_height_divergent: bool,
+    divergence_reported: bool,
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
 impl ChartFrame {
-    pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, height: impl Fn(V3) -> f64) -> Self {
+    pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, relief_scale: Option<f64>, height: impl Fn(V3) -> f64) -> Self {
         let basis = anchor_basis(anchor_dir);
         let anchor_height = height(basis.up);
-        Self { basis, radius, anchor_height, offset_y }
+        let relief_scale = relief_scale.unwrap_or(0.01);
+        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], memo_stats: MemoStats::default(), ground_sources: Vec::new(), active_source: CPU_SOLVE_SOURCE.to_string(), anonymous_installs: 0, cpu_height_divergent: false, divergence_reported: false }
+    }
+
+    pub fn chart_epoch(&self) -> u32 {
+        self.chart_epoch
+    }
+
+    pub fn reanchor(&mut self, dir: V3, height: impl Fn(V3) -> f64) -> V3 {
+        self.basis = anchor_basis(dir);
+        self.anchor_height = height(self.basis.up);
+        self.chart_epoch += 1;
+        self.basis.up
+    }
+
+    pub fn relief_scale(&self) -> f64 {
+        self.relief_scale
     }
 
     pub fn anchor_surface_world(&self) -> V3 {
@@ -287,14 +357,123 @@ impl ChartFrame {
         tangent_local_to_dir(&self.basis, self.radius + self.anchor_height + render_y, x, z)
     }
 
-    pub fn ground_height_local(&self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
-        solve_surface_y(&self.basis, self.radius, self.anchor_height, x, z, height, SURFACE_SOLVE_TOLERANCE_M, None).map(|y| y + self.offset_y)
+    pub fn register_ground_source(&mut self, name: &str, source: GroundFn) -> Result<(), GroundSourceError> {
+        if name.is_empty() {
+            return Err(GroundSourceError::EmptyName);
+        }
+        match source(0.0, 0.0, None) {
+            Ok(y) if !y.is_finite() => return Err(GroundSourceError::NotFinite),
+            Err(err @ SurfaceSolve::Tolerance) => return Err(GroundSourceError::Probe(err)),
+            _ => {}
+        }
+        match self.ground_sources.iter_mut().find(|(installed, _)| installed == name) {
+            Some(entry) => entry.1 = source,
+            None => self.ground_sources.push((name.to_string(), source)),
+        }
+        self.active_source = name.to_string();
+        Ok(())
+    }
+
+    pub fn install_anonymous_ground_source(&mut self, source: GroundFn) -> Result<String, GroundSourceError> {
+        self.anonymous_installs += 1;
+        let name = if self.anonymous_installs == 1 { "substituted".to_string() } else { format!("substituted#{}", self.anonymous_installs) };
+        self.register_ground_source(&name, source)?;
+        Ok(name)
+    }
+
+    pub fn use_cpu_solve(&mut self) {
+        self.active_source = CPU_SOLVE_SOURCE.to_string();
+    }
+
+    pub fn ground_source(&self) -> &str {
+        &self.active_source
+    }
+
+    pub fn ground_sources(&self) -> Vec<String> {
+        std::iter::once(CPU_SOLVE_SOURCE.to_string()).chain(self.ground_sources.iter().map(|(name, _)| name.clone())).collect()
+    }
+
+    pub fn has_ground_source(&self, name: &str) -> bool {
+        name == CPU_SOLVE_SOURCE || self.ground_sources.iter().any(|(installed, _)| installed == name)
+    }
+
+    pub fn set_cpu_height_divergent(&mut self, divergent: bool) {
+        self.cpu_height_divergent = divergent;
+    }
+
+    pub fn ground_height_active(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
+        if self.active_source == CPU_SOLVE_SOURCE {
+            return self.ground_height_local(x, z, height);
+        }
+        let (_, source) = self.ground_sources.iter().find(|(name, _)| *name == self.active_source).expect("the active ground source is installed");
+        source(x, z, None)
+    }
+
+    pub fn elevation_at_dir(&mut self, d: V3, height: impl Fn(V3) -> f64, hash_version: u32) -> (f64, Option<String>) {
+        let warning = if self.cpu_height_divergent && self.active_source != CPU_SOLVE_SOURCE && !self.divergence_reported {
+            self.divergence_reported = true;
+            Some(format!("[terrain] elevationAtDir is reading the CPU height sampler while this frame takes its ground from another source: at terrain hashVersion {hash_version} the CPU sampler and any GPU terrain disagree by a measured 1.4 m mean / 4.1 m max over 256 m, so this elevation describes ground nobody walks on -- read the frame ground height and convert it with elevationAtLocal, or seed a solve with cpuElevationAtDir"))
+        } else {
+            None
+        };
+        (height(normalise(d)), warning)
+    }
+
+    pub fn memo_stats(&self) -> MemoStats {
+        self.memo_stats.clone()
+    }
+
+    pub fn reset_memo_stats(&mut self) {
+        self.memo_stats = MemoStats::default();
+    }
+
+    pub fn ground_height_local(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
+        if !x.is_finite() || !z.is_finite() {
+            return Err(SurfaceSolve::Argument);
+        }
+        let cell_x = (x * GROUND_MEMO_CELLS_PER_M).floor() as i64;
+        let cell_z = (z * GROUND_MEMO_CELLS_PER_M).floor() as i64;
+        let slot = ((((cell_x as i32).wrapping_mul(GROUND_MEMO_HASH_X)) ^ ((cell_z as i32).wrapping_mul(GROUND_MEMO_HASH_Z))) & (GROUND_MEMO_SLOTS as i32 - 1)) as usize;
+        let epoch = i64::from(self.chart_epoch);
+        let entry = &self.memo[slot];
+        if entry.x == x && entry.z == z && entry.epoch == epoch {
+            self.memo_stats.hits += 1;
+            return match &entry.failure {
+                Some(err) => Err(err.clone()),
+                None => Ok(entry.height),
+            };
+        }
+        self.memo_stats.misses += 1;
+        let previous = &self.memo[slot];
+        if previous.epoch != -1 {
+            self.memo_stats.evictions += 1;
+            if previous.x == x && previous.z == z {
+                self.memo_stats.epoch_stale += 1;
+            } else if (previous.x * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_x && (previous.z * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_z {
+                self.memo_stats.cell_collisions += 1;
+            }
+        }
+        self.memo[slot] = GroundMemoSlot { x, z, height: 0.0, epoch, failure: None };
+        match solve_surface_y(&self.basis, self.radius, self.anchor_height, x, z, height, SURFACE_SOLVE_TOLERANCE_M, None) {
+            Ok(y) => {
+                self.memo[slot].height = y + self.offset_y;
+                Ok(self.memo[slot].height)
+            }
+            Err(err) => {
+                if err == SurfaceSolve::Tolerance {
+                    self.memo[slot].epoch = -1;
+                } else {
+                    self.memo[slot].failure = Some(err.clone());
+                }
+                Err(err)
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, solve_surface_y, tangent_local_to_dir, ChartFrame, Frame, GroundFault, SurfaceSolve};
+    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, render_y_on_sphere, solve_surface_y, tangent_local_to_dir, ChartFrame, Frame, GroundFault, GroundFn, GroundSourceError, SurfaceSolve};
     use serde_json::Value;
 
     const PLANET_FRAME_TOLERANCE_M: f64 = 1e-9;
@@ -447,6 +626,7 @@ mod tests {
             SurfaceSolve::ChartRange => "ChartRangeError",
             SurfaceSolve::NoGround => "NoGroundHeightError",
             SurfaceSolve::NoConvergence { .. } => "SurfaceSolveError",
+            SurfaceSolve::Argument => "SurfaceSolveArgumentError",
         }
     }
 
@@ -479,7 +659,7 @@ mod tests {
     #[test]
     fn chart_frame_matches_the_spoint_frame() {
         let fixture = fixture_chart();
-        let frame = ChartFrame::new(vec3(&fixture["anchorDir"]), fixture["radius"].as_f64().unwrap(), fixture["offsetY"].as_f64().unwrap(), |d| surface_height("smooth", d).unwrap());
+        let mut frame = ChartFrame::new(vec3(&fixture["anchorDir"]), fixture["radius"].as_f64().unwrap(), fixture["offsetY"].as_f64().unwrap(), Some(0.001), |d| surface_height("smooth", d).unwrap());
         let mut worst = (frame.anchor_height - fixture["anchorHeight"].as_f64().unwrap()).abs();
         let mut measure = |got: [f64; 3], want: [f64; 3]| {
             for i in 0..3 {
@@ -503,5 +683,195 @@ mod tests {
             }
         }
         assert!(worst <= PLANET_FRAME_TOLERANCE_M, "chart frame differs from spoint by up to {worst} m");
+    }
+
+    #[test]
+    fn solve_surface_y_reaches_the_closure_and_cap_paths_like_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-solve-paths.json")).unwrap();
+        let basis = anchor_basis([0.0, 1.0, 0.0]);
+        let radius = fixture["radius"].as_f64().unwrap();
+        let mut worst = 0.0_f64;
+        for case in fixture["cases"].as_array().unwrap() {
+            let (x, z, tol) = (case["x"].as_f64().unwrap(), case["z"].as_f64().unwrap(), case["tol"].as_f64().unwrap());
+            let (c, a, b) = (case["c"].as_f64().unwrap(), case["A"].as_f64().unwrap(), case["B"].as_f64().unwrap());
+            let height = move |d: [f64; 3]| Some(if d[0] > c { a } else { b });
+            let anchor_height = height(basis.up).unwrap();
+            match (solve_surface_y(&basis, radius, anchor_height, x, z, height, tol, None), case["error"].as_str()) {
+                (Ok(y), None) => {
+                    worst = worst.max((y - case["y"].as_f64().unwrap()).abs());
+                    let dir = tangent_local_to_dir(&basis, radius + anchor_height + y, x, z);
+                    let residual = render_y_on_sphere(x * x + z * z, height(dir).unwrap(), anchor_height, radius) - y;
+                    worst = worst.max((residual - case["residual"].as_f64().unwrap()).abs());
+                    assert!(residual.abs() > tol, "the closure return leaves a residual above the tolerance at ({x}, {z})");
+                }
+                (Err(err), Some(name)) => assert_eq!(surface_error_name(&err), name, "error at ({x}, {z})"),
+                (got, want) => panic!("spoint {want:?} with y {:?}, bevy {got:?} at ({x}, {z})", case["y"]),
+            }
+        }
+        assert!(worst <= PLANET_FRAME_TOLERANCE_M, "solveSurfaceY closure and cap paths differ from spoint by up to {worst} m");
+    }
+
+    #[test]
+    fn chart_frame_relief_scale_matches_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
+        for case in fixture["relief"].as_array().unwrap() {
+            let given = case["reliefScale"].as_f64();
+            let frame = ChartFrame::new([0.0, 1.0, 0.0], 6360.0, 0.0, given, |d| surface_height("smooth", d).unwrap());
+            let want = case["value"].as_f64().unwrap();
+            assert!(frame.relief_scale() == want, "reliefScale {given:?} gives {} where spoint gives {want}", frame.relief_scale());
+        }
+    }
+
+    fn chart_deviation(frame: &mut ChartFrame, want: &Value) -> f64 {
+        let mut worst = (frame.anchor_height - want["anchorHeight"].as_f64().unwrap()).abs();
+        let anchor_world = frame.anchor_surface_world();
+        let want_world = vec3(&want["anchorSurfaceWorld"]);
+        for i in 0..3 {
+            worst = worst.max((anchor_world[i] - want_world[i]).abs());
+        }
+        let dirs = [frame.local_to_dir(100.0, 50.0, None), frame.local_to_dir(100.0, 50.0, Some(20.0))];
+        for (got, want) in dirs.iter().zip(want["localToDir"].as_array().unwrap()) {
+            for i in 0..3 {
+                worst = worst.max((got[i] - vec3(want)[i]).abs());
+            }
+        }
+        let worlds = [frame.local_to_world(0.0, 0.0, 0.0), frame.local_to_world(100.0, 5.0, -50.0)];
+        for (got, want) in worlds.iter().zip(want["localToWorld"].as_array().unwrap()) {
+            for i in 0..3 {
+                worst = worst.max((got[i] - vec3(want)[i]).abs());
+            }
+        }
+        let grounds = [frame.ground_height_local(0.0, 0.0, |d| Some(surface_height("smooth", d).unwrap())), frame.ground_height_local(100.0, 50.0, |d| Some(surface_height("smooth", d).unwrap()))];
+        for (got, want) in grounds.iter().zip(want["groundHeightLocal"].as_array().unwrap()) {
+            worst = worst.max((got.as_ref().unwrap() - want.as_f64().unwrap()).abs());
+        }
+        worst
+    }
+
+    #[test]
+    fn chart_frame_reanchor_matches_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
+        let reanchor = &fixture["reanchor"];
+        let mut frame = ChartFrame::new([0.6, 0.0, 0.8], 6360.0, 5.0, Some(0.001), |d| surface_height("smooth", d).unwrap());
+        let mut worst = chart_deviation(&mut frame, &reanchor["before"]);
+        assert_eq!(frame.chart_epoch() as u64, reanchor["before"]["chartEpoch"].as_u64().unwrap(), "chartEpoch before");
+        let up = frame.reanchor([0.0, 1.0, 0.0], |d| surface_height("smooth", d).unwrap());
+        for i in 0..3 {
+            worst = worst.max((up[i] - vec3(&reanchor["returned"])[i]).abs());
+        }
+        assert_eq!(frame.chart_epoch() as u64, reanchor["after"]["chartEpoch"].as_u64().unwrap(), "chartEpoch after");
+        worst = worst.max(chart_deviation(&mut frame, &reanchor["after"]));
+        let up = frame.reanchor([0.6, 0.0, 0.8], |d| surface_height("smooth", d).unwrap());
+        for i in 0..3 {
+            worst = worst.max((up[i] - vec3(&reanchor["returnedAgain"])[i]).abs());
+        }
+        assert_eq!(frame.chart_epoch() as u64, reanchor["back"]["chartEpoch"].as_u64().unwrap(), "chartEpoch back");
+        worst = worst.max(chart_deviation(&mut frame, &reanchor["back"]));
+        assert!(worst <= PLANET_FRAME_TOLERANCE_M, "reanchor differs from spoint by up to {worst}");
+    }
+
+    #[test]
+    fn ground_memo_matches_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
+        let mut frame = ChartFrame::new([0.6, 0.0, 0.8], 6360.0, 5.0, Some(0.001), |d| surface_height("smooth", d).unwrap());
+        frame.reset_memo_stats();
+        for step in fixture["memo"].as_array().unwrap() {
+            if let Some(dir) = step.get("reanchor") {
+                frame.reanchor(vec3(dir), |d| surface_height("smooth", d).unwrap());
+                assert_eq!(frame.chart_epoch() as u64, step["chartEpoch"].as_u64().unwrap(), "chartEpoch after reanchor");
+            } else {
+                let (x, z) = (step["x"].as_f64().unwrap_or(f64::NAN), step["z"].as_f64().unwrap_or(f64::NAN));
+                match (frame.ground_height_local(x, z, |d| surface_height("smooth", d)), step["error"].as_str()) {
+                    (Ok(y), None) => assert!((y - step["value"].as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "memo value differs at ({x}, {z}): {y}"),
+                    (Err(err), Some(name)) => assert_eq!(surface_error_name(&err), name, "memo error at ({x}, {z})"),
+                    (got, want) => panic!("spoint {want:?}, bevy {got:?} at ({x}, {z})"),
+                }
+            }
+            let want = &step["stats"];
+            let got = frame.memo_stats();
+            assert_eq!(got.hits, want["hits"].as_u64().unwrap(), "hits");
+            assert_eq!(got.misses, want["misses"].as_u64().unwrap(), "misses");
+            assert_eq!(got.evictions, want["evictions"].as_u64().unwrap(), "evictions");
+            assert_eq!(got.epoch_stale, want["epochStale"].as_u64().unwrap(), "epochStale");
+            assert_eq!(got.cell_collisions, want["cellCollisions"].as_u64().unwrap(), "cellCollisions");
+        }
+    }
+
+    fn gpu_source() -> GroundFn {
+        Box::new(|x, z, _| if x > 5000.0 { Err(SurfaceSolve::NoConvergence { residual: 0.5 }) } else { Ok(0.5 + 0.01 * x - 0.02 * z) })
+    }
+
+    fn source_error_kind(err: &GroundSourceError) -> &'static str {
+        match err {
+            GroundSourceError::EmptyName | GroundSourceError::NotFinite => "TypeError",
+            GroundSourceError::Probe(err) => surface_error_name(err),
+        }
+    }
+
+    #[test]
+    fn ground_sources_match_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
+        let sources = &fixture["sources"];
+        let names = |v: &Value| -> Vec<String> { v.as_array().unwrap().iter().map(|n| n.as_str().unwrap().to_string()).collect() };
+        let smooth = |d: [f64; 3]| surface_height("smooth", d);
+        let mut frame = ChartFrame::new([0.6, 0.0, 0.8], 6360.0, 5.0, Some(0.001), |d| surface_height("smooth", d).unwrap());
+        assert_eq!(frame.ground_sources(), names(&sources["initial"]["names"]), "initial names");
+        assert_eq!(frame.ground_source(), sources["initial"]["source"].as_str().unwrap());
+        let cpu = frame.ground_height_active(100.0, 50.0, smooth).unwrap();
+        assert!((cpu - sources["initial"]["cpu"].as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "cpu ground");
+        frame.register_ground_source("gpu", gpu_source()).unwrap();
+        assert_eq!(frame.ground_sources(), names(&sources["gpu"]["names"]), "gpu names");
+        assert_eq!(frame.ground_source(), "gpu");
+        for ((x, z), want) in [(100.0, 0.0), (0.0, 50.0)].iter().zip(sources["gpu"]["values"].as_array().unwrap()) {
+            let got = frame.ground_height_active(*x, *z, smooth).unwrap();
+            assert!((got - want.as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "gpu ground at ({x}, {z})");
+        }
+        let err = frame.ground_height_active(6000.0, 0.0, smooth).unwrap_err();
+        assert_eq!(surface_error_name(&err), sources["gpuThrows"]["error"].as_str().unwrap(), "gpu throws");
+        let err = frame.register_ground_source("", gpu_source()).unwrap_err();
+        assert_eq!(source_error_kind(&err), sources["emptyName"]["error"].as_str().unwrap(), "empty name");
+        let err = frame.register_ground_source("nullish", Box::new(|_, _, _| Ok(f64::NAN))).unwrap_err();
+        assert_eq!(source_error_kind(&err), sources["nullishSource"]["error"].as_str().unwrap(), "nullish source");
+        assert!(frame.has_ground_source("gpu"));
+        assert!(!frame.has_ground_source("nope"));
+        let name = frame.install_anonymous_ground_source(Box::new(|x, _, _| Ok(1.0 + 0.001 * x))).unwrap();
+        assert_eq!(name, "substituted");
+        assert_eq!(frame.ground_sources(), names(&sources["anonymousA"]["names"]), "anonymous A names");
+        let got = frame.ground_height_active(100.0, 50.0, smooth).unwrap();
+        assert!((got - sources["anonymousA"]["values"][0].as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "anonymous A value");
+        let name = frame.install_anonymous_ground_source(Box::new(|_, _, _| Ok(2.0))).unwrap();
+        assert_eq!(name, sources["anonymousB"]["source"].as_str().unwrap(), "anonymous B name");
+        frame.use_cpu_solve();
+        assert_eq!(frame.ground_sources(), names(&sources["cpuSetter"]["names"]), "cpu setter names");
+        assert_eq!(frame.ground_source(), sources["cpuSetter"]["source"].as_str().unwrap());
+        let got = frame.ground_height_active(100.0, 50.0, smooth).unwrap();
+        assert!((got - sources["cpuSetter"]["values"][0].as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "cpu setter value");
+    }
+
+    #[test]
+    fn elevation_at_dir_warns_once_like_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
+        for label in ["divergentGpu", "plainGpu", "divergentCpu"] {
+            let want = &fixture["cpuWarning"][label];
+            let mut frame = ChartFrame::new([0.0, 1.0, 0.0], 6360.0, 0.0, Some(0.001), |d| surface_height("smooth", d).unwrap());
+            frame.set_cpu_height_divergent(label != "plainGpu");
+            if label != "divergentCpu" {
+                frame.register_ground_source("gpu", gpu_source()).unwrap();
+            }
+            let mut messages = Vec::new();
+            let mut values = Vec::new();
+            for _ in 0..2 {
+                let (value, warning) = frame.elevation_at_dir([0.6, 0.3, 0.7], |d| surface_height("smooth", d).unwrap(), 2);
+                values.push(value);
+                messages.extend(warning);
+            }
+            assert_eq!(messages.len() as u64, want["messages"].as_u64().unwrap(), "{label} message count");
+            if let Some(text) = want["text"].as_str() {
+                assert_eq!(messages[0], text, "{label} message text");
+            }
+            for (got, want) in values.iter().zip(want["values"].as_array().unwrap()) {
+                assert!((got - want.as_f64().unwrap()).abs() <= PLANET_FRAME_TOLERANCE_M, "{label} elevation");
+            }
+        }
     }
 }
