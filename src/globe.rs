@@ -67,13 +67,23 @@ fn default_planet_config() -> PlanetConfig {
     PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: 0.0, anchor_dir: [0.0, 1.0, 0.0], radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
 }
 
+fn vec3_of(value: &Value) -> Option<[f64; 3]> {
+    let array = value.as_array()?;
+    Some([array.first()?.as_f64()?, array.get(1)?.as_f64()?, array.get(2)?.as_f64()?])
+}
+
 fn carve_of(value: &Value) -> Option<CarveConfig> {
-    let dir = value.get("dir")?.as_array()?;
-    let dir = [dir.first()?.as_f64()?, dir.get(1)?.as_f64()?, dir.get(2)?.as_f64()?];
-    let inner_m = value.get("innerM")?.as_f64()?;
-    let outer_m = value.get("outerM")?.as_f64()?;
-    let length = dir.iter().map(|component| component * component).sum::<f64>().sqrt();
-    (length > 0.0 && inner_m >= 0.0 && outer_m > inner_m).then_some(CarveConfig { dir, inner_m, outer_m })
+    if let Some(dir) = value.get("dir").and_then(vec3_of) {
+        let inner_m = value.get("innerM")?.as_f64()?;
+        let outer_m = value.get("outerM")?.as_f64()?;
+        let length = dir.iter().map(|component| component * component).sum::<f64>().sqrt();
+        return (length > 0.0 && inner_m >= 0.0 && outer_m > inner_m).then_some(CarveConfig::Parsed { dir, inner_m, outer_m });
+    }
+    let centre = value.get("center").and_then(Value::as_array)?;
+    let (x, z) = (centre.first()?.as_f64()?, centre.get(1)?.as_f64()?);
+    let radius_m = value.get("radius")?.as_f64()?;
+    let falloff_m = value.get("falloff")?.as_f64()?;
+    (x.is_finite() && z.is_finite() && radius_m >= 0.0 && falloff_m > 0.0).then_some(CarveConfig::Centre { x, z, radius_m, falloff_m })
 }
 
 #[derive(Component, Clone, Debug)]
@@ -789,6 +799,17 @@ mod tests {
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "reliefScale elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn carve_centre_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "carveCentre");
+        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        assert_eq!(globe.carves.len(), 2);
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "centre carve elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
     }
 
     #[test]

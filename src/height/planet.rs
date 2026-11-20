@@ -8,6 +8,7 @@ const LAND_BIAS_M: f64 = -100_000.0;
 #[derive(Clone, Debug, PartialEq)]
 pub enum CarveConfig {
     Parsed { dir: V3, inner_m: f64, outer_m: f64 },
+    Centre { x: f64, z: f64, radius_m: f64, falloff_m: f64 },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,6 +49,23 @@ fn carve_chord2(radius_m: f64, planet_radius: f64) -> f64 {
     a * a
 }
 
+fn normalise(v: V3) -> V3 {
+    let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    [v[0] / length, v[1] / length, v[2] / length]
+}
+
+fn cross(a: V3, b: V3) -> V3 {
+    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+
+fn centre_dir(anchor: V3, radius: f64, x: f64, z: f64) -> V3 {
+    let up = normalise(anchor);
+    let reference = if up[1].abs() < 0.99 { [0.0, 1.0, 0.0] } else { [1.0, 0.0, 0.0] };
+    let east = normalise(cross(reference, up));
+    let north = cross(east, up);
+    normalise([0, 1, 2].map(|i| up[i] * radius + east[i] * x + north[i] * z))
+}
+
 impl Planet {
     pub fn new(config: &PlanetConfig) -> Self {
         let hpf = sea_bias_faces(i64::from(config.seed), config.hpf_res);
@@ -56,11 +74,12 @@ impl Planet {
             let natural = spec(&hpf, config.hpf_res, config.hash, config.relief_scale, Vec::new());
             carves
                 .iter()
-                .map(|carve| match carve {
-                    CarveConfig::Parsed { dir, inner_m, outer_m } => {
-                        let dir = Ops::new(Precision::F64).normalize(*dir);
-                        ResolvedCarve { dir, inner_m: *inner_m, outer_m: *outer_m, target_h: natural.compose(dir) }
-                    }
+                .map(|carve| {
+                    let (dir, inner_m, outer_m) = match *carve {
+                        CarveConfig::Parsed { dir, inner_m, outer_m } => (Ops::new(Precision::F64).normalize(dir), inner_m, outer_m),
+                        CarveConfig::Centre { x, z, radius_m, falloff_m } => (centre_dir(config.anchor_dir, config.radius, x, z), radius_m, radius_m + falloff_m),
+                    };
+                    ResolvedCarve { dir, inner_m, outer_m, target_h: natural.compose(dir) }
                 })
                 .collect()
         };
