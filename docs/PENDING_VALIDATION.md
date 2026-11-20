@@ -6270,3 +6270,11 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - scripts/capture-default-game.sh <name>: starts target/debug/bevy-jayzee with no arguments under timeout 150, finds its child PID, takes an xwd -root capture of the display after 45 s, then stops the child and the timeout by PID.
 - Witness (Phase B): node scripts/check-xwd-png-witness.cjs must print ALL PASS 4 checks; then bash scripts/capture-default-game.sh r122-planet and node scripts/check-planet-screenshot.cjs target/witness/r122-planet.xwd target/witness/r122-planet.log target/witness/r122-planet.png must exit 0.
 - Red check (Phase B): (a) in scripts/lib/xwd-png.cjs reverse the masks in readXwd; the XWD witness must FAIL; restore; cmp. (b) in src/vegetation.rs change TREES_PER_CHUNK from 6 to 0; rebuild; capture; the screenshot check must exit 1 with zero green and zero trees; restore; cmp; rebuild.
+
+## Round 122 Phase A 4: parity matrix finished (witness and red check listed; not run)
+
+- docs/parity-matrix.tsv is the source; docs/PARITY_MATRIX.md is generated from it. Rows: 1069 (was 1073). Exact duplicates (same normalised feature and source): none. Near-duplicates with the same outcome were merged into the first row: 351 into 79, 697 into 391, 764 into 763, 800 into 500. Their sources and evidence are kept in the merged row. Four rows removed, none exact duplicates; four rows merged.
+- Commit rows 1068 to 1073 overlap no inventory row (word overlap below 0.2), so they stay.
+- Outcomes now: missing 766, not applicable 269, present-candidate 34, present 0. Row 280 (VegPlacement) is the only candidate with a witness planned in Phase B; it becomes present only when the vegetation tests run and their output is cited.
+- Witness (Phase B): awk -F'\t' 'NR>1{print $6}' docs/parity-matrix.tsv | sort | uniq -c must sum to 1069; cut -f1 docs/parity-matrix.tsv | sort | uniq -d must print nothing.
+- Red check (Phase B): append a copy of row 79 to a scratch copy of the TSV; the duplicate-number check must print the duplicate; restore from the committed file; cmp must match.
