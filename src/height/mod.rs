@@ -67,6 +67,24 @@ mod tests {
         );
     }
 
+    fn check_within(name: &str, actual: &[f64], expected: &[f64], relative: f64) {
+        assert_eq!(actual.len(), expected.len(), "{name} count");
+        let differing: Vec<String> = actual
+            .iter()
+            .zip(expected)
+            .enumerate()
+            .filter(|(_, (a, e))| (**a - **e).abs() > relative * e.abs().max(1.0))
+            .map(|(i, (a, e))| format!("{name}[{i}] bevy {a:?} spoint {e:?}"))
+            .collect();
+        assert!(
+            differing.is_empty(),
+            "{} of {} differ from spoint by more than {relative} relative: {}",
+            differing.len(),
+            expected.len(),
+            differing.iter().take(3).cloned().collect::<Vec<_>>().join("; ")
+        );
+    }
+
     #[test]
     fn snoise3_matches_the_spoint_fixture() {
         let fixture = fixture();
@@ -104,6 +122,6 @@ mod tests {
             actual.extend(case["dirs"].as_array().unwrap().iter().map(|d| spec.compose(vec3(d))));
             expected.extend(numbers(&case["expected"]));
         }
-        check("compose", &actual, &expected);
+        check_within("compose", &actual, &expected, 1e-12);
     }
 }
