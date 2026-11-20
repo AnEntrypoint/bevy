@@ -4418,3 +4418,16 @@ What it shows: the transcoder's endpoints are already close to blue-optimal for 
 Verdict: OPEN. No endpoint search reaches 35 dB on all three channels. The minimum-channel best is E4 at 29.43 dB against the 35 dB bar. Reopen: a per-block joint search that is exhaustive for R, G and B together (too large for this run, about 8 x 32^3 bases per subset), or a different ETC2 encode of this texture.
 
 Red check: MODIFIER_TO_INDEX was changed from [3, 2, 0, 1] to [3, 2, 1, 0]. The re-encode was then byte-identical on only 1,422 of 60,556 blocks and the search mismatched the library on about 2 million texel channels per scenario; the check printed FAIL and exited 1 (MUTANT rc=1). The file was restored, cmp matched (cmp-restored), and git status showed only the new script before the commit.
+
+## Round 89 Phase B: the endpoint search in the window (record)
+
+Readings. vmstat 1 2 first: the first line is the average since boot (si 5250, so 7321). The second line, the gate sample, is si 3192, so 0: the swap-in is over 1000 KB/s, so the gate is closed. heavy-jobs at that point read busy: a zig compile of another project's txiki build (pid 2131332). Neither was stopped.
+
+Window job, one reading every 30 s, gate on the second vmstat sample with heavy-jobs on the same sample. 05:20:54: si 77180, so 53996, load 4.37, gate closed, heavy clear. 05:21:24: si 48, so 0, load 3.76, gate open, heavy clear: GATE-CLEAR with 567 s left. The witness set started at 05:21:24.
+
+Witnesses on the 05:21:24 clear sample. endpoint-search: rc 0, wall 120.4 s, timeout pid 2132282, node child 2132284, output ok 1 of 1 (re-encode identical 60,556 of 60,556, evaluator mismatches 0, search mismatches 0 in all five scenarios, baseline blue 28.49). endpoint-search-red-check: rc 0, wall 115.1 s, timeout pid 2133653, child 2133655: the mutant (MODIFIER_TO_INDEX [3, 2, 1, 0]) printed FAIL with the re-encode identical on 1,422 of 60,556 blocks and exited 1, which the red check reads as DETECTED; the tracked script matched HEAD by cmp afterwards, and the mutant file was removed. WITNESS-SET overall 0 at 05:25:20. Processes left after the run: 0.
+
+Result, the same numbers as Phase A. The bar stays OPEN. The exhaustive blue search adds 0.71 dB to the blue plane on the top-end blocks over blue-optimal selectors with the transcoder's endpoints, so the transcoder's endpoints are already near blue-optimal. The shared intensity table costs R and G in every blue-led search (R and G fall to 9 to 23 dB). The joint RGB coordinate search (E4, a local optimum) reaches R/G/B 29.43 / 34.99 / 30.67, minimum 29.43 dB. The mechanism left is the ETC1 palette itself, four levels per subset with one table shared by the three channels. The minimum-channel bound is not proven, because only a local search was run for R, G and B together.
+
+Which side agrees with which: the separate software GL and both decoders agree with the ETC2 bits, so the disagreement is between the ETC2 transcode and the RGBA8 unpack. The RGBA8 cache is the side that differs from the decoded ETC2.
+
