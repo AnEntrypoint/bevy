@@ -6385,3 +6385,5 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Witness: timeout 1500 cargo test --bin bevy-jayzee noise_matches_the_spoint_fixture (234 cases: createNoise2D through fbm2 with one octave, and createFbm2D over seeds, octaves, persistence and lacunarity), plus ballistics_and_quat_rotate_match_the_spoint_fixture and script:: (the script module tests).
 - Red check: /tmp/bt/r127-noise-redcheck.sh removes Math.SQRT2 from gradientNoise2D in src/script/prelude.js (in place, needle count checked); the noise test must fail with 'differs from spoint'; the prelude is restored and cmp must match.
 - Counts after Phase A: present 5, present-candidate 1 (136), blocked 31. Open 795.
+
+- Round 127 Phase B, window 17:28 (target/witness/window-job-r127.log): WITNESS-SET overall=0. noise-witness rc 0 (noise_matches_the_spoint_fixture ok, 1 passed); ballistics-quat-witness rc 0 (1 passed); script-module-tests rc 0 (6 passed); docs-witness rc 0 (open 795, present 5, blocked 31, candidate 1); noise-red-check rc 0 (mutant FAILED with differs from spoint, RESTORED_IDENTICAL, DETECTED). Row 136 is present.
