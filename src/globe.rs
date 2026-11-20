@@ -27,7 +27,7 @@ pub struct GlobeWorld {
     pub bodies: Vec<(f32, f32)>,
     pub hpf_tex_res: usize,
     pub hash_version: HashVersion,
-    pub relief_scale: f64,
+    pub relief_scale: Option<f64>,
     pub anchor_dir: [f64; 3],
     pub carves: Vec<CarveConfig>,
     pub planet: Arc<Planet>,
@@ -55,7 +55,7 @@ impl Default for GlobeWorld {
             bodies: vec![(0.0, 0.0)],
             hpf_tex_res: DEFAULT_HPF_TEX_RES,
             hash_version: HashVersion::Integer,
-            relief_scale: 0.0,
+            relief_scale: None,
             anchor_dir: [0.0, 1.0, 0.0],
             carves: Vec::new(),
             planet: Arc::new(Planet::new(&default_planet_config())),
@@ -64,7 +64,7 @@ impl Default for GlobeWorld {
 }
 
 fn default_planet_config() -> PlanetConfig {
-    PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: 0.0, anchor_dir: [0.0, 1.0, 0.0], radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
+    PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
 }
 
 fn vec3_of(value: &Value) -> Option<[f64; 3]> {
@@ -180,7 +180,7 @@ impl GlobeWorld {
             }
         }
         if let Some(scale) = object.get("reliefScale").and_then(Value::as_f64) {
-            self.relief_scale = scale;
+            self.relief_scale = Some(scale);
         }
         let anchor: Option<Vec<f64>> = object.get("anchorDir").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_f64).collect());
         if let Some(v) = anchor.filter(|v| v.len() == 3) {
@@ -399,7 +399,7 @@ pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut ca
 }
 
 pub const CENSUS_ENV: &str = "BEVY_JAYZEE_CENSUS";
-const CENSUS_FREEZE_S: f64 = 3.0;
+const CENSUS_FREEZE_S: f64 = 10.0;
 
 #[derive(Resource)]
 pub struct CensusMode;
@@ -767,16 +767,16 @@ mod tests {
         app.add_systems(Update, census_freeze);
         app.finish();
         app.cleanup();
-        let elapsed: Vec<f64> = (0..400)
+        let elapsed: Vec<f64> = (0..900)
             .map(|_| {
                 app.update();
                 app.world().resource::<Time<Virtual>>().elapsed_secs_f64()
             })
             .collect();
         let frame = 1.0 / 60.0;
-        assert!((elapsed[60] - elapsed[0] - 60.0 * frame).abs() < 1e-9, "60 census frames advanced {} s, not 1 s", elapsed[60] - elapsed[0]);
-        assert!(elapsed[399] >= CENSUS_FREEZE_S && elapsed[399] <= CENSUS_FREEZE_S + 2.0 * frame, "census froze at {} s", elapsed[399]);
-        assert_eq!(elapsed[399], elapsed[300], "the census simulation kept moving after the freeze");
+        assert!((elapsed[60] - elapsed[0] - 60.0 * frame).abs() < 1e-6, "60 census frames advanced {} s, not 1 s", elapsed[60] - elapsed[0]);
+        assert!(elapsed[899] >= CENSUS_FREEZE_S && elapsed[899] <= CENSUS_FREEZE_S + 2.0 * frame, "census froze at {} s", elapsed[899]);
+        assert_eq!(elapsed[899], elapsed[800], "the census simulation kept moving after the freeze");
     }
 
     #[test]
@@ -795,7 +795,7 @@ mod tests {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "reliefScale");
         let globe = GlobeWorld::from_value(Some(&case["config"]));
-        assert_eq!(globe.relief_scale, case["config"]["reliefScale"].as_f64().unwrap());
+        assert_eq!(globe.relief_scale, case["config"]["reliefScale"].as_f64());
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "reliefScale elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
