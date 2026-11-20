@@ -157,6 +157,10 @@
     "evictions": 0,
     "epochStale": 0,
     "cellCollisions": 0
+   },
+   "solve": {
+    "solves": 1,
+    "evaluations": 2
    }
   },
   {
@@ -170,6 +174,10 @@
     "evictions": 0,
     "epochStale": 0,
     "cellCollisions": 0
+   },
+   "solve": {
+    "solves": 1,
+    "evaluations": 2
    }
   },
   {
@@ -183,6 +191,10 @@
     "evictions": 1,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 2,
+    "evaluations": 4
    }
   },
   {
@@ -196,6 +208,10 @@
     "evictions": 2,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 3,
+    "evaluations": 7
    }
   },
   {
@@ -209,6 +225,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 4,
+    "evaluations": 9
    }
   },
   {
@@ -222,6 +242,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -235,6 +259,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -248,6 +276,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -261,6 +293,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -274,6 +310,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -289,6 +329,10 @@
     "evictions": 3,
     "epochStale": 0,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 5,
+    "evaluations": 12
    }
   },
   {
@@ -302,6 +346,10 @@
     "evictions": 4,
     "epochStale": 1,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 6,
+    "evaluations": 14
    }
   },
   {
@@ -315,6 +363,10 @@
     "evictions": 5,
     "epochStale": 2,
     "cellCollisions": 1
+   },
+   "solve": {
+    "solves": 7,
+    "evaluations": 17
    }
   }
  ],

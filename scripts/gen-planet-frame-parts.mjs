@@ -34,17 +34,19 @@ const returnedAgain = chartFrame.reanchor([0.6, 0, 0.8])
 const back = snapshot(chartFrame)
 
 const memoFrame = pf.createPlanetFrame({ sampler, anchorDir: [0.6, 0, 0.8], offsetY: 5, reliefScale: 0.001 })
+pf.resetSurfaceSolveStats()
+pf.resetGroundMemoStats()
 const memoStep = (x, z) => {
   try {
-    return { x, z, value: memoFrame.groundHeightLocal(x, z), error: null, stats: pf.groundMemoStats() }
+    return { x, z, value: memoFrame.groundHeightLocal(x, z), error: null, stats: pf.groundMemoStats(), solve: pf.surfaceSolveStats() }
   } catch (e) {
-    return { x, z, value: null, error: e.name, stats: pf.groundMemoStats() }
+    return { x, z, value: null, error: e.name, stats: pf.groundMemoStats(), solve: pf.surfaceSolveStats() }
   }
 }
 pf.resetGroundMemoStats()
 const memoSteps = [[0, 0], [0, 0], [0.1, 0], [1024, 0], [0, 0], [100, 50], [100, 50], [7000, 0], [7000, 0], [NaN, 0]].map(([x, z]) => memoStep(x, z))
 memoFrame.reanchor([0, 1, 0])
-memoSteps.push({ reanchor: [0, 1, 0], chartEpoch: memoFrame.chartEpoch, stats: pf.groundMemoStats() })
+memoSteps.push({ reanchor: [0, 1, 0], chartEpoch: memoFrame.chartEpoch, stats: pf.groundMemoStats(), solve: pf.surfaceSolveStats() })
 memoSteps.push(memoStep(0, 0))
 memoSteps.push(memoStep(100, 50))
 

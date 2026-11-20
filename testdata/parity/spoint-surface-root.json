@@ -1,0 +1,329 @@
+{
+ "spoint": "5f43c86c",
+ "surfaceRoot": [
+  {
+   "residualM": 0,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": 0,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": 0,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": 0,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": 0,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": 0.00001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": -0.0001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": 0.0001,
+   "toleranceM": 0.0001,
+   "within": true
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": 0.00010001,
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": "NaN",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": "Infinity",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": "-Infinity",
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": 0.0001,
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": 0,
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": -1,
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": "NaN",
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": "Infinity",
+   "within": false
+  },
+  {
+   "residualM": 0.0002,
+   "toleranceM": 0.0001,
+   "within": false
+  }
+ ],
+ "dropBelowTangent": [
+  {
+   "r2": 0,
+   "sphereRadius": 6360,
+   "value": 0
+  },
+  {
+   "r2": 1,
+   "sphereRadius": 6360,
+   "value": 0.00007861635268714866
+  },
+  {
+   "r2": 40000,
+   "sphereRadius": 6360,
+   "value": 3.145431897942185
+  },
+  {
+   "r2": 40449600,
+   "sphereRadius": 6360,
+   "value": 6360
+  },
+  {
+   "r2": 40449601,
+   "sphereRadius": 6360,
+   "value": 6360
+  },
+  {
+   "r2": 100,
+   "sphereRadius": 0.5,
+   "value": 0.5
+  },
+  {
+   "r2": 0.25,
+   "sphereRadius": 0.5,
+   "value": 0.5
+  },
+  {
+   "r2": 0.000001,
+   "sphereRadius": 0.001,
+   "value": 0.001
+  },
+  {
+   "r2": 0,
+   "sphereRadius": 0,
+   "value": 0
+  },
+  {
+   "r2": 5,
+   "sphereRadius": 1,
+   "value": 1
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

@@ -178,6 +178,59 @@ pub enum SurfaceSolve {
     Argument,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SolveStats {
+    pub solves: u64,
+    pub evaluations: u64,
+}
+
+thread_local! {
+    static SOLVE_STATS: std::cell::Cell<SolveStats> = const { std::cell::Cell::new(SolveStats { solves: 0, evaluations: 0 }) };
+    static MEMO_STATS: std::cell::Cell<MemoStats> = const { std::cell::Cell::new(MemoStats { hits: 0, misses: 0, evictions: 0, epoch_stale: 0, cell_collisions: 0 }) };
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn surface_solve_stats() -> SolveStats {
+    SOLVE_STATS.with(|c| c.get())
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn reset_surface_solve_stats() {
+    SOLVE_STATS.with(|c| c.set(SolveStats::default()))
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn ground_memo_stats() -> MemoStats {
+    MEMO_STATS.with(|c| c.get())
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn reset_ground_memo_stats() {
+    MEMO_STATS.with(|c| c.set(MemoStats::default()))
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn is_surface_root_within(residual_m: f64, tolerance_m: f64) -> bool {
+    residual_m.is_finite() && tolerance_m.is_finite() && tolerance_m > 0.0 && residual_m.abs() <= tolerance_m
+}
+
+fn bump_solve(f: impl FnOnce(&mut SolveStats)) {
+    SOLVE_STATS.with(|c| {
+        let mut s = c.get();
+        f(&mut s);
+        c.set(s);
+    })
+}
+
+fn bump_memo(f: impl FnOnce(&mut MemoStats)) {
+    MEMO_STATS.with(|c| {
+        let mut s = c.get();
+        f(&mut s);
+        c.set(s);
+    })
+}
+
 const SURFACE_SOLVE_MAX_EVALS: usize = 64;
 const BRACKET_HALVING_WINDOW: usize = 6;
 
@@ -190,6 +243,7 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     if radius.is_finite() && r2 >= radius * radius {
         return Err(SurfaceSolve::ChartRange);
     }
+    bump_solve(|s| s.solves += 1);
     let mut y = match guess {
         Some(g) if g.is_finite() => g,
         _ => render_y_on_sphere(r2, 0.0, anchor_height, radius),
@@ -200,6 +254,7 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     let mut checkpoint: Option<(usize, f64)> = None;
     let mut last_g = f64::INFINITY;
     for k in 0..SURFACE_SOLVE_MAX_EVALS {
+        bump_solve(|s| s.evaluations += 1);
         let dir = tangent_local_to_dir(basis, radius + anchor_height + y, x, z);
         let h = match height(dir) {
             Some(h) if h.is_finite() => h,
@@ -261,7 +316,7 @@ const GROUND_MEMO_HASH_X: i32 = 73_856_093;
 const GROUND_MEMO_HASH_Z: i32 = 19_349_663;
 
 #[cfg_attr(not(test), allow(dead_code))]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct MemoStats {
     pub hits: u64,
     pub misses: u64,
@@ -308,7 +363,6 @@ pub struct ChartFrame {
     relief_scale: f64,
     chart_epoch: u32,
     memo: Vec<GroundMemoSlot>,
-    memo_stats: MemoStats,
     ground_sources: Vec<(String, GroundFn)>,
     active_source: String,
     anonymous_installs: u32,
@@ -322,7 +376,7 @@ impl ChartFrame {
         let basis = anchor_basis(anchor_dir);
         let anchor_height = height(basis.up);
         let relief_scale = relief_scale.unwrap_or(0.01);
-        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], memo_stats: MemoStats::default(), ground_sources: Vec::new(), active_source: CPU_SOLVE_SOURCE.to_string(), anonymous_installs: 0, cpu_height_divergent: false, divergence_reported: false }
+        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], ground_sources: Vec::new(), active_source: CPU_SOLVE_SOURCE.to_string(), anonymous_installs: 0, cpu_height_divergent: false, divergence_reported: false }
     }
 
     pub fn chart_epoch(&self) -> u32 {
@@ -419,14 +473,6 @@ impl ChartFrame {
         (height(normalise(d)), warning)
     }
 
-    pub fn memo_stats(&self) -> MemoStats {
-        self.memo_stats.clone()
-    }
-
-    pub fn reset_memo_stats(&mut self) {
-        self.memo_stats = MemoStats::default();
-    }
-
     pub fn ground_height_local(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
         if !x.is_finite() || !z.is_finite() {
             return Err(SurfaceSolve::Argument);
@@ -437,20 +483,20 @@ impl ChartFrame {
         let epoch = i64::from(self.chart_epoch);
         let entry = &self.memo[slot];
         if entry.x == x && entry.z == z && entry.epoch == epoch {
-            self.memo_stats.hits += 1;
+            bump_memo(|s| s.hits += 1);
             return match &entry.failure {
                 Some(err) => Err(err.clone()),
                 None => Ok(entry.height),
             };
         }
-        self.memo_stats.misses += 1;
+        bump_memo(|s| s.misses += 1);
         let previous = &self.memo[slot];
         if previous.epoch != -1 {
-            self.memo_stats.evictions += 1;
+            bump_memo(|s| s.evictions += 1);
             if previous.x == x && previous.z == z {
-                self.memo_stats.epoch_stale += 1;
+                bump_memo(|s| s.epoch_stale += 1);
             } else if (previous.x * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_x && (previous.z * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_z {
-                self.memo_stats.cell_collisions += 1;
+                bump_memo(|s| s.cell_collisions += 1);
             }
         }
         self.memo[slot] = GroundMemoSlot { x, z, height: 0.0, epoch, failure: None };
@@ -475,6 +521,7 @@ impl ChartFrame {
 mod tests {
     use super::{anchor_basis, guarded_ground_height, raycast_ground_local, render_y_on_sphere, solve_surface_y, tangent_local_to_dir, ChartFrame, Frame, GroundFault, GroundFn, GroundSourceError, SurfaceSolve};
     use serde_json::Value;
+    use super::{ground_memo_stats, is_surface_root_within, reset_ground_memo_stats, reset_surface_solve_stats, sphere_drop_below_tangent, surface_solve_stats};
 
     const PLANET_FRAME_TOLERANCE_M: f64 = 1e-9;
 
@@ -770,11 +817,36 @@ mod tests {
         assert!(worst <= PLANET_FRAME_TOLERANCE_M, "reanchor differs from spoint by up to {worst}");
     }
 
+    fn json_num(v: &Value) -> f64 {
+        match v.as_str() {
+            Some("NaN") => f64::NAN,
+            Some("Infinity") => f64::INFINITY,
+            Some("-Infinity") => f64::NEG_INFINITY,
+            _ => v.as_f64().unwrap(),
+        }
+    }
+
+    #[test]
+    fn surface_root_and_drop_match_spoint() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-surface-root.json")).unwrap();
+        for case in fixture["surfaceRoot"].as_array().unwrap() {
+            let got = is_surface_root_within(json_num(&case["residualM"]), json_num(&case["toleranceM"]));
+            assert_eq!(got, case["within"].as_bool().unwrap(), "isSurfaceRootWithin({}, {})", case["residualM"], case["toleranceM"]);
+        }
+        let mut worst = 0.0_f64;
+        for case in fixture["dropBelowTangent"].as_array().unwrap() {
+            let got = sphere_drop_below_tangent(json_num(&case["r2"]), json_num(&case["sphereRadius"]));
+            worst = worst.max((got - json_num(&case["value"])).abs());
+        }
+        assert!(worst <= 1e-9, "sphereDropBelowTangent differs from spoint by up to {worst}");
+    }
+
     #[test]
     fn ground_memo_matches_spoint() {
         let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-frame-parts.json")).unwrap();
         let mut frame = ChartFrame::new([0.6, 0.0, 0.8], 6360.0, 5.0, Some(0.001), |d| surface_height("smooth", d).unwrap());
-        frame.reset_memo_stats();
+        reset_ground_memo_stats();
+        reset_surface_solve_stats();
         for step in fixture["memo"].as_array().unwrap() {
             if let Some(dir) = step.get("reanchor") {
                 frame.reanchor(vec3(dir), |d| surface_height("smooth", d).unwrap());
@@ -788,7 +860,10 @@ mod tests {
                 }
             }
             let want = &step["stats"];
-            let got = frame.memo_stats();
+            let got = ground_memo_stats();
+            let solve = surface_solve_stats();
+            assert_eq!(solve.solves, step["solve"]["solves"].as_u64().unwrap(), "solves");
+            assert_eq!(solve.evaluations, step["solve"]["evaluations"].as_u64().unwrap(), "evaluations");
             assert_eq!(got.hits, want["hits"].as_u64().unwrap(), "hits");
             assert_eq!(got.misses, want["misses"].as_u64().unwrap(), "misses");
             assert_eq!(got.evictions, want["evictions"].as_u64().unwrap(), "evictions");
