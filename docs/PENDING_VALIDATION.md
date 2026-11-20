@@ -6226,3 +6226,9 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - src/main.rs: default_args() returns viewer testdata/spec-world globe. With no command-line arguments the binary opens the globe place: the planet, its physics bodies and its trees.
 - Witness: cargo test default_game_is_the_globe_place (Phase B). Screenshot evidence is in the Phase B entry.
 - Red check: change "globe" in default_args to "test"; the witness must FAIL; restore from a copy and cmp must match.
+
+## Round 121 Phase A part two: XWD to PNG converter for the screenshot (witness and red check listed; not run)
+
+- scripts/lib/xwd-png.cjs (readXwd, encodePng, crc32), scripts/xwd-to-png.cjs (CLI), scripts/check-xwd-to-png-witness.cjs (synthetic XWD round trip: header, pixels, PNG signature, IDAT inflate, IHDR CRC).
+- Witness: node scripts/check-xwd-to-png-witness.cjs (Phase B).
+- Red check: swap the red and blue masks in readXwd; the witness must FAIL; restore from a copy and cmp must match.
