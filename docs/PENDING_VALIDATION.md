@@ -6113,3 +6113,17 @@ Measurement, after the witnesses (scripts/check-astc-endpoint-readback.cjs, a GP
 So the GPU decodes the endpoints exactly as the CPU table does, for all 1920 endpoints. Item 2's endpoint question is answered: the ±1 residual is not in the endpoint unquantisation. It must be in the interpolation between the endpoints (the weight step), which the next Phase A step tests.
 
 Push. Decision: every witness run passed, so the push is allowed. The push output and the remote head are in the next record.
+
+## Round 119 Phase A, the step after the window: item 2's interpolation test (witness and red check; the measurement is not yet run; not pushed)
+
+Push record for the Round 119 Phase B. git push origin main: To https://github.com/AnEntrypoint/bevy.git, then c56ee46..2c3ca0a main -> main, push rc 0. git ls-remote origin main: 2c3ca0a19820c70b8a81ba91b9386ff95a60971c refs/heads/main. Seven commits from Rounds 116 to 118 and the Round 119 commits (classifier 20b9050, its measurement and decision 65017d1, the window record 2c3ca0a) went up in that push.
+
+What the endpoint measurement settled (the 1,920 endpoints from the Round 119 window): the GPU's endpoint decode equals the CPU table for every endpoint (5,760 channel rows, delta 0). So the ±1 residual of item 2 is not in the endpoint unquantisation. It must be in the interpolation between the endpoints, which is the weight step.
+
+What it does. scripts/lib/astc-interp.cjs: three formulas for the weight step. spec is the decoder's own (low*(64-w)+high*w+32)>>6, round-half-up. floor drops the +32. even rounds exact halves to even. spec and even differ only when the remainder is exactly 32 out of 64. scripts/check-astc-interp-witness.cjs checks the three values on low 0, high 3, weight 32 (2, 1, 2), that the formulas differ on real inputs (floor on 458,752 inputs over the 16 levels and 256 by 256 endpoint pairs, even on 438,272), and that the decoder's texel equals the spec formula at 120 random mid-weight channels. scripts/check-astc-interp-readback.cjs is the measurement: 15,360 cached blocks at each of the 14 mid weights (215,040 fixtures, 1024 by 3,360 pixels), read back on the GPU, with each formula's matches tallied per weight and channel. It is not run; it needs a clear window.
+
+Witness (CPU only). ALL PASS 3 checks, rc 0 (PID 90902): ok the three formulas give 2, 1 and 2 for low 0, high 3, weight 32; ok the formulas differ on real inputs; ok the decoder interpolates with the spec formula at every mid weight (120 channels).
+
+Red check (spec's +32 removed in place, saved to /tmp/bt/r119-interp.good first). FAIL 3 of 3, DETECTED (PID 91104): the first check gives 1,1,2; the second spec-floor 0, spec-even 438,272; the third 61 of 120 decoded values differ from the spec (first: k 1 channel 0, decoded 18, spec 17). RESTORED_IDENTICAL; git status shows only the new files.
+
+Next step. Run scripts/check-astc-interp-readback.cjs in a clear window, with the witness and its red check. If the GPU matches the spec on every mid weight, the residual is not in the interpolation either, and the next candidates are the weights of the real blocks (the probe sets one weight per block). If one of the other formulas matches, the residual is that rounding, and the decoder's weight step is the fix to make.
