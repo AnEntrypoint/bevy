@@ -223,6 +223,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         crate::globe::register(&mut app);
         crate::vegetation::register(&mut app);
         app.add_systems(Update, crate::globe::frame_globe_camera);
+        crate::globe::add_census_systems(&mut app);
     } else {
         app.add_systems(Update, orbit_camera);
     }

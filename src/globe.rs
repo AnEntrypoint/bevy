@@ -4,6 +4,9 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use serde_json::{Map, Value, json};
 use crate::height::{CarveConfig, MAX_TERRAIN_CARVES, Planet};
+use bevy::app::App;
+use bevy::time::{Time, TimeUpdateStrategy, Virtual};
+use std::time::Duration;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -355,9 +358,41 @@ pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut ca
     }
 }
 
-fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<GlobeFocus>) {
+pub const CENSUS_ENV: &str = "BEVY_JAYZEE_CENSUS";
+const CENSUS_FREEZE_S: f64 = 3.0;
+
+#[derive(Resource)]
+pub struct CensusMode;
+
+fn census_frame() -> Duration {
+    Duration::from_secs_f64(1.0 / 60.0)
+}
+
+pub fn add_census_systems(app: &mut App) {
+    if std::env::var(CENSUS_ENV).as_deref() != Ok("1") {
+        return;
+    }
+    app.insert_resource(CensusMode);
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(census_frame()));
+    app.add_systems(Update, census_freeze);
+}
+
+fn census_freeze(time: Res<Time<Virtual>>, mut strategy: ResMut<TimeUpdateStrategy>, mut frozen: Local<bool>) {
+    if *frozen || time.elapsed_secs_f64() < CENSUS_FREEZE_S {
+        return;
+    }
+    *strategy = TimeUpdateStrategy::ManualDuration(Duration::ZERO);
+    *frozen = true;
+    eprintln!("census: simulation frozen at {:.3} s of virtual time", time.elapsed_secs_f64());
+}
+
+fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<GlobeFocus>, census: Option<Res<CensusMode>>, mut latched: Local<bool>) {
+    if *latched {
+        return;
+    }
     if let Some(position) = bodies.iter().next() {
         focus.0 = position.0;
+        *latched = census.is_some();
     }
 }
 
@@ -682,6 +717,26 @@ mod tests {
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "hpf elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn census_clock_steps_one_frame_at_a_time_then_freezes() {
+        let mut app = App::new();
+        app.add_plugins(bevy::MinimalPlugins);
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(census_frame()));
+        app.add_systems(Update, census_freeze);
+        app.finish();
+        app.cleanup();
+        let elapsed: Vec<f64> = (0..400)
+            .map(|_| {
+                app.update();
+                app.world().resource::<Time<Virtual>>().elapsed_secs_f64()
+            })
+            .collect();
+        let frame = 1.0 / 60.0;
+        assert!((elapsed[60] - elapsed[0] - 60.0 * frame).abs() < 1e-9, "60 census frames advanced {} s, not 1 s", elapsed[60] - elapsed[0]);
+        assert!(elapsed[399] >= CENSUS_FREEZE_S && elapsed[399] <= CENSUS_FREEZE_S + 2.0 * frame, "census froze at {} s", elapsed[399]);
+        assert_eq!(elapsed[399], elapsed[300], "the census simulation kept moving after the freeze");
     }
 
     #[test]
