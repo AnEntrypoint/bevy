@@ -17,8 +17,8 @@ Generated from docs/parity-matrix.tsv. Open means not present and not not-applic
 | 11 | occlusion | 7 | 0 | 0 | 0 | 7 | 5 | 0 | no counterpart |
 | 12 | weather | 7 | 0 | 0 | 0 | 7 | 2 | 0 | no counterpart |
 | 13 | groundy | 1 | 0 | 0 | 0 | 1 | 0 | 0 | no counterpart |
-| - | other (outside the list) | 441 | 0 | 3 | 11 | 427 | 90 | not re-read in this change | not ranked |
+| - | other (outside the list) | 438 | 3 | 0 | 11 | 427 | 90 | not re-read in this change | not ranked |
 
-Totals: open 799, present 1, candidate-only 3, blocked 33.
+Totals: open 796, present 4, candidate-only 0, blocked 33.
 
 Witnessable now: 0 in every group. The one present row (280, vegetation placement) is already witnessed. No candidate in the requested groups survives reading against spoint, so Phase A writes no new witness.
