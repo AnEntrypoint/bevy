@@ -764,6 +764,25 @@ mod tests {
     }
 
     #[test]
+    fn meshopt_views_decode_to_the_spoint_bytes() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!("../testdata/parity/meshopt-views.json")).unwrap();
+        let expected: Vec<Vec<u8>> = serde_json::from_value(fixture["views"].clone()).unwrap();
+        let decoded = decode(include_bytes!("../testdata/parity/meshopt-views.glb")).unwrap();
+        assert_eq!(decoded.meshopt_views, expected.len());
+        let container = read_container(&decoded.bytes).unwrap();
+        let bin = container.bin.unwrap_or_default();
+        let actual: Vec<Vec<u8>> = array_field(&container.json, "bufferViews")
+            .iter()
+            .map(|view| {
+                let offset = view.get("byteOffset").and_then(serde_json::Value::as_u64).unwrap_or(0) as usize;
+                let length = view.get("byteLength").and_then(serde_json::Value::as_u64).unwrap() as usize;
+                bin[offset..offset + length].to_vec()
+            })
+            .collect();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn basisu_glb_decodes_to_plain_glb_with_ktx2_images() {
         let (path, input) = smallest_glb_using(BASISU_EXTENSION);
         let decoded = decode(&input).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
