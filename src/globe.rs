@@ -26,15 +26,16 @@ pub struct GlobeWorld {
 }
 
 const DEFAULT_SEED: u64 = 0x5eed_1234;
+const DEFAULT_RADIUS: f32 = 6360.0;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
         Self {
             name: "globe".into(),
             center: Vec3::ZERO,
-            radius: 64.0,
+            radius: DEFAULT_RADIUS,
             sea_level: 0.0,
-            amplitude: 3.0,
+            amplitude: DEFAULT_RADIUS * 3.0 / 64.0,
             seed: DEFAULT_SEED,
             chunk_span: 0.35,
             gravity: 9.81,
@@ -548,6 +549,19 @@ mod tests {
             assert_eq!(g.elevation(lat, lon).to_bits(), globe().elevation(lat, lon).to_bits());
             assert!(g.elevation(lat, lon) <= g.amplitude);
         }
+    }
+
+    #[test]
+    fn default_radius_is_the_spoint_design_radius() {
+        assert_eq!(globe().radius, 6360.0);
+    }
+
+    #[test]
+    fn relief_scales_linearly_with_the_radius() {
+        let g = globe();
+        let direction = [0.3, 0.5, -0.8];
+        let height = g.planet.height(direction, f64::from(g.radius));
+        assert_eq!(g.planet.height(direction, 2.0 * f64::from(g.radius)), 2.0 * height);
     }
 
     #[test]
