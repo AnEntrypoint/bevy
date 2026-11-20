@@ -4153,10 +4153,10 @@ reading 03:42:58 si=512 so=0 load1=2.02 gate=open heavy=clear remainS=598 HEAVY_
 GATE-CLEAR 03:42:58 remainS=598
 WITNESS check-pair-budget rc=0 wall=0.0s ok=17 fail=0
 WITNESS check-window-job rc=0 wall=15.3s ok=10 fail=0
-WITNESS rc=1 03:43:13
+WITNESS rc=0 03:43:13
 END 03:43:13 overall=0
 
-Note: the `WITNESS rc=0 03:43:13` line in the job log is the window job's own line for the witness script, which ran both witnesses; its `rc=0` is the overall status of the two (the script's exit is 0 only when both pass).
+The job log line `WITNESS rc=0 03:43:13` is the witness script's combined status: 0 only when both witnesses pass. (Corrected in a later local commit: the first version of this record copied the line as `rc=1`.)
 
 The gate reading is the first `vmstat 1 2` sample: swap-in 512, swap-out 0, load 2.02, heavy clear, 598 s remaining. The first sample cleared the gate, so the witnesses started at once.
 
