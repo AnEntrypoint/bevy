@@ -4447,3 +4447,18 @@ Fixture witness: scripts/check-astc-decode.cjs. Void-extent blocks from the vend
 Red check: the decoder was copied to /tmp/bt/astc-decode.pre.cjs, a dot-file mutant (scripts/lib/.astc-decode.mutant.cjs, weight reversal removed by sed) was run through the witness via ASTC_DECODE_PATH. The mutant failed the RGB, RGBA and LA fixtures and exited 1 (DETECTED). The mutant was deleted, cmp matched the saved copy (RESTORED_IDENTICAL), and the witness passed again on the restored file. git status showed only the two new files before the commit.
 
 Commit: local only, as lanmower, no trailers. Not pushed in Phase A.
+
+## Round 90 Phase B: the window (record, did not clear, nothing pushed)
+
+Readings. vmstat 1 2 before the window: the first line (average since boot) si 5245, so 7274; the second line, the gate sample, si 312, so 0. heavy-jobs.cjs busy: zig test pid 2167062 (a peer's process, not stopped). Window: scripts/window-job.sh with WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 240, log target/witness/window-gate-r90.log. One reading every 30 s (si / so / gate / heavy):
+05:46:52 88 / 0 open busy; 05:47:21 12 / 0 open busy; 05:47:51 68 / 0 open busy; 05:48:22 16 / 0 open busy; 05:48:51 60 / 0 open busy; 05:49:21 16 / 0 open busy; 05:49:52 124 / 0 open busy; 05:50:21 140 / 0 open busy; 05:50:51 8 / 0 open busy; 05:51:22 616 / 0 open busy; 05:51:51 7544 / 0 closed clear; 05:52:21 21164 / 0 closed busy; 05:52:52 7732 / 9384 closed clear; 05:53:19 START-REFUSED with 210 s left, under the 240 s minimum.
+
+Result. No clear sample in the window: the memory gate was open on ten readings, but heavy-jobs read busy on every one of those (peers: zig test pid 2167062, fx, a gm-core worker, another Claude session). Swap-in then rose past 1000 KB/s at 05:51:51 and stayed there. No witness was started: the fixture witness, the red check and the readback were not run in the window. Nothing was pushed. Processes left by this run: 0 (pgrep found none). The window ran 6 min 39 s and ended in START-REFUSED, which is reported as open.
+
+Offline numbers, not witnesses. Decoder (scripts/lib/astc-decode.cjs) against the 1024 by 1024 ASTC level 0 in target/gltf-cache-astc (65,536 blocks, 0 decode errors, analyse mode without a browser), CPU decoder against the RGBA8 cache: R 62.81, G 62.29, B 5.47, A infinite dB (alpha is 255 throughout). Breakdown: 62,121 blocks are block mode 0x242 with CEM 8 (RGB, six endpoint values), 3,415 are void-extent. Red and green lie inside the reference range in every block. Blue low decodes right; blue high (endpoint value 5, the single value in the one-value partial trit group, assumption A1) decodes to 33 where the reference is near 255 in block 0. So the disagreement is localised to the partial trit tail, not to the full-group path, the weights or the partitions. The decoder was left unchanged and the cache disagreement is recorded as it is.
+
+Not run. The SwiftShader readback: scripts/check-astc-gpu.cjs (texture mode, one Chromium run with a GPU void-extent fixture and then the cache texture) and scripts/browser/readback-astc.html are written and untracked. Only analyse mode has run. They are not committed because nothing ran them in the window.
+
+Reopen. Item 2, the readback: in a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs.cjs reads clear, run node scripts/check-astc-gpu.cjs texture once under timeout, then commit the driver and page and push. The tail layout: replace assumption A1 once the ASTC spec text or a conformant encoder's output for a one-value trit tail is available, and rerun the fixture witness and the cache diagnostic.
+
+Commit: local only, as lanmower, no trailers. Not pushed.
