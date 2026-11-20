@@ -5757,3 +5757,70 @@ Then FAIL 1 of 2, mutant rc 1, DETECTED. The file was restored, and cmp reported
 Removed. scripts/lib/astc-endpoint-distance.cjs, scripts/check-astc-endpoint-distance-witness.cjs and scripts/check-astc-endpoint-distance.cjs (git rm). They remain in history at cd84afa.
 
 Commit. Local, as lanmower, no trailers. Pushed with the Round 115 Phase B, if its witnesses pass.
+
+## Round 115 Phase B: the class, code and records witnesses for c56ee46 in the window (cleared, witnesses passed, pushed cd84afa and c56ee46)
+
+Scope. Pushed cd84afa (the distance test, now known not to discriminate) and c56ee46 (the replacement class test, its witness and red check). The witnessed steps are the class test and the code and records witnesses they sit beside, each with its red check.
+
+Pre-window. vmstat 1 2 at 11:02:00 UTC: the first line is the average since boot (si 1836, so 2928); the gate sample is si 13784, so 556 (closed: swap-in above 1000 KB/s). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer zig test (pid 142725).
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r115.log). Readings, local time (UTC is two hours earlier):
+
+reading 13:02:06 si=2228 so=0 load1=4.03 gate=closed heavy=busy remainS=597 HEAVY_JOBS busy n=1;compile pid=142725 /tmp/zig-toolchain/zig-x86_64-linux
+reading 13:02:35 si=1332 so=316 load1=3.54 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=3;hot pid=112311 cpu=24.8 /usr/lib/chromium/chromium.r
+reading 13:03:05 si=92 so=0 load1=2.61 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=3;hot pid=112311 cpu=28.7 /usr/lib/chromium/chromium.real --
+reading 13:03:36 si=3492 so=2344 load1=2.18 gate=closed heavy=busy remainS=507 HEAVY_JOBS busy n=1;hot pid=112433 cpu=115.8 /usr/lib/chromium/chromium
+reading 13:04:05 si=224 so=0 load1=2.04 gate=open heavy=busy remainS=478 HEAVY_JOBS busy n=2;hot pid=112311 cpu=20.8 /usr/lib/chromium/chromium.real -
+reading 13:04:35 si=72 so=0 load1=2.11 gate=open heavy=busy remainS=448 HEAVY_JOBS busy n=1;hot pid=112433 cpu=106.9 /usr/lib/chromium/chromium.real -
+reading 13:05:06 si=24 so=0 load1=2.67 gate=open heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=112433 cpu=118 /usr/lib/chromium/chromium.real --t
+reading 13:05:35 si=284 so=0 load1=2.40 gate=open heavy=busy remainS=388 HEAVY_JOBS busy n=3;hot pid=152495 cpu=24.8 /data/cache/node/node-v24.22.0-li
+reading 13:06:05 si=0 so=0 load1=2.47 gate=open heavy=busy remainS=358 HEAVY_JOBS busy n=3;hot pid=152525 cpu=29.7 /usr/lib/chromium/chromium.real --u
+reading 13:06:36 si=5396 so=20 load1=2.53 gate=closed heavy=busy remainS=327 HEAVY_JOBS busy n=1;hot pid=152607 cpu=106.9 /usr/lib/chromium/chromium.r
+reading 13:07:05 si=308 so=0 load1=2.88 gate=open heavy=busy remainS=298 HEAVY_JOBS busy n=2;hot pid=152525 cpu=20.8 /usr/lib/chromium/chromium.real -
+reading 13:07:35 si=1804 so=0 load1=2.54 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=1;hot pid=152607 cpu=106.9 /usr/lib/chromium/chromium.re
+reading 13:08:06 si=88 so=0 load1=2.19 gate=open heavy=clear remainS=237 HEAVY_JOBS clear
+GATE-CLEAR 13:08:06 remainS=237
+WITNESS rc=0 13:08:07
+END 13:08:07 overall=0
+
+Gate. heavy-jobs read clear first at 13:08:06 local (11:08:06 UTC), with the gate open on the same sample (si 88, so 0): GATE-CLEAR, 237 s remaining. The witness set (/tmp/bt/r115-witnesses.sh, log target/witness/window-job-r115.log) ran under timeout with each PID captured. Its result lines:
+
+WITNESS class-witness rc=0 wall=0.1s
+ALL PASS 2 checks
+WITNESS class-red-check rc=0 wall=0.1s
+RESTORED_IDENTICAL
+DETECTED
+WITNESS code-witness rc=0 wall=0.1s
+ALL PASS 4 checks
+WITNESS code-red-check rc=0 wall=0.1s
+RESTORED_IDENTICAL
+DETECTED
+WITNESS records-witness rc=0 wall=0.1s
+ALL PASS 2 checks
+WITNESS records-red-check rc=0 wall=0.1s
+RESTORED_IDENTICAL
+DETECTED
+WITNESS-SET overall=0 13:08:07
+
+Witness set overall 0 at 13:08:07 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then e4964da..c56ee46 main -> main, push rc 0. git ls-remote origin main: c56ee46b6da36976c9d7b387352bb0eb1bfcbd02 refs/heads/main.
+
+
+## Round 115 Phase A: the single-constant search on the saved records for item 2 (witness and red check; measurement non-discriminating; not pushed)
+
+The hypothesis. The range-19 unquantisation has one wrong constant c (the table value c = 5, from ENDPOINT_UNQUANT[19]). If so, a repaired endpoint's GPU value would equal the unquantisation under the right c, for the code the CPU decoded.
+
+Change. scripts/lib/astc-endpoint-constant.cjs: unquantWithConstant(value, c) (the decoder's range-19 formula with c as a parameter), constantsExplaining(entries, maxC) and blocksExplained(records, c). New: scripts/check-astc-endpoint-constant-witness.cjs and scripts/check-astc-endpoint-constant.cjs (reads target/witness/astc-endpoint-records.json; no GPU run).
+
+Witness (CPU only, no window). node scripts/check-astc-endpoint-constant-witness.cjs: ok the constant formula with c = 5 matches the decoder for all 192 range-19 codes; ok a planted constant (c = 9) is recovered from entries generated with it; ALL PASS 2 checks, rc 0 (PID 154635).
+
+Red check. The search range was cut to c < 8 in place (saved to /tmp/bt/r115-constant.good first). The witness gave FAIL a planted constant is recovered from entries generated with it: found [], FAIL 1 of 2, mutant rc 1, DETECTED. Restored; cmp reported RESTORED_IDENTICAL.
+
+Measurement (saved records, 2,714 candidates, 943 blocks; PID 154710). The current table (c = 5) explains 0 blocks, as it must: each candidate's GPU value is the CPU value ±1, and the table gives the CPU value. The median over c = 0..255 explains 0 blocks. The best is c = 7 with 561 blocks. The neighbours: c = 6 405, c = 2 391, c = 8 338, c = 9 338.
+
+Why it does not discriminate. The explained count falls off with distance from c = 5 on both sides. Changing c moves only the digit-1 and digit-2 codes, by about one level, and the candidates are themselves one-level values. So a small constant change matches many candidates whatever the true cause is. The c = 7 result is the same effect, not evidence of a wrong constant. A discriminating test needs the GPU's own endpoint values for the same blocks, which the probe does not read back.
+
+Status. Item 2 stays open. The witness and red check discriminate, and the measurement does not. Next step: a readback of the GPU's decoded endpoint values (a probe that outputs endpoints, not texels), in a clear window, so that the constant and the table can be tested on the endpoints themselves.
+
+Not pushed. Local commit only, as lanmower, no trailers.
