@@ -4219,3 +4219,41 @@ Not validated and not claimed: the cache has no T, H or planar blocks (0 unsuppo
 Red check: `ETC1_INDEX_TO_MODIFIER` changed from `[2, 3, 1, 0]` to `[0, 1, 2, 3]`. The witness reported 0 of 8 fixtures ok and exited 1. The file was restored and `cmp` matched. The witness then reported 8 of 8 ok, and `git status` showed only the two new files.
 
 No window in Phase A. No cargo. Local commit only, not pushed. The witness exits 1 on the cache check, so this commit must not be pushed until the cache check is resolved.
+
+## Round 84 Phase B: the texel-decode witness set (record, not pushed)
+
+Window: `scripts/window-job.sh -- bash /tmp/bt/r84-witnesses.sh` at commit 4683419, defaults (window 600 s, interval 30 s, gate 1000 KB/s both ways, load limit 4, `scripts/heavy-jobs.cjs` unchanged from 495fff6, verified with `git diff 495fff6 HEAD` = 0 lines). Pre-check `vmstat 1 2` second sample: si 7572, so 0 (gate closed before the window opened).
+
+Readings, verbatim from `target/witness/window-job.log`, every reading in the window:
+
+reading 04:17:54 si=1596 so=0 load1=3.14 gate=closed heavy=clear remainS=598 HEAVY_JOBS clear
+reading 04:18:24 si=3488 so=0 load1=2.76 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=2;compile pid=2071193 /tmp/zig-toolchain/zig-x86_64-linu
+reading 04:18:55 si=2212 so=0 load1=3.33 gate=closed heavy=clear remainS=537 HEAVY_JOBS clear
+reading 04:19:24 si=212 so=0 load1=3.64 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=1;compile pid=2071512 /tmp/zig-toolchain/zig-x86_64-linux-0
+reading 04:19:54 si=424 so=0 load1=2.65 gate=open heavy=busy remainS=478 HEAVY_JOBS busy n=1;compile pid=2072320 zig test -lc --dep test_paths -Mroot=
+reading 04:20:25 si=188 so=0 load1=2.08 gate=open heavy=busy remainS=447 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=99 ./.zig-cache/o/8ac91219ccf88b3bd8b
+reading 04:20:54 si=1012 so=0 load1=1.83 gate=closed heavy=busy remainS=418 HEAVY_JOBS busy n=2;hot pid=755372 cpu=32.7 claude --dangerously-skip-perm
+reading 04:21:24 si=220 so=4 load1=1.70 gate=open heavy=busy remainS=388 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=100 ./.zig-cache/o/8ac91219ccf88b3bd8
+reading 04:21:54 si=84 so=180 load1=2.10 gate=open heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=58 ./.zig-cache/o/8ac91219ccf88b3bd8
+reading 04:22:25 si=880 so=8 load1=2.66 gate=open heavy=busy remainS=327 HEAVY_JOBS busy n=1;hot pid=2075898 cpu=39.6 /workspace/fx/fx/zig-out/bin/fx 
+reading 04:22:55 si=1712 so=172 load1=3.27 gate=closed heavy=busy remainS=297 HEAVY_JOBS busy n=1;hot pid=2225 cpu=25.7 claude --dangerously-skip-perm
+reading 04:23:26 si=232 so=2212 load1=3.09 gate=closed heavy=busy remainS=266 HEAVY_JOBS busy n=2;hot pid=1998 cpu=24.8 claude --dangerously-skip-perm
+reading 04:23:55 si=112 so=244 load1=3.19 gate=open heavy=busy remainS=237 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=99 ./.zig-cache/o/8ac91219ccf88b3bd
+reading 04:24:25 si=236 so=1056 load1=3.09 gate=closed heavy=busy remainS=207 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=99 ./.zig-cache/o/8ac91219ccf88b
+reading 04:24:56 si=824 so=0 load1=2.58 gate=open heavy=busy remainS=176 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=100 ./.zig-cache/o/8ac91219ccf88b3bd8
+reading 04:25:25 si=176 so=0 load1=2.08 gate=open heavy=busy remainS=147 HEAVY_JOBS busy n=1;hot pid=2071659 cpu=100 ./.zig-cache/o/8ac91219ccf88b3bd8
+reading 04:25:55 si=176 so=40 load1=1.65 gate=open heavy=clear remainS=117 HEAVY_JOBS clear
+
+GATE-CLEAR 04:25:55 remainS=117
+WITNESS check-texel-decode rc=1 wall=1.6s ok=8 fail=1
+WITNESS check-pair-window rc=0 wall=0.1s ok=6 fail=0
+WITNESS check-window-job rc=0 wall=15.5s ok=10 fail=0
+WITNESS-SET overall=1 04:26:13
+WITNESS rc=1 04:26:13
+END 04:26:13 overall=1
+
+Result: the window cleared on its seventeenth reading (04:25:55, gate open, heavy clear, 117 s left). The witnesses ran once each, on that sample. `check-texel-decode` exited 1: 8 of 8 fixtures ok, and the cache check failed at 25.25 dB against the 35 dB bar (the open finding in 4683419). `check-pair-window` 6 of 6 ok, wall 0.1 s. `check-window-job` 10 of 10 ok, wall 15.5 s. Set overall 1.
+
+Not pushed: the witness set did not pass. origin main stays at 17a39e3 (`git ls-remote origin main` checked after the window).
+
+Longest step: the wait for heavy clear, 8 min 1 s from job start (04:17:54) to the clear sample (04:25:55). What was done: nothing stopped. The busy processes were a peer's `zig test` (pid 2071659, under /workspace/fx) and Claude sessions (pids 755372, 2225, 1998); none is a process of this run, and none was stopped. The witnesses waited for the clear sample.
