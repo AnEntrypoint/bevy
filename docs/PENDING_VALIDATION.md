@@ -6443,3 +6443,14 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Red check A: src/height/planet.rs RELIEF_DESIGN_RADIUS_M 63_600_000.0 changed to 63_600_001.0. height:: returned rc 101 with "differ from spoint by more than 0.000000000001 relative". Restored from /tmp/bt/r130/planet.good, cmp identical (target/witness/r130-item2-redA.out).
 - Red check B: src/globe.rs DEFAULT_RADIUS 6360.0 changed to 64.0. default_radius_is_the_spoint_design_radius FAILED with rc 101. Restored from /tmp/bt/r130/globe.good, cmp identical (target/witness/r130-item2-redB.out).
 - Default game: changed. The census was not run in Phase A (see item 3).
+
+## Round 130 Phase A, item 4 (row 209): surfaceAlongDir witness, row present
+
+- Fixture: scripts/gen-spoint-surface.mjs (read-only from /workspace/spoint, rev 5f43c86c) writes testdata/parity/spoint-surface.json: 64 (lat, lon) points from LCG 20260 as f32 values. For each point, spoint's surfaceAlongDir (cpu-solve branch, since the frame has no shared lattice; createPlanetFrame with anchorDir [0, 1, 0] and offsetY 0; createHeightSampler at radius 6360, seed 0x5eed1234, hashVersion 2) returns r = radius + heightAt(dir).
+- Witness: globe::tests::surface_along_direction_matches_the_spoint_solve compares radius + GlobeWorld::elevation(lat, lon) with spoint r at each point and takes the worst absolute difference.
+- Bound, measured then set: the first run used a bound of 0 so the worst value could be read. It failed with worst 3.5146e-4 m (target/witness/r130-surface-measure.out). The bound is then one f32 ulp at the radius, 2^-11 = 4.8828e-4 m, because the globe stores positions in f32 and the worst difference is inside that ulp. Cause of the difference: bevy's lat/lon to unit uses f32 sin, cos and to_radians, while spoint uses f64, so the direction error times the terrain gradient gives about 3.5e-4 m.
+- Final witness: rc 0, 1 passed (target/witness/r130-surface.out).
+- Red check: src/globe.rs elevation multiplied by 1.001 (as f32 * 1.001). The witness failed with rc 101, worst 0.034999847412109375 m against one ulp 0.00048828125 m (target/witness/r130-surface-redcheck.out). Restored from /tmp/bt/r130/globe-item3.good, cmp identical. Full bin: rc 0, 89 passed (target/witness/r130-item3-bin.out).
+- Row 209: outcome present, with scope recorded in docs/parity-matrix.tsv: the cpu-solve branch only. Not witnessed: the sharedLattice branch (latticeRhoAlongDir) and non-cpu-solve ground sources.
+- Row 278: stays blocked. No witness calls loadPlanetSampler. Carve options (terrainCarvesOf non-empty) and hpf texture options are not wired into the globe. The row's evidence text was stale (radius 64 and spherical_noise) and is corrected.
+- Matrix counts after this item: open 793, present 7 (rows 136, 161, 209, 280, 292, 327, 953), present-candidate 0, blocked 30, missing 763, not applicable 269. docs/PARITY_MATRIX.md and docs/REMAINING_PARITY.md regenerated.

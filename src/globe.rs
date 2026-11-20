@@ -565,6 +565,27 @@ mod tests {
     }
 
     #[test]
+    fn surface_along_direction_matches_the_spoint_solve() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!("../testdata/parity/spoint-surface.json")).unwrap();
+        let globe = globe();
+        assert_eq!(fixture["seed"].as_u64(), Some(globe.seed));
+        assert_eq!(fixture["radius"].as_str().unwrap().parse::<f32>().unwrap(), globe.radius);
+        let worst = fixture["points"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|point| {
+                let latitude: f32 = point["lat"].as_str().unwrap().parse().unwrap();
+                let longitude: f32 = point["lon"].as_str().unwrap().parse().unwrap();
+                let spoint: f64 = point["r"].as_str().unwrap().parse().unwrap();
+                (f64::from(globe.radius) + f64::from(globe.elevation(latitude, longitude)) - spoint).abs()
+            })
+            .fold(0.0_f64, f64::max);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "surface radius differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
     fn gravity_points_to_centre() {
         let g = globe();
         let position = g.surface_position(30.0, 45.0, 2.0);
