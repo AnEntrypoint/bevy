@@ -64,7 +64,7 @@ const compose = composeSpecs.map((c) => {
 
 mkdirSync(outDir, { recursive: true })
 const fixture = { source: `spoint ${rev}: packages/mapspinner/src/tsl/ops-jsgen.js (compileSnoise3, compileHeightSpec) and tsl/height-spec.js (carveChord2)`, hpfRes: RES, hpfFaces, snoise3: snoiseCases, compose }
-writeFileSync(join(outDir, 'spoint-height-spec.json'), JSON.stringify(fixture) + '\n')
+writeFileSync(join(outDir, 'spoint-height-spec.json'), JSON.stringify(fixture, (key, value) => (typeof value === 'number' && key !== 'hashVersion' ? String(value) : value)) + '\n')
 const snoiseValues = snoiseCases.reduce((n, c) => n + c.expected.length, 0)
 const composeValues = compose.reduce((n, c) => n + c.expected.length, 0)
 console.log(`wrote ${snoiseValues} snoise3 and ${composeValues} composeHeight values from spoint ${rev}`)

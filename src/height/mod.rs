@@ -30,7 +30,10 @@ mod tests {
     }
 
     fn number(value: &Value) -> f64 {
-        value.as_f64().unwrap()
+        match value {
+            Value::String(text) => text.parse().unwrap(),
+            _ => value.as_f64().unwrap(),
+        }
     }
 
     fn vec3(value: &Value) -> V3 {
