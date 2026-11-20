@@ -6492,3 +6492,12 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Bound, measured then set: the first run with bound 0 gave worst 3.5146e-4 m (target/witness/r130-278b-measure.out). Bound: one f32 ulp at the radius, 4.8828e-4 m. Final run: rc 0, 1 passed (target/witness/r130-278b.out).
 - Red check: src/height/planet.rs target_h of each carve multiplied by 1.001. The witness failed with rc 101 (target/witness/r130 redcheck output /tmp/bt/r130/r278b-target.out). Restored from /tmp/bt/r130/r278b-target.good, cmp identical.
 - Row 278: still blocked. Part C (hpfTexRes) is not wired yet.
+
+## Round 130 row 278, part C: hpfTexRes through loadPlanetSampler, and row 278 present
+
+- Wiring: src/height/anchor.rs sea_bias_faces takes its bake level from the resolution as spoint does (BAKE_MAX_LEVEL = round(log2(hpfTexRes))). Bands above that level are skipped (sea_bias_at takes max_level). src/height/planet.rs stores hpf_res and passes it to the spec's hpfRes. src/globe.rs reads hpfTexRes (default 128, at least 2) and rebuilds the planet when it changes. Divergence: a resolution below 2 is raised to 2, because spoint would divide by zero.
+- Witness: globe::tests::hpf_tex_res_elevation_matches_the_spoint_sampler builds the globe from the hpfTexRes 64 case config and asserts that the globe read the resolution. It then compares elevation at the 68 points with spoint. At 64 the bake includes levels up to 6, so the subregional band (level 7) is excluded, and the case exercises that cut.
+- Bound, measured then set: the first run with bound 0 gave worst 3.6417e-4 m (target/witness/r130-278c-measure.out). Bound: one f32 ulp at the radius, 4.8828e-4 m. Final run: rc 0, 1 passed (target/witness/r130-278c.out).
+- Red check: src/height/anchor.rs max_level fixed at 7 (let max_level = (res as f64).log2().round() as u32; changed to let max_level = 7;). The witness failed with rc 101 (/tmp/bt/r130/r278c-level.out). Restored from /tmp/bt/r130/r278c-level.good, cmp identical.
+- Row 278: present, with the scope written in docs/parity-matrix.tsv. Parts A, B and C are witnessed through spoint's loadPlanetSampler. Not witnessed: the {center, radius, falloff} carve form, hashVersion 1, reliefScale override, loadBakedHeightField, and carve counts above 4 (the globe keeps 4). The owner should review whether that scope is enough for present.
+- Matrix after this part: open 792, present 8 (136, 161, 209, 278, 280, 292, 327, 953), present-candidate 0, blocked 29, missing 763, not applicable 269.

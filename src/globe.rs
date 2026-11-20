@@ -22,12 +22,14 @@ pub struct GlobeWorld {
     pub body_altitude: f32,
     pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
+    pub hpf_tex_res: usize,
     pub carves: Vec<CarveConfig>,
     pub planet: Arc<Planet>,
 }
 
 const DEFAULT_SEED: u64 = 0x5eed_1234;
 const DEFAULT_RADIUS: f32 = 6360.0;
+const DEFAULT_HPF_TEX_RES: usize = 128;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
@@ -45,8 +47,9 @@ impl Default for GlobeWorld {
             body_altitude: 0.5,
             drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
+            hpf_tex_res: DEFAULT_HPF_TEX_RES,
             carves: Vec::new(),
-            planet: Arc::new(Planet::new(DEFAULT_SEED as i32, &[])),
+            planet: Arc::new(Planet::new(DEFAULT_SEED as i32, DEFAULT_HPF_TEX_RES, &[])),
         }
     }
 }
@@ -121,7 +124,7 @@ impl GlobeWorld {
 
     pub fn from_json(&mut self, value: &Value) {
         let Some(object) = value.as_object() else { return; };
-        let seed = self.seed;
+        let (seed, hpf_tex_res) = (self.seed, self.hpf_tex_res);
         if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
         if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
         for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
@@ -137,6 +140,9 @@ impl GlobeWorld {
         self.radius = self.radius.max(1.0);
         self.stream_radius = self.stream_radius.max(self.radius * self.chunk_span);
         self.chunk_span = self.chunk_span.clamp(0.02, std::f32::consts::PI);
+        if let Some(res) = object.get("hpfTexRes").and_then(Value::as_f64) {
+            self.hpf_tex_res = (res as usize).max(2);
+        }
         if let Some(carves) = object.get("carves").and_then(Value::as_array) {
             self.carves = carves
                 .iter()
@@ -153,8 +159,8 @@ impl GlobeWorld {
                 self.carves.truncate(MAX_TERRAIN_CARVES);
             }
         }
-        if self.seed != seed || object.contains_key("carves") {
-            self.planet = Arc::new(Planet::new(self.seed as i32, &self.carves));
+        if self.seed != seed || self.hpf_tex_res != hpf_tex_res || object.contains_key("carves") {
+            self.planet = Arc::new(Planet::new(self.seed as i32, self.hpf_tex_res, &self.carves));
         }
     }
 
@@ -665,6 +671,17 @@ mod tests {
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "carved elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn hpf_tex_res_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "hpfTexRes");
+        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        assert_eq!(globe.hpf_tex_res as f64, case["config"]["hpfTexRes"].as_f64().unwrap());
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "hpf elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
     }
 
     #[test]

@@ -2,7 +2,6 @@ use super::anchor::sea_bias_faces;
 use super::height_spec::{Carve, HashVersion, HeightSpec, Params};
 use super::ops_jsgen::{Ops, Precision, V3};
 
-pub const HPF_RES: usize = 128;
 const RELIEF_DESIGN_RADIUS_M: f64 = 63_600_000.0;
 const LAND_BIAS_M: f64 = -100_000.0;
 
@@ -24,11 +23,12 @@ struct ResolvedCarve {
 #[derive(Clone)]
 pub struct Planet {
     pub(super) hpf: Vec<Vec<f32>>,
+    hpf_res: usize,
     carves: Vec<ResolvedCarve>,
 }
 
-fn spec(hpf: &[Vec<f32>], carves: Vec<Carve>) -> HeightSpec<'_> {
-    let params = Params { hpf_res: HPF_RES as f64, land_bias: LAND_BIAS_M, beach_shelf_m: 0.0, relief_scale: 0.0 };
+fn spec(hpf: &[Vec<f32>], hpf_res: usize, carves: Vec<Carve>) -> HeightSpec<'_> {
+    let params = Params { hpf_res: hpf_res as f64, land_bias: LAND_BIAS_M, beach_shelf_m: 0.0, relief_scale: 0.0 };
     HeightSpec::new(HashVersion::Integer, Precision::F64, params, carves, hpf).expect("a planet spec within the carve limit always builds")
 }
 
@@ -38,9 +38,9 @@ fn carve_chord2(radius_m: f64, planet_radius: f64) -> f64 {
 }
 
 impl Planet {
-    pub fn new(seed: i32, carves: &[CarveConfig]) -> Self {
-        let hpf = sea_bias_faces(i64::from(seed), HPF_RES);
-        let natural = spec(&hpf, Vec::new());
+    pub fn new(seed: i32, hpf_res: usize, carves: &[CarveConfig]) -> Self {
+        let hpf = sea_bias_faces(i64::from(seed), hpf_res);
+        let natural = spec(&hpf, hpf_res, Vec::new());
         let carves = carves
             .iter()
             .map(|carve| {
@@ -48,7 +48,7 @@ impl Planet {
                 ResolvedCarve { dir, inner_m: carve.inner_m, outer_m: carve.outer_m, target_h: natural.compose(dir) }
             })
             .collect();
-        Self { hpf, carves }
+        Self { hpf, hpf_res, carves }
     }
 
     pub fn height(&self, dir: V3, radius: f64) -> f64 {
@@ -62,7 +62,7 @@ impl Planet {
                 target_h: carve.target_h,
             })
             .collect();
-        spec(&self.hpf, carves).compose(Ops::new(Precision::F64).normalize(dir)) * (radius / RELIEF_DESIGN_RADIUS_M)
+        spec(&self.hpf, self.hpf_res, carves).compose(Ops::new(Precision::F64).normalize(dir)) * (radius / RELIEF_DESIGN_RADIUS_M)
     }
 }
 

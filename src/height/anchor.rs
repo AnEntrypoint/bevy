@@ -91,7 +91,7 @@ fn band_fractal(band: &Band, p: V3, seed: i64) -> f64 {
     fractal3(q, seed + band.final_offset, 4, 0.55, true)
 }
 
-pub fn sea_bias_at(seed: i64, face: usize, fu: f64, fv: f64) -> f32 {
+pub fn sea_bias_at(seed: i64, face: usize, fu: f64, fv: f64, max_level: u32) -> f32 {
     let frame = FACE_FRAME[face];
     let (u, v) = (fu * 2.0 - 1.0, fv * 2.0 - 1.0);
     let d = [0, 1, 2].map(|i| frame.0[i] + u * frame.1[i] + v * frame.2[i]);
@@ -99,7 +99,7 @@ pub fn sea_bias_at(seed: i64, face: usize, fu: f64, fv: f64) -> f32 {
     let length = if length > 0.0 { length } else { 1.0 };
     let unit = d.map(|c| c / length);
     let mut acc = 0.0_f32;
-    for band in &BANDS {
+    for band in BANDS.iter().filter(|band| band.level <= max_level) {
         let cycles = f64::from(1u32 << band.level) * FRACTAL_CYCLES_PER_CELL * FACES_AROUND_SPHERE;
         let fval = band_fractal(band, unit.map(|c| c * cycles), seed + band.index * 101);
         acc = (f64::from(acc) + f64::from((band.sea_bias)(fval) as f32)) as f32;
@@ -109,10 +109,11 @@ pub fn sea_bias_at(seed: i64, face: usize, fu: f64, fv: f64) -> f32 {
 
 pub fn sea_bias_faces(seed: i64, res: usize) -> Vec<Vec<f32>> {
     let denom = (res - 1) as f64;
+    let max_level = (res as f64).log2().round() as u32;
     (0..6)
         .map(|face| {
             (0..res * res)
-                .map(|i| sea_bias_at(seed, face, (i % res) as f64 / denom, (i / res) as f64 / denom))
+                .map(|i| sea_bias_at(seed, face, (i % res) as f64 / denom, (i / res) as f64 / denom, max_level))
                 .collect()
         })
         .collect()
