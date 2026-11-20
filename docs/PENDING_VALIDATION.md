@@ -5604,3 +5604,58 @@ Longest step. The window wait, 10:20:56 to 10:30:57 UTC (about 10 min, all of it
 
 Status. 90de827 stays local. The records measurement (the next item 2 step) needs a clear window, so the Phase A step is not taken in this stretch. Item 2 stays open. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample) for the code witness, its red check, the records witness and its red check, then the push of 90de827, and the records measurement after it.
 
+
+## Round 113 Phase B: the witnesses for 90de827 and 6fe1c22 in the window (cleared, witnesses passed, pushed 90de827 and 6fe1c22)
+
+Scope. 90de827 is the Round 111 Phase A step (candidateRecord and tabulate, the records witness and its red check). 6fe1c22 is the Round 112 ledger record. The witnessed steps are the code classification (scripts/lib/astc-endpoint-code.cjs, whose witness and red check ran again because the library changed) and the records tabulation.
+
+Pre-window. vmstat 1 2 at 10:41:03 UTC: the first line is the average since boot (si 1858, so 3063); the gate sample is si 832, so 0 (open). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer zig compile (pid 110758). The window job waited for a clear sample and did not force one.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r113.log). Readings, local time (UTC is two hours earlier):
+
+reading 12:41:08 si=1448 so=0 load1=3.35 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=2;hot pid=2197 cpu=20.8 claude --dangerously-skip-permis
+reading 12:41:38 si=200 so=0 load1=3.26 gate=open heavy=clear remainS=568 HEAVY_JOBS clear
+GATE-CLEAR 12:41:38 remainS=568
+WITNESS rc=0 12:41:39
+END 12:41:39 overall=0
+
+Gate. heavy-jobs read clear at 12:41:38 local (10:41:38 UTC) with the gate open on the same sample (si 200, so 0): GATE-CLEAR, 568 s remaining. The witness set (/tmp/bt/r113-witnesses.sh, log target/witness/window-job-r113.log) ran under timeout with each PID captured:
+
+PID code-witness timeout=111413 child= 111417 12:41:38
+WITNESS code-witness rc=0 wall=0.0s
+ok   range 19 has 192 codes with 192 distinct values
+ok   a GPU value one code up is classified as an adjacent code
+ok   a GPU value five codes up is classified as another code
+ok   a value that no code produces is classified as not a code value
+ALL PASS 4 checks
+PID code-red-check timeout=111434 child= 111438 12:41:39
+WITNESS code-red-check rc=0 wall=0.1s
+MUTATED
+PID code-mutant pid=111450 12:41:39
+RESTORED_IDENTICAL
+FAIL a GPU value one code up is classified as an adjacent code: other code
+FAIL 1 of 4
+mutant_rc=1
+DETECTED
+PID records-witness timeout=111473 child= 12:41:39
+WITNESS records-witness rc=0 wall=0.0s
+ok   a candidate record holds the CPU and GPU codes and the class
+ok   records tabulate by class and CPU trit digit
+ALL PASS 2 checks
+PID records-red-check timeout=111497 child= 111501 12:41:39
+WITNESS records-red-check rc=0 wall=0.1s
+MUTATED
+PID records-mutant pid=111513 12:41:39
+RESTORED_IDENTICAL
+FAIL records tabulate by class and CPU trit digit: [["adjacent code | cpu trit digit 1",1],["gpu value not a code value | cpu trit digit 1",1],["other code | cpu trit digit 1",1],["gpu value not a cod
+FAIL 1 of 2
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 12:41:39
+
+Witness set overall 0 at 12:41:39 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 37eb93f..6fe1c22 main -> main, push rc 0. git ls-remote origin main: 6fe1c22a96ae31b00ad3eb737df4326272405bef refs/heads/main.
+
+Longest step. The window wait, from 10:41:04 to 10:41:38 UTC (under a minute).
+
