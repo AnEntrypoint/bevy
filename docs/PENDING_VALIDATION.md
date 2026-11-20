@@ -6328,3 +6328,11 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Matrix: row 280 (VegPlacement) is present, with the vegetation test output and the census cited in the row. Counts after the flip: 1069 rows, missing 766, not applicable 269, present-candidate 33, present 1.
 - Honesty note: the planet census shows green pixels and trees, but I have not looked at the image by eye. The vegetation witness proves the bevy placement rule, not an equivalence check against spoint code.
 - Push: origin main, carrying cde6a24, 3dc0d0a, f0819bf, afee21d and the flip commit, if the witnesses above pass.
+
+## Round 123 Phase A 1: the 19 candidate rows in the requested groups are read against spoint and marked blocked (witness and red check listed; not run)
+
+- Method: each candidate row in planet, client, mapspinner, netcode and protocol was read against its spoint function and the bevy code it was matched to. None does the same thing, so each is outcome blocked with the cause in the row (rows 197, 209, 217, 269, 278, 289, 291, 707, 710, 510, 525, 529, 534, 645, 646, 797, 820, 876, 896). Row 197 is the clearest: up matches, but spoint east and north depend on a reference azimuth while bevy east is geographic.
+- No witness can be written for these rows as they stand, so no row became present. The 14 candidates in groups outside the list (other) are not re-read in this change.
+- docs/parity-matrix.tsv is the source; docs/PARITY_MATRIX.md is regenerated from it. Counts: 1069 rows; missing 766, not applicable 269, present-candidate 14, blocked 19, present 1.
+- Witness: awk -F'\t' 'NR>1{c[$6]++} END{for(k in c) print c[k], k}' docs/parity-matrix.tsv must print 19 blocked and 14 present-candidate; cut -f1 docs/parity-matrix.tsv | sort | uniq -d must print nothing.
+- Red check: append a copy of row 197 to a scratch copy of the TSV; uniq -d must print 197; restore the committed file; cmp must match; git status must show only the intended files.
