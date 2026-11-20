@@ -5519,3 +5519,51 @@ Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git,
 
 Longest step. The window wait, from 10:00:57 to 10:05:30 UTC (about 5 min, with the gate open on some samples and heavy-jobs busy on all of them until the clear sample).
 
+
+## Round 111 Phase B: the Round 110 record 37eb93f and its cited witnesses in the window (cleared, witnesses passed, pushed 37eb93f)
+
+Scope. 37eb93f is the Round 110 ledger record (the window that cleared at 10:05:30 UTC). Its cited witnesses are the code-classification witness (scripts/check-astc-endpoint-code-witness.cjs) and its red check. The commit's message and record say Round 110, not Round 109: the Round 109 window did not clear, and the cited window is Round 110.
+
+Pre-window. vmstat 1 2 at 10:10:54 UTC: the first line is the average since boot (si 1789, so 2986); the gate sample is si 216, so 0 (open). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read clear.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r111.log). Readings, local time (UTC is two hours earlier):
+
+reading 12:10:59 si=204 so=0 load1=2.98 gate=open heavy=clear remainS=598 HEAVY_JOBS clear
+GATE-CLEAR 12:10:59 remainS=598
+WITNESS rc=0 12:10:59
+END 12:10:59 overall=0
+
+Gate. heavy-jobs read clear and the gate was open on the first sample, at 10:10:59 UTC (si 204, so 0): GATE-CLEAR, 598 s remaining. The witness set (/tmp/bt/r109-witnesses.sh, which runs the code witness and its red check; log target/witness/window-job-r109.log, the last run in that file) ran under timeout with each PID captured:
+
+ok   a GPU value one code up is classified as an adjacent code
+ok   a GPU value five codes up is classified as another code
+ok   a value that no code produces is classified as not a code value
+ALL PASS 4 checks
+PID code-red-check timeout=85078 child=  85082 12:10:59
+WITNESS code-red-check rc=0 wall=0.1s
+MUTATED
+PID code-mutant pid=85094 12:10:59
+RESTORED_IDENTICAL
+FAIL a GPU value one code up is classified as an adjacent code: other code
+FAIL 1 of 4
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 12:10:59
+
+Witness set overall 0 at 12:10:59 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then f3f0006..37eb93f main -> main, push rc 0. git ls-remote origin main: 37eb93ff876eef8388797c81be6e08a434e204a2 refs/heads/main.
+
+## Round 111 Phase A: the candidate records and their tabulation for item 2 (witness and red check, the measurement not run, not pushed)
+
+The step. Item 2's next step needs each repair candidate's record saved (the CPU endpoint, the GPU value, both codes, and the class), so the no-code candidates (707 in Round 108) can be tested. The measurement printed counts only, so this step adds the record function, a tabulation by class and CPU trit digit, and a measurement that writes the records to target/witness/astc-endpoint-records.json.
+
+Change. scripts/lib/astc-endpoint-code.cjs: candidateRecord(cpuValue, gpuValue, byValue) and tabulate(records). New: scripts/check-astc-endpoint-records-witness.cjs and scripts/check-astc-endpoint-records.cjs (the measurement, which writes the records; not run yet).
+
+Witness (no window; CPU only). node scripts/check-astc-endpoint-records-witness.cjs: ok a candidate record holds the CPU and GPU codes and the class; ok records tabulate by class and CPU trit digit; ALL PASS 2 checks, rc 0 (PID 85931). The code witness was run again on the changed library: ALL PASS 4 checks, rc 0 (PID 85923).
+
+Red check (no window). The tabulation's digit divisor was changed from 64 to 32 in place (saved to /tmp/bt/r111-code.good first). The records witness gave FAIL records tabulate by class and CPU trit digit (the digit column is wrong for code 50 and code 150), FAIL 1 of 2, mutant rc 1, DETECTED. The file was restored, and cmp reported RESTORED_IDENTICAL.
+
+Not run. The measurement (scripts/check-astc-endpoint-records.cjs) needs a GPU readback in a clear window and has only been syntax-checked. Its output (target/witness/astc-endpoint-records.json) does not exist yet, so the 707 no-code candidates have not been tested. Reopen: a clear window for that measurement, then the CPU test on the saved records.
+
+Not pushed. Local commit only, as lanmower, no trailers.

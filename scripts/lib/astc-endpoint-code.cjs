@@ -15,4 +15,23 @@ function classifyGpuValue(cpuValue, gpuValue, byValue) {
     return 'other code';
 }
 
-module.exports = { codeMap, classifyGpuValue };
+function candidateRecord(cpuValue, gpuValue, byValue) {
+    return {
+        cpuValue,
+        gpuValue,
+        cpuCode: byValue.get(cpuValue),
+        gpuCode: byValue.get(gpuValue),
+        class: classifyGpuValue(cpuValue, gpuValue, byValue),
+    };
+}
+
+function tabulate(records) {
+    const table = new Map();
+    for (const r of records) {
+        const key = r.class + ' | cpu trit digit ' + Math.floor(r.cpuCode / 64);
+        table.set(key, (table.get(key) || 0) + 1);
+    }
+    return table;
+}
+
+module.exports = { codeMap, classifyGpuValue, candidateRecord, tabulate };
