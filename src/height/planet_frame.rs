@@ -388,6 +388,7 @@ mod tests {
         let smooth = 40.0 + 25.0 * d[0] - 15.0 * d[1] + 10.0 * d[2] * d[2];
         match kind {
             "null" => None,
+            "zigzag" => Some(40.0 + 50.0 * ((d[2] * 2000.0).floor() as i64 & 1) as f64),
             "smooth" => Some(smooth),
             "step" => Some(if d[0] > 0.3 { 100.0 } else { 40.0 }),
             "nullish" => if d[0] > 0.9 { None } else { Some(smooth) },

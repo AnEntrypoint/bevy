@@ -16,6 +16,7 @@ const KINDS = {
   step: (d) => 40 + 60 * (d[0] > 0.3 ? 1 : 0),
   nullish: (d) => (d[0] > 0.9 ? null : smooth(d)),
   null: () => null,
+  zigzag: (d) => 40 + 50 * (Math.floor(d[2] * 2000) & 1),
 }
 const sampler = { radius: RADIUS, hashVersion: 2, heightAt: smooth }
 const frame = pf.createPlanetFrame({ sampler, anchorDir: [0, 1, 0], offsetY: 0, reliefScale: 0.001 })
@@ -39,6 +40,12 @@ const CASES = [
   { x: 3000, z: 0, kind: 'step', tol: 1e-12, guess: null },
   { x: 1500, z: 0, kind: 'step', tol: 1e-12, guess: null },
   { x: 3000, z: 0, kind: 'step', tol: 1e-14, guess: 60 },
+  { x: 100, z: 50, kind: 'zigzag', tol: 1e-3, guess: null },
+  { x: 3000, z: 2000, kind: 'zigzag', tol: 1e-3, guess: null },
+  { x: 0, z: 0, kind: 'zigzag', tol: 1e-6, guess: null },
+  { x: -4000, z: 1000, kind: 'zigzag', tol: 1e-6, guess: null },
+  { x: 100, z: 50, kind: 'smooth', tol: 1e-300, guess: null },
+  { x: 3000, z: 0, kind: 'step', tol: 1e-300, guess: null },
 ]
 const cases = CASES.map((c) => {
   try {
@@ -51,5 +58,5 @@ const cases = CASES.map((c) => {
 
 const statusAfter = execFileSync('git', ['-C', spoint, 'status', '--porcelain']).toString()
 if (statusAfter !== statusBefore) throw new Error('spoint working tree changed')
-writeFileSync(outPath, JSON.stringify({ spoint: rev, module: 'src/terrain/PlanetFrame.js', radius: RADIUS, anchorDir: [0, 1, 0], sampler: 'smooth: 40 + 25 x - 15 y + 10 z z', anchorHeight: frame.anchorHeight, kinds: 'null: always null, smooth, step: 40 + 60 (x > 0.3), nullish: null when x > 0.9 else smooth', spointStatusBefore: statusBefore, spointStatusAfter: statusAfter, cases }) + '\n')
+writeFileSync(outPath, JSON.stringify({ spoint: rev, module: 'src/terrain/PlanetFrame.js', radius: RADIUS, anchorDir: [0, 1, 0], sampler: 'smooth: 40 + 25 x - 15 y + 10 z z', anchorHeight: frame.anchorHeight, kinds: 'null: always null, zigzag: 40 + 50 (floor(z 2000) odd), smooth, step: 40 + 60 (x > 0.3), nullish: null when x > 0.9 else smooth', spointStatusBefore: statusBefore, spointStatusAfter: statusAfter, cases }) + '\n')
 console.log(JSON.stringify({ spoint: rev, anchorHeight: frame.anchorHeight, cases: cases.map((c) => [c.kind, c.x, c.z, c.y, c.error]) }))
