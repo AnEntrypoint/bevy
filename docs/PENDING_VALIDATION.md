@@ -4042,7 +4042,29 @@ Recovery of the two per-format files (data, no window):
 
 Red check: the layout was changed so every format maps to the shared name (`return SHARED_REFERENCE`). The witness exited 1 with seven FAILs, covering the ETC2 and ASTC references, the rows and the names. The file was restored with `cmp`, and the witness exited 0 with 9 of 9 ok.
 
-Not run here: the footprint rerun against the new names (Phase B), and any window. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+Not run here: the footprint rerun against the new names, and any window. Both were done later in the Round 78 Phase B window (its record follows the Round 78 Phase A entry). The earlier text tagged the rerun as Phase B before that window ran, so it is corrected here. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 78 Phase B: the witnesses on the clear sample (record)
+
+Window: the job's first sample cleared the gate at 03:13:48 with 598 s remaining of a 600 s window, so the witnesses started at once and the window was not used further. The job was the Round 78 loop in `/tmp/bt`, which the committed `scripts/window-job.sh` (Round 79) replaces.
+
+Readings, verbatim from the job log (every reading in the window):
+
+reading 03:13:48 si=284 so=544 load1=2.12 gate=open heavy=clear remainS=598 HEAVY_JOBS clear;
+GATE-CLEAR 03:13:48 remainS=598 witnesses=start
+
+The gate reading is the second `vmstat 1 2` sample: swap-in 284 and swap-out 544 KB/s, both below 1000; load 2.12, below 4; `scripts/heavy-jobs.cjs` at bevy's commit 495fff6 reads clear (the heavy-job files are unchanged in HEAD).
+
+Witnesses, each run once, rc 0:
+- `check-reference-layout.cjs`: 9 ok, 0 FAIL, wall under 0.05 s (shown as 0.0 s).
+- `check-pair-budget.cjs`: 11 ok, 0 FAIL, wall under 0.05 s.
+- `check-astc-pair.cjs`: 16 ok, 0 FAIL, wall under 0.05 s.
+- `texture-footprint.cjs` (the footprint check): rc 0, wall 1.3 s. Decision `bc7`; `fallbackFormats` `{"astc4x4":true,"etc2":true}`. Both formats read their own reference: `etc2` reference `rgba8-software-etc2`, `loadEvidence.sameWindow` true, gap 315.753 s; `astc4x4` reference `rgba8-software-astc4x4`, `sameWindow` true, gap 309.082 s.
+- `check-fallback-list.cjs`: 7 ok, 0 FAIL, wall under 0.05 s.
+
+END 03:13:50 overall=0. The footprint decision and fallback list are unchanged from Round 77; the per-format references now give both formats same-window evidence in the footprint.
+
+Docs only: no red check applies to this record.
 
 ## Round 79 Phase A: the window job is committed, with a witness for its gate
 
@@ -4057,3 +4079,23 @@ What changed:
 Red check: the swap-out condition was removed from the gate. The witness exited 1 with `FAIL a swap-out spike alone closes the gate`. The job was restored with `cmp`, and the witness exited 0 with 8 of 8 ok.
 
 No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+
+## Round 79 Phase B: the window job on the clear sample (record)
+
+Run: `scripts/window-job.sh -- node scripts/check-window-job.cjs` at commit 4444763, with the committed defaults (window 600 s, interval 30 s, gate 1000 KB/s, load limit 4, `scripts/heavy-jobs.cjs` at 495fff6, unchanged in HEAD).
+
+Readings, verbatim from the job log `target/witness/window-job.log` (every reading in the window):
+
+reading 03:23:47 si=532 so=0 load1=1.52 gate=open heavy=clear remainS=598 HEAVY_JOBS clear
+GATE-CLEAR 03:23:47 remainS=598
+WITNESS rc=0 03:24:01
+END 03:24:01 overall=0
+
+The gate reading is the second `vmstat 1 2` sample: swap-in 532, swap-out 0, load 1.52, heavy clear, 598 s remaining. The first sample cleared the gate, so the witness started at once.
+
+Witness: `check-window-job.cjs`, 8 ok, 0 FAIL, rc 0, wall 14 s (03:23:47 to 03:24:01).
+
+No process of mine remained after the window, and no peer process was stopped.
+
+Docs only: no red check applies to this record.
