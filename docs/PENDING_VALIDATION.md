@@ -5824,3 +5824,18 @@ Why it does not discriminate. The explained count falls off with distance from c
 Status. Item 2 stays open. The witness and red check discriminate, and the measurement does not. Next step: a readback of the GPU's decoded endpoint values (a probe that outputs endpoints, not texels), in a clear window, so that the constant and the table can be tested on the endpoints themselves.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 116 Phase A: the GPU endpoint readback for item 2 (lib, witness, measurement; not pushed)
+
+Why the earlier tests could not finish item 2. The probe reads texels, and every probe in the records and distance steps used residual blocks only. A texel readback cannot tell an endpoint value from an interpolated one unless the weight is fixed. The probe gives every block one uniform weight index b % levels. For mode 0x242 that is 16 levels, from 0 to 64 (WEIGHT_LEVELS[WEIGHT_RANGE_BY_FIELD[0x242]]). A block at index 0 reads back as its e0, and a block at index 15 as its e1. The records script already ran these blocks on the GPU and then skipped them, so nothing compared the GPU's endpoints with the CPU's.
+
+What it does. scripts/lib/astc-endpoint-readback.cjs: uniformTexel(pixels, b) (the 16 texels of block b, or null when they differ), endpointRows(b, end, cpu, gpu) (one row per channel with delta = gpu - cpu), tabulateDeltas(rows), and cacheBlocks(count) (the loader moved from the records script). scripts/check-astc-endpoint-readback.cjs runs the probe on the same 15,360 cached blocks, compares each index-0 and top-index block with its CPU endpoint for the same block, classifies each mismatch with classifyGpuValue, and saves the rows to target/witness/astc-endpoint-readback.json.
+
+Witness (CPU only). scripts/check-astc-endpoint-readback-witness.cjs: ok a uniform block reads as that texel; ok a block with one texel different is not read as uniform (wrong output: a texel value); ok a GPU channel one above the CPU channel is reported as delta 1 (wrong output: delta 0); ok the table counts each end, channel and delta separately; ok the weight table for mode 0x242 runs from 0 to 64 in 16 levels; ok the block loader returns 16 blocks in mode 0x242 (wrong output: a block in another mode). ALL PASS 6 checks, rc 0 (PID 2998).
+
+Red checks (each mutant run under timeout, restored from a /tmp copy, cmp RESTORED_IDENTICAL):
+- delta forced to 0: FAIL a GPU channel one above the CPU channel is reported as delta 1 (wrong output: delta 0): deltas 0,0,0; FAIL 2 of 6; DETECTED (PID 3018).
+- uniform test removed: FAIL a block with one texel different is not read as uniform (wrong output: a texel value): got [7,8,9]; FAIL 1 of 6; DETECTED (PID 3039).
+- loader filter inverted: FAIL the block loader returns 16 blocks in mode 0x242 (wrong output: a block in another mode): modes 5fc,...; FAIL 1 of 6; DETECTED (PID 3060).
+
+Measurement. Not run in Phase A: it needs the GPU, so it runs in the Phase B window, and its result is recorded there.
