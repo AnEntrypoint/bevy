@@ -6511,3 +6511,131 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Cause: the view moves, not the renderer. The camera is framed on the focus, which is the position of the first dynamic GlobeBody (update_focus, then frame_globe_camera in src/globe.rs). That body moves under FixedUpdate physics, and the fixed steps run on the wall clock (Time delta, features_ecs.rs and protocol.rs read delta_secs). So the frame at the 45 s capture depends on how many steps the machine completed. A horizontal shift of the whole view is what a camera following a body that moved along the surface would show.
 - Decision: not fixed in this round. Making the capture deterministic needs a fixed-step or frozen-clock mode in the game, or a fixed camera, and that changes the default game's runtime behaviour. The census metrics are not affected: the green pixel count (5127) and the tree count (16) are the same in both runs. The PNG hash is therefore not a valid witness for this census and should not be used as one. The census check compares green pixels and trees, which the shift does not change.
 - Not verified: that the body is at a different place in each run (inferred from the whole-view shift, not measured in the game). The reason the green count is identical under the shift is not established; it is consistent with the view moving only in yaw about the planet's up axis.
+
+## Round 130 Phase B, window 3 (gate driver pid 598542, exited rc 0)
+
+- Gate: /tmp/bt/r130p3-gate.sh. Each reading runs vmstat 1 2 and logs both samples (VMSTAT-LINE rows; the second data row of each reading is the sample that is tested), then heavy-jobs (/tmp/bt/r119-heavy.sh). The clear rule: si and so under 1000 KB/s in the second sample, and heavy-jobs rc 0 in that same reading. Ten readings. Readings 1 to 9 failed on heavy-jobs busy; the holders were gcc cc1plus jobs under /workspace/gm/build/release and a headless Chromium GPU process (pid 601011), none started in this round and none touched. Reading 10 cleared: second sample si 44, so 0, heavy-jobs clear (GATE-CLEAR try=10 20:14:43Z).
+- Full gate log with both samples for every reading (target/witness/window-job-r130-p3.log):
+
+```
+GATE-DRIVER pid=598542 started 20:05:05Z
+VMSTAT try=1 20:05:06Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  6  0 4653520 237676  13576 7718884 3376 4107 22461 13739 36284   17 13  6 80  1  0  0
+VMSTAT-LINE  7  0 4653520 300860  13580 7611952    0    0     4  1972 29668 17160 33  3 64  0  0  0
+GATE-READ try=1 20:05:09Z vmstat_sample2 si=0 so=0 heavy495fff6_rc=1
+VMSTAT try=2 20:06:10Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  6  0 4622332 825648  14028 7724184 3369 4097 22416 13736 36262   17 13  6 80  1  0  0
+VMSTAT-LINE  5  0 4622328 716728  14028 7725660    4    0    16   496 18831 13071 34  1 65  0  0  0
+GATE-READ try=2 20:06:13Z vmstat_sample2 si=4 so=0 heavy495fff6_rc=1
+VMSTAT try=3 20:07:14Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  2  1 4487620 2848256  12852 6504780 3366 4088 22385 13736 36236   17 13  6 80  1  0  0
+VMSTAT-LINE  1  2 4487244 2840488  12864 6518880  376    0 10988   100 17142 18707 12  2 80  6  0  0
+GATE-READ try=3 20:07:16Z vmstat_sample2 si=376 so=0 heavy495fff6_rc=1
+VMSTAT try=4 20:08:17Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  3  0 4397868 424104  19472 6981452 3360 4079 22370 13716 36237   17 13  6 80  1  0  0
+VMSTAT-LINE  2  0 4397832 357068  19472 6982220   36    0   192   588 36884 52630 21  4 74  0  0  0
+GATE-READ try=4 20:08:20Z vmstat_sample2 si=36 so=0 heavy495fff6_rc=1
+VMSTAT try=5 20:09:21Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  1  0 4374204 501648  19784 7433596 3354 4070 22330 13688 36215   17 13  6 80  1  0  0
+VMSTAT-LINE  1  0 4374172 504492  19784 7434092   32    0    32   740 25349 34472 11  5 84  0  0  0
+GATE-READ try=5 20:09:24Z vmstat_sample2 si=32 so=0 heavy495fff6_rc=1
+VMSTAT try=6 20:10:25Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  1  0 4361388 1666072  15784 6837920 3346 4061 22385 13660 36183   17 13  6 80  1  0  0
+VMSTAT-LINE  8  0 4361380 1662468  15784 6837964    8    0    44     0 14380 19331 13  2 85  0  0  0
+GATE-READ try=6 20:10:27Z vmstat_sample2 si=8 so=0 heavy495fff6_rc=1
+VMSTAT try=7 20:11:29Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  1  0 4354880 602004  16116 7489636 3339 4052 22350 13632 36154   17 13  6 80  1  0  0
+VMSTAT-LINE  3  0 4354852 563692  16120 7491852   28    0    32     4 61967 75267 20  8 72  0  0  0
+GATE-READ try=7 20:11:31Z vmstat_sample2 si=28 so=0 heavy495fff6_rc=1
+VMSTAT try=8 20:12:32Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  6  0 4346068 631188  17280 5715552 3332 4043 22312 13610 36136   17 13  6 80  1  0  0
+VMSTAT-LINE 11  0 4343836 749872  18232 5736032 2288    0  9900 13956 34046 33127 35 10 54  0  0  0
+GATE-READ try=8 20:12:35Z vmstat_sample2 si=2288 so=0 heavy495fff6_rc=1
+VMSTAT try=9 20:13:36Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  5  0 4329472 1259776  15076 5046040 3325 4034 22267 13610 36122   17 13  6 80  1  0  0
+VMSTAT-LINE 14  0 4329460 1758184  15084 5058396   12    0    16 28964 58244 62793 39  8 53  0  0  0
+GATE-READ try=9 20:13:39Z vmstat_sample2 si=12 so=0 heavy495fff6_rc=1
+VMSTAT try=10 20:14:40Z
+VMSTAT-LINE procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+VMSTAT-LINE  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+VMSTAT-LINE  0  0 4328532 1863192  13716 6010820 3318 4025 22223 13611 36095   17 13  6 80  1  0  0
+VMSTAT-LINE  4  0 4328488 1873868  13716 6010932   44    0    56     0 12354 16373  4  1 95  0  0  0
+GATE-READ try=10 20:14:43Z vmstat_sample2 si=44 so=0 heavy495fff6_rc=0
+GATE-CLEAR try=10 20:14:43Z
+PID docs-witness pid=612545 20:14:43Z
+WITNESS docs-witness rc=0
+PID docs-red-check pid=612582 20:14:43Z
+WITNESS docs-red-check rc=0
+PID bin-witness pid=612618 20:14:43Z
+WITNESS bin-witness rc=0
+MUTANT r1-anchor file-differs-rc=1
+PID mutant-r1-anchor pid=613146 20:14:53Z
+RESTORED r1-anchor identical
+DETECTED r1-anchor rc=101       1 differ from spoint       2 FAILED 
+MUTANT r2-relief file-differs-rc=1
+PID mutant-r2-relief pid=613498 20:14:57Z
+RESTORED r2-relief identical
+DETECTED r2-relief rc=101       1 differ from spoint       2 FAILED 
+MUTANT r3-radius file-differs-rc=1
+PID mutant-r3-radius pid=613875 20:15:01Z
+RESTORED r3-radius identical
+DETECTED r3-radius rc=101       2 FAILED 
+MUTANT r4-surface file-differs-rc=1
+PID mutant-r4-surface pid=614224 20:15:05Z
+RESTORED r4-surface identical
+DETECTED r4-surface rc=101       1 differs from spoint       2 FAILED 
+MUTANT r5-278a-seed file-differs-rc=1
+PID mutant-r5-278a-seed pid=614574 20:15:10Z
+RESTORED r5-278a-seed identical
+DETECTED r5-278a-seed rc=101       2 FAILED 
+MUTANT r6-278b-carve file-differs-rc=1
+PID mutant-r6-278b-carve pid=614919 20:15:14Z
+RESTORED r6-278b-carve identical
+DETECTED r6-278b-carve rc=101       1 differs from spoint       2 FAILED 
+MUTANT r7-278c-level file-differs-rc=1
+PID mutant-r7-278c-level pid=615296 20:15:19Z
+RESTORED r7-278c-level identical
+DETECTED r7-278c-level rc=101       1 differs from spoint       2 FAILED 
+PID census-build pid=615668 20:15:24Z
+WITNESS census-build rc=0
+PID census-1-capture pid=616003 20:15:28Z
+WITNESS census-1-capture rc=0
+game stopped rc=143
+PID census-1-check pid=616443 20:16:16Z
+WITNESS census-1-check rc=0
+{"png":"target/witness/r130-p3-census1.png","sha256":"a8ba9824c7a1154f9404baa69f5d89387426465d0bc2f201fa1e1f85a40b4464","width":1536,"height":752,"greenPercent":0.44,"greenMinPercent":0.43,"treesMin":16,"trees":16}
+PID census-2-capture pid=616459 20:16:16Z
+WITNESS census-2-capture rc=0
+game stopped rc=143
+PID census-2-check pid=617453 20:17:03Z
+WITNESS census-2-check rc=0
+{"png":"target/witness/r130-p3-census2.png","sha256":"ea5343a8aeb20952b2a144355284d283a9652aa3db7fbd8d4b445e9d03f6eed3","width":1536,"height":752,"greenPercent":0.44,"greenMinPercent":0.43,"treesMin":16,"trees":16}
+WITNESS-SET overall=0 20:17:03Z
+PHASEB-DONE rc=0 20:17:03Z
+```
+
+- Witnesses in this window (rc): docs witness 0 (open 792, present 8, blocked 29, candidate-only 0); docs red check 0 (a count of 28 blocked is rejected by the docs check, so rc 0 means the mismatch was detected); bin witness 0 (92 passed).
+- Red checks, each detected and restored identical: r1-anchor (2600.0 to 2600.5), r2-relief (63_600_000.0 to 63_600_001.0), r3-radius (DEFAULT_RADIUS 6360 to 64), r4-surface (elevation times 1.001), r5-278a-seed (DEFAULT_SEED plus 1), r6-278b-carve (carve target_h times 1.001), r7-278c-level (max_level fixed at 7). Every one returned rc 101.
+- Census in this window: census-1 rc 0 (greenPercent 0.44 against min 0.43; trees 16 against min 16; PNG sha256 a8ba9824...). census-2 rc 0 (greenPercent 0.44; trees 16; PNG sha256 ea5343a8...). Game pids: run 1 timeout 616010, bevy 616012; run 2 timeout 616466, bevy 616468. Both stopped by the capture script (game stopped rc 143). Both captures are 1536x752 = 1,155,072 pixels; 174,845 of them differ between the two XWD captures (15 percent). The PNG hashes differ for the same reason as before (the framed body moves), and the green count and tree count match.
+- Stopped by PID: gate driver 598542 exited; bevy 616012 and 616468 were not running after the capture script ended (checked with ps -p). No pkill or killall used.
+- Row 278: present (parts A, B and C witnessed; scope in docs/parity-matrix.tsv).
+- Counts: open 792, present 8, candidate-only 0, blocked 29.
+
