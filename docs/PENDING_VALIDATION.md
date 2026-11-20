@@ -6206,3 +6206,10 @@ Red checks (each mutation in place under timeout, restored from a /tmp copy, cmp
 - partition seed moved from bit 13 to 14: PID 108555, FAIL 2 of 4 (CEM 8: 148 of 320 texels wrong, CEM 4: 143 of 320), DETECTED.
 
 Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear window (witness and red check first). (b) Item 3: a GPU readback of the two-subset blocks above, in the same window, which would check the tail shapes the GPU decodes. Both need the gate to clear first.
+
+## Round 121 Phase A part one: parity matrix of spoint features (not witnessed; not pushed)
+
+- docs/PARITY_MATRIX.md and docs/parity-matrix.tsv: 1073 rows, the 1067 features in spoint docs/FEATURES-full.md at spoint 5f43c86c and 6 commit-sourced rows. Counts: missing 769, not applicable 270, present-candidate 34 (no witness yet), present 0.
+- Source: eight classifier passes, one per 134-row chunk. Each present-candidate cites a bevy file and symbol; none is counted present until its Phase B witness runs.
+- Known gap: 195 missing rows sit in item other-ranked, which is too broad to act on until the owner splits it.
+- Witness: none in Phase A. Red check: none; this is a document.
