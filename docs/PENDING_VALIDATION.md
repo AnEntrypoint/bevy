@@ -4666,3 +4666,36 @@ Red check, one script for both (/tmp/bt/r96-redcheck.sh, mutants as dot-files, p
 Verdict. Neither candidate closes the gap. The transfer tag is ruled out (the curves lower blue by 0.9 to 8 dB). The subset geometry is worth at most 0.34 dB on the minimum channel. The 35 dB bar stays OPEN; the best minimum tested is still 29.74 dB (special-mode union, Round 94), and the best all-channel geometry arm is 29.46 dB.
 
 Reopen. The remaining gap sits in the palette model, not the shape or the transfer: an exhaustive per-block search over the full ETC1 differential palette (5-bit bases with the delta) on the red and green channels, combined with the special-mode arm; or an owner ruling on the 35 dB bar for this format.
+
+## Round 96 Phase B: the Phase A witnesses in the window (did not clear, nothing pushed)
+
+Pre-window readings. vmstat 1 2 at 07:37:58: the first line (average since boot) si 5242, so 7171; the second line, the gate sample, si 988, so 0, under 1000 KB/s, so the gate was open. scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy: chromium renderer pid 2266732 at 104% CPU, chromium gpu-process pid 2266698, and a claude session pid 2225. None belongs to this round and none was stopped.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r96.log). Every reading, one per 30 s:
+
+```reading 07:38:07 si=244 so=0 load1=5.17 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2266732 cpu=105 /usr/lib/chromium/chromium.real
+reading 07:38:37 si=96 so=0 load1=4.39 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=2266732 cpu=110 /usr/lib/chromium/chromium.real 
+reading 07:39:07 si=4 so=4724 load1=3.96 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=1;hot pid=2266732 cpu=113.9 /usr/lib/chromium/chromium.r
+reading 07:39:37 si=556 so=0 load1=3.54 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=1;hot pid=2266732 cpu=104 /usr/lib/chromium/chromium.real -
+reading 07:40:07 si=20372 so=0 load1=3.35 gate=closed heavy=busy remainS=477 HEAVY_JOBS busy n=4;hot pid=1629 cpu=31.7 claude --dangerously-skip-permi
+reading 07:40:37 si=168 so=0 load1=4.58 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=2;hot pid=2282536 cpu=20.8 /usr/lib/chromium/chromium.rea
+reading 07:41:07 si=976 so=0 load1=4.56 gate=closed heavy=busy remainS=418 HEAVY_JOBS busy n=2;hot pid=2356 cpu=23.8 claude --dangerously-skip-permiss
+reading 07:41:38 si=4692 so=10932 load1=4.97 gate=closed heavy=busy remainS=387 HEAVY_JOBS busy n=1;hot pid=2282574 cpu=105 /usr/lib/chromium/chromium
+reading 07:42:07 si=8368 so=72620 load1=5.25 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=2282574 cpu=105 /usr/lib/chromium/chromium
+reading 07:42:37 si=848 so=3040 load1=4.87 gate=closed heavy=clear remainS=328 HEAVY_JOBS clear
+reading 07:43:08 si=2732 so=0 load1=4.61 gate=closed heavy=busy remainS=297 HEAVY_JOBS busy n=4;hot pid=2088755 cpu=22.8 /data/cache/node/node-v24.22.
+reading 07:43:37 si=652 so=84 load1=5.29 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=1;hot pid=2284679 cpu=112.9 /usr/lib/chromium/chromium.r
+reading 07:44:07 si=896 so=0 load1=4.19 gate=closed heavy=busy remainS=238 HEAVY_JOBS busy n=1;hot pid=2284679 cpu=106.9 /usr/lib/chromium/chromium.re
+reading 07:44:38 si=28 so=0 load1=3.09 gate=open heavy=busy remainS=207 HEAVY_JOBS busy n=1;hot pid=2284679 cpu=111.9 /usr/lib/chromium/chromium.real 
+reading 07:45:07 si=260 so=0 load1=2.39 gate=open heavy=busy remainS=178 HEAVY_JOBS busy n=1;hot pid=2284679 cpu=115.8 /usr/lib/chromium/chromium.real
+reading 07:45:37 si=380 so=608 load1=2.36 gate=open heavy=busy remainS=148 HEAVY_JOBS busy n=2;hot pid=2286600 cpu=20.8 /usr/lib/chromium/chromium.rea
+reading 07:46:08 si=496 so=0 load1=2.30 gate=open heavy=busy remainS=117 HEAVY_JOBS busy n=1;hot pid=2286641 cpu=111.9 /usr/lib/chromium/chromium.real
+reading 07:46:37 si=76 so=76 load1=2.06 gate=open heavy=busy remainS=88 HEAVY_JOBS busy n=2;hot pid=2707 cpu=22.8 claude --dangerously-skip-permission
+reading 07:47:07 si=24 so=0 load1=2.01 gate=open heavy=busy remainS=58 HEAVY_JOBS busy n=1;hot pid=2286641 cpu=116.8 /usr/lib/chromium/chromium.real -
+reading 07:47:38 si=1708 so=0 load1=1.88 gate=closed heavy=busy remainS=27 HEAVY_JOBS busy n=2;hot pid=755372 cpu=22 claude --dangerously-skip-permiss
+WINDOW-ENDED-WITHOUT-CLEAR 07:48:05
+```
+
+Result. The gate never cleared with heavy-jobs clear on the same sample: heavy-jobs read clear once, at 07:42:37, and that sample's gate was closed (si 848, so 3040). The job ended at 07:48:05 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set (scripts/check-etc1-individual-witness.cjs with its red check, scripts/check-etc2-transfer-witness.cjs, scripts/check-block-geometry-witness.cjs with the combined red check) did not start in the window, so this record claims no witness result for the window. Phase A results are in commit 3412091 and in the Round 96 Phase A entry above.
+
+Push. None. origin main stays where it was; the unpushed commits 437e14a and 3412091 remain local. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear on the same sample, then run the witness set in /tmp/bt/r96-witnesses.sh under timeout, and push once if every witness passes.
