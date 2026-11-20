@@ -5839,3 +5839,38 @@ Red checks (each mutant run under timeout, restored from a /tmp copy, cmp RESTOR
 - loader filter inverted: FAIL the block loader returns 16 blocks in mode 0x242 (wrong output: a block in another mode): modes 5fc,...; FAIL 1 of 6; DETECTED (PID 3060).
 
 Measurement. Not run in Phase A: it needs the GPU, so it runs in the Phase B window, and its result is recorded there.
+
+## Round 116 Phase B: window did not clear (no witness run, nothing pushed; readings recorded)
+
+Host rebooted before this round. Checkout at start: origin/main c56ee46 (c56ee46b6da36976c9d7b387352bb0eb1bfcbd02 on origin), HEAD 6ecbef4, plus the untracked readback files, which were then committed as 289c691 and d6fcb30 (Phase A). The clock reads two hours ahead of UTC on the gate log (local = UTC+2); the timestamps below are local, with UTC in brackets.
+
+Pre-window vmstat 1 2 at 12:17:06 UTC: sample 1 (average since boot) si 0, so 0, bi 24493, bo 4864; sample 2 si 0, so 0, bi 28704, bo 13344 (the swap readings are under the gate, but this was not the window gate sample).
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r116.log). Readings:
+
+- 14:17:21 si 0 so 0, gate open, heavy-jobs busy (gm-core pid 2236)
+- 14:17:50 si 0 so 0, gate open, heavy-jobs busy (gm-core pid 2525)
+- 14:18:20 si 0 so 0, gate open, heavy-jobs busy (claude pid 1797)
+- 14:18:51 si 0 so 0, gate open, heavy-jobs busy (zig compile pid 4823)
+- 14:19:20 si 44 so 0, gate open, heavy-jobs busy (zig compile pid 5059)
+- 14:19:50 si 0 so 0, gate open, heavy-jobs busy (gm-core pid 2525)
+- 14:20:21 si 20 so 0, gate closed, heavy-jobs busy (gm-core pid 2525)
+- 14:20:50 si 28 so 0, gate closed, heavy-jobs busy (gm-core pid 2525)
+- 14:21:20 si 52 so 0, gate closed, heavy-jobs clear
+- 14:21:51 si 252 so 0, gate open, heavy-jobs busy (cmake pid 7062, four or more compile jobs)
+- 14:22:20 si 1300 so 19124, gate closed, heavy-jobs busy (cmake pid 7062)
+- 14:22:50 si 8 so 0, gate closed, heavy-jobs busy (cmake pid 7062)
+- 14:23:21 si 44 so 0, gate closed, heavy-jobs busy (gm-core pid 1762)
+- 14:23:50 si 4 so 0, gate closed, heavy-jobs busy (cmake pid 7062)
+- 14:24:20 si 16 so 0, gate closed, heavy-jobs busy (cmake pid 7062)
+- 14:24:51 si 892 so 0, gate closed, heavy-jobs busy (gm-core pid 2525)
+- 14:25:20 si 60 so 0, gate closed, heavy-jobs busy (cmake pid 7062)
+- 14:25:50 si 100 so 0, gate closed, heavy-jobs busy (gm-core pid 2525)
+- 14:26:21 si 6204 so 0, gate closed, heavy-jobs busy (gm-core pid 2525)
+- 14:26:50 si 6684 so 0, gate closed, heavy-jobs busy (claude pid 1797)
+
+Result: WINDOW-ENDED-WITHOUT-CLEAR at 14:27:18 local (12:27:18 UTC). The gate never had a sample with both swap directions under 1000 KB/s and heavy-jobs clear together. The heavy-jobs busy readings came from peer processes (gm-core pids 2236, 2525, 1762; claude pid 1797; a cmake build pid 7062 and zig compiles pid 4823, 5059), none of them started by this round. Swap-in spiked to 6684 KB/s in the last minute.
+
+Witnesses not run in this window: class (c56ee46 and earlier), code, records, constant, and readback witnesses with their red checks, and the readback measurement. Their Phase A runs are recorded above (readback: 6 of 6 and three red checks DETECTED, in Round 116 Phase A). The readback measurement, which would finish item 2, has not run. Nothing was pushed: origin/main is still c56ee46, and HEAD carries 289c691 and d6fcb30 locally.
+
+Blocker for item 2: the GPU measurement needs a clear window; the cause is peer load (gm-core, cmake, zig, claude) on heavy-jobs and swap. Item 3 was not taken in this round: its Phase A needs the endpoint-shape block encoder, which is not on disk, and the item 2 measurement should run first so its window is not spent on item 3.
