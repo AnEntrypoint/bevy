@@ -4555,3 +4555,36 @@ Witness. scripts/check-etc2-special-witness.cjs, 10 checks, ALL PASS 10 checks, 
 Red check. The planar rounding term (`+ 2`) was removed in a dot-file mutant (scripts/lib/.etc2-special.mutant.cjs, via ETC2_SPECIAL_PATH). The witness exited 1 with 3 of 10 FAIL (the three planar fixtures). mutant_rc 1, DETECTED. The mutant was deleted, and scripts/lib/etc2-special.cjs was cmp-identical to its saved copy (RESTORED_IDENTICAL). git status showed only the three new files.
 
 Reopen. The bit layouts of T, H and planar, from the ETC2 specification or fitted to a SwiftShader readback of fixture blocks in each mode. Then re-run the top-end arms with a decodable encoder, and combine planar with the E4 search on the R channel, the limit in every arm.
+
+## Round 93 Phase B: the ETC2 special-mode witness in the window (did not clear, nothing pushed)
+
+Pre-window readings. `vmstat 1 2` at 07:03:46: the first line is the average since boot (si 5249, so 7173); the second line is the gate sample (si 480, so 0), both under 1000 KB/s. scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy: chromium renderer pid 2250747 at 98% CPU and a chromium gpu-process pid 2250712 at 21%. Both belong to another session and were not stopped.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r93.log). Every reading, one per 30 s, as the job logged it:
+
+```reading 07:03:56 si=60 so=0 load1=4.49 gate=closed heavy=busy remainS=597 HEAVY_JOBS busy n=1;hot pid=2250747 cpu=109.9 /usr/lib/chromium/chromium.rea
+reading 07:04:25 si=664 so=4 load1=4.34 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=2250747 cpu=104 /usr/lib/chromium/chromium.real
+reading 07:04:55 si=1372 so=0 load1=4.10 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=1;hot pid=2250747 cpu=103 /usr/lib/chromium/chromium.rea
+reading 07:05:26 si=124 so=1708 load1=3.69 gate=closed heavy=busy remainS=507 HEAVY_JOBS busy n=1;hot pid=2250747 cpu=107 /usr/lib/chromium/chromium.r
+reading 07:05:55 si=8 so=0 load1=3.27 gate=open heavy=busy remainS=478 HEAVY_JOBS busy n=4;hot pid=2088755 cpu=27 /data/cache/node/node-v24.22.0-linux
+reading 07:06:25 si=880 so=2884 load1=3.97 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=2;hot pid=2252331 cpu=25.7 /usr/lib/chromium/chromium.
+reading 07:06:56 si=476 so=53368 load1=4.04 gate=closed heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=2252416 cpu=108 /usr/lib/chromium/chromium.
+reading 07:07:25 si=2628 so=0 load1=4.72 gate=closed heavy=busy remainS=388 HEAVY_JOBS busy n=1;hot pid=2252416 cpu=105 /usr/lib/chromium/chromium.rea
+reading 07:07:55 si=1048 so=50464 load1=4.73 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=2252416 cpu=105.9 /usr/lib/chromium/chromi
+reading 07:08:26 si=56716 so=0 load1=3.85 gate=closed heavy=clear remainS=327 HEAVY_JOBS clear
+reading 07:08:55 si=1032 so=0 load1=3.67 gate=closed heavy=busy remainS=298 HEAVY_JOBS busy n=2;hot pid=2253461 cpu=22 /usr/lib/chromium/chromium.real
+reading 07:09:25 si=88 so=0 load1=2.64 gate=open heavy=busy remainS=268 HEAVY_JOBS busy n=1;hot pid=2253503 cpu=105.9 /usr/lib/chromium/chromium.real 
+reading 07:09:56 si=44 so=0 load1=2.95 gate=open heavy=busy remainS=237 HEAVY_JOBS busy n=1;hot pid=2253503 cpu=110.9 /usr/lib/chromium/chromium.real 
+reading 07:10:25 si=356 so=0 load1=3.45 gate=open heavy=busy remainS=208 HEAVY_JOBS busy n=1;hot pid=2253503 cpu=105 /usr/lib/chromium/chromium.real -
+reading 07:10:55 si=2516 so=3720 load1=3.55 gate=closed heavy=busy remainS=178 HEAVY_JOBS busy n=1;hot pid=2253503 cpu=101 /usr/lib/chromium/chromium.
+reading 07:11:26 si=4136 so=8196 load1=3.51 gate=closed heavy=busy remainS=147 HEAVY_JOBS busy n=1;hot pid=2256712 cpu=99 grep -o "shared": *[0-9]*\|"
+reading 07:11:55 si=1116 so=19404 load1=3.83 gate=closed heavy=busy remainS=118 HEAVY_JOBS busy n=1;hot pid=2256712 cpu=100 grep -o "shared": *[0-9]*\
+reading 07:12:25 si=500 so=0 load1=3.71 gate=open heavy=busy remainS=88 HEAVY_JOBS busy n=1;hot pid=2256712 cpu=100 grep -o "shared": *[0-9]*\|"gaps":
+reading 07:12:56 si=844 so=0 load1=3.16 gate=open heavy=busy remainS=57 HEAVY_JOBS busy n=2;hot pid=2510 cpu=28.7 claude --dangerously-skip-permission
+reading 07:13:25 si=92 so=0 load1=2.97 gate=open heavy=busy remainS=28 HEAVY_JOBS busy n=1;hot pid=2256712 cpu=100 grep -o "shared": *[0-9]*\|"gaps": 
+WINDOW-ENDED-WITHOUT-CLEAR 07:13:53
+```
+
+Result. The gate never cleared: heavy-jobs read busy on every sample except 07:08:26, and that sample's swap-in (56716 KB/s) closed the gate. The job ended at 07:13:53 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set and the red check did not start, so this record claims no witness result. The Phase A witness (10 of 10) and red check (DETECTED) in commit 451b6bb were run outside the window and are not a Phase B pass.
+
+Push. None. origin main is not moved by this round. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear, then run scripts/check-etc2-special-witness.cjs and /tmp/bt/r94s-redcheck.sh under timeout.
