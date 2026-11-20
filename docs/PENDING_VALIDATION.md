@@ -4043,3 +4043,17 @@ Recovery of the two per-format files (data, no window):
 Red check: the layout was changed so every format maps to the shared name (`return SHARED_REFERENCE`). The witness exited 1 with seven FAILs, covering the ETC2 and ASTC references, the rows and the names. The file was restored with `cmp`, and the witness exited 0 with 9 of 9 ok.
 
 Not run here: the footprint rerun against the new names (Phase B), and any window. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 79 Phase A: the window job is committed, with a witness for its gate
+
+The gated window loop used in Rounds 73 to 78 lived only in `/tmp/bt`. Its gate and its start rule were never versioned or witnessed, so a change to them would not have been caught.
+
+Design (decided here): `scripts/window-job.sh` takes its vmstat, heavy-job and load readings from environment variables (`VMSTAT_CMD`, `HEAVY_CMD`, `LOADAVG_FILE`), and its window, interval and gate limits from `WINDOW_S` (default 600), `INTERVAL_S` (default 30), `GATE_KB` (default 1000) and `LOAD_MAX` (default 4). The defaults are the window rule. The witness drives the job with stubs, so the gate is tested without a host. A start is a sample where both swap directions are below `GATE_KB`, the load is at or below `LOAD_MAX`, and `scripts/heavy-jobs.cjs` (commit 495fff6) is clear. Every reading is logged. The witnesses named after `--` run only on a clear sample, and the job exits with their status.
+
+What changed:
+- `scripts/window-job.sh`: the job.
+- `scripts/check-window-job.cjs`: 8 cases, each a run of the job with stub readings. A swap-in spike closes the gate and the next clear sample starts the witness. A swap-out spike alone closes it. A busy heavy reading holds the start until a clear one. A load above 4 closes the gate and the window ends without a start. A heavy rule that never clears ends the window without a start. A failing witness sets the exit status. Readings come at the interval. A clear sample with no witness ends without a run. 8 of 8 ok, exit 0. The check takes about 14 s.
+
+Red check: the swap-out condition was removed from the gate. The witness exited 1 with `FAIL a swap-out spike alone closes the gate`. The job was restored with `cmp`, and the witness exited 0 with 8 of 8 ok.
+
+No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
