@@ -4752,3 +4752,72 @@ Red checks. /tmp/bt/r97-redcheck.sh: the chooseBest comparison flipped (picks th
 Reopen for item 1, the one still open. The T, H and planar bit layouts, from the ETC2 specification or fitted to a SwiftShader readback of one fixture block per mode. The readback page scripts/browser/readback.html decodes a single 4x4 fixture, so a multi-block page is needed. Until then the model union's 29.76 dB is a bound on the palette models, not a decoded result.
 
 Output files: target/witness/window-job-r96.log (Phase B witness set), /tmp/bt/r97-allmodes.out, /tmp/bt/r98-union.out, /tmp/bt/r97-mutant.out, /tmp/bt/r98-mutant.out.
+
+## Round 98 Phase B: the Round 97 witnesses for ba0dab8 in the window (did not clear, nothing pushed)
+
+Readings. vmstat 1 2 first, at 08:21:30: the first line is the average since boot (si 5240, so 7135); the second line, the gate sample, is si 832, so 0 (under 1000 KB/s both ways: open). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy: a grep of a peer process (pid 2309491, 100% CPU). It is not this round's process and was not stopped.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r99.log). Every reading, one per 30 s:
+
+reading 08:21:34 si=2116 so=12584 load1=2.68 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2309491 cpu=100 grep -o "shared": *[0-9]*\
+reading 08:22:04 si=444 so=0 load1=2.29 gate=open heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=2309491 cpu=100 grep -o "shared": *[0-9]*\|"gaps"
+reading 08:22:35 si=1688 so=0 load1=2.38 gate=closed heavy=busy remainS=537 HEAVY_JOBS busy n=4;hot pid=2088755 cpu=23.8 /data/cache/node/node-v24.22.
+reading 08:23:04 si=3780 so=0 load1=3.27 gate=closed heavy=busy remainS=508 HEAVY_JOBS busy n=1;hot pid=2296557 cpu=108.9 /usr/lib/chromium/chromium.r
+reading 08:23:34 si=672 so=0 load1=2.81 gate=open heavy=busy remainS=478 HEAVY_JOBS busy n=1;hot pid=2296557 cpu=116.8 /usr/lib/chromium/chromium.real
+reading 08:24:05 si=20 so=0 load1=2.95 gate=open heavy=busy remainS=447 HEAVY_JOBS busy n=1;hot pid=2296557 cpu=114.9 /usr/lib/chromium/chromium.real 
+reading 08:24:34 si=560 so=0 load1=2.80 gate=open heavy=busy remainS=418 HEAVY_JOBS busy n=1;hot pid=2296557 cpu=114.9 /usr/lib/chromium/chromium.real
+reading 08:25:04 si=4 so=0 load1=2.78 gate=open heavy=busy remainS=388 HEAVY_JOBS busy n=2;hot pid=2313552 cpu=52.5 /usr/lib/chromium/chromium.real --
+reading 08:25:35 si=60 so=0 load1=3.10 gate=open heavy=busy remainS=357 HEAVY_JOBS busy n=3;hot pid=2313506 cpu=24.8 /usr/lib/chromium/chromium.real -
+reading 08:26:04 si=4 so=0 load1=2.88 gate=open heavy=busy remainS=328 HEAVY_JOBS busy n=1;hot pid=2313589 cpu=115.8 /usr/lib/chromium/chromium.real -
+reading 08:26:34 si=116 so=0 load1=2.26 gate=open heavy=busy remainS=298 HEAVY_JOBS busy n=1;hot pid=2313589 cpu=103 /usr/lib/chromium/chromium.real -
+reading 08:27:05 si=76 so=0 load1=2.33 gate=open heavy=busy remainS=267 HEAVY_JOBS busy n=1;chromium-renderer pid=2313589 /usr/lib/chromium/chromium.r
+reading 08:27:34 si=12 so=0 load1=2.27 gate=open heavy=busy remainS=238 HEAVY_JOBS busy n=2;hot pid=2315308 cpu=26.7 /usr/lib/chromium/chromium.real -
+reading 08:28:04 si=3904 so=0 load1=4.16 gate=closed heavy=busy remainS=208 HEAVY_JOBS busy n=2;hot pid=2315354 cpu=22.8 /usr/lib/chromium/chromium.re
+reading 08:28:35 si=160 so=0 load1=4.15 gate=closed heavy=busy remainS=177 HEAVY_JOBS busy n=1;hot pid=2315397 cpu=105 /usr/lib/chromium/chromium.real
+reading 08:29:04 si=80 so=0 load1=4.65 gate=closed heavy=busy remainS=148 HEAVY_JOBS busy n=1;hot pid=2315397 cpu=106.9 /usr/lib/chromium/chromium.rea
+reading 08:29:34 si=1472 so=0 load1=4.11 gate=closed heavy=busy remainS=118 HEAVY_JOBS busy n=1;hot pid=2315397 cpu=105.9 /usr/lib/chromium/chromium.r
+reading 08:30:05 si=16 so=0 load1=3.73 gate=open heavy=busy remainS=87 HEAVY_JOBS busy n=9;hot pid=755372 cpu=28.7 claude --dangerously-skip-permissio
+reading 08:30:34 si=20 so=0 load1=4.56 gate=closed heavy=busy remainS=58 HEAVY_JOBS busy n=3;hot pid=2317293 cpu=20.8 /usr/lib/chromium/chromium.real 
+reading 08:31:04 si=4 so=0 load1=4.28 gate=closed heavy=busy remainS=28 HEAVY_JOBS busy n=1;hot pid=2317387 cpu=108.9 /usr/lib/chromium/chromium.real 
+WINDOW-ENDED-WITHOUT-CLEAR 08:31:32
+
+Result. The gate was open on several samples, but heavy-jobs read busy on every sample: peer Chromium renderers (pids 2296557, 2313552, 2313589, 2315397, 2317387), a peer node process from /data/cache, a Claude session (pid 755372) and a peer grep. The window ended at 08:31:32 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set (/tmp/bt/r99-witnesses.sh, which would run scripts/check-block-modes-witness.cjs and scripts/check-union-e4-witness.cjs with their red checks) did not start, so this record claims no witness result for the window.
+
+Push. None. origin main stays at 8038827; ba0dab8 remains local. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear on the same sample; then run the witness set under timeout and push once if every witness passes.
+
+## Round 98 Phase A: the ASTC endpoint and interpolation probe (item 2 of the ranked list, tested, witness green, committed locally)
+
+Question. Item 2 is the ASTC ±1 disagreement between the CPU decoder and the GPU, recorded at 10.06% of texels in the Round 92 readback. Its open part is whether the endpoint unquantisation or the weight interpolation is the step that disagrees. The probe separates them with one weight index per block: the endpoints come unchanged from the cache, and every texel of a block takes the same weight level (0 to 15, the decoder's table WEIGHT_LEVELS[8]: 0, 4, 8, ..., 64).
+
+Method. scripts/lib/astc-probe.cjs writes a weight index into the 16 weight fields at the top of each cache block of mode 0x242 (stored bits are reverseBits(index)); the endpoint bits are untouched (checked bit by bit in the witness). scripts/lib/astc-probe-gpu.cjs serves the fixture blob to scripts/browser/readback-astc-blocks.html (a copy of readback-astc.html that reads /astc-blocks.bin into a 1024-texel-wide texture, 256 blocks per row) in a separate Chromium with the SwiftShader flags of check-astc-gpu.cjs. The page's posts go to /gpu-astc-rgba8 and /result. The Chromium PID is captured, its process tree is stopped by PID, and leftovers are killed by PID.
+
+Why this browser. The playwriter browser was probed first (Invariant 11): its WebGL2 reports the NVIDIA renderer with WEBGL_compressed_texture_etc not present and no compressed formats listed, so it cannot decode ASTC or ETC2 textures. The separate SwiftShader Chromium is the path of the ETC2 readback (Round 86) and of the ASTC readback in scripts/check-astc-gpu.cjs.
+
+Measurement (scripts/check-astc-probe.cjs, rc 0, probe wall 4.0 s, GPU run pid 2322749, outcome done, leftover 0). The cache holds 15,360 mode-0x242 blocks at stride 4 (the rest are void), so 15,360 fixtures were used, 960 per level. Blocks off = blocks with at least one R, G or B texel differing from the CPU decode:
+
+| level (weight) | blocks off of 960 | R G B texel-channels off | off by 1 | off by more |
+| --- | --- | --- | --- | --- |
+| 0 (0) | 0 | 0 0 0 | 0 | 0 |
+| 1 (4) | 200 | 1040 1392 912 | 3344 | 0 |
+| 2 (8) | 352 | 2112 2400 1920 | 6432 | 0 |
+| 3 (12) | 214 | 1408 1440 880 | 3728 | 0 |
+| 4 (17) | 122 | 912 928 272 | 2112 | 0 |
+| 5 (21) | 89 | 512 656 288 | 1456 | 0 |
+| 6 (25) | 118 | 912 800 256 | 1968 | 0 |
+| 7 (29) | 109 | 832 720 208 | 1760 | 0 |
+| 8 (35) | 114 | 928 800 176 | 1904 | 0 |
+| 9 (39) | 116 | 800 928 240 | 1968 | 0 |
+| 10 (43) | 59 | 448 416 192 | 1056 | 0 |
+| 11 (47) | 126 | 944 880 304 | 2128 | 0 |
+| 12 (52) | 219 | 1584 1440 928 | 3952 | 0 |
+| 13 (56) | 364 | 2256 2288 2112 | 6656 | 0 |
+| 14 (60) | 222 | 1456 1680 720 | 3856 | 0 |
+| 15 (64) | 0 | 0 0 0 | 0 | 0 |
+
+Overall 2,424 of 15,360 blocks (15.78%) have a texel off. Every disagreement is exactly one level (no difference is larger than 1). Level 0 and level 15 are exact, so the endpoints, with their unquantisation, agree with the GPU on these blocks. The disagreement is in the interpolation at interior weights, (low times (64 minus w) plus high times w plus 32) shifted right by 6, or in the weight values the GPU uses. The probe does not say which of the two; that is the next step (fit the GPU's effective weight at each level from the saved readback).
+
+Witness. scripts/check-astc-probe-witness.cjs, ALL PASS 8 checks, rc 0 (wall about 1.5 s for its GPU run): 500 setBits round trips; for each of 16 levels the weights decode back to the index and the endpoint bits are untouched; the CPU decode of a fixture is one colour across its 16 texels at every level; GPU readback finished with 1024 x 4 texels, every fixture block one colour across its 16 texels, and non-zero texels 4,096.
+
+Red check (/tmp/bt/r99-redcheck.sh). The weight index was written without bit reversal in a dot-file mutant (ASTC_PROBE_PATH). The witness exited 1 with 1 of 8 FAIL (weights decode to the wrong index), DETECTED, RESTORED_IDENTICAL.
+
+Output files: /tmp/bt/r99-probe.out (probe), /tmp/bt/r99-mutant.out (mutant), target/witness/window-gate-r99.log (window readings).
