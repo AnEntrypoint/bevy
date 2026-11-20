@@ -189,10 +189,9 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     if radius.is_finite() && r2 >= radius * radius {
         return Err(SurfaceSolve::ChartRange);
     }
-    let render_y_on_sphere = |elevation: f64| (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation);
     let mut y = match guess {
         Some(g) if g.is_finite() => g,
-        _ => render_y_on_sphere(0.0),
+        _ => render_y_on_sphere(r2, 0.0, anchor_height, radius),
     };
     let (mut y_prev, mut g_prev) = (0.0, 0.0);
     let (mut below, mut above) = (f64::NEG_INFINITY, f64::INFINITY);
@@ -205,7 +204,7 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
             Some(h) if h.is_finite() => h,
             _ => return Err(SurfaceSolve::NoGround),
         };
-        let y_f = render_y_on_sphere(h);
+        let y_f = render_y_on_sphere(r2, h, anchor_height, radius);
         let g = y_f - y;
         last_g = g;
         if g.is_finite() && g.abs() <= tolerance_m {
@@ -247,9 +246,55 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     Err(SurfaceSolve::NoConvergence { residual: last_g })
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+const SURFACE_SOLVE_TOLERANCE_M: f64 = 1e-4;
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn render_y_on_sphere(r2: f64, elevation: f64, anchor_height: f64, radius: f64) -> f64 {
+    (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub struct ChartFrame {
+    basis: Basis,
+    radius: f64,
+    anchor_height: f64,
+    offset_y: f64,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+impl ChartFrame {
+    pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, height: impl Fn(V3) -> f64) -> Self {
+        let basis = anchor_basis(anchor_dir);
+        let anchor_height = height(basis.up);
+        Self { basis, radius, anchor_height, offset_y }
+    }
+
+    pub fn anchor_surface_world(&self) -> V3 {
+        self.basis.up.map(|c| c * (self.radius + self.anchor_height))
+    }
+
+    pub fn local_to_world(&self, x: f64, y: f64, z: f64) -> V3 {
+        let s = self.radius + self.anchor_height + y;
+        [0, 1, 2].map(|i| self.basis.up[i] * s + (self.basis.east[i] * x + self.basis.north[i] * z))
+    }
+
+    pub fn local_to_dir(&self, x: f64, z: f64, y: Option<f64>) -> V3 {
+        let render_y = match y {
+            Some(y) => y - self.offset_y,
+            None => render_y_on_sphere(x * x + z * z, 0.0, self.anchor_height, self.radius),
+        };
+        tangent_local_to_dir(&self.basis, self.radius + self.anchor_height + render_y, x, z)
+    }
+
+    pub fn ground_height_local(&self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
+        solve_surface_y(&self.basis, self.radius, self.anchor_height, x, z, height, SURFACE_SOLVE_TOLERANCE_M, None).map(|y| y + self.offset_y)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, solve_surface_y, tangent_local_to_dir, Frame, GroundFault, SurfaceSolve};
+    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, solve_surface_y, tangent_local_to_dir, ChartFrame, Frame, GroundFault, SurfaceSolve};
     use serde_json::Value;
 
     const PLANET_FRAME_TOLERANCE_M: f64 = 1e-9;
@@ -425,5 +470,38 @@ mod tests {
             }
         }
         assert!(worst <= PLANET_FRAME_TOLERANCE_M, "solveSurfaceY differs from spoint by up to {worst} m");
+    }
+
+    fn fixture_chart() -> Value {
+        serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-chart.json")).unwrap()
+    }
+
+    #[test]
+    fn chart_frame_matches_the_spoint_frame() {
+        let fixture = fixture_chart();
+        let frame = ChartFrame::new(vec3(&fixture["anchorDir"]), fixture["radius"].as_f64().unwrap(), fixture["offsetY"].as_f64().unwrap(), |d| surface_height("smooth", d).unwrap());
+        let mut worst = (frame.anchor_height - fixture["anchorHeight"].as_f64().unwrap()).abs();
+        let mut measure = |got: [f64; 3], want: [f64; 3]| {
+            for i in 0..3 {
+                worst = worst.max((got[i] - want[i]).abs());
+            }
+        };
+        measure(frame.anchor_surface_world(), vec3(&fixture["anchorSurfaceWorld"]));
+        for case in fixture["localToWorld"].as_array().unwrap() {
+            let got = frame.local_to_world(case["x"].as_f64().unwrap(), case["y"].as_f64().unwrap(), case["z"].as_f64().unwrap());
+            measure(got, vec3(&case["out"]));
+        }
+        for case in fixture["localToDir"].as_array().unwrap() {
+            let got = frame.local_to_dir(case["x"].as_f64().unwrap(), case["z"].as_f64().unwrap(), case["y"].as_f64());
+            measure(got, vec3(&case["out"]));
+        }
+        for case in fixture["groundHeightLocal"].as_array().unwrap() {
+            let (x, z) = (case["x"].as_f64().unwrap(), case["z"].as_f64().unwrap());
+            match (frame.ground_height_local(x, z, |d| surface_height("smooth", d)), case["error"].as_str()) {
+                (Ok(y), None) => worst = worst.max((y - case["y"].as_f64().unwrap()).abs()),
+                (got, want) => panic!("spoint {want:?}, bevy {got:?} at ({x}, {z})"),
+            }
+        }
+        assert!(worst <= PLANET_FRAME_TOLERANCE_M, "chart frame differs from spoint by up to {worst} m");
     }
 }
