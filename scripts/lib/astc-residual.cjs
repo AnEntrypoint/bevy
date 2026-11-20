@@ -16,4 +16,22 @@ function classify(e0, e1, texels, formula) {
     return { missing, joint: fitWeights(e0, e1, texels, formula) };
 }
 
-module.exports = { channelFits, classify };
+function endpointRepairs(e0, e1, texels, formula) {
+    const repairs = [];
+    for (let c = 0; c < 3; c += 1) {
+        for (const end of [0, 1]) {
+            for (const delta of [-1, 1]) {
+                const a = Array.from(e0);
+                const b = Array.from(e1);
+                const target = end === 0 ? a : b;
+                const value = target[c] + delta;
+                if (value < 0 || value > 255) continue;
+                target[c] = value;
+                if (fitWeights(a, b, texels, formula).length > 0) repairs.push({ channel: c, end, delta });
+            }
+        }
+    }
+    return repairs;
+}
+
+module.exports = { channelFits, classify, endpointRepairs };

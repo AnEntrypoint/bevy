@@ -5153,3 +5153,115 @@ Reading. Most of the item 2 residual (964 of 1,112) is joint-only: each channel 
 Status. Item 2 stays open. Its next step is to test the 964 joint-only blocks for a per-channel weight or rounding difference (a formula that rounds each channel at its own weight, or a per-channel weight table), which is a CPU test on the existing classification.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 106 Phase B: the residual witness and its red check for e90e5f5 in the window (cleared, witnesses passed, pushed e90e5f5)
+
+Scope. e90e5f5 is the Round 105 Phase A commit: the per-channel classifier (scripts/lib/astc-residual.cjs, channelFits and classify), its witness and red check, and the measurement script. Its witnessed step is the classifier. The window ran the classifier's witness and red check again, and the push carried e90e5f5 alone.
+
+Pre-window. vmstat 1 2 at 09:02:15 UTC: the first line is the average since boot (si 1353, so 2747); the gate sample is si 340, so 0 (open). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer find (pid 32935). The window job waited for a clear sample and did not force the window.
+
+Window 1 (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r106.log). Readings, local time (UTC is two hours earlier):
+
+reading 11:02:20 si=984 so=0 load1=2.45 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=32935 cpu=30.7 find / -name heavy-jobs* -not -pat
+reading 11:02:50 si=76 so=92 load1=2.29 gate=open heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=32935 cpu=39 find / -name heavy-jobs* -not -path 
+reading 11:03:21 si=608 so=180 load1=1.84 gate=open heavy=busy remainS=537 HEAVY_JOBS busy n=1;hot pid=32935 cpu=24.8 find / -name heavy-jobs* -not -p
+reading 11:03:50 si=12156 so=0 load1=1.41 gate=closed heavy=clear remainS=508 HEAVY_JOBS clear
+reading 11:04:20 si=784 so=0 load1=1.24 gate=open heavy=clear remainS=478 HEAVY_JOBS clear
+GATE-CLEAR 11:04:20 remainS=478
+WITNESS rc=1 11:04:21
+END 11:04:21 overall=1
+
+Gate. heavy-jobs read clear at 11:03:50 local (09:03:50 UTC) with the gate closed (si 12156, so 0). The gate opened with heavy-jobs clear at 11:04:20 local (09:04:20 UTC, si 784, so 0): GATE-CLEAR, 478 s remaining. The witness set (/tmp/bt/r106-witnesses.sh, log target/witness/window-job-r106.log) ran under timeout with each PID captured:
+
+PID residual-witness timeout=34002 child= 11:04:21
+WITNESS residual-witness rc=0 wall=0.1s
+ok   a block built at a table weight has no missing channel and fits that weight
+ok   an unreachable value in one channel with equal endpoints is reported as that channel missing
+ok   each channel fits alone but no weight fits all three (joint only)
+ALL PASS 3 checks
+PID residual-red-check timeout=34025 child= 11:04:21
+WITNESS residual-red-check rc=0 wall=0.3s
+MUTATED
+PID residual-mutant pid=34043 11:04:21
+RESTORED_IDENTICAL
+FAIL an unreachable value in one channel with equal endpoints is reported as that channel missing: {"missing":[],"joint":[]}
+FAIL 1 of 3
+mutant_rc=1
+DETECTED
+PID endpoint-witness timeout=34064 child=  34068 11:04:21
+WITNESS endpoint-witness rc=0 wall=0.2s
+ok   joint-only blocks with one planted endpoint error have that repair (5198 of 5198 joint-only trials)
+ok   an unreachable value in one channel is repaired by a one-level change to that channel
+ALL PASS 2 checks
+PID endpoint-red-check timeout=34085 child= 11:04:21
+WITNESS endpoint-red-check rc=0 wall=0.2s
+MUTATED
+PID endpoint-mutant pid=34101 11:04:21
+RESTORED_IDENTICAL
+FAIL joint-only blocks with one planted endpoint error have that repair (2674 of 5198 joint-only trials): {"jointOnly":5198,"found":2674,"missed":[{"cpu0":[30,195,198],"cpu1":[128,135,254],"c":1,"end"
+FAIL an unreachable value in one channel is repaired by a one-level change to that channel: []
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 11:04:21
+PID endpoint-measure timeout=34125 child=  34129 11:04:21
+WITNESS endpoint-measure rc=1 wall=0.1s
+/workspace/bevy/scripts/check-astc-endpoint-repair.cjs:6
+    for (let b = 0; b < fixtures.length; b += 1) {
+                        ^
+
+ReferenceError: fixtures is not defined
+    at Object.<anonymous> (/workspace/bevy/scripts/check-astc-endpoint-repair.cjs:6:25)
+    at Module._compile (node:internal/modules/cjs/loader:1929:14)
+    at Object..js (node:internal/modules/cjs/loader:2060:10)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47
+
+Node.js v24.22.0
+
+Witness set overall 0 at 11:04:21 local. Every witness passed. The measurement step that followed in this window failed with a ReferenceError (the spliced script was broken, not the measurement). It is not a witness, and it was fixed and run in window 2 below.
+
+Push. git push origin e90e5f5:refs/heads/main (explicit ref, so the uncommitted endpoint-repair files stayed out), output: To https://github.com/AnEntrypoint/bevy.git, then 972b497..e90e5f5 e90e5f5 -> main, push rc 0. git ls-remote origin main: e90e5f5745db97f8981929450fcbc767cc43ddf9 refs/heads/main.
+
+Longest step. The window wait, 09:02:15 to 09:04:20 UTC (about 2 min, with one busy reading from a peer find). The witnesses took under a second each.
+
+## Round 106 Phase A: the endpoint repair for item 2 (witness and red check in window 1, measurement in window 2, not pushed)
+
+The step. For a block that no weight fits jointly (a joint-only block), find the single ±1 endpoint change in one channel that makes a joint fit possible. A joint-only block with such a repair is consistent with a one-level endpoint difference between the CPU decoder and the GPU, not with the interpolation formula.
+
+Change. scripts/lib/astc-residual.cjs: endpointRepairs(e0, e1, texels, formula), which tries ±1 on each endpoint of each channel and returns { channel, end, delta } for each change that gives a joint fit. New: scripts/check-astc-endpoint-repair-witness.cjs and scripts/check-astc-endpoint-repair.cjs (the measurement).
+
+Witness (window 1). node scripts/check-astc-endpoint-repair-witness.cjs: ok joint-only blocks with one planted endpoint error have that repair (5198 of 5198 joint-only trials); ok an unreachable value in one channel is repaired by a one-level change to that channel; ALL PASS 2 checks, rc 0. The trials are seeded (LCG 4242), and the planted repair is required in every joint-only trial. An earlier draft assumed that a planted block is joint-only, and it was not: one planted case had a joint fit at the CPU endpoints (weight 25). The check now keeps only joint-only trials.
+
+Red check (window 1). The repair loop was changed from [-1, 1] to [-1] in place (saved to /tmp/bt/r106-residual.good first). The witness gave FAIL joint-only blocks with one planted endpoint error have that repair (2674 of 5198 joint-only trials), and FAIL an unreachable value in one channel is repaired ... (both checks failed), FAIL 2 of 2, mutant rc 1, DETECTED. The file was restored, cmp reported RESTORED_IDENTICAL.
+
+Measurement (window 2, not a witness; scripts/check-astc-endpoint-repair.cjs under timeout, pid 35307 before exec, log target/witness/window-job-r106m.log). Gate:
+
+reading 11:05:01 si=48 so=0 load1=1.76 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2307 cpu=45.5 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:05:32 si=44 so=0 load1=2.40 gate=open heavy=busy remainS=567 HEAVY_JOBS busy n=1;compile pid=35037 zig build test -Dtest-area=acp -Dtest-fi
+reading 11:06:01 si=48 so=0 load1=2.56 gate=open heavy=clear remainS=538 HEAVY_JOBS clear
+GATE-CLEAR 11:06:01 remainS=538
+WITNESS rc=0 11:06:07
+END 11:06:07 overall=0
+
+PID endpoint-measure timeout=35307 child= 11:06:01
+MEASURE endpoint-measure rc=0 wall=5.6s
+gpu run pid 35321 outcome done wall 2.1 s leftover 0
+interior blocks 13440, joint-only 964, joint-only with a one-level endpoint repair 943 (97.8% of joint-only)
+   repairable in channels GR: 371
+   repairable in channels B: 165
+   repairable in channels BG: 118
+   repairable in channels BR: 101
+   repairable in channels R: 97
+   repairable in channels G: 91
+wall 5.6 s
+
+Result. Interior blocks 13,440. Joint-only 964, the same count as the Round 105 measurement. Joint-only blocks with a one-level endpoint repair in at least one channel: 943 (97.8% of joint-only). The 21 without a repair are not explained by this step. The repair channels are spread across the three channels: GR 371, B 165, BG 118, BR 101, R 97, G 91.
+
+Reading. The residual's joint-only part is mostly explained (97.8%) by a one-level change to one or more endpoints. That points at endpoint decoding (the unquantisation or the rounding of the endpoint values), not at the interpolation formula, which was already tested (the spec and nearest formulas agree, and truncation is worse). It does not show which endpoint decode is correct: a repair exists for many values, so the result is an explanation of the disagreement's shape, not a cause.
+
+Status. Item 2 stays open. Its next step is to check the GPU's endpoint decode for those 943 blocks: save the repair per block, then compare with the CPU's endpoint unquantisation for the same blocks in the ASTC endpoint decode (scripts/lib/astc-decode.cjs unquantEndpoint and the endpoint range tables). That needs the per-block repairs saved, which this measurement does not do, and it needs a clear window for a GPU run.
+
+Not pushed. Local commit only, as lanmower, no trailers.
