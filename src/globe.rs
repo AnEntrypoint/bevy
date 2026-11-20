@@ -190,12 +190,12 @@ impl GlobeWorld {
         Quat::from_mat3(&Mat3::from_cols(right, up, back)).normalize()
     }
 
-    fn grid(&self) -> (i32, i32) {
+    pub(crate) fn grid(&self) -> (i32, i32) {
         let span = self.chunk_span.to_degrees();
         ((180.0 / span).ceil() as i32, (360.0 / span).ceil() as i32)
     }
 
-    fn cell_bounds(&self, row: i32, column: i32) -> (f32, f32, f32, f32) {
+    pub(crate) fn cell_bounds(&self, row: i32, column: i32) -> (f32, f32, f32, f32) {
         let span = self.chunk_span.to_degrees();
         let lat0 = -90.0 + row as f32 * span;
         let lon0 = -180.0 + column as f32 * span;
@@ -344,6 +344,7 @@ fn sync_chunks(
     mut meshes: Option<ResMut<Assets<Mesh>>>,
     mut materials: Option<ResMut<Assets<StandardMaterial>>>,
     mut material: Local<Option<Handle<StandardMaterial>>>,
+    vegetation: Option<Res<crate::vegetation::VegetationAssets>>,
 ) {
     let step = globe.radius * globe.chunk_span;
     if !registry.chunks.is_empty() && last_focus.is_some_and(|previous| previous.distance(focus.0) < step * 0.5) {
@@ -382,7 +383,11 @@ fn sync_chunks(
                         let handle = material.get_or_insert_with(|| materials.add(StandardMaterial { base_color: Color::WHITE, perceptual_roughness: 0.95, ..default() })).clone();
                         entity.insert(MeshMaterial3d(handle));
                     }
-                    registry.chunks.insert(key, entity.id());
+                    let chunk = entity.id();
+                    registry.chunks.insert(key, chunk);
+                    if let Some(assets) = vegetation.as_deref() {
+                        crate::vegetation::spawn_chunk_trees(&mut commands, &globe, assets, chunk, key, bounds);
+                    }
                 }
                 (false, Some(entity)) => {
                     commands.entity(entity).despawn();

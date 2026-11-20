@@ -17,6 +17,8 @@ mod spec;
 mod texture_quality;
 mod tree;
 mod ui_html;
+mod vegetation;
+mod vegetation;
 mod viewer;
 mod viewer_world;
 mod world;

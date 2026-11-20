@@ -221,6 +221,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     if let Some(globe) = place_def.config.extra.get("globe") {
         app.insert_resource(crate::globe::GlobeWorld::from_value(Some(globe)));
         crate::globe::register(&mut app);
+        app.add_systems(Startup, crate::vegetation::prepare);
         app.add_systems(Update, crate::globe::orbit_globe_camera);
     } else {
         app.add_systems(Update, orbit_camera);
