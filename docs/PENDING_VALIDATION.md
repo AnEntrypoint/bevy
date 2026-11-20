@@ -4933,3 +4933,53 @@ Result. heavy-jobs read clear on three samples (09:24:05 and 09:24:35 with the g
 Push. None. origin main stays at 36dfe62; ae07edd remains local. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear on the same sample; then run the witness set under timeout and push once if every witness passes.
 
 Note on earlier probe runs. The ASTC probe (Round 99, 36dfe62) and the weight fit (Round 100, ae07edd) ran their GPU readbacks outside a clear window, although the reopen condition written for item 2 asked for a clear window. Their witnesses and red checks passed, and their numbers are recorded as measurements from an ungated run. The Phase B witnesses for them (Round 100, 36dfe62) ran in a clear window.
+
+## Round 102 Phase B: the Round 100 weight-fit witness for ae07edd in the window (cleared, witnesses passed, pushed 5872c51)
+
+Journal check. The last window for ae07edd (Round 101, 09:33:33) did not clear and ran no witness, so no witnessed window existed for ae07edd or 5872c51. Phase B was run now.
+
+Readings. vmstat 1 2 first, at 09:41:00: the first line is the average since boot (si 5102, so 6883); the second line, the gate sample, is si 396, so 0 (under 1000 KB/s both ways: open). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy on peer chromium processes (pids 2355144, 2355231).
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r102.log). Every reading, one per 30 s:
+
+reading 09:41:09 si=92 so=0 load1=2.85 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2355231 cpu=110.9 /usr/lib/chromium/chromium.real 
+reading 09:41:40 si=120 so=0 load1=2.52 gate=open heavy=busy remainS=567 HEAVY_JOBS busy n=1;hot pid=2355231 cpu=105 /usr/lib/chromium/chromium.real -
+reading 09:42:10 si=12 so=0 load1=2.61 gate=open heavy=busy remainS=537 HEAVY_JOBS busy n=3;hot pid=2357153 cpu=32.7 /usr/lib/chromium/chromium.real -
+reading 09:42:40 si=208 so=0 load1=2.35 gate=open heavy=busy remainS=507 HEAVY_JOBS busy n=2;hot pid=2357199 cpu=22 /usr/lib/chromium/chromium.real --
+reading 09:43:11 si=76 so=0 load1=3.00 gate=open heavy=busy remainS=476 HEAVY_JOBS busy n=1;hot pid=2357239 cpu=112.9 /usr/lib/chromium/chromium.real 
+reading 09:43:40 si=20 so=0 load1=2.40 gate=open heavy=busy remainS=447 HEAVY_JOBS busy n=1;hot pid=2357239 cpu=113.9 /usr/lib/chromium/chromium.real 
+reading 09:44:10 si=44 so=0 load1=3.43 gate=open heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=2357239 cpu=105.9 /usr/lib/chromium/chromium.real 
+reading 09:44:41 si=4 so=0 load1=2.57 gate=open heavy=busy remainS=386 HEAVY_JOBS busy n=3;hot pid=3627 cpu=24.8 playwriter-ws-server;hot pid=2358844 
+reading 09:45:10 si=5396 so=149320 load1=3.83 gate=closed heavy=busy remainS=356 HEAVY_JOBS busy n=3;hot pid=2359065 cpu=191.1 /usr/lib/chromium/chrom
+reading 09:45:40 si=20932 so=0 load1=4.16 gate=closed heavy=busy remainS=327 HEAVY_JOBS busy n=3;hot pid=2359065 cpu=226.7 /usr/lib/chromium/chromium.
+reading 09:46:10 si=7020 so=0 load1=3.86 gate=closed heavy=clear remainS=297 HEAVY_JOBS clear
+reading 09:46:41 si=71968 so=0 load1=2.87 gate=closed heavy=clear remainS=266 HEAVY_JOBS clear
+reading 09:47:10 si=344 so=0 load1=2.43 gate=open heavy=clear remainS=237 HEAVY_JOBS clear
+GATE-CLEAR 09:47:10 remainS=237
+WITNESS rc=0 09:47:20
+END 09:47:20 overall=0
+
+Gate. The gate was open from 09:41:09 to 09:44:41 but heavy-jobs was busy throughout. At 09:46:10 heavy-jobs read clear with the gate closed (si 7020, so 0), and it stayed clear at 09:46:41. The gate opened on the same clear sample at 09:47:10 (si 344, so 0, remaining 237 s): GATE-CLEAR. The witness set (/tmp/bt/r101-witnesses.sh, log target/witness/window-job-r101.log) ran under timeout with PID captured:
+
+- astc-weight-fit-witness: timeout pid 2360205, child 2360207, rc 0, wall 5.1 s, ALL PASS 4 checks.
+- astc-weight-fit-red-check: timeout pid 2360386, child 2360388, rc 0, wall 4.6 s, mutant FAIL 2 of 4, DETECTED, RESTORED_IDENTICAL.
+
+Witness set overall 0 at 09:47:20. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 36dfe62..5872c51 main -> main, push rc 0. git ls-remote origin main: 5872c51315bfe3c1a815a2e6158403e69dd6b837 refs/heads/main. Both ae07edd and 5872c51 are on origin.
+
+Longest step: the window wait, from 09:41:00 to the clear sample at 09:47:10 (about 6 min). Nothing was stopped by this run.
+
+## Round 102: seed search for the ETC2 T, H and planar probe (item 1, negative result, no Phase A)
+
+Question. The multi-block SwiftShader probe of T/H/P needs a seed block already in T, H or planar mode, named from source. A block is in a special mode when its differential-mode colour overflows: the diff bit is set and a 3-bit delta takes a 5-bit base outside 0 to 31 (the rule scripts/check-etc2-endpoint-search.cjs applies as parseDiff).
+
+Method (scratch script /tmp/bt/r102-seedscan2.cjs, not committed). Every ETC2 texture in target/gltf-cache-etc2 (64 files; 61 hold KTX2 images with vkFormat 151, the ETC2 RGBA8 SRGB format; all levels read from the level index).
+
+Result (rc 0). Levels scanned 618. Blocks 3,786,171. Differential-bit blocks 3,283,288. Blocks whose differential colour overflows (the T/H/P condition) 0.
+
+Verdict. The cache holds no T, H or planar block, so no seed can be named from source. Item 1's probe is not reachable from disk. The Phase A probe stays blocked.
+
+ETC2 scan note. The scan covers the transcoder output in the cache, which contains no special-mode block. A seed must come from outside the cache (an ETC2 test vector or the specification's bit examples) to be placed on disk.
+
+Item 2 (ASTC ±1). Its next step, the residual analysis of the 1,112 no-fit interior blocks, needs a GPU readback in a clear window. The window in this stretch was used for Phase B witnesses and has closed, so the readback was not run here.
