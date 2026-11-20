@@ -4099,3 +4099,26 @@ Witness: `check-window-job.cjs`, 8 ok, 0 FAIL, rc 0, wall 14 s (03:23:47 to 03:2
 No process of mine remained after the window, and no peer process was stopped.
 
 Docs only: no red check applies to this record.
+
+
+## Round 80 Phase B: the window job runs the witness and the footprint check (record)
+
+Run: `scripts/window-job.sh -- bash /tmp/bt/r80-witnesses.sh` at commit eb7d36b, with the committed defaults (window 600 s, interval 30 s, gate 1000 KB/s, load limit 4, `scripts/heavy-jobs.cjs` at 495fff6, unchanged in HEAD). The witness script ran `scripts/check-window-job.cjs` and then `scripts/texture-footprint.cjs`, once each.
+
+Readings, verbatim from the job log `target/witness/window-job.log` (every reading in the window):
+
+reading 03:32:16 si=3020 so=0 load1=1.40 gate=closed heavy=clear remainS=597 HEAVY_JOBS clear
+reading 03:32:45 si=516 so=0 load1=1.86 gate=open heavy=clear remainS=568 HEAVY_JOBS clear
+GATE-CLEAR 03:32:45 remainS=568
+WITNESS check-window-job rc=0 wall=13.8s ok=8 fail=0
+WITNESS footprint rc=0 wall=2.1s decision=bc7
+WITNESS rc=0 03:33:01
+END 03:33:01 overall=0
+
+The first sample closed the gate on swap-in (3020 KB/s). The second is the gate reading: swap-in 516, swap-out 0, load 1.86, heavy clear, 568 s remaining. The witnesses started at that sample.
+
+Footprint check: decision `bc7`, witness rc 0. Its `fallbackFormats` and per-format references are the ones recorded in the Round 78 Phase B record.
+
+No process of mine remained after the window, and no peer process was stopped.
+
+Docs only: no red check applies to this record.
