@@ -5567,3 +5567,40 @@ Red check (no window). The tabulation's digit divisor was changed from 64 to 32 
 Not run. The measurement (scripts/check-astc-endpoint-records.cjs) needs a GPU readback in a clear window and has only been syntax-checked. Its output (target/witness/astc-endpoint-records.json) does not exist yet, so the 707 no-code candidates have not been tested. Reopen: a clear window for that measurement, then the CPU test on the saved records.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 112 Phase B: the witnesses for 90de827 in the window (did not clear, nothing pushed)
+
+Scope. 90de827 is the Round 111 Phase A step: candidateRecord and tabulate in scripts/lib/astc-endpoint-code.cjs, the records witness and its red check, and the records measurement (not yet run). Its witnessed step is the records classification. The window was to run the code witness and its red check (the library changed), and the records witness and its red check.
+
+Pre-window. vmstat 1 2 at 10:20:54 UTC: the first line is the average since boot (si 1820, so 3048); the gate sample is si 4552, so 92 (closed: swap-in above 1000 KB/s). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer chromium renderer (pid 89453). The window job waited for a clear sample and did not force one.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r112.log). Readings, local time (UTC is two hours earlier):
+
+reading 12:20:59 si=50948 so=0 load1=3.52 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=89453 cpu=115.8 /usr/lib/chromium/chromium.re
+reading 12:21:30 si=52 so=0 load1=4.30 gate=closed heavy=busy remainS=567 HEAVY_JOBS busy n=2;hot pid=89453 cpu=116.8 /usr/lib/chromium/chromium.real 
+reading 12:21:59 si=28 so=0 load1=3.93 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=1;hot pid=89453 cpu=106 /usr/lib/chromium/chromium.real --ty
+reading 12:22:29 si=2268 so=0 load1=3.93 gate=closed heavy=busy remainS=508 HEAVY_JOBS busy n=4;hot pid=92266 cpu=35.6 /usr/lib/chromium/chromium.real
+reading 12:23:00 si=0 so=0 load1=4.99 gate=closed heavy=busy remainS=477 HEAVY_JOBS busy n=8;hot pid=88363 cpu=23.8 node scripts/dev/serve.mjs /worksp
+reading 12:23:29 si=272 so=0 load1=5.39 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=2;hot pid=92266 cpu=21.8 /usr/lib/chromium/chromium.real 
+reading 12:23:59 si=3368 so=0 load1=5.54 gate=closed heavy=busy remainS=418 HEAVY_JOBS busy n=2;hot pid=92361 cpu=105.9 /usr/lib/chromium/chromium.rea
+reading 12:24:30 si=5060 so=0 load1=4.87 gate=closed heavy=busy remainS=387 HEAVY_JOBS busy n=2;hot pid=92361 cpu=106.7 /usr/lib/chromium/chromium.rea
+reading 12:24:59 si=1580 so=0 load1=4.69 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=92361 cpu=107.9 /usr/lib/chromium/chromium.rea
+reading 12:25:30 si=32 so=0 load1=5.22 gate=closed heavy=busy remainS=327 HEAVY_JOBS busy n=1;compile pid=94399 /tmp/zig-toolchain/zig-x86_64-linux-0.
+reading 12:25:59 si=692 so=0 load1=4.47 gate=closed heavy=busy remainS=298 HEAVY_JOBS busy n=3;compile pid=94857 /tmp/zig-toolchain/zig-x86_64-linux-0
+reading 12:26:29 si=4 so=0 load1=4.68 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=5;hot pid=89266 cpu=21.8 /data/cache/node/node-v24.22.0-lin
+reading 12:27:00 si=4 so=0 load1=4.45 gate=closed heavy=busy remainS=237 HEAVY_JOBS busy n=1;hot pid=94969 cpu=115.8 /usr/lib/chromium/chromium.real -
+reading 12:27:29 si=328 so=0 load1=3.30 gate=open heavy=busy remainS=208 HEAVY_JOBS busy n=1;hot pid=94969 cpu=102 /usr/lib/chromium/chromium.real --t
+reading 12:27:59 si=4 so=0 load1=3.08 gate=open heavy=busy remainS=178 HEAVY_JOBS busy n=1;hot pid=94969 cpu=106.9 /usr/lib/chromium/chromium.real --t
+reading 12:28:30 si=1632 so=0 load1=3.08 gate=closed heavy=busy remainS=147 HEAVY_JOBS busy n=1;hot pid=94969 cpu=118 /usr/lib/chromium/chromium.real 
+reading 12:28:59 si=4 so=0 load1=5.27 gate=closed heavy=busy remainS=118 HEAVY_JOBS busy n=4;hot pid=97076 cpu=24.8 /usr/lib/chromium/chromium.real --
+reading 12:29:29 si=3152 so=0 load1=6.47 gate=closed heavy=busy remainS=88 HEAVY_JOBS busy n=4;hot pid=97076 cpu=32.7 /usr/lib/chromium/chromium.real 
+reading 12:30:00 si=4 so=5908 load1=5.86 gate=closed heavy=busy remainS=57 HEAVY_JOBS busy n=2;hot pid=97163 cpu=105.9 /usr/lib/chromium/chromium.real
+reading 12:30:29 si=72 so=0 load1=5.72 gate=closed heavy=busy remainS=28 HEAVY_JOBS busy n=2;hot pid=97163 cpu=105.9 /usr/lib/chromium/chromium.real -
+WINDOW-ENDED-WITHOUT-CLEAR 12:30:57
+
+Result. heavy-jobs read busy on all 20 samples. The gate was open on three of them (12:21:59, 12:27:29 and 12:27:59 local) and closed on the rest, so no sample had both conditions. The witnesses never ran (no WITNESS line in target/witness/window-job-r112.log). WINDOW-ENDED-WITHOUT-CLEAR at 12:30:57 local (10:30:57 UTC), exit code 3. Nothing was pushed. The busy processes were peer Chromium renderers and browser processes, peer zig compiles, a peer dev server (pid 88363), and a peer node cache process (pid 89266). None was stopped.
+
+Longest step. The window wait, 10:20:56 to 10:30:57 UTC (about 10 min, all of it waiting for a clear sample).
+
+Status. 90de827 stays local. The records measurement (the next item 2 step) needs a clear window, so the Phase A step is not taken in this stretch. Item 2 stays open. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample) for the code witness, its red check, the records witness and its red check, then the push of 90de827, and the records measurement after it.
+
