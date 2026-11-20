@@ -3943,3 +3943,26 @@ Checks without a browser:
 Red check: the pair check's tolerance rule was disabled (`ok: interleaved`). The witness exited 1 with three FAILs: the two ASTC ratio cases and the new ETC2 ratio case (1200 against 1018). The library was restored with `cmp`, and the witness exited 0 with 16 of 16 ok.
 
 No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 76 Phase A: fixed arm budgets, and a start rule that refuses a short window
+
+The Round 75 pair failed because of its own design. The job set the pair's window to the time that remained (667 s), and the runner gave the format arm that window minus the 360 s reference budget, so the ETC2 arm had about 307 s. The ASTC arm ran 308.8 s in Round 71, so the budget was too small by design.
+
+Design (decided here, recorded for the owner to overrule):
+- Each arm has its own budget, fixed in the runner: the format arm and the reference arm each get at least 360 s (`armBudgets` in `scripts/lib/pair-budget.cjs`). The pair needs 720 s. A budget variable below 360 s, or a non-numeric one, is raised to 360 s. `PAIR_WINDOW_S` no longer sets any arm's timer.
+- The job starts a pair only with at least the full pair budget (720 s) left in its own window. The window is 780 s measured from the job's start, so a start can only happen in its first 60 s. This is a consequence of the rule, not an accident: a start later than that could not get 720 s.
+- The ASTC format arm's timeout changes from a window-derived value (about 420 s with a 780 s window) to the fixed 360 s. The ASTC arm ran 308.8 s, so it still fits. Its result semantics and line shape are unchanged.
+
+What changed:
+- `scripts/lib/pair-budget.cjs`: `armBudgets(env)` and `canStartPair(remainingS, pairS)`.
+- `scripts/measure-astc-pair.cjs`: the arm timers take `budgets.formatS` and `budgets.referenceS`. The window clock is gone.
+- `scripts/check-pair-budget.cjs`: 11 cases. The defaults are 360/360. A 667 s or 780 s window variable does not set an arm. The ETC2 arm keeps 360 s at 665, 400, 307, and 60 s of remaining time. An explicit 420 s is kept. Values below 360 s and non-numeric values fall back to 360 s. A start with 665 or 700 s left is refused, and a start with 720 s or 780 s left is allowed.
+
+Checks without a window:
+- `check-pair-budget.cjs`: 11 of 11 ok, exit 0.
+- `check-astc-pair.cjs`: 16 of 16 ok, exit 0. The ASTC pair logic is unchanged.
+- The ASTC and ETC2 stand-ins (a driver that writes nothing) fail at their own stage with the same line shape. The witnesses and the footprint are byte-identical afterwards.
+
+Red check: the format budget was read from `PAIR_WINDOW_S` (the Round 75 bug). The witness exited 1 with the FAILs for the window cases. The file was restored with `cmp`, and the witness exited 0 with 11 of 11 ok.
+
+No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.

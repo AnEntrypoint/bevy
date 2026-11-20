@@ -4,6 +4,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { formatLine, checkPairs } = require('./lib/astc-load-ratio.cjs');
 const { runArm } = require('./lib/load-arm.cjs');
+const { armBudgets } = require('./lib/pair-budget.cjs');
 
 const shortNames = { astc4x4: 'astc', etc2: 'etc2' };
 const format = process.argv[2] || process.env.PAIR_FORMAT || 'astc4x4';
@@ -12,8 +13,7 @@ const short = shortNames[format];
 const repo = path.resolve(__dirname, '..');
 const witnessDir = path.join(repo, 'target', 'witness');
 const footprintPath = path.join(witnessDir, 'texture-footprint.json');
-const windowMs = Number(process.env.PAIR_WINDOW_S || 780) * 1000;
-const referenceBudgetMs = Number(process.env.PAIR_REFERENCE_BUDGET_S || 360) * 1000;
+const budgets = armBudgets(process.env);
 const tolerance = Number(process.env.LOAD_TOLERANCE || 1.1);
 const formatDriver = process.env.PAIR_FORMAT_DRIVER || process.env.ASTC_LOAD_DRIVER || 'scripts/check-neon-wasm-models.cjs';
 const referenceDriver = process.env.PAIR_REFERENCE_DRIVER || formatDriver;
@@ -31,15 +31,14 @@ function armFailure(stage, run, common) {
 }
 
 async function main() {
-    const windowStartMs = Date.now();
     fs.mkdirSync(archive, { recursive: true });
-    const formatRun = await runArm({ repo, driver: formatDriver, texture: format, label: short, archive, timeoutMs: windowMs - referenceBudgetMs });
+    const formatRun = await runArm({ repo, driver: formatDriver, texture: format, label: short, archive, timeoutMs: budgets.formatS * 1000 });
     const common = { window: windowId, archive: path.relative(repo, archive) };
     if (armFailed(formatRun)) {
         console.log(armFailure(short, formatRun, common));
         process.exit(1);
     }
-    const referenceRun = await runArm({ repo, driver: referenceDriver, texture: 'rgba8-software', label: 'reference', archive, timeoutMs: windowMs - (Date.now() - windowStartMs) });
+    const referenceRun = await runArm({ repo, driver: referenceDriver, texture: 'rgba8-software', label: 'reference', archive, timeoutMs: budgets.referenceS * 1000 });
     if (armFailed(referenceRun)) {
         console.log(armFailure('reference', referenceRun, common));
         process.exit(1);
