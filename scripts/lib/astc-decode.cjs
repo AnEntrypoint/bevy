@@ -403,4 +403,5 @@ module.exports = {
     WEIGHT_RANGE_BY_FIELD,
     BISE_RANGES,
     DUAL_PLANE_BIT,
+    WEIGHT_LEVELS,
 };

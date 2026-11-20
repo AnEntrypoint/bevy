@@ -4821,3 +4821,81 @@ Witness. scripts/check-astc-probe-witness.cjs, ALL PASS 8 checks, rc 0 (wall abo
 Red check (/tmp/bt/r99-redcheck.sh). The weight index was written without bit reversal in a dot-file mutant (ASTC_PROBE_PATH). The witness exited 1 with 1 of 8 FAIL (weights decode to the wrong index), DETECTED, RESTORED_IDENTICAL.
 
 Output files: /tmp/bt/r99-probe.out (probe), /tmp/bt/r99-mutant.out (mutant), target/witness/window-gate-r99.log (window readings).
+
+## Round 100 Phase B: the Round 98 and Round 99 witnesses for ba0dab8 and 36dfe62 in the window (cleared, witnesses passed, pushed 36dfe62)
+
+Readings. git log origin/main..HEAD showed 36dfe62 and ba0dab8. vmstat 1 2 first, at 08:41:20: the first line is the average since boot (si 5217, so 7092); the second line, the gate sample, is si 11556, so 0 (over 1000 KB/s: closed). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer grep (pid 2325113).
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r100.log). Every reading, one per 30 s:
+
+reading 08:41:23 si=1576 so=4708 load1=4.44 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=2;hot pid=2225 cpu=46 claude --dangerously-skip-permi
+reading 08:41:54 si=524 so=0 load1=3.79 gate=open heavy=busy remainS=567 HEAVY_JOBS busy n=2;hot pid=2326357 cpu=100 /workspace/gm/build/release/nativ
+reading 08:42:23 si=7456 so=0 load1=4.24 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=1;hot pid=2328242 cpu=100 grep -o "shared": *[0-9]*\|"ga
+reading 08:42:53 si=52 so=0 load1=3.25 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=1;hot pid=2328242 cpu=100 grep -o "shared": *[0-9]*\|"gaps":
+reading 08:43:24 si=148 so=0 load1=2.74 gate=open heavy=busy remainS=477 HEAVY_JOBS busy n=1;hot pid=2328242 cpu=100 grep -o "shared": *[0-9]*\|"gaps"
+reading 08:43:53 si=360 so=0 load1=2.54 gate=open heavy=busy remainS=448 HEAVY_JOBS busy n=1;hot pid=2328242 cpu=100 grep -o "shared": *[0-9]*\|"gaps"
+reading 08:44:24 si=68 so=0 load1=2.95 gate=open heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=2328242 cpu=100 grep -o "shared": *[0-9]*\|"gaps":
+reading 08:44:53 si=1568 so=848 load1=4.21 gate=closed heavy=clear remainS=388 HEAVY_JOBS clear
+reading 08:45:23 si=152 so=0 load1=3.17 gate=open heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=2225 cpu=28.7 claude --dangerously-skip-permissio
+reading 08:45:54 si=80 so=101436 load1=3.40 gate=closed heavy=busy remainS=327 HEAVY_JOBS busy n=2;hot pid=2330519 cpu=222.8 /usr/lib/chromium/chromiu
+reading 08:46:23 si=6796 so=173612 load1=4.93 gate=closed heavy=busy remainS=298 HEAVY_JOBS busy n=2;hot pid=2330519 cpu=175.2 /usr/lib/chromium/chrom
+reading 08:46:53 si=5124 so=0 load1=5.53 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=5;hot pid=2330473 cpu=134.3 /usr/lib/chromium/chromium.r
+reading 08:47:24 si=2204 so=0 load1=4.15 gate=closed heavy=clear remainS=237 HEAVY_JOBS clear
+reading 08:47:54 si=3016 so=0 load1=3.63 gate=closed heavy=busy remainS=207 HEAVY_JOBS busy n=1;compile pid=2331773 /tmp/zig-toolchain/zig-x86_64-linu
+reading 08:48:25 si=196 so=0 load1=2.90 gate=open heavy=busy remainS=176 HEAVY_JOBS busy n=2;compile pid=2332060 /tmp/zig-toolchain/zig-x86_64-linux-0
+reading 08:48:54 si=44 so=0 load1=2.89 gate=open heavy=busy remainS=147 HEAVY_JOBS busy n=2;compile pid=2332281 /tmp/zig-toolchain/zig-x86_64-linux-0.
+reading 08:49:24 si=1408 so=0 load1=2.67 gate=closed heavy=clear remainS=117 HEAVY_JOBS clear
+reading 08:49:55 si=668 so=0 load1=2.09 gate=open heavy=clear remainS=86 HEAVY_JOBS clear
+GATE-CLEAR 08:49:55 remainS=86
+WITNESS rc=0 08:50:06
+END 08:50:06 overall=0
+
+Gate. The gate first opened at 08:41:54 but heavy-jobs was busy. It cleared at 08:44:53 (heavy clear, gate closed) and at 08:47:24 (heavy clear, gate closed), and at 08:49:24 (heavy clear, gate closed). The gate opened and heavy-jobs read clear on the same sample at 08:49:55 (si 668, so 0, remaining 86 s): GATE-CLEAR. The witness set (/tmp/bt/r100-witnesses.sh, log target/witness/window-job-r100.log) ran in that window, each under timeout with its PID captured:
+
+- block-modes-witness: timeout pid 2332762, child 2332764, rc 0, wall 0.3 s, ALL PASS 6 checks.
+- block-modes-red-check: timeout pid 2332782, child 2332784, rc 0, wall 0.4 s, mutant FAIL 2 of 6, DETECTED, RESTORED_IDENTICAL.
+- union-e4-witness: timeout pid 2332817, child 2332819, rc 0, wall 0.8 s, ALL PASS 6 checks.
+- union-e4-red-check: timeout pid 2332837, child 2332839, rc 0, wall 0.7 s, mutant FAIL 1 of 6, DETECTED, ENDPOINT_RESTORED_IDENTICAL.
+- astc-probe-witness: timeout pid 2332887, child 2332889, rc 0, wall 4.3 s, ALL PASS 8 checks.
+- astc-probe-red-check: timeout pid 2333046, child 2333048, rc 0, wall 4.1 s, mutant FAIL 1 of 8, DETECTED, RESTORED_IDENTICAL.
+
+Witness set overall 0 at 08:50:06. Every witness passed, so the push ran once.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 8038827..36dfe62 main -> main, push rc 0. git ls-remote origin main: 36dfe62b2821e574982a594c3818e6b1b1508e0f refs/heads/main. Both commits, ba0dab8 and 36dfe62, are on origin.
+
+Longest step: the window wait (about 9 min to the clear sample at 08:49:55, from 08:41:20). Nothing was stopped by this run.
+
+## Round 100 Phase A: the GPU weight fit on the ASTC probe blocks (item 2 of the ranked list, tested, witness green, committed locally)
+
+Question. Round 98 found the ±1 disagreement in the interior weight levels, with endpoints exact at levels 0 and 15. The next step named there is whether the GPU uses a different weight per level (the table) or a different interpolation rule. This round fits, for each probe block and level, the integer weight w in 0 to 64 that reproduces the 16 GPU texels from the block's endpoints (e0 and e1, read from the CPU decode at levels 0 and 15, which the GPU matches exactly). Three rounding rules are tried: spec, (a times (64 minus w) plus b times w plus 32) shifted right 6; truncated, the same without +32; nearest, the same divided by 64 and rounded.
+
+Method. scripts/lib/astc-weight-fit.cjs (FORMULAS, MAX_WEIGHT, fitWeights). scripts/check-astc-weight-fit.cjs runs the Round 98 probe (15,360 fixtures, 960 per level) through scripts/lib/astc-probe-gpu.cjs and classifies every block and level by its fit: no fit, one fit, or several fits (several fits happen when the endpoints are close in a channel, so the output is insensitive to w). The table is WEIGHT_LEVELS[8], now exported from scripts/lib/astc-decode.cjs (the only change to a tested file, one export line).
+
+Result (rc 0, probe wall 4.1 s, GPU pid 2334930, leftover 0). For the spec rule, per level k (table weight in brackets): no fit | one fit | several fits | one fit at the table weight.
+
+- 0 (0): 0 | 306 | 654 | 306
+- 1 (4): 92 | 251 | 617 | 210
+- 2 (8): 158 | 222 | 580 | 155
+- 3 (12): 88 | 229 | 643 | 186
+- 4 (17): 55 | 251 | 654 | 239
+- 5 (21): 48 | 257 | 655 | 243
+- 6 (25): 65 | 250 | 645 | 236
+- 7 (29): 55 | 244 | 661 | 228
+- 8 (35): 60 | 247 | 653 | 229
+- 9 (39): 64 | 259 | 637 | 240
+- 10 (43): 38 | 222 | 700 | 209
+- 11 (47): 56 | 256 | 648 | 237
+- 12 (52): 88 | 242 | 630 | 196
+- 13 (56): 155 | 228 | 577 | 160
+- 14 (60): 90 | 247 | 623 | 205
+- 15 (64): 0 | 314 | 646 | 314
+
+Reading. Of the 13,440 interior blocks (levels 1 to 14), 1,112 (8.3%) fit no weight at all under the spec rule. The unique fits are mostly at the table weight, and where a unique fit is off the table the offset is mostly 0 or ±1, so the GPU's effective weight is not a different table. The truncated rule has far more blocks with no fit (for example 488 at level 1 and 557 at level 10), and the nearest rule gives the same counts as spec, so the spec rule is the closest of the three. The ±1 therefore sits in the interpolation rounding for a subset of blocks that no single weight reproduces, not in the weight table. Endpoints stay exact at levels 0 and 15.
+
+Witness. scripts/check-astc-weight-fit-witness.cjs, ALL PASS 4 checks, rc 0 (twice: once before and once after the red check): the weight table is 16 levels from 0 to 64; 200 synthetic trials for each rule, every table weight is in its fit set; the GPU readback finished with 1024 x 4 texels; on the GPU, all 32 end-level blocks fit their table weight (0 and 64) under the spec rule.
+
+Red check (/tmp/bt/r100-fitredcheck.sh). The fit range was cut to w < 64 in a dot-file mutant (ASTC_WEIGHT_FIT_PATH). The witness exited 1 with 2 of 4 FAIL (600 synthetic misses; 16 of 32 end-level blocks), DETECTED, RESTORED_IDENTICAL.
+
+Next step named. Residual analysis of the 1,112 no-fit interior blocks, by channel and by endpoint values, to find what the GPU's rounding depends on. This is a new measurement on the same probe and is not run here.
+
+Output files: /tmp/bt/r100-fit.out (fit), /tmp/bt/r100-fitmutant.out (mutant), target/witness/window-gate-r100.log (window readings).
