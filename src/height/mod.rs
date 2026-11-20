@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn planet_matches_the_spoint_fixture() {
         let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet.json")).unwrap();
-        let planet = Planet::new(&PlanetConfig { seed: fixture["seed"].as_i64().unwrap() as i32, hpf_res: 128, hash: HashVersion::Integer, relief_scale: 0.0, anchor_dir: [0.0, 1.0, 0.0], radius: 6360.0, carves: Vec::new() });
+        let planet = Planet::new(&crate::height::PlanetConfig { seed: fixture["seed"].as_i64().unwrap() as i32, hpf_res: 128, hash: HashVersion::Integer, relief_scale: 0.0, anchor_dir: [0.0, 1.0, 0.0], radius: 6360.0, carves: Vec::new() });
         let digests: Vec<String> = planet.hpf.iter().map(|face| fnv1a(face)).collect();
         let expected_digests: Vec<String> = fixture["faceDigests"].as_array().unwrap().iter().map(|d| d.as_str().unwrap().to_string()).collect();
         assert_eq!(digests, expected_digests, "seaBias face digests differ from spoint");
