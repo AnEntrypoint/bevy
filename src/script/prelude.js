@@ -302,9 +302,12 @@ function __quatEuler(q) {
   return { yaw: yaw * __rad, pitch: pitch * __rad, roll: roll * __rad };
 }
 function __quatRotate(q, v) {
+  const length = Math.hypot(q.x, q.y, q.z, q.w);
+  if (!(length > 0)) throw new TypeError('[quat] quat-zero-length: cannot normalize a zero quaternion');
+  const unit = { x: q.x / length, y: q.y / length, z: q.z / length, w: q.w / length };
   const p = { x: v.x, y: v.y, z: v.z, w: 0 };
-  const conjugate = { x: -q.x, y: -q.y, z: -q.z, w: q.w };
-  const out = __quatMul(__quatMul(q, p), conjugate);
+  const conjugate = { x: -unit.x, y: -unit.y, z: -unit.z, w: unit.w };
+  const out = __quatMul(__quatMul(unit, p), conjugate);
   return { x: out.x, y: out.y, z: out.z };
 }
 function __quatFromDirection(direction, axis = '-z') {
@@ -735,26 +738,37 @@ globalThis.__tick = (dt) => {
   }
 };
 globalThis.__jobs = globalThis.__jobs || {};
+function __ballisticElevation(speed, g, distance, rise) {
+  if (distance === 0) return null;
+  const v2 = speed * speed;
+  const root = v2 * v2 - g * (g * distance * distance + 2 * rise * v2);
+  if (root < 0) return null;
+  return Math.atan((v2 - Math.sqrt(root)) / (g * distance));
+}
 globalThis.__builtins.ballistics = {
   solveShot: (fromValue, toValue, speed, g, lead) => {
-    const from = __vec(fromValue), to = __vec(toValue);
-    const leadV = lead ? __vec(lead) : { x: 0, y: 0, z: 0 };
-    const dx = to.x + leadV.x - from.x, dz = to.z + leadV.z - from.z;
-    const distance = Math.hypot(dx, dz), rise = to.y - from.y;
-    if (distance < 1e-6) return null;
-    const v2 = speed * speed;
-    const root = v2 * v2 - g * (g * distance * distance + 2 * rise * v2);
-    if (root < 0) return null;
-    const angle = Math.atan((v2 - Math.sqrt(root)) / (g * distance));
-    const horizontal = speed * Math.cos(angle), time = distance / Math.max(1e-6, horizontal);
-    return { vel: { x: (dx / distance) * horizontal, y: speed * Math.sin(angle), z: (dz / distance) * horizontal }, time };
+    const origin = __vec(fromValue), target = __vec(toValue);
+    const velocity = lead === null || lead === undefined ? null : __vec(lead);
+    const staticSolve = (aim) => {
+      const dx = aim.x - origin.x, dz = aim.z - origin.z;
+      const distance = Math.hypot(dx, dz);
+      const theta = __ballisticElevation(speed, g, distance, aim.y - origin.y);
+      if (theta === null) return null;
+      const horizontal = speed * Math.cos(theta);
+      if (!(horizontal > 0)) return null;
+      return { vel: { x: (dx / distance) * horizontal, y: speed * Math.sin(theta), z: (dz / distance) * horizontal }, time: distance / horizontal };
+    };
+    let aim = { ...target }, firedAt = aim, solution = null;
+    for (let i = 0; i < 4; i++) {
+      firedAt = aim;
+      solution = staticSolve(firedAt);
+      if (solution === null) return null;
+      if (velocity === null) break;
+      aim = { x: target.x + velocity.x * solution.time, y: target.y + velocity.y * solution.time, z: target.z + velocity.z * solution.time };
+    }
+    return { ...solution, aim: firedAt };
   },
-  elevation: (speed, g, distance, rise) => {
-    const v2 = speed * speed;
-    const root = v2 * v2 - g * (g * distance * distance + 2 * rise * v2);
-    if (root < 0) return null;
-    return Math.atan((v2 - Math.sqrt(root)) / (g * Math.max(1e-6, distance)));
-  },
+  elevation: __ballisticElevation,
 };
 
 globalThis.__builtins.spline = {

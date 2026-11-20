@@ -4107,6 +4107,40 @@ mod tests {
     }
 
     #[test]
+    fn ballistics_and_quat_rotate_match_the_spoint_fixture() {
+        fn close(actual: &serde_json::Value, expected: &serde_json::Value) -> bool {
+            match (actual, expected) {
+                (serde_json::Value::Null, serde_json::Value::Null) => true,
+                (serde_json::Value::Number(a), serde_json::Value::Number(b)) => {
+                    (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-9
+                }
+                (serde_json::Value::Array(a), serde_json::Value::Array(b)) => {
+                    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| close(a, b))
+                }
+                (serde_json::Value::Object(a), serde_json::Value::Object(b)) => {
+                    a.len() == b.len() && b.iter().all(|(key, value)| a.get(key).is_some_and(|x| close(x, value)))
+                }
+                _ => false,
+            }
+        }
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/parity/spoint-ballistics-quat.json")).unwrap();
+        let source = format!(
+            "(() => {{ const run = (c) => {{ if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const r = __builtins.vec3.rotate(c.q, c.v); return [r.x, r.y, r.z]; }}; return JSON.stringify({}.map(run)); }})()",
+            fixture["cases"]
+        );
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world");
+        let engine = ScriptEngine::new(&root).unwrap();
+        let text: String = engine.context.with(|ctx| ctx.eval::<String, _>(source.as_str())).unwrap();
+        let actual: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert!(
+            close(&actual, &fixture["expected"]),
+            "bevy {actual} differs from spoint {}",
+            fixture["expected"]
+        );
+    }
+
+    #[test]
     fn builtin_exports_have_no_duplicates() {
         for key in [
             "math", "vec3", "easing", "noise", "path", "ballistics", "physics", "tween", "spline", "nav",
