@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { sourceIsZstd, measure } = require('./lib/texture-cache.cjs');
+const { windowEvidence } = require('./lib/fallback-list.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
@@ -67,12 +68,13 @@ function judge(format, spec, models, names) {
     const reference = witnessSummary(spec.reference);
     const visual = visualSummary(spec.visual);
     const texel = spec.texel ? texelSummary() : null;
+    const loadEvidence = witness && reference ? windowEvidence(witness.mtime, reference.mtime) : null;
     const loadOk = Boolean(witness && reference && witness.loadMsMedian !== null && reference.loadMsMedian !== null && witness.loadMsMedian <= reference.loadMsMedian * loadTolerance);
     const cleanOk = Boolean(witness && witness.total > 0 && witness.clean === witness.total);
     const visualOk = Boolean(visual && visual.ok && visual.pairs === names.length);
     const texelOk = spec.texel ? Boolean(texel && texel.ok) : null;
     const usable = fp.wins && loadOk && cleanOk && visualOk && texelOk !== false;
-    return { footprint: fp, reference: spec.reference, witness, referenceWitness: reference, visual, texel, reasons: { footprintWins: fp.wins, loadOk, cleanOk, visualOk, texelOk, loadTolerance }, usable };
+    return { footprint: fp, reference: spec.reference, witness, referenceWitness: reference, loadEvidence, visual, texel, reasons: { footprintWins: fp.wins, loadOk, cleanOk, visualOk, texelOk, loadTolerance }, usable };
 }
 
 function main() {

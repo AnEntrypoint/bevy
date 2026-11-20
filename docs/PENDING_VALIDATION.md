@@ -3908,3 +3908,18 @@ Red check: the pair check was changed to `ok: interleaved`, so it ignored the to
 Stand-in tests of the pair runner (no browser): the ASTC arm writes nothing gives `ASTC_PAIR run_ok=false stage=astc fresh=false`, exit 1, with the 64 shots restored and the witness byte-identical. The ASTC arm that hangs under a 2 s budget gives `stage=astc timed_out=true`, exit 1, with the driver stopped by PID and no stand-in process left.
 
 Not changed: the footprint rule (1.1), the stop rule, the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim. No cargo ran. Local commit only; not pushed in Phase A.
+
+## Round 72 Phase A: the fallback list and its window evidence
+
+The fallback list is not hardcoded. `scripts/texture-footprint.cjs` derives `fallbackFormats` from each format's `usable` verdict. No script, witness, or AGENTS.md line still lists ASTC as excluded. The Round 59 exclusion survives only as ledger history, and the Round 70 and Round 71 corrections mark it superseded. So the list already matches the measured result, and no list value changed.
+
+What changed:
+- `scripts/lib/fallback-list.cjs`: `windowEvidence` takes the gap between a format's witness mtime and its reference mtime, and counts it as the same window at 780 s or less. `checkFallbackList` requires the list keys to be exactly astc4x4 and etc2, each listed value to equal its usable verdict, the window evidence to be present and consistent, and the decision to follow bc7 usable.
+- `scripts/texture-footprint.cjs`: each judged format now records `loadEvidence`. The decision rule and the 1.1 tolerance are unchanged.
+- `scripts/check-fallback-list.cjs`: six fixture cases and the live footprint. 7 of 7 ok, exit 0.
+
+Red check: the list comparison in the library was disabled (`if (false) failures.push`). The witness exited 1 with `FAIL an ETC2 entry listed false while usable fails`. The library was restored with `cmp`, and the witness exited 0. Then the live footprint's `etc2` was set to false. The witness exited 1 with `FAIL live footprint list: etc2 listed false against usable true`. The file was restored with `cmp`, and the witness exited 0.
+
+Caveat, the window evidence. ASTC's verdict is same-window: its witness and the pair's reference are 309.082 s apart. ETC2's verdict is not: its witness is from 21:41 and its reference from 00:04, a gap of 8580.541 s. ETC2 is listed usable under the footprint's rule, so the list is right by that rule. But its load comparison is cross-window, the same kind of evidence the pair replaced for ASTC. A same-window ETC2 pair needs about 11 minutes of window. It is not run here, and it is on the ranked list.
+
+No window was needed for this change. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
