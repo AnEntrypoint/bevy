@@ -5067,3 +5067,89 @@ WINDOW-ENDED-WITHOUT-CLEAR 10:31:00
 Result. heavy-jobs read busy on every one of the 19 samples, and the gate was open on 14 of them. No sample cleared both conditions, so the witnesses did not run (log target/witness/window-job-r104.log has no WITNESS line). WINDOW-ENDED-WITHOUT-CLEAR at 10:31:00. Nothing was pushed. The busy processes were peer Chromium renderers and browser processes, a peer node cache process, and a peer gm process. None was stopped.
 
 Longest step. The window wait, 10:21:02 to 10:31:00 (about 10 min), with the witnesses never starting.
+
+## Round 105 Phase B: the three unpushed commits in the window (cleared, witnesses passed, pushed 972b497)
+
+Scope. Pushed 0b70894 (ledger-only), f119411 (the trit and quint table witness) and 972b497 (the Round 104 ledger record). The witnessed step is f119411, and its witness and red check ran in this window.
+
+Pre-window. The window was not started before 08:55 UTC, as instructed (oscraft's window runs until 08:55 UTC). vmstat 1 2 at 08:55:44 UTC: the first line is the average since boot (si 1151, so 2354); the gate sample is si 4, so 0 (open). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy on oscraft's renderer (pid 28700, 105% CPU).
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r105.log). Readings, local time (UTC is two hours earlier):
+
+reading 10:55:49 si=36 so=0 load1=1.73 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=28700 cpu=115.8 /usr/lib/chromium/chromium.real --
+reading 10:56:19 si=120 so=0 load1=1.44 gate=open heavy=clear remainS=568 HEAVY_JOBS clear
+GATE-CLEAR 10:56:19 remainS=568
+WITNESS rc=0 10:56:24
+END 10:56:24 overall=0
+
+Gate. heavy-jobs read clear at 10:56:19 local (08:56:19 UTC) with the gate open on the same sample (si 120, so 0). That sample is GATE-CLEAR, with 568 s remaining. The witness set (/tmp/bt/r105-witnesses.sh, log target/witness/window-job-r105.log) ran under timeout with each PID captured:
+
+PID tail-tables-witness timeout=29872 child=  29876 10:56:19
+WITNESS tail-tables-witness rc=0 wall=0.0s
+ok   trit table holds 243 distinct 8-bit codes
+ok   quint table holds 125 distinct 7-bit codes
+ALL PASS 2 checks
+PID tail-tables-red-check timeout=29914 child= 10:56:19
+WITNESS tail-tables-red-check rc=0 wall=0.1s
+MUTATED
+PID red-check-mutant pid=29937 10:56:19
+RESTORED_IDENTICAL
+FAIL trit table holds 243 distinct 8-bit codes: entries 243, distinct 242
+FAIL 1 of 2
+mutant_rc=1
+DETECTED
+PID residual-witness timeout=29957 child= 10:56:20
+WITNESS residual-witness rc=0 wall=0.0s
+ok   a block built at a table weight has no missing channel and fits that weight
+ok   an unreachable value in one channel with equal endpoints is reported as that channel missing
+ok   each channel fits alone but no weight fits all three (joint only)
+ALL PASS 3 checks
+PID residual-red-check timeout=29988 child= 10:56:20
+WITNESS residual-red-check rc=0 wall=0.1s
+MUTATED
+PID residual-mutant pid=30010 10:56:20
+RESTORED_IDENTICAL
+FAIL an unreachable value in one channel with equal endpoints is reported as that channel missing: {"missing":[],"joint":[]}
+FAIL 1 of 3
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 10:56:20
+PID residual-measure timeout=30040 child= 10:56:20
+WITNESS residual-measure rc=0 wall=4.2s
+gpu run pid 30055 outcome done wall 0.7 s leftover 0
+interior blocks 13440, no weight fits all channels 1112 (8.27%)
+   every channel fits alone: 964
+   channel without any fit: G: 75
+   channel without any fit: R: 48
+   channel without any fit: B: 17
+   channel without any fit: RG: 4
+   channel without any fit: GB: 3
+   channel without any fit: RB: 1
+wall 4.1 s
+
+Witness set overall 0 at 10:56:20 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 9eb4306..972b497 main -> main, push rc 0. git ls-remote origin main: 972b497c7cc0181c4f9cbc6572811fea4e817423 refs/heads/main.
+
+Longest step. The window wait, from 08:55:44 UTC to the clear sample at 08:56:19 UTC (under a minute); the whole window job took about 40 s, and the witnesses took under 2 s each except the measurement (4.2 s).
+
+## Round 105 Phase A: the per-channel residual classifier for item 2 (witness and red check, measurement in the window, not pushed)
+
+The item. Item 2, the ASTC CPU–GPU ±1 residual. The Round 97-era fit step found 1,112 interior blocks of 13,440 with no weight that fits all three channels under the spec formula. The open question is which channel causes them. Phase A adds a classifier that says, for each block, whether any single channel has no fitting weight at all, or whether each channel fits alone but no weight fits all three together.
+
+Change. scripts/lib/astc-residual.cjs: channelFits(e0, e1, texels, formula, channel) and classify(e0, e1, texels, formula), which returns { missing, joint }. New files: scripts/check-astc-residual-witness.cjs and scripts/check-astc-residual.cjs (the measurement).
+
+Witness. node scripts/check-astc-residual-witness.cjs (in the window): ok a block built at a table weight has no missing channel and fits that weight; ok an unreachable value in one channel with equal endpoints is reported as that channel missing; ok each channel fits alone but no weight fits all three (joint only); ALL PASS 3 checks, rc 0.
+
+Red check. The classifier's channel loop was changed from c < 3 to c < 2 in place (saved to /tmp/bt/r105-residual.good first). The witness gave FAIL an unreachable value in one channel with equal endpoints is reported as that channel missing: {"missing":[],"joint":[]}, FAIL 1 of 3, mutant rc 1, DETECTED. The file was restored, cmp reported RESTORED_IDENTICAL.
+
+Measurement (not a witness; scripts/check-astc-residual.cjs, GPU readback of the same 15,360-block cache set, under timeout, pid 30040 before exec). GPU run pid 30055, outcome done, wall 0.7 s, leftover 0. Interior blocks (levels 1 to 14): 13,440. No weight fits all three channels: 1,112 (8.27%), which reproduces the earlier count. Breakdown of the 1,112:
+
+- every channel fits alone, so only the joint fit fails: 964 (86.7%).
+- a channel with no fitting weight at all: G 75, R 48, B 17, RG 4, GB 3, RB 1 (148 in total).
+
+Reading. Most of the item 2 residual (964 of 1,112) is joint-only: each channel has a weight that fits it alone, and the three channels do not share one. That points at per-channel weights or rounding on the GPU, not at a single bad channel. The 148 with a missing channel are dominated by G (75). This is a classification of the disagreement, not a cause: no cause is shown here, and the disagreement is not a failed witness.
+
+Status. Item 2 stays open. Its next step is to test the 964 joint-only blocks for a per-channel weight or rounding difference (a formula that rounds each channel at its own weight, or a per-channel weight table), which is a CPU test on the existing classification.
+
+Not pushed. Local commit only, as lanmower, no trailers.
