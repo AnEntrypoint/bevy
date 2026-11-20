@@ -5433,3 +5433,40 @@ Reading. The GPU's endpoint is never the next code up or down from the CPU's cod
 Status. Item 2 stays open. Its next step is to test the 707 no-code candidates against the unquantisation of range 19 (for example, whether the GPU value is the unquant of the same code with a different digit or low-bit rounding), which is a CPU test on the saved candidates, and to test the 2,007 other-code candidates for a code-distance pattern. The saved candidates are not on disk yet: the measurement prints counts, not per-candidate records.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 109 Phase B: the code-classification witness for a13958f in the window (did not clear, nothing pushed)
+
+Scope. a13958f is the Round 108 Phase A commit: the code classification (scripts/lib/astc-endpoint-code.cjs, its witness, and the measurement). Its witnessed step is the classifier, and its witness and red check were the Phase B set for this window.
+
+Pre-window. vmstat 1 2 at 09:44:20 UTC: the first line is the average since boot (si 1843, so 3199); the gate sample is si 44, so 0 (open). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on peer ninja and gcc compiles (pids 63246, 63858). The window job waited for a clear sample and did not force one.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r109.log). Readings, local time (UTC is two hours earlier):
+
+reading 11:44:23 si=140 so=0 load1=2.77 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=3;hot pid=2172 cpu=42.6 /config/.gmnew/versions/0f9e3bb-542
+reading 11:44:54 si=20 so=0 load1=2.75 gate=open heavy=busy remainS=567 HEAVY_JOBS busy n=3;hot pid=2172 cpu=95 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 11:45:23 si=16 so=5304 load1=2.97 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=3;hot pid=2172 cpu=73.3 /config/.gmnew/versions/0f9e3bb
+reading 11:45:53 si=4 so=156 load1=2.91 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=3;hot pid=2172 cpu=90 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:46:24 si=8 so=0 load1=3.37 gate=open heavy=busy remainS=477 HEAVY_JOBS busy n=3;hot pid=2172 cpu=76.2 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:46:53 si=676 so=0 load1=3.90 gate=open heavy=busy remainS=448 HEAVY_JOBS busy n=2;hot pid=2172 cpu=92.1 /config/.gmnew/versions/0f9e3bb-542
+reading 11:47:23 si=56 so=3500 load1=3.49 gate=closed heavy=busy remainS=418 HEAVY_JOBS busy n=3;hot pid=2172 cpu=100 /config/.gmnew/versions/0f9e3bb-
+reading 11:47:54 si=576 so=0 load1=3.46 gate=open heavy=busy remainS=387 HEAVY_JOBS busy n=3;hot pid=2172 cpu=98 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:48:23 si=48 so=0 load1=3.23 gate=open heavy=busy remainS=358 HEAVY_JOBS busy n=3;hot pid=2172 cpu=98 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 11:48:53 si=96 so=0 load1=2.92 gate=open heavy=busy remainS=328 HEAVY_JOBS busy n=3;hot pid=2172 cpu=99 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 11:49:24 si=40 so=0 load1=3.57 gate=open heavy=busy remainS=297 HEAVY_JOBS busy n=3;hot pid=2172 cpu=99 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 11:49:53 si=320 so=0 load1=3.90 gate=open heavy=busy remainS=268 HEAVY_JOBS busy n=3;hot pid=2172 cpu=87.4 /config/.gmnew/versions/0f9e3bb-542
+reading 11:50:23 si=2000 so=112 load1=3.93 gate=closed heavy=busy remainS=238 HEAVY_JOBS busy n=1;hot pid=2172 cpu=81.2 /config/.gmnew/versions/0f9e3b
+reading 11:50:54 si=44 so=0 load1=3.12 gate=open heavy=busy remainS=207 HEAVY_JOBS busy n=1;hot pid=2172 cpu=74.3 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:51:23 si=48 so=0 load1=3.22 gate=open heavy=busy remainS=178 HEAVY_JOBS busy n=3;hot pid=2172 cpu=100 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:51:53 si=20 so=0 load1=3.78 gate=open heavy=busy remainS=148 HEAVY_JOBS busy n=3;hot pid=2172 cpu=78.2 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:52:24 si=6792 so=0 load1=3.83 gate=closed heavy=busy remainS=117 HEAVY_JOBS busy n=1;hot pid=2172 cpu=72.3 /config/.gmnew/versions/0f9e3bb-
+reading 11:52:53 si=748 so=0 load1=2.95 gate=open heavy=busy remainS=88 HEAVY_JOBS busy n=2;hot pid=2172 cpu=88.1 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:53:24 si=2436 so=2328 load1=2.45 gate=closed heavy=busy remainS=57 HEAVY_JOBS busy n=2;compile pid=70528 ninja -C build/release -j1 gm gm-c
+reading 11:53:53 si=492 so=0 load1=2.62 gate=open heavy=busy remainS=28 HEAVY_JOBS busy n=3;hot pid=2172 cpu=96 /config/.gmnew/versions/0f9e3bb-542/gm
+WINDOW-ENDED-WITHOUT-CLEAR 11:54:21
+
+Result. heavy-jobs read busy on all 19 samples. The gate was open on about half of them and closed on the others, so no sample had both conditions. The witnesses never ran (no WITNESS line in target/witness/window-job-r109.log). WINDOW-ENDED-WITHOUT-CLEAR at 11:54:21 local (09:54:21 UTC), exit code 3. Nothing was pushed. The busy processes were oscraft's gm-core worker (pid 2172, present in every sample) and peer ninja and gcc compiles. None was stopped.
+
+Longest step. The window wait, 09:44:18 to 09:54:21 UTC (about 10 min, all of it waiting for a clear sample).
+
+Status. a13958f stays local. Item 2 stays open, and its next step (the CPU test of the 707 no-code candidates against the range-19 unquantisation) needs the candidate records, which the measurement does not save. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample) for the witness and red check of a13958f, then the push.
+
