@@ -839,6 +839,31 @@ mod tests {
     }
 
     #[test]
+    fn tps_game_hf_matches_the_spoint_loader() {
+        let bytes = include_bytes!("../testdata/parity/tps-game.hf");
+        let points: Value = serde_json::from_str(include_str!("../testdata/parity/tps-game-hf-points.json")).unwrap();
+        let field = crate::height::baked::BakedHeightField::from_hf(bytes).unwrap();
+        let mut worst = 0.0_f64;
+        for sample in points["samples"].as_array().unwrap() {
+            let (x, z, expected) = (sample[0].as_f64().unwrap(), sample[1].as_f64().unwrap(), sample[2].as_f64().unwrap());
+            worst = worst.max((field.height_at_local(x, z) - expected).abs());
+        }
+        assert!(worst <= BAKED_HEIGHT_TOLERANCE_M, "tps-game.hf height differs from spoint by up to {worst} m, bound {BAKED_HEIGHT_TOLERANCE_M} m");
+    }
+
+    #[test]
+    fn tps_game_hf_refusals_match_the_spoint_codec() {
+        let bytes = include_bytes!("../testdata/parity/tps-game.hf");
+        let points: Value = serde_json::from_str(include_str!("../testdata/parity/tps-game-hf-points.json")).unwrap();
+        let mut bad_magic = bytes.to_vec();
+        bad_magic[0] ^= 0xff;
+        let bad = crate::height::baked::BakedHeightField::from_hf(&bad_magic).err().expect("bad magic accepted");
+        assert!(bad.starts_with(points["refusals"]["badMagic"].as_str().unwrap()), "bad magic refusal {bad:?}");
+        let truncated = crate::height::baked::BakedHeightField::from_hf(&bytes[..bytes.len() - 1]).err().expect("truncated accepted");
+        assert!(truncated.starts_with(points["refusals"]["truncated"].as_str().unwrap()), "truncated refusal {truncated:?}");
+    }
+
+    #[test]
     fn baked_height_field_refuses_a_truncated_artifact_like_spoint() {
         let short: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-short.json")).unwrap();
         let points: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-points.json")).unwrap();
