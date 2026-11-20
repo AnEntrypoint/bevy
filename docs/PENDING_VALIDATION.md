@@ -6190,3 +6190,19 @@ Holders, by PID and cwd (checked against /proc at 13:38 UTC and after the window
 None of these holders is a bevy compile, witness or probe. The window's own witnesses were not started because the gate never cleared.
 
 Not run: the witnesses and red checks of this stack, and the interpolation measurement (scripts/check-astc-interp-readback.cjs). Its inputs were checked offline before the window (215,040 fixtures, 3,440,640 bytes, readback height 3,360, decoder against spec on 8,400 values with 0 mismatches). Nothing pushed: origin/main is 2c3ca0a.
+
+## Round 120 Phase A: item 3's two-subset endpoint blocks (witness and red check; not pushed)
+
+Named item. Item 3, ASTC partial tails. Its reopen condition was a GPU readback of synthetic 2 to 4 trit and quint tail blocks. The single-subset block writer (81dd473) builds only 6- and 8-value shapes, and the decoder picks the range from the bits left, so a single subset gives only the tails of those shapes. Two subsets double the endpoint count: CEM 8 gives 12 values, which in a trit range has a trit tail of 2. This is the shape step that puts tails 2 and 3 into real blocks. It is CPU only; its GPU readback waits for a clear window.
+
+Why this item and not item 2. Item 2's interpolation measurement is written and its inputs are checked, but it needs a clear window, and the window did not clear (Round 120 record above). The item named here needs no window to write and check.
+
+What it does. scripts/lib/astc-endpoint-block.cjs: TWO_SUBSET_POSITION (29), valueBits, and buildTwoSubsetBlock(cem, seed, values, weightIndex). The block has the subset field at bits 11 to 12 (value 1, so two subsets), the 10-bit partition seed at bits 13 to 22, the CEM at bits 25 to 28, and the endpoint sequence from bit 29, in the subset order the decoder reads (each subset's pairs per channel). The range is the one the decoder picks for the bits left.
+
+Witness (CPU only). scripts/check-astc-two-subset-witness.cjs: ok a CEM 8 two-subset block has 12 endpoint values in a trit range, so its tail is two values (wrong output: a range with no trit tail); ok each texel of a CEM 8 two-subset block decodes to its own subset endpoint (wrong output: the other subset or a single-subset layout); ok the same for CEM 4 (wrong output: the other subset or a shifted endpoint); ok the same for CEM 12. ALL PASS 4 checks, rc 0 (PID 108108). The partition for each texel is the decoder's own astcTexelPartition, so the witness checks the layout and the subset order against the decoder's partition function, not against an external encoder.
+
+Red checks (each mutation in place under timeout, restored from a /tmp copy, cmp RESTORED_IDENTICAL):
+- endpoint start moved from bit 29 to 30 (TWO_SUBSET_POSITION): PID 108534, FAIL 3 of 4 (CEM 8: 320 of 320 texels wrong, CEM 4: 320 of 320, CEM 12: 320 of 320), DETECTED.
+- partition seed moved from bit 13 to 14: PID 108555, FAIL 2 of 4 (CEM 8: 148 of 320 texels wrong, CEM 4: 143 of 320), DETECTED.
+
+Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear window (witness and red check first). (b) Item 3: a GPU readback of the two-subset blocks above, in the same window, which would check the tail shapes the GPU decodes. Both need the gate to clear first.
