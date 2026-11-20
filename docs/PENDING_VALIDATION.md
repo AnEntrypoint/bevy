@@ -4122,3 +4122,23 @@ Footprint check: decision `bc7`, witness rc 0. Its `fallbackFormats` and per-for
 No process of mine remained after the window, and no peer process was stopped.
 
 Docs only: no red check applies to this record.
+
+## Round 81 Phase A: the start-window ruling (1200 s window, a pair starts in its first 480 s)
+
+Ruling (dispatcher, this round, recorded here): the pair window is 1200 s. The window job starts a pair only while at least 720 s of that window remain, so a pair can start in the first 480 s of a window, not only in the first 60 s. Each arm keeps its fixed 360 s budget, so the window length sets no arm's timer. The owner's standing rule stands: any other process above 20% CPU in top counts, including Claude sessions and `find`, and the window job keeps that rule. This ruling is reversible: the window is one constant, `PAIR_WINDOW_S` in `scripts/lib/pair-budget.cjs`.
+
+Reason: with a 780 s window and a 720 s pair budget, a start had only 60 s, and Rounds 73 to 75 ended without a start for that reason. With 1200 s, the same 720 s budget leaves 480 s for the gate and the heavy rule to clear.
+
+Reading of "measured from the pair's own start" (for the dispatcher to check): the 1200 s clock opens when the window job opens, not when the pair starts. A clock that opened at the pair's own start would have 1200 s left at every start, so the 720 s rule would never refuse anything. The pair's arm budgets are still measured from the pair's own start, as before.
+
+What changed:
+- `scripts/lib/pair-budget.cjs`: `PAIR_WINDOW_S` (1200), `latestPairStartS(pairS)` (480), `pairStartAllowedAt(elapsedS, pairS)`.
+- `scripts/window-job.sh`: `MIN_REMAINING_S` (default 0). A clear sample is not started when less than `MIN_REMAINING_S` remains: the job logs `START-REFUSED` and exits 4 without running the witness. With the default, its behaviour is unchanged.
+- `scripts/check-pair-budget.cjs`: 17 cases, up from 11. A start at 800 s into the 1200 s window is refused (400 s left). A start at 480 s is allowed (720 s left). A start at 481 s is refused. The ETC2 arm keeps 360 s in a 1200 s window whatever the window variable says.
+- `scripts/check-window-job.cjs`: 10 cases, up from 8. A clear sample with 10 s of window and 3 s needed starts the witness. A clear sample reached with 4 s of window and 3 s needed is refused.
+
+Witnesses: `check-pair-budget.cjs` 17 of 17 ok, exit 0. `check-window-job.cjs` 10 of 10 ok, exit 0. `check-astc-pair.cjs` 16 of 16 ok, exit 0, unchanged, so the ASTC behaviour is unchanged.
+
+Red check: `pairStartAllowedAt` ignored the elapsed time (`canStartPair(PAIR_WINDOW_S, pairS)`, the bug the ruling removes). `check-pair-budget.cjs` exited 1 with `FAIL a start at 800 s into the 1200 s window is refused` and `FAIL a start at 481 s into the window is refused`. The library was restored with `cmp`, and the witness exited 0 with 17 of 17 ok.
+
+No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.

@@ -4,6 +4,7 @@ WINDOW_S=${WINDOW_S:-600}
 INTERVAL_S=${INTERVAL_S:-30}
 GATE_KB=${GATE_KB:-1000}
 LOAD_MAX=${LOAD_MAX:-4}
+MIN_REMAINING_S=${MIN_REMAINING_S:-0}
 LOG=${WINDOW_LOG:-target/witness/window-job.log}
 VMSTAT_CMD=${VMSTAT_CMD:-vmstat 1 2}
 HEAVY_CMD=${HEAVY_CMD:-node scripts/heavy-jobs.cjs}
@@ -31,6 +32,11 @@ while :; do
   if [ "$t" -ge "$deadline" ]; then
     echo "WINDOW-ENDED-WITHOUT-CLEAR $(date +%T)" | tee -a "$LOG"
     exit 3
+  fi
+  remaining=$((deadline - t))
+  if [ "$remaining" -lt "$MIN_REMAINING_S" ]; then
+    echo "START-REFUSED $(date +%T) remainS=$remaining min=$MIN_REMAINING_S" | tee -a "$LOG"
+    exit 4
   fi
   if sample; then
     echo "GATE-CLEAR $(date +%T) remainS=$((deadline - $(date +%s)))" | tee -a "$LOG"

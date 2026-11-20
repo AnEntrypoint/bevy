@@ -1,4 +1,5 @@
 const MIN_ARM_BUDGET_S = 360;
+const PAIR_WINDOW_S = 1200;
 
 function budget(value) {
     const seconds = Number(value);
@@ -15,4 +16,12 @@ function canStartPair(remainingS, pairS) {
     return remainingS >= pairS;
 }
 
-module.exports = { MIN_ARM_BUDGET_S, armBudgets, canStartPair };
+function latestPairStartS(pairS) {
+    return PAIR_WINDOW_S - pairS;
+}
+
+function pairStartAllowedAt(elapsedS, pairS) {
+    return canStartPair(PAIR_WINDOW_S - elapsedS, pairS);
+}
+
+module.exports = { MIN_ARM_BUDGET_S, PAIR_WINDOW_S, armBudgets, canStartPair, latestPairStartS, pairStartAllowedAt };

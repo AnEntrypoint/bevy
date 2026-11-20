@@ -40,6 +40,7 @@ function runJob(index, options) {
       INTERVAL_S: String(options.intervalS || 1),
       GATE_KB: '1000',
       LOAD_MAX: '4',
+      MIN_REMAINING_S: String(options.minRemainingS || 0),
       WINDOW_LOG: log,
       VMSTAT_CMD: sequenceStub(dir, 'vmstat', options.vmstat, vmstatPrint),
       HEAVY_CMD: sequenceStub(dir, 'heavy', options.heavy, heavyPrint),
@@ -66,6 +67,8 @@ const cases = [
   { name: 'a failing witness sets the job exit status', options: { vmstat: ['10 10'], heavy: ['clear'], witness: ['false'] }, ok: (r) => r.status === 1 && r.text.includes('overall=1') },
   { name: 'readings come at the interval (two or more in a 3 s window at 1 s)', options: { vmstat: ['10 10'], heavy: ['busy'], windowS: 3, intervalS: 1 }, ok: (r) => r.readings.length >= 2 },
   { name: 'a clear sample with no witness ends the job without a run', options: { vmstat: ['10 10'], heavy: ['clear'], witness: [] }, ok: (r) => r.status === 0 && r.runCount === 0 && r.text.includes('no-witness') },
+  { name: 'a clear sample with enough window left (10 s, 3 s needed) starts the witness', options: { vmstat: ['2000 0', '10 10'], heavy: ['clear'], windowS: 10, intervalS: 1, minRemainingS: 3 }, ok: startsOnSecondSample },
+  { name: 'a clear sample reached with too little window left (4 s, 3 s needed) is refused', options: { vmstat: ['2000 0', '2000 0', '10 10'], heavy: ['clear'], windowS: 4, intervalS: 1, minRemainingS: 3 }, ok: (r) => r.status === 4 && r.runCount === 0 && r.text.includes('START-REFUSED') && r.readings.length === 2 && r.readings.every((line) => /gate=closed/.test(line)) },
 ];
 
 let failed = 0;
