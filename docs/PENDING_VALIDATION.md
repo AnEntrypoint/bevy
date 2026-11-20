@@ -5921,3 +5921,35 @@ Result: WINDOW-ENDED-WITHOUT-CLEAR at 14:41:00 local (12:41:00 UTC). The gate ne
 
 Witnesses not run in this window: the class, code, records, constant, readback and encoder witnesses and their red checks, and the readback measurement (d6fcb30). The encoder's Phase A run is recorded in Round 117 Phase A (witness ALL PASS 3, red checks DETECTED). Nothing pushed: origin/main is c56ee46.
 
+
+## Round 117 gate cause: heavy-jobs matched other projects' processes on all 20 busy samples (evidence; no change to the gate)
+
+The reading. target/witness/window-gate-r117.log: 20 readings, each heavy=busy, 14:31:03 to 14:40:32 local (UTC+2). No reading was clear with the gate open.
+
+The matcher. scripts/lib/heavy-jobs.cjs, classify(): (1) hot: any process in the top sample with CPU above 20 (CPU_LIMIT), anywhere on the host, with no owner, cwd or project check; (2) compile: any process whose binary basename is in COMPILERS (zig, cmake, cargo, rustc, cc1plus, ninja, and so on), anywhere on the host; (3) chromium-renderer: a renderer over 1 GiB RSS, anywhere on the host. The only exemption is a gm-core process with --handshake. scripts/heavy-jobs.cjs passes top and ps output straight to classify.
+
+Every matched PID across the 20 samples, with its owner from the log's command text and, where the process still exists, its cwd and age (probed 12:51 UTC):
+
+- 2525, hot, 11 samples (14:31:03 to 14:40:32): gm-core worker, --workspace /workspace/oscraft, live at probe (cwd /workspace/oscraft, age 2134 s, user abc). Owner: oscraft (a peer's job).
+- 19800 and 19870, hot and chromium-renderer, 14:31:03 to 14:31:32: chromium crashpad and renderer, user-data-dir /workspace/osc… (oscraft's browser). Gone.
+- 21366 (14:31:03) and 27175 (14:32:02), compile: zig build-exe and zig test of .zig-cache/o/…/txiki-build/libfx_txiki.a. txiki-build and libfx_txiki are fx's. Gone.
+- 27886, hot, 10 samples (14:33:02 to 14:39:02): a zig test binary under a relative ./.zig-cache path. cwd gone; owner not identified in the log (no bevy job is a zig build). Not bevy's.
+- 28882 and 28947, hot and chromium-renderer, 14:33:02 to 14:35:02; 32603, 32641 and 32683, hot, 14:36:02 to 14:38:02; 28911, hot, 14:33:32: chromium renderer and gpu processes in the oscraft browser family (user-data-dir values in the log are /workspace/osc…, 12 lines). Gone.
+- 32243 (14:35:33) and 33001 (14:36:02), hot: fx __fx_foreground_session__ under /workspace/fx/fx. fx's. Gone.
+- 35652 (14:40:03) and 35917 (14:40:32), compile: zig build-exe of .zig-cache/o/…. Owner not recorded (command cut in the log). Gone.
+
+Sorted. Bevy's own matches: none. No bevy witness, cargo build or bevy probe was matched on any of the 20 samples. Other projects' matches: fx (zig builds and the foreground session), oscraft (the gm-core worker and its browser), and zig processes whose owner the log does not record. The most persistent was the oscraft gm-core worker, on 11 of the 20 samples.
+
+The defect. heavy-jobs counts any host process, from any project, as load on bevy's gate. So the gate reads busy whenever a peer compiles or a peer's browser renders, not when bevy's own load is high. That is a defect in the gate's design, not a reason to wait longer. Not changed this stretch: every peer uses scripts/heavy-jobs.cjs at 495fff6, and changing it is a shared-gate change. The fix belongs in a later commit that every peer adopts: scope the match to the caller's own workspace (cwd or process group), or to the job list the window itself started.
+
+## Round 118 Phase A: the endpoint block writer for item 3 (witness and red check; not pushed)
+
+Item named. Item 3 (ASTC partial tails), the endpoint-shape step after the encoder (476dc7f). The block writer builds a real 128-bit ASTC block, mode 0x242, one partition, CEM 8 or 12, with endpoint values written through encodeIntegerSequence and weights through probe.withWeightIndex. Its GPU readback is for a later clear window.
+
+What it does. scripts/lib/astc-endpoint-block.cjs: buildEndpointBlock(cem, values, weightIndex) writes the mode, the CEM at bits 13 to 16, the endpoint sequence from bit 17 with the range the decoder picks for the 47 bits left, and the weights at the top. expectedEndpoints(values, range, end) gives the unquantised value per channel at weight 0 (end 0) or weight 64 (end 1). CEM 8 with six values lands on range 19, which has a trit tail, so the block exercises the tail path.
+
+Witness (CPU only). scripts/check-astc-endpoint-block-witness.cjs: ok a CEM 8 block has six endpoint values and range 19 for 47 bits (wrong output: a range without the trit tail); ok the CEM field sits at bits 13 to 16 and the mode reads 0x242 (wrong output: a CEM of 0 or a different mode); ok the decoded endpoint of each channel matches the written value at weight 0 and at weight 64 (80 trials across CEM 8 and 12, LCG seed 11; wrong output: an endpoint shifted by a bit or a value from the other end). ALL PASS 3 checks, rc 0 (PID 59148; again PID 59305 after removing an unused import).
+
+Red check. ENDPOINT_POSITION changed from 17 to 18 in place (saved to /tmp/bt/r117-block.good first). The witness gave FAIL the decoded endpoint of each channel matches the written value at weight 0 and at weight 64: 80 of 80; first cem 8 weight 0 decoded 6,117,154 expected 254,135,141. FAIL 1 of 3, mutant rc 1, DETECTED (PID 59315). Restored; cmp reported RESTORED_IDENTICAL.
+
+Not verified here. The writer and the decoder share the layout knowledge, so this checks the block's self-consistency, not an external encoder. The endpoint order (R0, R1, G0, G1, B0, B1) is the decoder's, which the GPU readback checks.
