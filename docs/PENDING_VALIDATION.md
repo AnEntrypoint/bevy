@@ -6375,3 +6375,13 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Counts after Phase A: present 4, present-candidate 1 (161), blocked 32. Open 796.
 
 - Round 126 Phase B, window 17:18 (target/witness/window-job-r126.log): WITNESS-SET overall=0; meshopt-witness rc 0 (1 passed), glb-module-tests rc 0 (8 passed), docs-witness rc 0 (open 796, present 4, blocked 32, candidate 1), meshopt-red-check rc 0 (mutant panicked at glb.rs:770, RESTORED_IDENTICAL, DETECTED). Row 161 is present.
+
+## Round 127 Phase A: the planet height noise difference, the one cause shared by the most blocked rows (witness and red check listed; not run)
+
+- Group taken: the planet and terrain area (spoint src/terrain and src/shared), which holds 8 of the 32 blocked rows. The one code difference that reaches the most of them: the height noise. spoint createNoise2D and createFbm2D are gradient noise over a mulberry32 permutation table per seed, with octave normalisation by the amplitude sum; bevy noise.fbm2 was hash value noise with a per-octave seed. The noise difference is the stated cause of row 136 and the source of the sampler cause in rows 278 and 209.
+- Change: src/script/prelude.js gradientFbm2 replaces fbm2 (gradient noise, shared permutation per seed, default seed 1337 as spoint). ridged, billowed, simplex2 and the other modes are unchanged, so the change is narrow. Behaviour change for scripts: noise.fbm2 values change, and scripts without a seed now use seed 1337.
+- Rows: 136 becomes present-candidate with its witness; 209 and 278 stay blocked, cause updated (the globe elevation in src/globe.rs still uses the noise crate; the carve and hpf options and the surface solve still differ). The other five terrain rows (197, 217, 269, 289, 291, 312) have their own causes and are not touched.
+- Test refactor: the close helper and the engine setup are shared by evaluate_cases (src/script/mod.rs); the ballistics test uses them too, with no change to its expectations.
+- Witness: timeout 1500 cargo test --bin bevy-jayzee noise_matches_the_spoint_fixture (234 cases: createNoise2D through fbm2 with one octave, and createFbm2D over seeds, octaves, persistence and lacunarity), plus ballistics_and_quat_rotate_match_the_spoint_fixture and script:: (the script module tests).
+- Red check: /tmp/bt/r127-noise-redcheck.sh removes Math.SQRT2 from gradientNoise2D in src/script/prelude.js (in place, needle count checked); the noise test must fail with 'differs from spoint'; the prelude is restored and cmp must match.
+- Counts after Phase A: present 5, present-candidate 1 (136), blocked 31. Open 795.
