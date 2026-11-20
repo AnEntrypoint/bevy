@@ -4588,3 +4588,29 @@ WINDOW-ENDED-WITHOUT-CLEAR 07:13:53
 Result. The gate never cleared: heavy-jobs read busy on every sample except 07:08:26, and that sample's swap-in (56716 KB/s) closed the gate. The job ended at 07:13:53 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set and the red check did not start, so this record claims no witness result. The Phase A witness (10 of 10) and red check (DETECTED) in commit 451b6bb were run outside the window and are not a Phase B pass.
 
 Push. None. origin main is not moved by this round. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear, then run scripts/check-etc2-special-witness.cjs and /tmp/bt/r94s-redcheck.sh under timeout.
+
+## Round 94 Phase B: the ETC2 special-mode witness and red check in the window (cleared, witnesses passed)
+
+Pre-window readings. vmstat 1 2 at 07:21:20: the first line is the average since boot (si 5304, so 7253); the second line, the gate sample, is si 2164, so 0, over 1000 KB/s, so the gate was closed. heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read clear.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r95.log). Every reading, one per 30 s:
+
+```
+reading 07:21:28 si=928 so=7940 load1=1.73 gate=closed heavy=clear remainS=598 HEAVY_JOBS clear
+reading 07:21:59 si=1704 so=3020 load1=2.49 gate=closed heavy=busy remainS=567 HEAVY_JOBS busy n=2;compile pid=2264430 /tmp/zig-toolchain/zig-x86_64-l
+reading 07:22:28 si=56 so=0 load1=3.17 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=2;compile pid=2264886 /tmp/zig-toolchain/zig-x86_64-linux-0.
+reading 07:22:58 si=112 so=0 load1=3.51 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=2;compile pid=2265253 /tmp/zig-toolchain/zig-x86_64-linux-0
+reading 07:23:29 si=240 so=0 load1=3.28 gate=open heavy=clear remainS=477 HEAVY_JOBS clear
+GATE-CLEAR 07:23:29 remainS=477
+WITNESS rc=0 07:23:30
+END 07:23:30 overall=0
+```
+
+Gate. Clear at 07:23:29 (si 240, so 0, heavy clear), 477 s left. The gate was open on 07:22:28 and 07:22:58 but heavy-jobs read busy (peer zig compiles, pids 2264886 and 2265253, not stopped).
+
+Witnesses on the 07:23:29 clear sample, each under timeout with PID captured (log target/witness/window-job-r95.log):
+- etc2-special-witness (scripts/check-etc2-special-witness.cjs): rc 0, wall 0.5 s, timeout pid 2266514, child 2266516; ALL PASS 10 checks, baseline blue 28.49 dB, min 28.49 dB.
+- etc2-special-red-check (/tmp/bt/r94s-redcheck.sh): rc 0, wall 0.2 s, timeout pid 2266534, child 2266536; the planar rounding mutant failed 3 of 10, mutant rc 1, DETECTED, RESTORED_IDENTICAL.
+WITNESS-SET overall 0 at 07:23:30. No process of this round left running.
+
+Push. The push carries 451b6bb (the ETC2 special-mode test, witness and red check) and 48e603f (the Round 93 window record), plus this record. Nothing else is pushed.
