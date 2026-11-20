@@ -1,6 +1,7 @@
 use super::anchor::sea_bias_faces;
 use super::height_spec::{Carve, HashVersion, HeightSpec, Params};
 use super::ops_jsgen::{Ops, Precision, V3};
+use super::planet_frame::{anchor_basis, tangent_local_to_dir};
 
 const RELIEF_DESIGN_RADIUS_M: f64 = 63_600_000.0;
 const LAND_BIAS_M: f64 = -100_000.0;
@@ -56,21 +57,8 @@ fn carve_chord2(radius_m: f64, planet_radius: f64) -> f64 {
     a * a
 }
 
-fn normalise(v: V3) -> V3 {
-    let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    [v[0] / length, v[1] / length, v[2] / length]
-}
-
-fn cross(a: V3, b: V3) -> V3 {
-    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
-}
-
 fn centre_dir(anchor: V3, radius: f64, x: f64, z: f64) -> V3 {
-    let up = normalise(anchor);
-    let reference = if up[1].abs() < 0.99 { [0.0, 1.0, 0.0] } else { [1.0, 0.0, 0.0] };
-    let east = normalise(cross(reference, up));
-    let north = cross(east, up);
-    normalise([0, 1, 2].map(|i| up[i] * radius + east[i] * x + north[i] * z))
+    tangent_local_to_dir(&anchor_basis(anchor), radius, x, z)
 }
 
 impl Planet {

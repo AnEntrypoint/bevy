@@ -1,5 +1,6 @@
 #[cfg(test)]
 pub(crate) mod baked;
+pub(crate) mod planet_frame;
 mod anchor;
 mod height_spec;
 mod ops_jsgen;
