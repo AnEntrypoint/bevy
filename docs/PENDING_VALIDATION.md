@@ -4983,3 +4983,39 @@ Verdict. The cache holds no T, H or planar block, so no seed can be named from s
 ETC2 scan note. The scan covers the transcoder output in the cache, which contains no special-mode block. A seed must come from outside the cache (an ETC2 test vector or the specification's bit examples) to be placed on disk.
 
 Item 2 (ASTC ±1). Its next step, the residual analysis of the 1,112 no-fit interior blocks, needs a GPU readback in a clear window. The window in this stretch was used for Phase B witnesses and has closed, so the readback was not run here.
+
+## Round 103 journal check: the push of ae07edd and 5872c51
+
+The Round 102 window (log target/witness/window-gate-r102.log) cleared at 09:47:10 with heavy-jobs clear on the same sample (si 344, so 0). The witness set for ae07edd ran in that window (log target/witness/window-job-r101.log, the script /tmp/bt/r101-witnesses.sh): astc-weight-fit-witness pid 2360205, child 2360207, rc 0, 5.1 s, ALL PASS 4 checks; astc-weight-fit-red-check pid 2360386, child 2360388, rc 0, 4.6 s, mutant rc 1, DETECTED, RESTORED_IDENTICAL. The push of 36dfe62..5872c51 followed at about 09:48 and is recorded in the Round 102 Phase B entry (push output: 36dfe62..5872c51 main -> main, rc 0). 5872c51 is a ledger-only commit, so the witnessed code is ae07edd. Every witness of that push passed in the same window.
+
+## Round 103 Phase B: the Round 100 weight-fit witness for ae07edd in the window (cleared, witnesses passed, pushed 9eb4306; 9eb4306 is ledger-only)
+
+Readings. vmstat 1 2 first, at 09:51:16: the first line is the average since boot (si 5126, so 6911); the second line, the gate sample, is si 232, so 3724 (swap-out over 1000 KB/s: closed). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy on a peer find (pid 2365640).
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r103.log). Every reading, one per 30 s:
+
+reading 09:51:20 si=572 so=4192 load1=2.91 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2365640 cpu=35.6 find / -xdev -name trace_ev
+reading 09:51:50 si=376 so=7876 load1=3.07 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=2365640 cpu=33.7 find / -xdev -name trace_ev
+reading 09:52:21 si=6676 so=1180 load1=3.71 gate=closed heavy=busy remainS=537 HEAVY_JOBS busy n=1;hot pid=2365640 cpu=32.7 find / -xdev -name trace_e
+reading 09:52:50 si=4788 so=35952 load1=3.56 gate=closed heavy=clear remainS=508 HEAVY_JOBS clear
+reading 09:53:21 si=272 so=0 load1=3.35 gate=open heavy=clear remainS=477 HEAVY_JOBS clear
+GATE-CLEAR 09:53:21 remainS=477
+WITNESS rc=0 09:53:30
+END 09:53:30 overall=0
+
+Gate. The gate was closed on the first three samples, with heavy-jobs busy (a peer find). heavy-jobs read clear at 09:52:50 with the gate closed (si 4788, so 35952). The gate opened on a clear sample at 09:53:21 (si 272, so 0, remaining 477 s): GATE-CLEAR. The witness set (/tmp/bt/r103-witnesses.sh, log target/witness/window-job-r103.log) ran under timeout with PID captured:
+
+- astc-weight-fit-witness: timeout pid 2366705, child 2366707, rc 0, wall 5.1 s, ALL PASS 4 checks.
+- astc-weight-fit-red-check: timeout pid 2366859, child 2366861, rc 0, wall 4.6 s, mutant FAIL 2 of 4, DETECTED, RESTORED_IDENTICAL.
+
+Witness set overall 0 at 09:53:30. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 5872c51..9eb4306 main -> main, push rc 0. git ls-remote origin main: 9eb430620bb65425417f5ef20e8ba795d7488651 refs/heads/main.
+
+Longest step: the window wait, from 09:51:16 to the clear sample at 09:53:21 (about 2 min). Nothing was stopped by this run.
+
+## Round 103: seed search for the T/H/P probe (item 1, negative result, no Phase A)
+
+Seed sources searched. (a) The ETC2 texture cache: the Round 102 scan (618 levels, 3,283,288 differential-bit blocks, 0 overflow blocks). (b) The repository outside target and .git: the only ETC2 mentions are in run logs and output files. (c) The cargo registry: bevy_image-0.20.1 (ctt_helpers.rs and mod.rs) maps ETC2 formats to block formats and encodes nothing; ktx2, ash and wgpu carry format enums only; a grep for ETC2 encoder and decoder names found none for the special modes. (d) The vendored basis-universal-sys-0.3.1 source: contrib/previewers/lib/basisu_transcoder.cpp:2491 states "basisu doesn't support ETC2 planar/T/H modes - just basic ETC1", so the vendored transcoder has no special-mode block either.
+
+Verdict. No T, H or planar block can be named from source. The multi-block SwiftShader probe seeded from such a block is not reachable. Item 1 stays blocked on the bit layouts, as before.
