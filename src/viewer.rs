@@ -224,6 +224,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
         crate::vegetation::register(&mut app);
         app.add_systems(Update, crate::globe::frame_globe_camera);
         crate::globe::add_census_systems(&mut app);
+    app.add_systems(Update, hide_live_text.run_if(bevy::prelude::resource_exists::<crate::globe::CensusMode>));
     } else {
         app.add_systems(Update, orbit_camera);
     }
@@ -414,6 +415,12 @@ fn process_rss_kib() -> Option<u64> {
 
 fn process_rss_mib() -> String {
     process_rss_kib().map_or_else(|| "unsupported (no /proc/self/statm)".to_string(), |kib| format!("{:.1}MiB", kib as f64 / 1024.0))
+}
+
+fn hide_live_text(mut texts: Query<&mut Visibility, bevy::prelude::Or<(With<ViewerOverlay>, With<ViewerStatsOverlay>)>>) {
+    for mut visibility in &mut texts {
+        *visibility = Visibility::Hidden;
+    }
 }
 
 fn update_overlay(
