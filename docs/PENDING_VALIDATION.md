@@ -5470,3 +5470,52 @@ Longest step. The window wait, 09:44:18 to 09:54:21 UTC (about 10 min, all of it
 
 Status. a13958f stays local. Item 2 stays open, and its next step (the CPU test of the 707 no-code candidates against the range-19 unquantisation) needs the candidate records, which the measurement does not save. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample) for the witness and red check of a13958f, then the push.
 
+
+## Round 110 Phase B: the code-classification witness for a13958f in the window (cleared, witnesses passed, pushed a13958f and f3f0006)
+
+Scope. Pushed a13958f (the code classification, its witness and red check, and the measurement) and f3f0006 (the Round 109 ledger record). The witnessed step is a13958f. The witness and red check ran in this window.
+
+Pre-window. vmstat 1 2 at 10:00:55 UTC: the first line is the average since boot (si 1800, so 3001); the gate sample is si 7032, so 0 (closed: swap-in above 1000 KB/s). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on oscraft's gm-core worker (pid 2172). The window job waited and did not force the window.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r110.log). Readings, local time (UTC is two hours earlier):
+
+reading 12:01:00 si=528 so=1048 load1=3.06 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2172 cpu=84.2 /config/.gmnew/versions/0f9e3b
+reading 12:01:31 si=1548 so=184 load1=3.03 gate=closed heavy=busy remainS=567 HEAVY_JOBS busy n=1;hot pid=2172 cpu=68.3 /config/.gmnew/versions/0f9e3b
+reading 12:02:00 si=52 so=0 load1=2.98 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=3;hot pid=2172 cpu=97 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 12:02:30 si=2344 so=0 load1=3.33 gate=closed heavy=busy remainS=508 HEAVY_JOBS busy n=3;hot pid=2172 cpu=77.2 /config/.gmnew/versions/0f9e3bb-
+reading 12:03:01 si=136 so=0 load1=3.87 gate=open heavy=busy remainS=477 HEAVY_JOBS busy n=5;hot pid=422 cpu=26.7 /lsiopy/bin/python3 /lsiopy/bin/selk
+reading 12:03:30 si=1500 so=0 load1=3.59 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=2;hot pid=2172 cpu=72.3 /config/.gmnew/versions/0f9e3bb-
+reading 12:04:00 si=200 so=0 load1=3.43 gate=open heavy=busy remainS=418 HEAVY_JOBS busy n=2;hot pid=2172 cpu=84 /config/.gmnew/versions/0f9e3bb-542/g
+reading 12:04:31 si=248 so=1032 load1=3.46 gate=closed heavy=busy remainS=387 HEAVY_JOBS busy n=2;hot pid=2172 cpu=88.1 /config/.gmnew/versions/0f9e3b
+reading 12:05:00 si=88 so=59896 load1=3.20 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=2;hot pid=2172 cpu=98 /config/.gmnew/versions/0f9e3bb-
+reading 12:05:30 si=864 so=0 load1=3.01 gate=open heavy=clear remainS=328 HEAVY_JOBS clear
+GATE-CLEAR 12:05:30 remainS=328
+WITNESS rc=0 12:05:31
+END 12:05:31 overall=0
+
+Gate. heavy-jobs read clear at 12:05:30 local (10:05:30 UTC) with the gate open on the same sample (si 864, so 0): GATE-CLEAR, 328 s remaining. The witness set (/tmp/bt/r109-witnesses.sh, log target/witness/window-job-r109.log, since that script writes to the r109 file name) ran under timeout with each PID captured:
+
+PID code-witness timeout=79313 child= 12:05:31
+WITNESS code-witness rc=0 wall=0.0s
+ok   range 19 has 192 codes with 192 distinct values
+ok   a GPU value one code up is classified as an adjacent code
+ok   a GPU value five codes up is classified as another code
+ok   a value that no code produces is classified as not a code value
+ALL PASS 4 checks
+PID code-red-check timeout=79334 child=  79338 12:05:31
+WITNESS code-red-check rc=0 wall=0.1s
+MUTATED
+PID code-mutant pid=79358 12:05:31
+RESTORED_IDENTICAL
+FAIL a GPU value one code up is classified as an adjacent code: other code
+FAIL 1 of 4
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 12:05:31
+
+Witness set overall 0 at 12:05:31 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 31c988e..f3f0006 main -> main, push rc 0. git ls-remote origin main: f3f0006f53facbf52387ac5c137f6ec8117395d9 refs/heads/main.
+
+Longest step. The window wait, from 10:00:57 to 10:05:30 UTC (about 5 min, with the gate open on some samples and heavy-jobs busy on all of them until the clear sample).
+
