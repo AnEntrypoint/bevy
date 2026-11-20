@@ -4305,3 +4305,19 @@ Which side the readback agrees with: neither. The browser cannot decode ETC2, so
 Renderers. Before the readback, two bevy renderers (pids 2089773 and 2089782) belonged to this round's tab. They were stopped by PID after the tab was closed; afterwards no bevy renderer was left. The bevy browser process (pid 2089696, under the gate pid 2089666) was left running, since it is the gate's. The oscraft browser (pids 2088779 to 2088866) belongs to another project and was not touched.
 
 Longest step: the witness set's `check-window-job` (15.3 s); the readback call returned within its 90 s timeout. Nothing was stopped except the two bevy renderers named above.
+
+## Round 86 Phase A: the separate-browser ETC2 readback (fixture)
+
+Reason for the separate browser (INVARIANT 11): the playwriter browser for this project exposes no ETC2 at all. Its WebGL2 context lists zero native compressed formats, and an ETC2 upload fails with GL_INVALID_ENUM 0x500. The playwriter setup therefore cannot do this job. Approved by the dispatcher for one separate Chromium at a time, localhost only, no request beyond the local page, nothing to play.spawn.co, stopped by PID when the readback ends.
+
+Browser and flags: Chromium 155.0.8059.39, binary /usr/lib/chromium/chromium.real (not the /usr/bin/chromium wrapper, so the captured PID is the browser process). Flags: --headless=new --no-sandbox --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist --no-first-run --disable-background-networking --disable-component-update --disable-default-apps --disable-sync, plus --user-data-dir under target/readback/profile-<case>. These are the SwiftShader WebGL2 flags as I recall the Chromium GPU documentation; this host has no network access, so the docs were not re-read in this run. The renderer string reads ANGLE (Google, Vulkan 1.3.0, SwiftShader Device), which confirms the software GL.
+
+What the probe found: under SwiftShader the compressed-texture extensions are WEBGL_compressed_texture_etc, WEBGL_compressed_texture_etc1, WEBGL_compressed_texture_astc and the BC set. WebGL2 accepts an ETC2 upload only after the extension is enabled with getExtension('WEBGL_compressed_texture_etc'); without that call the same upload fails with 0x500. COMPRESSED_TEXTURE_FORMATS stays empty, so the page reads the extension, not the format list.
+
+Files: scripts/browser/readback.html (the page: enables the extension, uploads a compressed block as a 4x4 or 1024x1024 texture, samples it with texelFetch into the default framebuffer, reads the pixels back, and posts them to localhost), scripts/check-etc2-gpu.cjs (the driver: serves the page and the level-0 bytes on 127.0.0.1, starts one Chromium with the flags above, waits for the page result up to 180 s, stops the browser tree by PID, and then compares). Fixture mode is the default for the flat-block case; texture mode is the readback of one cache texture (value.17c7bd864f7f18268f, level 0).
+
+Fixture: a flat ETC2 RGBA8 block, alpha block ff00000000000000, colour block 88440000 0000ffff (individual mode, base red 136, green 68, blue 0, every index 01 so +8). Expected decoded colour 144 / 76 / 8 / 255 on all 16 texels, derived by hand from the spec. The software GL decodes it to exactly that: ok, 16 of 16 texels, wall 0.9 s.
+
+Red check: the fragment output was swizzled to .bgra. The fixture reported FAIL and exited 1. The page was restored with cmp (cmp-restored), the fixture passed again with exit 0, and git status showed only the new files. The probe-only ETC2_PROBE_FLAGS hook was removed afterwards and the fixture passed with exit 0 again.
+
+Not run in Phase A: the texture readback. It runs in Phase B, once, on the clear window.

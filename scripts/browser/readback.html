@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ETC2 readback</title>
+<script>
+const ETC2_RGBA8 = 0x9278;
+const TEXTURE_SIZE = 1024;
+const FIXTURE_BLOCK = [0xff, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x44, 0, 0, 0, 0, 0xff, 0xff];
+const VERTEX_SOURCE = [
+    '#version 300 es',
+    'void main() {',
+    '    vec2 corner = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));',
+    '    gl_Position = vec4(corner * 2.0 - 1.0, 0.0, 1.0);',
+    '}',
+].join('\n');
+const FRAGMENT_SOURCE = [
+    '#version 300 es',
+    'precision highp float;',
+    'uniform highp sampler2D tex;',
+    'out vec4 color;',
+    'void main() {',
+    '    color = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);',
+    '}',
+].join('\n');
+function compile(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        throw new Error(gl.getShaderInfoLog(shader));
+    }
+    return shader;
+}
+function link(gl) {
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
+    gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SOURCE));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(program));
+    }
+    gl.useProgram(program);
+    gl.uniform1i(gl.getUniformLocation(program, 'tex'), 0);
+    return program;
+}
+function readback(gl, format, width, height, bytes) {
+    gl.canvas.width = width;
+    gl.canvas.height = height;
+    gl.viewport(0, 0, width, height);
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, bytes);
+    const uploadError = gl.getError();
+    if (uploadError) {
+        throw new Error('compressedTexImage2D error 0x' + uploadError.toString(16));
+    }
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const pixels = new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    const readError = gl.getError();
+    if (readError) {
+        throw new Error('readPixels error 0x' + readError.toString(16));
+    }
+    gl.deleteTexture(texture);
+    return pixels;
+}
+async function post(url, body, type) {
+    await fetch(url, { method: 'POST', body: body, headers: type ? { 'Content-Type': type } : {} });
+}
+async function main() {
+    const caseName = new URLSearchParams(location.search).get('case');
+    const canvas = document.createElement('canvas');
+    canvas.width = 4;
+    canvas.height = 4;
+    const gl = canvas.getContext('webgl2');
+    if (!gl) {
+        await post('/result', JSON.stringify({ case: caseName, error: 'no webgl2' }), 'application/json');
+        return;
+    }
+    const debug = gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    const formats = Array.from(gl.getParameter(gl.COMPRESSED_TEXTURE_FORMATS));
+    const etc2Extension = gl.getExtension('WEBGL_compressed_texture_etc');
+    link(gl);
+    const meta = { case: caseName, renderer: renderer, version: gl.getParameter(gl.VERSION), etc2Listed: Boolean(etc2Extension) && formats.length >= 0, nativeFormats: formats.length, extensions: (gl.getSupportedExtensions() || []).filter((e) => /compress|etc|astc|s3tc|bptc|rgtc/i.test(e)) };
+    try {
+        if (caseName === 'fixture') {
+            const pixels = readback(gl, ETC2_RGBA8, 4, 4, new Uint8Array(FIXTURE_BLOCK));
+            meta.pixels = Array.from(pixels);
+        } else {
+            const response = await fetch('/etc2-level0.bin');
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            meta.inputBytes = bytes.length;
+            const pixels = readback(gl, ETC2_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE, bytes);
+            await post('/gpu-rgba8', pixels, 'application/octet-stream');
+            meta.outputBytes = pixels.length;
+        }
+    } catch (error) {
+        meta.error = String(error && error.message ? error.message : error);
+    }
+    await post('/result', JSON.stringify(meta), 'application/json');
+}
+main().catch(async (error) => {
+    await post('/result', JSON.stringify({ error: String(error) }), 'application/json');
+});
+</script>
