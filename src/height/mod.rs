@@ -1,10 +1,15 @@
+mod anchor;
 mod height_spec;
 mod ops_jsgen;
+mod planet;
+
+pub use planet::Planet;
 
 #[cfg(test)]
 mod tests {
     use super::height_spec::{Carve, HashVersion, HeightSpec, Params};
     use super::ops_jsgen::{Precision, V3};
+    use super::Planet;
     use serde_json::Value;
 
     const NO_PARAMS: Params = Params { hpf_res: 8.0, land_bias: 0.0, beach_shelf_m: 0.0, relief_scale: 0.0 };
@@ -67,13 +72,13 @@ mod tests {
         );
     }
 
-    fn check_within(name: &str, actual: &[f64], expected: &[f64], relative: f64) {
+    fn check_within(name: &str, actual: &[f64], expected: &[f64], relative: f64, floor: f64) {
         assert_eq!(actual.len(), expected.len(), "{name} count");
         let differing: Vec<String> = actual
             .iter()
             .zip(expected)
             .enumerate()
-            .filter(|(_, (a, e))| (**a - **e).abs() > relative * e.abs().max(1.0))
+            .filter(|(_, (a, e))| (**a - **e).abs() > relative * e.abs().max(floor))
             .map(|(i, (a, e))| format!("{name}[{i}] bevy {a:?} spoint {e:?}"))
             .collect();
         assert!(
@@ -122,6 +127,32 @@ mod tests {
             actual.extend(case["dirs"].as_array().unwrap().iter().map(|d| spec.compose(vec3(d))));
             expected.extend(numbers(&case["expected"]));
         }
-        check_within("compose", &actual, &expected, 1e-12);
+        check_within("compose", &actual, &expected, 1e-12, 1.0);
+    }
+
+    fn fnv1a(values: &[f32]) -> String {
+        let hash = values
+            .iter()
+            .flat_map(|v| v.to_bits().to_le_bytes())
+            .fold(0xcbf2_9ce4_8422_2325_u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0000_0100_0000_01b3));
+        format!("{hash:016x}")
+    }
+
+    #[test]
+    fn planet_matches_the_spoint_fixture() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet.json")).unwrap();
+        let planet = Planet::new(fixture["seed"].as_i64().unwrap() as i32);
+        let digests: Vec<String> = planet.hpf.iter().map(|face| fnv1a(face)).collect();
+        let expected_digests: Vec<String> = fixture["faceDigests"].as_array().unwrap().iter().map(|d| d.as_str().unwrap().to_string()).collect();
+        assert_eq!(digests, expected_digests, "seaBias face digests differ from spoint");
+        let samples = fixture["faceSamples"].as_array().unwrap();
+        let actual: Vec<f64> = samples.iter().map(|s| f64::from(planet.hpf[number(&s["face"]) as usize][number(&s["index"]) as usize])).collect();
+        let expected: Vec<f64> = samples.iter().map(|s| number(&s["value"])).collect();
+        check("seaBias", &actual, &expected);
+        for block in fixture["radii"].as_array().unwrap() {
+            let radius = number(&block["radius"]);
+            let actual: Vec<f64> = block["dirs"].as_array().unwrap().iter().map(|d| planet.height(vec3(d), radius)).collect();
+            check_within("height", &actual, &numbers(&block["heights"]), 1e-12, 0.0);
+        }
     }
 }

@@ -3,7 +3,9 @@ use bevy::asset::RenderAssetUsages;
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use serde_json::{Map, Value, json};
+use crate::height::Planet;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(Resource, Clone, Debug)]
 pub struct GlobeWorld {
@@ -20,7 +22,10 @@ pub struct GlobeWorld {
     pub body_altitude: f32,
     pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
+    pub planet: Arc<Planet>,
 }
+
+const DEFAULT_SEED: u64 = 0x5eed_1234;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
@@ -30,7 +35,7 @@ impl Default for GlobeWorld {
             radius: 64.0,
             sea_level: 0.0,
             amplitude: 3.0,
-            seed: 0x5eed_1234,
+            seed: DEFAULT_SEED,
             chunk_span: 0.35,
             gravity: 9.81,
             stream_radius: 40.0,
@@ -38,6 +43,7 @@ impl Default for GlobeWorld {
             body_altitude: 0.5,
             drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
+            planet: Arc::new(Planet::new(DEFAULT_SEED as i32)),
         }
     }
 }
@@ -103,6 +109,7 @@ impl GlobeWorld {
 
     pub fn from_json(&mut self, value: &Value) {
         let Some(object) = value.as_object() else { return; };
+        let seed = self.seed;
         if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
         if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
         for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
@@ -118,6 +125,9 @@ impl GlobeWorld {
         self.radius = self.radius.max(1.0);
         self.stream_radius = self.stream_radius.max(self.radius * self.chunk_span);
         self.chunk_span = self.chunk_span.clamp(0.02, std::f32::consts::PI);
+        if self.seed != seed {
+            self.planet = Arc::new(Planet::new(self.seed as i32));
+        }
     }
 
     pub fn lat_lon_to_unit(&self, latitude: f32, longitude: f32) -> Vec3 {
@@ -143,29 +153,8 @@ impl GlobeWorld {
     }
 
     pub fn elevation(&self, latitude: f32, longitude: f32) -> f32 {
-        self.spherical_noise(self.lat_lon_to_unit(latitude, longitude), 4)
-    }
-
-    fn spherical_noise(&self, unit: Vec3, octaves: u32) -> f32 {
-        let mut total = 0.0;
-        let mut weight = 1.0;
-        let mut norm = 0.0;
-        for octave in 0..octaves {
-            let p = unit * (2.0_f32).powi(octave as i32);
-            let (x, y, z) = (p.x.floor() as i64, p.y.floor() as i64, p.z.floor() as i64);
-            let smooth = |t: f32| t * t * (3.0 - 2.0 * t);
-            let (sx, sy, sz) = (smooth(p.x - p.x.floor()), smooth(p.y - p.y.floor()), smooth(p.z - p.z.floor()));
-            let corner = |dx: i64, dy: i64, dz: i64| self.hash(x + dx + octave as i64 * 17, y + dy, z + dz) * 2.0 - 1.0;
-            let lerp = |a: f32, b: f32, t: f32| a * (1.0 - t) + b * t;
-            let a = lerp(corner(0, 0, 0), corner(1, 0, 0), sx);
-            let b = lerp(corner(0, 1, 0), corner(1, 1, 0), sx);
-            let c = lerp(corner(0, 0, 1), corner(1, 0, 1), sx);
-            let d = lerp(corner(0, 1, 1), corner(1, 1, 1), sx);
-            total += lerp(lerp(a, b, sy), lerp(c, d, sy), sz) * weight;
-            norm += weight;
-            weight *= 0.5;
-        }
-        (total / norm * self.amplitude).max(self.sea_level)
+        let unit = self.lat_lon_to_unit(latitude, longitude);
+        self.planet.height([f64::from(unit.x), f64::from(unit.y), f64::from(unit.z)], f64::from(self.radius)) as f32
     }
 
     pub fn surface_position(&self, latitude: f32, longitude: f32, altitude: f32) -> Vec3 {
@@ -533,7 +522,7 @@ pub fn provenance() -> BTreeMap<&'static str, &'static str> {
         ("globeInfo", "Bevy ECS GlobeWorld/GlobeSummary"),
         ("globeToCartesian", "Bevy math Vec3/Quat spherical conversion"),
         ("globeToSpherical", "Bevy math Vec3 spherical conversion"),
-        ("globeElevation", "Bevy ECS deterministic spherical noise"),
+        ("globeElevation", "Bevy ECS planet height from the spoint height spec"),
         ("globeChunk", "Bevy ECS procedural GlobeChunk entities with Bevy Mesh and Avian trimesh"),
         ("globeChunks", "Bevy ECS procedural GlobeChunk entities"),
         ("globeGravity", "Bevy ECS radial gravity system"),

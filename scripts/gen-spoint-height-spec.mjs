@@ -18,11 +18,15 @@ const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; ret
 const signed = () => random() * 2 - 1
 const vec = (scale) => [signed() * scale, signed() * scale, signed() * scale]
 
-const hpfFaces = Array.from({ length: 6 }, (_, face) => Array.from({ length: RES * RES * 4 }, (_, i) => {
-  const c = i % 4, xy = Math.floor(i / 4), x = xy % RES, y = Math.floor(xy / RES)
-  return Math.fround(((face * 131 + x * 17 + y * 29 + c * 7) % 128 - 64) / 128)
+const hpfFaces = Array.from({ length: 6 }, (_, face) => Array.from({ length: RES * RES }, (_, i) => {
+  const x = i % RES, y = Math.floor(i / RES)
+  return Math.fround(((face * 131 + x * 17 + y * 29) % 128 - 64) / 128)
 }))
-const hpfFace = (face) => Float32Array.from(hpfFaces[face])
+const hpfFace = (face) => {
+  const buffer = new Float32Array(RES * RES * 4)
+  hpfFaces[face].forEach((value, i) => { buffer[i * 4] = value })
+  return buffer
+}
 
 const params = (overrides) => ({ hpfRes: RES, landBias: -100000, beachShelfM: 0, reliefScale: 0, ...overrides })
 const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return v.map((c) => c / l) }

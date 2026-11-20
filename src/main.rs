@@ -1,7 +1,6 @@
 mod features;
 mod features_ecs;
 mod glb;
-#[allow(dead_code)]
 mod height;
 mod globe;
 mod gltf_check;

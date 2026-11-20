@@ -232,7 +232,7 @@ impl<'a> HeightSpec<'a> {
 
     fn texel(&self, face: f64, x: f64, y: f64) -> f64 {
         let width = self.params.hpf_res as usize;
-        let index = ((y as usize) * width + x as usize) * 4;
+        let index = (y as usize) * width + x as usize;
         f64::from(self.hpf[face as usize][index])
     }
 
