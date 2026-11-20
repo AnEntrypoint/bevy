@@ -3,7 +3,7 @@ pub(crate) mod baked;
 pub(crate) mod planet_frame;
 mod anchor;
 mod height_spec;
-mod ops_jsgen;
+pub(crate) mod ops_jsgen;
 mod planet;
 
 pub use height_spec::{HashVersion, MAX_TERRAIN_CARVES};

@@ -1,0 +1,248 @@
+{
+ "spoint": "5f43c86c",
+ "range": 100,
+ "players": [
+  {
+   "id": "self",
+   "position": [
+    0,
+    1.7,
+    5
+   ],
+   "hp": 100
+  },
+  {
+   "id": "dead",
+   "position": [
+    0,
+    0.8,
+    10
+   ],
+   "hp": 0
+  },
+  {
+   "id": "side",
+   "position": [
+    2,
+    0.8,
+    20
+   ],
+   "hp": 100
+  },
+  {
+   "id": "near",
+   "position": [
+    0.1,
+    0.8,
+    20
+   ],
+   "hp": 100
+  },
+  {
+   "id": "far",
+   "position": [
+    0,
+    0.8,
+    200
+   ],
+   "hp": 100
+  }
+ ],
+ "direct": [
+  {
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "direction": [
+    1,
+    1,
+    0
+   ],
+   "range": 10,
+   "tp": [
+    3,
+    0.1,
+    0
+   ],
+   "out": null,
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "range": 100,
+   "tp": [
+    0.1,
+    0.8,
+    20
+   ],
+   "out": {
+    "proj": [
+     0,
+     1.7,
+     20
+    ],
+    "dot": 20
+   },
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "range": 100,
+   "tp": [
+    2,
+    0.8,
+    20
+   ],
+   "out": null,
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "range": 5,
+   "tp": [
+    0.1,
+    0.8,
+    20
+   ],
+   "out": null,
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    0
+   ],
+   "range": 100,
+   "tp": [
+    0.1,
+    0.8,
+    20
+   ],
+   "out": null,
+   "error": "TypeError"
+  }
+ ],
+ "predict": [
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "selfId": "self",
+   "zone": 0.75,
+   "out": {
+    "headshot": false
+   },
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "selfId": "self",
+   "zone": 0.4,
+   "out": {
+    "headshot": true
+   },
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    1
+   ],
+   "selfId": "near",
+   "zone": 0.4,
+   "out": null,
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    0,
+    0,
+    0
+   ],
+   "selfId": "self",
+   "zone": 0.75,
+   "out": null,
+   "error": null
+  },
+  {
+   "origin": [
+    0,
+    1.7,
+    0
+   ],
+   "direction": [
+    1,
+    0,
+    0
+   ],
+   "selfId": "self",
+   "zone": 0.75,
+   "out": null,
+   "error": null
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

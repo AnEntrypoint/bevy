@@ -2,6 +2,7 @@ mod features;
 mod features_ecs;
 mod glb;
 mod height;
+mod hitscan;
 mod globe;
 mod gltf_check;
 mod png_check;
