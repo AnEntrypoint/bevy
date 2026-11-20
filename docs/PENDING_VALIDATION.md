@@ -4614,3 +4614,33 @@ Witnesses on the 07:23:29 clear sample, each under timeout with PID captured (lo
 WITNESS-SET overall 0 at 07:23:30. No process of this round left running.
 
 Push. The push carries 451b6bb (the ETC2 special-mode test, witness and red check) and 48e603f (the Round 93 window record), plus this record. Nothing else is pushed.
+
+## Round 95 Phase A: ETC1 individual-mode endpoints on the top-end blocks (tested, witness green)
+
+Why this mechanism is next. The endpoint search (scripts/check-etc2-endpoint-search.cjs) returns early for every block whose diff bit is clear (`if (!((hi0 >>> 1) & 1)) ... continue`), so the 1,031 top-end blocks that the cache encodes in individual mode, and the top-end differential blocks whose delta cannot hold the ideal endpoint (2,753 of 60,556 in Round 88), were never offered an individual-mode alternative. Individual mode carries a 4-bit base per channel per subset with no delta limit, so it is the one ETC1 degree of freedom the search skipped. The special modes (Round 94) and the luma-selector and bias mechanisms (Round 88) are already tested.
+
+Model. scripts/lib/etc1-individual.cjs: a per-block alternating search over the flip bit, the two subset tables and the 4-bit bases, with selectors re-chosen between rounds; 8 table starts per flip, 3 rounds. The bit layout is the one the library decoder reads (hi bits 31 to 8 for the bases, bit 0 flip, bits 7 to 5 and 4 to 2 the tables, lo bits q and q+16 the selector code). Its encoder is checked against scripts/lib/texel-decode.cjs in the witness, so the layout is not from memory.
+
+Test. scripts/check-etc1-individual-top.cjs: the same 47,224 top-end blocks (mean cache blue at least 250) and the same whole-texture PSNR as the endpoint search. Each top-end block is re-encoded in individual mode; every other block keeps the library decode.
+
+Result (rc 0, wall 71.2 s, job pid 2270403):
+
+| Arm | R / G / B dB | min dB | blue dB |
+| --- | --- | --- | --- |
+| cache as it is | 28.77 / 36.34 / 28.49 | 28.49 | 28.49 |
+| individual mode on top-end blocks | 29.21 / 34.16 / 30.55 | 29.21 | 30.55 |
+| cache or individual, best per block | 29.23 / 34.26 / 30.56 | 29.23 | 30.56 |
+
+Counts. Top-end blocks 47,224; the cache block is already individual on 1,031 of them. Individual beats the cache block on 43,123 (121 of those were individual in the cache, 43,002 differential).
+
+Comparison. Round 94 (special modes) gave a best minimum of 29.74 dB; the individual arm gives 29.21 dB, so the special-mode union is still the best minimum tested. Individual mode is worth +0.72 dB on the minimum and +2.06 dB on blue over the cache. Neither family reaches the 35 dB bar, and both leave R as the limit (29.2 to 29.7 dB on R in every arm). Combining individual with the special modes and the E4 search has not been run.
+
+Verdict. Individual-mode endpoints are not the blue top-end fix on their own. The bar stays OPEN.
+
+Witness. scripts/check-etc1-individual-witness.cjs, ALL PASS 6 checks, rc 0: the individual hi-word fixture (0x142536a9); the library decodes two encoded blocks (flip 0 and flip 1) to the predicted colours with 0 channel mismatches; the search is exact (sse 0) on a constructed block for each flip; the baseline library decode, blue 28.49 dB, min 28.49 dB.
+
+Red check. The index map MODIFIER_TO_INDEX [3, 2, 0, 1] was changed to [3, 2, 1, 0] in a dot-file mutant (scripts/lib/.etc1-individual.mutant.cjs, via ETC1_INDIVIDUAL_PATH). The witness exited 1 with 2 of 6 FAIL (27 channel mismatches on each flip). mutant_rc 1, DETECTED, RESTORED_IDENTICAL, git status showed only the three new files.
+
+Caveat found and fixed. The first witness drew its random blocks from the low bits of the LCG, which return 0 for 399 of 400 draws with the low two bits, so the first red check did not detect the mutation (NOT_DETECTED). The generator now takes the high bits, and the red check then detects it. The search also first ran 64 table starts per flip and was cut to 8 starts with 3 rounds to fit the time; the witness passes at that setting.
+
+Reopen. A joint search of the individual bases and the differential bases for each block (the exhaustive search is what Round 88 left open), combined with the special-mode arm, measured on the minimum channel; or an owner ruling on the 35 dB bar for this format.
