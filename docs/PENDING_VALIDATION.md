@@ -4165,3 +4165,17 @@ Wall times: check-pair-budget under 0.05 s (shown as 0.0 s); check-window-job 15
 No process of mine remained after the window, and no peer process was stopped.
 
 Docs only: no red check applies to this record.
+
+## Round 83 Phase A: the pair window is read from the one constant
+
+The ruling in Round 81 made the window one constant, `PAIR_WINDOW_S` in `scripts/lib/pair-budget.cjs`. But the window job still took `WINDOW_S` and `MIN_REMAINING_S` from the command line, typed by hand for each run. Changing the constant would have changed nothing, so the ruling was not yet reversible by one change.
+
+Design (decided here): `scripts/pair-window.sh <astc4x4|etc2>` reads `PAIR_WINDOW_S` and the full pair budget from the library and passes them to `scripts/window-job.sh` as `WINDOW_S` and `MIN_REMAINING_S`, then runs `scripts/measure-astc-pair.cjs` for that format. `--print-env` prints the two values without running anything. The wrapper accepts only the two formats the pair runner accepts. The pair's budgets still come from `armBudgets`, so an explicit larger format budget raises the start threshold, as before.
+
+What changed:
+- `scripts/pair-window.sh`: the wrapper.
+- `scripts/check-pair-window.cjs`: 6 cases. The ETC2 window is the library constant (1200 s). The ETC2 start threshold is the full pair budget (720 s). The latest start is 480 s into the window. ASTC gets the same values. A 500 s format budget raises the threshold to 860 s. An unknown format exits 2 and prints no values. 6 of 6 ok, exit 0.
+
+Red check: the wrapper's window was hard-coded to 780 s (the old value). The witness exited 1 with three FAILs: the window constant, the latest start, and the 500 s budget case. The wrapper was restored with `cmp`, and the witness exited 0 with 6 of 6 ok.
+
+No window was used in Phase A. The window-job witness and the pair-budget witness are unchanged. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
