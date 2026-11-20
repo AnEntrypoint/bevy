@@ -4257,3 +4257,15 @@ Result: the window cleared on its seventeenth reading (04:25:55, gate open, heav
 Not pushed: the witness set did not pass. origin main stays at 17a39e3 (`git ls-remote origin main` checked after the window).
 
 Longest step: the wait for heavy clear, 8 min 1 s from job start (04:17:54) to the clear sample (04:25:55). What was done: nothing stopped. The busy processes were a peer's `zig test` (pid 2071659, under /workspace/fx) and Claude sessions (pids 755372, 2225, 1998); none is a process of this run, and none was stopped. The witnesses waited for the clear sample.
+
+## Round 85 Phase A: the browser readback (no ETC2 in the browser)
+
+The playwriter browser for this project cannot decode ETC2. Its WebGL2 context lists zero native compressed formats, and an ETC2 RGBA8 upload fails with GL_INVALID_ENUM (0x500). The WebGL compressed-texture extensions it exposes are BC only (`EXT_texture_compression_bptc`, `EXT_texture_compression_rgtc`, `WEBGL_compressed_texture_s3tc`, `WEBGL_compressed_texture_s3tc_srgb`). ETC1 and ASTC are not exposed either. So the readback cannot decode the cache texture, and the fallback applies: a software decode from a second implementation (see the next commit).
+
+`scripts/check-gl-readback.js` is the page body. It runs in the playwriter tab through `p.evaluate`, and it builds a 4x4 WebGL2 texture from a compressed block, samples it with `texelFetch` into the default framebuffer, and reads the pixels back. The fixtures are two flat BC1 blocks (red 0xF800 and green 0x07E0, index 0) with known answers (255,0,0,255) and (0,255,0,255), plus an ETC2 flat block that runs only if ETC2 is listed, which it is not here.
+
+Run: the unmodified body passed both BC1 fixtures and reported ETC2 as skipped.
+
+Red check: the `texelFetch` output was swizzled to `.bgra`. The red fixture became (0,0,255,255) and failed, and the green fixture still passed (its channels are symmetric under the swap). The file was restored, `cmp` matched, and `git status` showed only the new files.
+
+The playwriter tab for this run is the only page this run opened; it is closed when the run finishes. No cargo, no window in Phase A, local commit only.
