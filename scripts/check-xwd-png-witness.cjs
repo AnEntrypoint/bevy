@@ -39,19 +39,16 @@ const packed = synthetic(24);
 const packedImage = readXwd(packed.xwd);
 check('every 24-bit pixel decodes to its red, green and blue values (wrong output: channels swapped or a misread stride)', Buffer.compare(packedImage.rgb, packed.expected) === 0, 'first differing byte ' + [...packedImage.rgb].findIndex((v, i) => v !== packed.expected[i]));
 const png = encodePng(image.width, image.height, image.rgb);
-check('the PNG signature is the eight standard bytes (wrong output: a non-PNG file)', png.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), 'signature');
 const idatAt = png.indexOf(Buffer.from('IDAT'));
-const idatLength = png.readUInt32BE(idatAt - 4);
-const raw = zlib.inflateSync(png.subarray(idatAt + 4, idatAt + 4 + idatLength));
+const raw = zlib.inflateSync(png.subarray(idatAt + 4, idatAt + 4 + png.readUInt32BE(idatAt - 4)));
 const stride = width * 3;
-let rowsMatch = raw.length === (stride + 1) * height;
+let rowsMatch = raw.length === (stride + 1) * height && png.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 for (let y = 0; y < height && rowsMatch; y += 1) {
   rowsMatch = raw[y * (stride + 1)] === 0 && raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)).equals(wide.expected.subarray(y * stride, (y + 1) * stride));
 }
-check('the PNG IDAT inflates to the same pixels, one filter byte per row (wrong output: a misordered or missing scanline)', rowsMatch, 'raw length ' + raw.length);
 const ihdrAt = png.indexOf(Buffer.from('IHDR'));
-const stored = png.readUInt32BE(ihdrAt + 17);
-check('the IHDR CRC matches the chunk type and data (wrong output: a corrupted chunk the viewer rejects)', stored === crc32(png.subarray(ihdrAt, ihdrAt + 17)), 'stored ' + stored.toString(16) + ' computed ' + crc32(png.subarray(ihdrAt, ihdrAt + 17)).toString(16));
+const storedCrc = png.readUInt32BE(ihdrAt + 17);
+check('the PNG has the standard signature, inflates to the same scanlines and has a matching IHDR CRC (wrong output: a non-PNG file, a misordered scanline or a corrupted chunk)', rowsMatch && storedCrc === crc32(png.subarray(ihdrAt, ihdrAt + 17)), 'rows ' + rowsMatch + ' crc ' + storedCrc.toString(16));
 const passed = checks.filter(Boolean).length;
 console.log(passed === checks.length ? 'ALL PASS ' + passed + ' checks' : 'FAIL ' + (checks.length - passed) + ' of ' + checks.length);
 process.exit(passed === checks.length ? 0 : 1);

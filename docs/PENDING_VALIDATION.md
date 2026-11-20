@@ -6261,3 +6261,12 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - src/viewer.rs: the globe branch calls vegetation::register and frame_globe_camera. AGENTS.md states the new camera system.
 - Witness: scripts/check-planet-screenshot.cjs in the next entry, reading the game log line and the census of the capture, Phase B.
 - Red check: in src/vegetation.rs change TREES_PER_CHUNK from 6 to 0. Rebuild, capture, run the screenshot check: it must FAIL with zero green and zero trees; restore from a copy; cmp must match; git status must show only the intended files. Rebuild after the restore.
+
+## Round 122 Phase A 3: planet screenshot check replaces the XWD converter (witness and red check listed; not run)
+
+- Removed: scripts/xwd-to-png.cjs (its work moves into the screenshot check) and scripts/check-xwd-to-png-witness.cjs (replaced by scripts/check-xwd-png-witness.cjs).
+- scripts/check-planet-screenshot.cjs <capture.xwd> <game.log> <out.png>: writes the PNG, counts green pixels (g above r and b by 15) as a percentage, reads the tree count from the line vegetation: N trees placed, prints one JSON line with the PNG path, its SHA-256, the size, the green percentage and the tree count. Exit 0 only when green is at least GREEN_MIN_PERCENT (0.5) and the tree count is above zero.
+- scripts/check-xwd-png-witness.cjs: four checks, the header and the 32-bit pixels and the 24-bit pixels from synthetic captures, and one PNG check that merges the signature, the inflated scanlines and the IHDR CRC.
+- scripts/capture-default-game.sh <name>: starts target/debug/bevy-jayzee with no arguments under timeout 150, finds its child PID, takes an xwd -root capture of the display after 45 s, then stops the child and the timeout by PID.
+- Witness (Phase B): node scripts/check-xwd-png-witness.cjs must print ALL PASS 4 checks; then bash scripts/capture-default-game.sh r122-planet and node scripts/check-planet-screenshot.cjs target/witness/r122-planet.xwd target/witness/r122-planet.log target/witness/r122-planet.png must exit 0.
+- Red check (Phase B): (a) in scripts/lib/xwd-png.cjs reverse the masks in readXwd; the XWD witness must FAIL; restore; cmp. (b) in src/vegetation.rs change TREES_PER_CHUNK from 6 to 0; rebuild; capture; the screenshot check must exit 1 with zero green and zero trees; restore; cmp; rebuild.
