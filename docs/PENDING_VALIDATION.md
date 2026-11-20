@@ -4387,3 +4387,16 @@ Counterfactuals, PSNR in dB (R / G / B, min):
 Verdict: OPEN. No single mechanism, and no combination tested, reaches 35 dB on all three channels. The best all-channel result is M2b at min 30.47. Attributed so far: the bias step (+0.89 dB on blue), the luma selector metric (the trade between G and R/B), and the solid path's flat values (+0.44 dB on the minimum). The rest of the blue top-end error is not attributed. It is consistent with the 4-level ETC1 palette per subset, but I have not tested that: an MSE-optimal endpoint search per block was not run. Reopen: that search, or a different ETC2 encode of this texture, or an owner ruling on the 35 dB bar for this format.
 
 Red check: INDEX_TO_MODIFIER was changed from [2, 3, 1, 0] to [2, 3, 0, 1]. The baseline rebuild then differed from the library on 899,404 texel channels, the check printed FAIL and exited 1 (MUTANT rc=1). The file was restored, cmp matched (cmp-restored), the check passed with exit 0, and git status showed only the new script before the commit.
+
+## Round 88 Phase B: the blue top-end counterfactuals in the window (record)
+
+Readings. vmstat 1 2 first: the first line is the average since boot (si 5295, so 7397). The second line, the gate sample, is si 276, so 0: both directions under 1000 KB/s, so the gate is open. heavy-jobs at that point read busy: a zig test process of another project (pid 2114065, 100% CPU, ./.zig-cache test) and a Claude session (pid 2109, 23.8%). Neither was stopped.
+
+Window job, one reading every 30 s, gate on the second vmstat sample with heavy-jobs on the same sample. 05:06:37: si 296, so 0, load 2.92, gate open, heavy busy (the same zig test process at 99% and the Claude session at 23.8%). 05:07:07: si 224, so 0, load 2.61, gate open, heavy clear: GATE-CLEAR with 568 s left. The witness set started at 05:07:08.
+
+Witnesses on the 05:07:07 clear sample. blue-cf-analysis: rc 0, wall 0.8 s, timeout pid 2121406, node child 2121408, output ok 1 of 1 (baseline reconstruction mismatches 0, blue PSNR 28.49, min 28.49). blue-cf-red-check: rc 0, wall 0.8 s, timeout pid 2121435, child 2121437: the mutant (INDEX_TO_MODIFIER [2, 3, 0, 1]) printed FAIL with 899,404 mismatches and exited 1, which the red check reads as DETECTED; the tracked script matched HEAD by cmp afterwards, and the mutant file was removed. WITNESS-SET overall 0 at 05:07:09. Processes left after the run: 0.
+
+Result, the same numbers as Phase A. The bar stays OPEN. Attributed: the bias step (blue 29.38, min 28.77, R limits), the luma selector metric (blue-only selectors reach blue 35.16 but R and G fall to 26.61 and 25.95; RGB-unweighted selectors reach min 30.47), and the flat solid path (exact flat blocks give min 28.93). The best all-channel combination tested is ideal endpoints with RGB-unweighted selectors, min 30.09. The remaining error is not attributed; the MSE-optimal endpoint search that would test the 4-level palette was not run.
+
+Which side agrees with which: the separate software GL and both decoders agree with the ETC2 bits, so the disagreement is between the ETC2 transcode and the RGBA8 unpack. The RGBA8 cache is the side that differs from the decoded ETC2.
+
