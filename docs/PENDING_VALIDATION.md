@@ -5659,3 +5659,80 @@ Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git,
 
 Longest step. The window wait, from 10:41:04 to 10:41:38 UTC (under a minute).
 
+
+## Round 114 Phase B: the Round 113 record e4964da and its cited witnesses in the window (cleared, witnesses passed, pushed e4964da)
+
+Scope. e4964da is the Round 113 ledger record. Its cited witnesses are the code witness and its red check, and the records witness and its red check (the set in /tmp/bt/r113-witnesses.sh).
+
+Pre-window. vmstat 1 2 at 10:51:12 UTC: the first line is the average since boot (si 1845, so 2982); the gate sample is si 72, so 0 (open). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read clear.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r114.log). Readings, local time (UTC is two hours earlier):
+
+reading 12:51:18 si=21092 so=0 load1=1.00 gate=closed heavy=clear remainS=597 HEAVY_JOBS clear
+reading 12:51:47 si=388 so=4 load1=1.14 gate=open heavy=clear remainS=568 HEAVY_JOBS clear
+GATE-CLEAR 12:51:47 remainS=568
+WITNESS rc=0 12:51:47
+END 12:51:47 overall=0
+
+Gate. The first sample in the window (12:51:18 local) was closed on swap-in (si 21092), with heavy-jobs clear. The second, at 12:51:47 local (10:51:47 UTC), was open (si 388, so 4) with heavy-jobs clear: GATE-CLEAR, 568 s remaining. The witness set ran under timeout with each PID captured (its log is the last run in target/witness/window-job-r113.log, from pid 124379 on):
+
+PID code-witness timeout=124379 child= 124383 12:51:47
+WITNESS code-witness rc=0 wall=0.0s
+ok   range 19 has 192 codes with 192 distinct values
+ok   a GPU value one code up is classified as an adjacent code
+ok   a GPU value five codes up is classified as another code
+ok   a value that no code produces is classified as not a code value
+ALL PASS 4 checks
+PID code-red-check timeout=124400 child= 12:51:47
+WITNESS code-red-check rc=0 wall=0.1s
+MUTATED
+PID code-mutant pid=124416 12:51:47
+RESTORED_IDENTICAL
+FAIL a GPU value one code up is classified as an adjacent code: other code
+FAIL 1 of 4
+mutant_rc=1
+DETECTED
+PID records-witness timeout=124437 child= 124441 12:51:47
+WITNESS records-witness rc=0 wall=0.0s
+ok   a candidate record holds the CPU and GPU codes and the class
+ok   records tabulate by class and CPU trit digit
+ALL PASS 2 checks
+PID records-red-check timeout=124458 child= 12:51:47
+WITNESS records-red-check rc=0 wall=0.1s
+MUTATED
+PID records-mutant pid=124474 12:51:47
+RESTORED_IDENTICAL
+FAIL records tabulate by class and CPU trit digit: [["adjacent code | cpu trit digit 1",1],["gpu value not a code value | cpu trit digit 1",1],["other code | cpu trit digit 1",1],["gpu value not a cod
+FAIL 1 of 2
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 12:51:47
+
+Witness set overall 0 at 12:51:47 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 6fe1c22..e4964da main -> main, push rc 0. git ls-remote origin main: e4964da7c4981c0b21225190f552076cd5d33fd8 refs/heads/main.
+
+## Round 114 Phase A: the records measurement and the distance test for item 2 (witness and red check; not pushed)
+
+The measurement. scripts/check-astc-endpoint-records.cjs ran in a clear window (window-gate-r114m.log, GATE-CLEAR at 12:53:08 local, 10:53:08 UTC, si 452, so 0, heavy-jobs clear). It saved 2,714 repair candidates to target/witness/astc-endpoint-records.json (not committed; target is not in git). The GPU run: pid 125221, outcome done, wall 1.8 s, leftover 0. Measurement wall 5.2 s. Tabulation by class and CPU trit digit:
+
+PID records-measure timeout=125207 child= 125211 12:53:09
+MEASURE records-measure rc=0 wall=5.2s
+gpu run pid 125221 outcome done wall 1.8 s leftover 0
+saved 2714 repair candidates to target/witness/astc-endpoint-records.json
+   other code | cpu trit digit 0: 1012
+   other code | cpu trit digit 1: 604
+   gpu value not a code value | cpu trit digit 2: 529
+   other code | cpu trit digit 2: 391
+   gpu value not a code value | cpu trit digit 0: 178
+wall 5.2 s
+
+The step. For each no-code candidate (707), the distance from the GPU value to the nearest value any range-19 code produces: scripts/lib/astc-endpoint-distance.cjs (nearestCodeDistance, tabulateNoCodeDistances), its witness scripts/check-astc-endpoint-distance-witness.cjs (ALL PASS 4 checks, rc 0, PID 124801), and the analysis scripts/check-astc-endpoint-distance.cjs, which reads the saved records.
+
+Red check. The distance's absolute value was changed to a one-sided distance (const d = v >= value ? v - value : Infinity) in place (saved to /tmp/bt/r114-distance.good first). The witness gave FAIL a value above the top code value is measured against the top code value: Infinity, FAIL 1 of 4, mutant rc 1, DETECTED. The file was restored, and cmp reported RESTORED_IDENTICAL.
+
+Result, and why it does not discriminate. All 707 no-code GPU values are at distance 1 from the nearest code value. The baseline is the same: all 64 values the range-19 table does not produce are also at distance 1. The unproduced values are isolated (62 runs of length 1 and one run of length 2), so each one sits next to a code value by construction. The distance-1 result is therefore a property of the table, not evidence of the GPU's rounding. A one-sided (above or below) split was considered and dropped: for isolated gaps both neighbours are at distance 1, so the side is a tie.
+
+Status. Item 2 stays open. The distance test cannot separate the GPU's values from the table's gaps, so it does not identify a cause. A discriminating test needs a different observable, such as the GPU's own decoded endpoint values for the same blocks, which the probe does not read back, or a hypothesis for the unquantisation table that is checked on all 2,714 candidates, not on the 707 alone.
+
+Not pushed. Local commit only, as lanmower, no trailers.
