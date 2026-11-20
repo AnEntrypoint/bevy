@@ -49,4 +49,29 @@ function expectedEndpoints(values, range, end) {
     return out;
 }
 
-module.exports = { COMPONENT_COUNT_BY_CEM, ENDPOINT_POSITION, CEM_POSITION, buildEndpointBlock, expectedEndpoints, endpointRangeFor };
+const TWO_SUBSET_POSITION = 29;
+
+function valueBits(value, count) {
+    const bits = [];
+    for (let i = 0; i < count; i += 1) bits.push((value >> i) & 1);
+    return bits;
+}
+
+function buildTwoSubsetBlock(cem, seed, values, weightIndex) {
+    const components = COMPONENT_COUNT_BY_CEM[cem];
+    const count = 4 * components;
+    if (values.length !== count) throw new Error('expected ' + count + ' endpoint values, got ' + values.length);
+    const range = chooseEndpointRange(count, 128 - WEIGHT_BITS_TOTAL - TWO_SUBSET_POSITION);
+    const block = new Uint8Array(16);
+    block[0] = probe.WEIGHT_MODE & 0xff;
+    block[1] = (probe.WEIGHT_MODE >> 8) & 0xff;
+    setBlockBits(block, 11, valueBits(1, 2));
+    setBlockBits(block, 13, valueBits(seed, 10));
+    setBlockBits(block, 25, valueBits(cem, 4));
+    const encoded = encodeIntegerSequence(values, range);
+    if (encoded.bitLength !== integerSequenceBits(range, count)) throw new Error('endpoint bit count differs from the decoder');
+    setBlockBits(block, TWO_SUBSET_POSITION, bitsOf(encoded.bytes, encoded.bitLength));
+    return { block: probe.withWeightIndex(block, weightIndex, probe.WEIGHT_MODE), range, count, components };
+}
+
+module.exports = { COMPONENT_COUNT_BY_CEM, ENDPOINT_POSITION, CEM_POSITION, TWO_SUBSET_POSITION, buildEndpointBlock, buildTwoSubsetBlock, expectedEndpoints, endpointRangeFor };
