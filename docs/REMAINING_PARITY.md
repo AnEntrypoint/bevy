@@ -4,7 +4,7 @@ Generated from docs/parity-matrix.tsv. Open means not present and not not-applic
 
 | Rank | Group | Open | Present | Candidate (no witness) | Blocked | Missing | Not applicable | Witnessable now | Blocker |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | planet | 99 | 13 | 0 | 6 | 93 | 4 | 0 | globe: different tangent basis, no surface solve, no streamer budgets, no sampler parity |
+| 1 | planet | 97 | 15 | 0 | 6 | 91 | 4 | 0 | globe: different tangent basis, no surface solve, no streamer budgets, no sampler parity |
 | 2 | client | 102 | 0 | 0 | 6 | 96 | 129 | 0 | browser app vs native Lightyear client; no app-module loader; projection contract differs |
 | 3 | mapspinner | 32 | 2 | 0 | 2 | 30 | 37 | 0 | no planet renderer in bevy; defaults differ (radius 64 m against 6360000 m) |
 | 4 | netcode | 39 | 0 | 0 | 1 | 38 | 1 | 0 | no lockstep, consensus, desync, cheat or replay code in bevy |
@@ -17,8 +17,8 @@ Generated from docs/parity-matrix.tsv. Open means not present and not not-applic
 | 11 | occlusion | 7 | 0 | 0 | 0 | 7 | 5 | 0 | no counterpart |
 | 12 | weather | 7 | 0 | 0 | 0 | 7 | 2 | 0 | no counterpart |
 | 13 | groundy | 1 | 0 | 0 | 0 | 1 | 0 | 0 | no counterpart |
-| - | other (outside the list) | 436 | 5 | 0 | 9 | 427 | 90 | not re-read in this change | not ranked |
+| - | other (outside the list) | 435 | 6 | 0 | 9 | 426 | 90 | not re-read in this change | not ranked |
 
-Totals: open 784, present 20, candidate-only 0, blocked 28.
+Totals: open 781, present 23, candidate-only 0, blocked 28.
 
 Witnessable now: 0 in every group. The one present row (280, vegetation placement) is already witnessed. No candidate in the requested groups survives reading against spoint, so Phase A writes no new witness.

@@ -6717,3 +6717,26 @@ Counts after this round (docs check 784 20 0 28): open 784, present 20, candidat
 ## Round 134 re-rank: top ten reachable missing rows (docs/RANKED_MISSING.tsv)
 
 1 729 tps-game client HUD overlay; 2 145 CharacterManager character controller; 3 157 character chart transfer; 4 274 setupTerrainStreaming; 5 275 stopTerrainStreaming; 6 277 createAirborneGroundReuse; 7 728 tps-game predicted hit; 8 144 connected players registered as physics characters; 9 196 createPlanetFrame (partial, see above); 10 202 solveSurfaceY (partial, see above).
+
+## Round 135 Phase A: 202 and 196 present; 728 present with scope; seven top-ten rows unwitnessable with causes
+
+Witnesses compare bevy with spoint at fixed inputs; spoint is read-only at 5f43c86c (each generator checks git status before and after). Red checks mutate one line with an exact count check (/tmp/bt/r133/mut.py), run the witness, then restore and cmp.
+
+- a443e68 (one commit, because all of it is in src/height/planet_frame.rs): scripts/gen-solve-paths.mjs writes testdata/parity/spoint-solve-paths.json (closure cases with residual -2804 m, cap cases with SurfaceSolveError). Witness: solve_surface_y_reaches_the_closure_and_cap_paths_like_spoint passes. Red r30 (bracket-closure return replaced by the plain average): FAILED, off by up to 6959 m. Red r31 (cap maps to NoGround): FAILED, error name at (0, 3000). Restored, cmp identical.
+- a443e68, reliefScale: scripts/gen-planet-frame-parts.mjs writes testdata/parity/spoint-planet-frame-parts.json. Witness: chart_frame_relief_scale_matches_spoint passes (null and absent give 0.01, 0 and 0.25 kept). Red r32 (default 0.02): FAILED, reliefScale None gives 0.02 where spoint gives 0.01. Restored, cmp identical.
+- a443e68, chartEpoch and reanchor: witness chart_frame_reanchor_matches_spoint passes (epochs 0, 1, 2; anchorSurfaceWorld, localToDir, localToWorld and groundHeightLocal after each reanchor). Red r33 (chart_epoch increment removed): FAILED at chartEpoch after. Restored, cmp identical.
+- a443e68, ground memo: witness ground_memo_matches_spoint passes over 14 steps (same-cell collision, slot eviction, epoch-stale after reanchor, ChartRangeError replayed from the memo, NaN argument refusal with stats unchanged). Red r34 (epoch check removed from the hit test): FAILED at hits. Red r39 (argument guard removed): FAILED at memo error at (NaN, 0). Restored, cmp identical. Memo stats are per frame in bevy; spoint keeps them module-wide (one frame is used per witness).
+- a443e68, ground sources: witness ground_sources_match_spoint passes (install, gpu values, gpu throws SurfaceSolveError, empty name and non-finite probe as TypeError, anonymous names substituted and substituted#2, switching back to cpu-solve). Red r35 (active-source dispatch always cpu): FAILED at gpu ground at (100, 0). Restored, cmp identical. Not ported: the JS arity refusal, the prototype receiver refusal and the closure identity name match; the Rust types enforce or do not express them.
+- a443e68, CPU divergence warning: witness elevation_at_dir_warns_once_like_spoint passes (exact text, one message when divergent with a gpu source, none when plain or cpu). Red r36 (once-latch removed): FAILED at divergentGpu message count. Restored, cmp identical.
+- 8f5ad27 src/hitscan.rs (rayVsCapsule, hitHeightRatio, predictHit with range and headshot zone as arguments) with scripts/gen-hitscan.mjs and testdata/parity/spoint-hitscan.json (spoint through apps/tps-game/shared.js bound to Hitscan.js). Witness: ray_vs_capsule_matches_the_spoint_hitscan and predict_hit_matches_the_spoint_hitscan pass. Red r37 (hit radius times 4): FAILED at predictHit for near at zone 0.4. Red r38 (headshot divided by centre height): FAILED at predictHit for self at zone 0.75. Restored, cmp identical. height/mod.rs makes ops_jsgen pub(crate) so the hitscan module can use V3.
+- Full bin suite after both commits: 117 passed, 0 failed. Non-test build (cargo build --bin bevy-jayzee): no warnings.
+
+Unwitnessable rows (outcome missing, cause in the row): 729 (HUD math module-private, no bevy HUD), 145 (needs Jolt CharacterVirtual; no bevy character controller), 157 (needs 145), 274 (no bevy terrain streaming; spoint's own witness never calls it), 275 (needs 274), 277 (pure spoint function, no bevy port yet: next pure port), 144 (needs a live cluster and websocket clients).
+
+Row outcomes: 202 present (witnesses above; the cap and closure paths are now reached). 196 present (scope: JS receiver and arity refusals and closure identity naming not ported; memo stats per frame). 728 present (scope: the hit-marker drive is row 729).
+
+Counts after this round (docs check 781 23 0 28): open 781 (missing 753 plus blocked 28), present 23, candidate-only 0, blocked 28.
+
+## Round 135 re-rank: top ten missing rows (docs/RANKED_MISSING.tsv)
+
+1 729 HUD overlay; 2 145 CharacterManager controller; 3 157 character chart transfer; 4 274 setupTerrainStreaming; 5 275 stopTerrainStreaming; 6 277 createAirborneGroundReuse; 7 144 connected players as physics characters; 8 205 stats counters; 9 206; 10 213. Rows 1 to 7 are assessed and unwitnessable with causes recorded in their rows.
