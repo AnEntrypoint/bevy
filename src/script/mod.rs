@@ -4130,8 +4130,9 @@ mod tests {
             fixture["cases"]
         );
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world");
-        let engine = ScriptEngine::new(&root).unwrap();
+        let mut engine = ScriptEngine::new(&root).unwrap();
         let text: String = engine.context.with(|ctx| ctx.eval::<String, _>(source.as_str())).unwrap();
+        engine.shutdown();
         let actual: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert!(
             close(&actual, &fixture["expected"]),
