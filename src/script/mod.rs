@@ -4126,7 +4126,7 @@ mod tests {
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../testdata/parity/spoint-ballistics-quat.json")).unwrap();
         let source = format!(
-            "(() => {{ const run = (c) => {{ if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const r = __builtins.vec3.rotate(c.q, c.v); return [r.x, r.y, r.z]; }}; return JSON.stringify({}.map(run)); }})()",
+            "(() => {{ const run = (c) => {{ if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const q = Array.isArray(c.q) ? {{ x: c.q[0], y: c.q[1], z: c.q[2], w: c.q[3] }} : c.q; const r = __builtins.vec3.rotate(q, c.v); return [r.x, r.y, r.z]; }}; return JSON.stringify({}.map(run)); }})()",
             fixture["cases"]
         );
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world");
