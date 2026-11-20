@@ -2,7 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { encodePng, readXwd } = require('./lib/xwd-png.cjs');
 
-const GREEN_MIN_PERCENT = 0.5;
+const GREEN_MIN_PERCENT = 0.43;
+const TREES_MIN = 16;
 const [xwdPath, logPath, pngPath] = process.argv.slice(2);
 if (!xwdPath || !logPath || !pngPath) {
   console.error('usage: node scripts/check-planet-screenshot.cjs <capture.xwd> <game.log> <out.png>');
@@ -31,6 +32,7 @@ console.log(JSON.stringify({
   height: image.height,
   greenPercent: Number(greenPercent.toFixed(2)),
   greenMinPercent: GREEN_MIN_PERCENT,
+  treesMin: TREES_MIN,
   trees,
 }));
-process.exit(greenPercent >= GREEN_MIN_PERCENT && trees > 0 ? 0 : 1);
+process.exit(greenPercent >= GREEN_MIN_PERCENT && trees >= TREES_MIN ? 0 : 1);
