@@ -6213,3 +6213,16 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Source: eight classifier passes, one per 134-row chunk. Each present-candidate cites a bevy file and symbol; none is counted present until its Phase B witness runs.
 - Known gap: 195 missing rows sit in item other-ranked, which is too broad to act on until the owner splits it.
 - Witness: none in Phase A. Red check: none; this is a document.
+
+## Round 121 Phase A part two: vegetation on the globe (witness and red check listed; not run)
+
+- src/vegetation.rs: TREES_PER_CHUNK 6; placements() picks land cells by hash; spawn_chunk_trees() parents each tree to its chunk entity, so the chunk despawn removes its trees; prepare() builds the shared mesh and material assets. src/globe.rs: sync_chunks spawns trees for a new chunk when VegetationAssets exists; grid and cell_bounds are pub(crate). src/viewer.rs: prepare runs at Startup.
+- Matrix rows: the default-vegetation items. Row 280 (VegPlacement, spoint) moves from present-candidate to present only when the witness below passes in Phase B.
+- Witness: cargo test vegetation (placements_are_deterministic, placements_stay_inside_their_cell, placements_are_on_land, tree_bases_sit_on_the_surface_above_the_radius, the_planet_has_trees).
+- Red check: in src/vegetation.rs change the land filter from > globe.sea_level to < globe.sea_level; placements_are_on_land must FAIL; restore from a copy and cmp must match.
+
+## Round 121 Phase A part two: one command starts the planet
+
+- src/main.rs: default_args() returns viewer testdata/spec-world globe. With no command-line arguments the binary opens the globe place: the planet, its physics bodies and its trees.
+- Witness: cargo test default_game_is_the_globe_place (Phase B). Screenshot evidence is in the Phase B entry.
+- Red check: change "globe" in default_args to "test"; the witness must FAIL; restore from a copy and cmp must match.
