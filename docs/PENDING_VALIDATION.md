@@ -5265,3 +5265,46 @@ Reading. The residual's joint-only part is mostly explained (97.8%) by a one-lev
 Status. Item 2 stays open. Its next step is to check the GPU's endpoint decode for those 943 blocks: save the repair per block, then compare with the CPU's endpoint unquantisation for the same blocks in the ASTC endpoint decode (scripts/lib/astc-decode.cjs unquantEndpoint and the endpoint range tables). That needs the per-block repairs saved, which this measurement does not do, and it needs a clear window for a GPU run.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 107 Phase B: the residual and endpoint-repair witnesses for afe3744 in the window (did not clear, nothing pushed)
+
+Scope. afe3744 carries the endpoint-repair step (endpointRepairs in scripts/lib/astc-residual.cjs, its witness and red check, and the measurement script), plus the Round 106 ledger record. Its witnessed step is endpointRepairs. Phase B for afe3744 needed a clear sample.
+
+Pre-window. vmstat 1 2 at 09:11:07 UTC: the first line is the average since boot (si 1423, so 2693); the gate sample is si 14848, so 0 (closed: swap-in above 1000 KB/s). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read busy on oscraft's gm-core worker (pid 2172, a peer process). The window job waited for a clear sample and did not force the window.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r107.log). Readings, local time (UTC is two hours earlier):
+
+reading 11:11:11 si=7448 so=60 load1=2.00 gate=closed heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2172 cpu=67 /config/.gmnew/versions/0f9e3bb-5
+reading 11:11:41 si=7884 so=21456 load1=2.35 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=2;hot pid=2172 cpu=87.1 /config/.gmnew/versions/0f9e
+reading 11:12:11 si=7304 so=17580 load1=2.83 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=2;hot pid=2172 cpu=83.2 /config/.gmnew/versions/0f9e
+reading 11:12:42 si=9180 so=63940 load1=2.85 gate=closed heavy=busy remainS=507 HEAVY_JOBS busy n=1;hot pid=2172 cpu=75.2 /config/.gmnew/versions/0f9e
+reading 11:13:12 si=72 so=17984 load1=2.61 gate=closed heavy=busy remainS=477 HEAVY_JOBS busy n=1;hot pid=2172 cpu=83.2 /config/.gmnew/versions/0f9e3b
+reading 11:13:43 si=184 so=0 load1=2.58 gate=open heavy=busy remainS=446 HEAVY_JOBS busy n=1;hot pid=2172 cpu=75.2 /config/.gmnew/versions/0f9e3bb-542
+reading 11:14:12 si=776 so=0 load1=2.59 gate=open heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=2172 cpu=77 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:14:42 si=396 so=5100 load1=2.20 gate=closed heavy=busy remainS=387 HEAVY_JOBS busy n=5;hot pid=1822 cpu=27.7 claude --dangerously-skip-perm
+reading 11:15:13 si=2048 so=0 load1=2.51 gate=closed heavy=busy remainS=356 HEAVY_JOBS busy n=4;hot pid=38980 cpu=21.8 /data/cache/node/node-v24.22.0-
+reading 11:15:42 si=2048 so=0 load1=3.33 gate=closed heavy=busy remainS=327 HEAVY_JOBS busy n=1;hot pid=39152 cpu=114.9 /usr/lib/chromium/chromium.rea
+reading 11:16:12 si=40528 so=0 load1=2.96 gate=closed heavy=busy remainS=297 HEAVY_JOBS busy n=1;hot pid=39152 cpu=99 /usr/lib/chromium/chromium.real 
+reading 11:16:43 si=48 so=0 load1=2.53 gate=open heavy=busy remainS=266 HEAVY_JOBS busy n=1;chromium-renderer pid=39152 /usr/lib/chromium/chromium.rea
+reading 11:17:12 si=1312 so=0 load1=2.26 gate=closed heavy=busy remainS=237 HEAVY_JOBS busy n=1;hot pid=43974 cpu=79.2 node scripts/witness-shell.mjs
+reading 11:17:42 si=128 so=0 load1=1.97 gate=open heavy=busy remainS=207 HEAVY_JOBS busy n=2;hot pid=44195 cpu=21 /usr/lib/chromium/chromium.real --ty
+reading 11:18:13 si=6672 so=0 load1=3.04 gate=closed heavy=busy remainS=176 HEAVY_JOBS busy n=2;hot pid=2172 cpu=71.3 /config/.gmnew/versions/0f9e3bb-
+reading 11:18:42 si=28244 so=44 load1=3.78 gate=closed heavy=busy remainS=147 HEAVY_JOBS busy n=2;hot pid=2172 cpu=70.3 /config/.gmnew/versions/0f9e3b
+reading 11:19:12 si=36 so=16 load1=5.15 gate=closed heavy=busy remainS=117 HEAVY_JOBS busy n=2;hot pid=2172 cpu=70.3 /config/.gmnew/versions/0f9e3bb-5
+reading 11:19:43 si=5528 so=0 load1=5.12 gate=closed heavy=busy remainS=86 HEAVY_JOBS busy n=2;hot pid=2172 cpu=77.2 /config/.gmnew/versions/0f9e3bb-5
+reading 11:20:12 si=3344 so=0 load1=4.88 gate=closed heavy=busy remainS=57 HEAVY_JOBS busy n=2;hot pid=2172 cpu=101 /config/.gmnew/versions/0f9e3bb-54
+reading 11:20:42 si=64 so=0 load1=4.53 gate=closed heavy=busy remainS=27 HEAVY_JOBS busy n=4;hot pid=44118 cpu=28.7 /data/cache/node/node-v24.22.0-lin
+WINDOW-ENDED-WITHOUT-CLEAR 11:21:10
+
+Result. heavy-jobs read busy on all 20 samples. The gate was open on five of them (11:13:43, 11:14:12, 11:16:43, 11:17:42, 11:20:42 local) and closed on the rest, so no sample had both conditions. The witnesses never ran (no WITNESS line in target/witness/window-job-r107.log). WINDOW-ENDED-WITHOUT-CLEAR at 11:21:10 local (09:21:10 UTC). Exit code 3. Nothing was pushed. The busy processes were oscraft's gm-core worker (pid 2172), a peer Chromium renderer and browser (pids 39152, 44195), a peer claude session (pid 1822), a peer node cache process (pid 44118), and a peer witness-shell (pid 43974). None was stopped.
+
+Longest step. The window wait, 09:11:07 to 09:21:10 UTC (about 10 min, all of it waiting for a clear sample).
+
+## Round 107 Phase A: the next item 2 step is blocked on a clear window (no code committed)
+
+The step. Save the per-block endpoint repairs and tabulate them by the endpoint's quantised code (range 19, the 6-value trit range of CEM 8), to see whether repairs cluster on particular codes. This needs a GPU readback of the same cache set, so it needs a clear window. None was available in this stretch, so it was not run.
+
+A CPU-only check was tried first. scripts/lib/astc-decode.cjs unquantEndpoint over the codes of each trit range (run from /tmp/bt/r107-monotone.cjs, not committed): for range 19, 192 distinct values in code order, 95 decreases in that order. The decreases do not show a defect. The code order is the bit layout (digit and low bits), and the spec's level order was not checked here, since the spec is not on disk. So the check is not a valid witness, and it was not committed.
+
+Status. Item 2 stays open, and its next step is blocked on a clear window. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample), then the per-block repair save and tabulation described above.
+
