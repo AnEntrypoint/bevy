@@ -2,6 +2,7 @@ use crate::globe::GlobeWorld;
 use bevy::prelude::*;
 
 const TREES_PER_CHUNK: u32 = 6;
+const REPORT_AFTER_S: f32 = 3.0;
 
 #[derive(Resource)]
 pub struct VegetationAssets {
@@ -14,7 +15,18 @@ pub struct VegetationAssets {
 #[derive(Component)]
 pub struct Tree;
 
-pub fn prepare(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
+pub fn register(app: &mut App) {
+    app.add_systems(Startup, prepare).add_systems(Update, report_trees);
+}
+
+fn report_trees(trees: Query<(), With<Tree>>, time: Res<Time>, mut reported: Local<bool>) {
+    if !*reported && time.elapsed_secs() >= REPORT_AFTER_S {
+        info!("vegetation: {} trees placed", trees.iter().count());
+        *reported = true;
+    }
+}
+
+fn prepare(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
     commands.insert_resource(VegetationAssets {
         trunk: meshes.add(Cylinder::new(0.12, 1.2)),
         canopy: meshes.add(Cone::new(0.6, 2.0)),

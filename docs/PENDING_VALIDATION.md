@@ -6253,3 +6253,11 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - src/main.rs: default_args() and its test are removed; the default arguments are one inline array at the single call site. The default-game check moves to the screenshot witness in the next entry.
 - Witness: cargo test --bin bevy-jayzee vegetation (three tests), Phase B.
 - Red check: in src/vegetation.rs change the land filter from > globe.sea_level to < globe.sea_level. A witness test must FAIL; restore from a copy; cmp must match; git status must show only the intended files.
+
+## Round 122 Phase A 2: frame the globe camera on the body, and log the tree count (witness and red check listed; not run)
+
+- src/globe.rs: orbit_globe_camera is replaced by frame_globe_camera, which places the eye FRAMING_HEIGHT_M above the body along its normal and FRAMING_BACK_M sideways, looking at the body. The orbit at 2.4 radii left 2 m trees a few pixels wide. The two constants are named in the code.
+- src/vegetation.rs: register() adds prepare at Startup and report_trees at Update. report_trees logs one line, vegetation: N trees placed, once REPORT_AFTER_S (3 s) have passed.
+- src/viewer.rs: the globe branch calls vegetation::register and frame_globe_camera. AGENTS.md states the new camera system.
+- Witness: scripts/check-planet-screenshot.cjs in the next entry, reading the game log line and the census of the capture, Phase B.
+- Red check: in src/vegetation.rs change TREES_PER_CHUNK from 6 to 0. Rebuild, capture, run the screenshot check: it must FAIL with zero green and zero trees; restore from a copy; cmp must match; git status must show only the intended files. Rebuild after the restore.

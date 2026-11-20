@@ -321,11 +321,14 @@ fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>, mut registry: Re
     }
 }
 
-pub fn orbit_globe_camera(time: Res<Time>, globe: Res<GlobeWorld>, mut cameras: Query<&mut Transform, With<Camera3d>>) {
-    let angle = time.elapsed_secs() * 0.12;
-    let eye = globe.center + Vec3::new(angle.sin(), 0.45, angle.cos()).normalize() * globe.radius * 2.4;
+const FRAMING_HEIGHT_M: f32 = 10.0;
+const FRAMING_BACK_M: f32 = 14.0;
+
+pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut cameras: Query<&mut Transform, With<Camera3d>>) {
+    let up = (focus.0 - globe.center).normalize_or_zero();
+    let eye = focus.0 + up * FRAMING_HEIGHT_M + up.any_orthogonal_vector() * FRAMING_BACK_M;
     for mut transform in &mut cameras {
-        *transform = Transform::from_translation(eye).looking_at(globe.center, Vec3::Y);
+        *transform = Transform::from_translation(eye).looking_at(focus.0, up);
     }
 }
 
