@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { sourceIsZstd, measure } = require('./lib/texture-cache.cjs');
 const { windowEvidence } = require('./lib/fallback-list.cjs');
+const { referenceFor } = require('./lib/pair-reference.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const cdn = process.env.NEON_CDN || '/workspace/neon-syndicates/assets/cdn';
@@ -12,8 +13,8 @@ const loadTolerance = Number(process.env.LOAD_TOLERANCE || 1.1);
 const caches = { rgba8: 'target/gltf-cache-rgba8', bc7: 'target/gltf-cache', astc4x4: 'target/gltf-cache-astc', etc2: 'target/gltf-cache-etc2' };
 const judged = {
     bc7: { reference: 'rgba8', witness: 'bc7', visual: 'bc7', texel: true },
-    astc4x4: { reference: 'rgba8-software', witness: 'astc4x4', visual: 'astc4x4', texel: false },
-    etc2: { reference: 'rgba8-software', witness: 'etc2', visual: 'etc2', texel: false },
+    astc4x4: { reference: referenceFor('astc4x4'), witness: 'astc4x4', visual: 'astc4x4', texel: false },
+    etc2: { reference: referenceFor('etc2'), witness: 'etc2', visual: 'etc2', texel: false },
 };
 
 function readWitness(name) {

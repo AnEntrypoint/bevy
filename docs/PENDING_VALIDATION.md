@@ -4022,3 +4022,24 @@ Checks without a window:
 Red check: the format budget was read from `PAIR_WINDOW_S` (the Round 75 bug). The witness exited 1 with the FAILs for the window cases. The file was restored with `cmp`, and the witness exited 0 with 11 of 11 ok.
 
 No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 78 Phase A: one reference file per format
+
+The defect: every pair's reference arm wrote the shared name `neon-wasm-witness-rgba8-software.json`, so the ETC2 pair (Round 77) replaced the reference that ASTC's footprint entry read. ASTC's `loadEvidence` became cross-window (gap 3809.826 s), though its load still passed (990 against 1032).
+
+Layout (decided here): each format has its own reference name, `rgba8-software-<format>`, so its files are `neon-wasm-witness-rgba8-software-<format>.json` and `neon-rows-rgba8-software-<format>.json`. The shared name is no longer written by a pair: after each pair, the reference arm's output is copied to the format's own name (the copy keeps its mtime, which is the arm's end time), and the shared name is restored to its pre-pair content. Reason: the footprint's `loadEvidence` reads the file's mtime, so each format's reference must keep its own timestamp, and a shared name cannot keep two. Field names in `texture-footprint.json` are unchanged; the value of `reference` for `astc4x4` and `etc2` is now the per-format name.
+
+What changed:
+- `scripts/lib/pair-reference.cjs`: `referenceFor(format)` and `keepReference({ witnessDir, format, beforeDir })`.
+- `scripts/measure-astc-pair.cjs`: calls `keepReference` after the reference arm succeeds. The before-copies come from the pair's archive.
+- `scripts/texture-footprint.cjs`: the `astc4x4` and `etc2` judgements read `referenceFor(format)`.
+- `scripts/check-reference-layout.cjs`: runs an ETC2 pair and an ASTC pair in turn, in both orders, in a temporary directory. 9 of 9 ok. Each format's own witness and rows keep that format's state, and the shared name is back at its pre-pair content.
+
+Recovery of the two per-format files (data, no window):
+- ETC2: copied from the shared file as the ETC2 pair left it. Verified before copying: `loadMsMedian` 1032, 64 of 64 clean, mtime 2026-11-20T01:02:52.007Z (the value the footprint recorded). Its rows file was copied the same way.
+- ASTC: copied from the ETC2 pair archive's before-copy of the shared file (`target/witness/etc2-load-pair-archive/2026-11-20T00-52-29-798Z/reference/before-neon-wasm-witness-rgba8-software.json`). That copy was taken at 00:57:41 UTC, just before the ETC2 pair's reference arm, so it is the Round 71 reference. Verified: `loadMsMedian` 1018, 64 of 64 clean, the same value as the Round 71 pair line (`reference_ms=1018`). The copy's own mtime was the copy time, so its mtime was reset to 2026-11-20T00:04:31.263Z, the mtime the Round 72 footprint recorded for that reference. This is the only restored timestamp, and it is the value on record.
+- The shared name was left as the ETC2 pair left it (1032). Nothing reads it now except the pair's own reference arm, which overwrites it and restores it.
+
+Red check: the layout was changed so every format maps to the shared name (`return SHARED_REFERENCE`). The witness exited 1 with seven FAILs, covering the ETC2 and ASTC references, the rows and the names. The file was restored with `cmp`, and the witness exited 0 with 9 of 9 ok.
+
+Not run here: the footprint rerun against the new names (Phase B), and any window. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.

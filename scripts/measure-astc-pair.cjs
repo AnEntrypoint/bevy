@@ -5,6 +5,7 @@ const { execFileSync } = require('node:child_process');
 const { formatLine, checkPairs } = require('./lib/astc-load-ratio.cjs');
 const { runArm } = require('./lib/load-arm.cjs');
 const { armBudgets } = require('./lib/pair-budget.cjs');
+const { keepReference } = require('./lib/pair-reference.cjs');
 
 const shortNames = { astc4x4: 'astc', etc2: 'etc2' };
 const format = process.argv[2] || process.env.PAIR_FORMAT || 'astc4x4';
@@ -43,6 +44,7 @@ async function main() {
         console.log(armFailure('reference', referenceRun, common));
         process.exit(1);
     }
+    keepReference({ witnessDir, format, beforeDir: path.join(archive, 'reference') });
     const runs = [
         { window: windowId, arm: short, startS: formatRun.startedMs / 1000, loadStart: formatRun.loadStart, loadMs: formatRun.witness.summary.loadMsMedian, clean: formatRun.witness.summary.clean, total: formatRun.witness.summary.total, wallS: formatRun.witness.wallMs / 1000 },
         { window: windowId, arm: 'reference', startS: referenceRun.startedMs / 1000, loadStart: referenceRun.loadStart, loadMs: referenceRun.witness.summary.loadMsMedian, clean: referenceRun.witness.summary.clean, total: referenceRun.witness.summary.total, wallS: referenceRun.witness.wallMs / 1000 },
