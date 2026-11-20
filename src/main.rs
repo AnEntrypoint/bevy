@@ -37,7 +37,7 @@ fn main() {
     exit_when_no_gpu_adapter();
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        args = default_args();
+        args = ["viewer", "testdata/spec-world", "globe"].map(String::from).into();
     }
     let number = |index: usize, fallback: usize| {
         args.get(index)
@@ -159,18 +159,4 @@ fn generate_static_report(directory: &str, place: Option<&str>) -> String {
         },
         "wasm": { "built": true, "renderer": "Bevy 0.20 WebGPU WASM", "output": "web/wasm/", "url": "http://127.0.0.1:8092/web/wasm/" }
     }).to_string()
-}
-
-fn default_args() -> Vec<String> {
-    vec!["viewer".into(), "testdata/spec-world".into(), "globe".into()]
-}
-
-#[cfg(test)]
-mod tests {
-    use super::default_args;
-
-    #[test]
-    fn default_game_is_the_globe_place() {
-        assert_eq!(default_args(), ["viewer", "testdata/spec-world", "globe"]);
-    }
 }

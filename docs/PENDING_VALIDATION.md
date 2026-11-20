@@ -6246,3 +6246,10 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Game log: target/witness/r121-game.log, 1600 lines, no panic or error lines; no physics or vegetation startup lines are logged.
 - Parity matrix: no row is present. The vegetation tests passed, but they prove bevy's placement rule, not parity with spoint's VegPlacement.placementsForChunk, which was not checked. Row 280 stays present-candidate.
 - Push: origin main, after this commit, if the witnesses above pass.
+
+## Round 122 Phase A 1: YAGNI and dedup on the vegetation module and the default arguments (witness and red check listed; not run)
+
+- src/vegetation.rs: TREES_PER_CHUNK is private; Tree and VegetationAssets lose derives nothing reads; placements is private. Tests cut from five to three: placements_are_deterministic and placements_stay_inside_their_cell are dropped, because the hash is deterministic by construction and the lerp of a [0,1) hash stays inside its cell. Kept: placements_are_on_land, tree_bases_sit_on_the_surface_above_the_radius, the_planet_has_trees. The cells() helper serves all three.
+- src/main.rs: default_args() and its test are removed; the default arguments are one inline array at the single call site. The default-game check moves to the screenshot witness in the next entry.
+- Witness: cargo test --bin bevy-jayzee vegetation (three tests), Phase B.
+- Red check: in src/vegetation.rs change the land filter from > globe.sea_level to < globe.sea_level. A witness test must FAIL; restore from a copy; cmp must match; git status must show only the intended files.

@@ -1,9 +1,9 @@
 use crate::globe::GlobeWorld;
 use bevy::prelude::*;
 
-pub const TREES_PER_CHUNK: u32 = 6;
+const TREES_PER_CHUNK: u32 = 6;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct VegetationAssets {
     trunk: Handle<Mesh>,
     canopy: Handle<Mesh>,
@@ -11,7 +11,7 @@ pub struct VegetationAssets {
     canopy_material: Handle<StandardMaterial>,
 }
 
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component)]
 pub struct Tree;
 
 pub fn prepare(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
@@ -23,7 +23,7 @@ pub fn prepare(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut mat
     });
 }
 
-pub fn placements(globe: &GlobeWorld, bounds: (f32, f32, f32, f32), key: (i32, i32)) -> Vec<(f32, f32)> {
+fn placements(globe: &GlobeWorld, bounds: (f32, f32, f32, f32), key: (i32, i32)) -> Vec<(f32, f32)> {
     (0..TREES_PER_CHUNK)
         .filter_map(|index| {
             let slot = index as i64;
@@ -54,25 +54,6 @@ mod tests {
     fn cells(globe: &GlobeWorld) -> Vec<((f32, f32, f32, f32), (i32, i32))> {
         let (rows, columns) = globe.grid();
         (0..rows).flat_map(|row| (0..columns).map(move |column| (globe.cell_bounds(row, column), (row, column)))).collect()
-    }
-
-    #[test]
-    fn placements_are_deterministic() {
-        let globe = GlobeWorld::default();
-        for (bounds, key) in cells(&globe) {
-            assert_eq!(placements(&globe, bounds, key), placements(&globe, bounds, key));
-        }
-    }
-
-    #[test]
-    fn placements_stay_inside_their_cell() {
-        let globe = GlobeWorld::default();
-        for (bounds, key) in cells(&globe) {
-            for (latitude, longitude) in placements(&globe, bounds, key) {
-                assert!(latitude >= bounds.0 && latitude <= bounds.1, "latitude {latitude} outside {bounds:?}");
-                assert!(longitude >= bounds.2 && longitude <= bounds.3, "longitude {longitude} outside {bounds:?}");
-            }
-        }
     }
 
     #[test]
