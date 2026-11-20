@@ -5019,3 +5019,17 @@ Longest step: the window wait, from 09:51:16 to the clear sample at 09:53:21 (ab
 Seed sources searched. (a) The ETC2 texture cache: the Round 102 scan (618 levels, 3,283,288 differential-bit blocks, 0 overflow blocks). (b) The repository outside target and .git: the only ETC2 mentions are in run logs and output files. (c) The cargo registry: bevy_image-0.20.1 (ctt_helpers.rs and mod.rs) maps ETC2 formats to block formats and encodes nothing; ktx2, ash and wgpu carry format enums only; a grep for ETC2 encoder and decoder names found none for the special modes. (d) The vendored basis-universal-sys-0.3.1 source: contrib/previewers/lib/basisu_transcoder.cpp:2491 states "basisu doesn't support ETC2 planar/T/H modes - just basic ETC1", so the vendored transcoder has no special-mode block either.
 
 Verdict. No T, H or planar block can be named from source. The multi-block SwiftShader probe seeded from such a block is not reachable. Item 1 stays blocked on the bit layouts, as before.
+
+## Round 104 Phase A: the trit and quint code tables behind the partial-tail decoder (witness and red check, not pushed)
+
+The item. Item 3 (ASTC partial tails of 2–4 trit values and quints) is blocked on the GPU pin for those tails: the cache holds only the one-value trit tail, which Round 92 pinned. The reopen step names an endpoint-shape encoder. Its first piece is the code tables the decoder unpacks with: TRIT_CODES (243 five-digit groups in 8 bits) and QUINT_CODES (125 three-digit groups in 7 bits), both in scripts/lib/astc-decode.cjs. A duplicate code in either table would be silently overwritten by the inverse table, so this step checks the tables first.
+
+Change. scripts/lib/astc-decode.cjs: TRIT_CODES and QUINT_CODES added to module.exports (export only, no decode change). scripts/check-astc-tail-tables.cjs is new.
+
+Witness. node scripts/check-astc-tail-tables.cjs: ok trit table holds 243 distinct 8-bit codes; ok quint table holds 125 distinct 7-bit codes; ALL PASS 2 checks, rc 0. Run under timeout with PID captured (sh pid 3329 before exec).
+
+Red check. The trit table's first entry was changed from 0 to 1 in place (a copy of the decoder saved to /tmp/bt/r104-decode.good first). The witness gave FAIL trit table holds 243 distinct 8-bit codes: entries 243, distinct 242, and FAIL 1 of 2, mutant rc 1: DETECTED. The decoder was restored from the copy, cmp reported RESTORED_IDENTICAL, and git status showed only the export change and the new script.
+
+Scope. This is a table-consistency witness. It shows the tables are complete and injective. It does not check the codes against the ASTC specification, which is not on disk, and it does not exercise the 2–4 trit or quint tail decode. Item 3 stays blocked until a GPU readback pins those tails, which needs a clear window (reopen line in the Round 104 report).
+
+Not pushed. Local commit only, as lanmower, no trailers.

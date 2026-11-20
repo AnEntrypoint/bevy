@@ -404,4 +404,6 @@ module.exports = {
     BISE_RANGES,
     DUAL_PLANE_BIT,
     WEIGHT_LEVELS,
+    TRIT_CODES,
+    QUINT_CODES,
 };
