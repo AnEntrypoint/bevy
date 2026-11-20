@@ -585,6 +585,51 @@ mod tests {
         assert!(worst <= f64::from(ulp), "surface radius differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
     }
 
+    fn numeric(value: &Value) -> Value {
+        match value {
+            Value::String(text) => match text.parse::<f64>() {
+                Ok(number) => Value::from(number),
+                Err(_) => value.clone(),
+            },
+            Value::Array(items) => Value::Array(items.iter().map(numeric).collect()),
+            Value::Object(map) => Value::Object(map.iter().map(|(key, value)| (key.clone(), numeric(value))).collect()),
+            _ => value.clone(),
+        }
+    }
+
+    fn spoint_sampler_fixture() -> Value {
+        numeric(&serde_json::from_str::<Value>(include_str!("../testdata/parity/spoint-sampler.json")).unwrap())
+    }
+
+    fn spoint_case<'a>(fixture: &'a Value, name: &str) -> &'a Value {
+        fixture["cases"].as_array().unwrap().iter().find(|case| case["name"] == name).unwrap()
+    }
+
+    fn worst_elevation_difference(globe: &GlobeWorld, fixture: &Value, case: &Value) -> f64 {
+        fixture["points"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .zip(case["heights"].as_array().unwrap())
+            .map(|(point, height)| {
+                let elevation = globe.elevation(point["lat"].as_f64().unwrap() as f32, point["lon"].as_f64().unwrap() as f32);
+                (f64::from(elevation) - height.as_f64().unwrap()).abs()
+            })
+            .fold(0.0_f64, f64::max)
+    }
+
+    #[test]
+    fn default_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "default");
+        let globe = GlobeWorld::default();
+        assert_eq!(globe.seed, fixture["seed"].as_u64().unwrap());
+        assert_eq!(f64::from(globe.radius), case["config"]["radius"].as_f64().unwrap());
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
     #[test]
     fn gravity_points_to_centre() {
         let g = globe();
