@@ -5874,3 +5874,19 @@ Result: WINDOW-ENDED-WITHOUT-CLEAR at 14:27:18 local (12:27:18 UTC). The gate ne
 Witnesses not run in this window: class (c56ee46 and earlier), code, records, constant, and readback witnesses with their red checks, and the readback measurement. Their Phase A runs are recorded above (readback: 6 of 6 and three red checks DETECTED, in Round 116 Phase A). The readback measurement, which would finish item 2, has not run. Nothing was pushed: origin/main is still c56ee46, and HEAD carries 289c691 and d6fcb30 locally.
 
 Blocker for item 2: the GPU measurement needs a clear window; the cause is peer load (gm-core, cmake, zig, claude) on heavy-jobs and swap. Item 3 was not taken in this round: its Phase A needs the endpoint-shape block encoder, which is not on disk, and the item 2 measurement should run first so its window is not spent on item 3.
+
+## Round 117 Phase A: the CPU encoder for trit and quint integer sequences, item 3 (witness and red check; not pushed)
+
+Item named. Item 3, ASTC partial tails. Its reopen condition is a GPU readback of synthetic 2–4 trit and quint tail blocks, which needs the endpoint-shape encoder. This is that encoder, on the CPU side only. The GPU readback stays for a later clear window.
+
+Why this is the next reachable item. Item 2's measurement (d6fcb30) needs the same clear window as before, so it stays queued. Item 3's encoder needs no GPU and no window, and it is the blocker item 3 names.
+
+What it does. scripts/lib/astc-encode-sequence.cjs: encodeIntegerSequence(values, range) returns { bytes, bitLength }. It writes the integer sequence in the layout the decoder reads: a full trit group of 5 (first = low0, code bits 0–1, low1; second = code bits 2–3, low2, code bit 4, low3, code bits 5–6, low4, code bit 7), a full quint group of 3 (one chunk), and tails of 1–4 trits and 1–2 quints (a packed digit code, then the lows). Its TRIT_TAIL_BITS and QUINT_TAIL_BITS are copies of the decoder's tables, which the decoder does not export; the witness checks them against integerSequenceBits.
+
+Witness (CPU only). scripts/check-astc-encode-sequence-witness.cjs: ok two values in a range-13 trit tail are written in the hand-derived bits (bits 12, bytes 0x57 0x09), the expected bytes derived by hand from the layout (wrong output: the tail digit shifted or the lows swapped); ok the hand-derived bits decode to 21,41 with readIntegerSequence; ok every range and every count from 1 to 8 reads back as written, with the length integerSequenceBits gives (3,360 random trials, LCG seed 7). ALL PASS 3 checks, rc 0 (PID 27376).
+
+Red checks (mutants run under timeout, restored from a /tmp copy, cmp RESTORED_IDENTICAL):
+- trit full-group low2 moved to low3's offset: FAIL 1 of 3, 400 of 3,360 trials failed (first: range 7, count 5 wrote 1,7,5,7,9 read 1,7,7,7,9), PID 27485, DETECTED.
+- quint tail length fixed at the 1-value length: FAIL 1 of 3, 360 of 3,360 failed (first: range 3, count 2 wrote 4,3 read 3,0, bits 3 against 5), PID 27507, DETECTED.
+
+Not verified here. The encoder is checked against the decoder's own layout and length, not against an external ASTC encoder. The GPU readback of these tails is the test that would show the layout matches the GPU, and it has not run.
