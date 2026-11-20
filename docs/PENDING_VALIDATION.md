@@ -4510,3 +4510,15 @@ Numbers, cache level 0 (1024 by 1024), before and after the change. CPU decoder 
 Still open, recorded and not fixed here. R and G differ by one level on endpoints in about 16,000 blocks each (ungated rounding of some unquantised trit-group values; the fit gives low endpoints off by minus one in about 750 blocks for R and G). Blue low is off by minus one in about 435 blocks. The 3 blue-high misses are off by one. None of these is pinned, and each needs its own witness.
 
 Commit: local only, as lanmower, no trailers. Not pushed in Phase A.
+
+## Round 92 Phase B: the trit-tail witness in the window (cleared, witnesses passed)
+
+Readings. vmstat 1 2 before the window: the first line (average since boot) si 5191, so 7173; the gate sample si 412, so 0 (open). heavy-jobs.cjs matched 495fff6 (cmp, zero diff) and read clear (rc 0).
+
+Window: scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, LOAD_MAX at the script default 4, log target/witness/window-gate-r92.log. One reading every 30 s (si / so / load1 / gate / heavy): 06:14:37 5248/0/3.25 closed busy; 06:15:06 216/180/2.88 open busy; 06:15:36 108/0/3.03 open busy; 06:16:07 8532/0/3.04 closed busy; 06:16:36 1600/0/2.78 closed clear; 06:17:06 900/5248/4.45 closed clear; 06:17:37 4300/0/5.13 closed clear; 06:18:06 5556/0/6.02 closed busy; 06:18:36 3496/0/5.81 closed busy; 06:19:07 152/644/6.51 closed clear; 06:19:36 84/0/4.69 closed busy; 06:20:06 88/0/3.87 open clear, GATE-CLEAR with 268 s left.
+
+Witnesses on the 06:20:06 clear sample, each under timeout with PID captured (log target/witness/window-job-r92.log). trit-tail-pins (node scripts/check-astc-trit-tail.cjs): rc 0, wall 0.2 s, timeout pid 2215431, ALL PASS 8 of 8, zero mismatched bytes per block. trit-tail-red-check (bash /tmp/bt/r92-redcheck.sh): rc 0, wall 0.2 s, timeout pid 2215460: the mutant printed nine FAIL lines (eight pins and the summary), mutant rc 1, DETECTED; the decoder was restored (RESTORED_IDENTICAL). WITNESS-SET overall 0 at 06:20:07. No separate Chromium was started, and none was needed for these witnesses. No process of mine is left running.
+
+Result. The one-value trit tail now decodes as the GPU decodes it on the pinned blocks. The cache's CPU-vs-GPU disagreement is down from 80.37% to 10.06% of texels (the numbers and the open R, G and blue-low rounding items are in the Phase A entry above). The open items are the rounding in R and G, and the unpinned tails of two to four values and of quints.
+
+Push: this record, together with the Phase A commit 8034b7b, is pushed to origin main once, after every witness passed.
