@@ -4899,3 +4899,37 @@ Red check (/tmp/bt/r100-fitredcheck.sh). The fit range was cut to w < 64 in a do
 Next step named. Residual analysis of the 1,112 no-fit interior blocks, by channel and by endpoint values, to find what the GPU's rounding depends on. This is a new measurement on the same probe and is not run here.
 
 Output files: /tmp/bt/r100-fit.out (fit), /tmp/bt/r100-fitmutant.out (mutant), target/witness/window-gate-r100.log (window readings).
+
+## Round 101 Phase B: the Round 100 weight-fit witness for ae07edd in the window (did not clear, nothing pushed)
+
+Readings. vmstat 1 2 first, at 09:23:26: the first line is the average since boot (si 5113, so 6905); the second line, the gate sample, is si 7256, so 0 (over 1000 KB/s: closed). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read clear at 09:23:26.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r101.log). Every reading, one per 30 s:
+
+reading 09:23:36 si=6744 so=0 load1=3.60 gate=closed heavy=busy remainS=597 HEAVY_JOBS busy n=1;hot pid=1629 cpu=25 claude --dangerously-skip-permissi
+reading 09:24:05 si=6108 so=364 load1=3.90 gate=closed heavy=clear remainS=568 HEAVY_JOBS clear
+reading 09:24:35 si=2320 so=6408 load1=3.98 gate=closed heavy=clear remainS=538 HEAVY_JOBS clear
+reading 09:25:06 si=228 so=0 load1=3.82 gate=open heavy=busy remainS=507 HEAVY_JOBS busy n=1;hot pid=2344888 cpu=100 grep -o "shared": *[0-9]*\|"gaps"
+reading 09:25:35 si=12868 so=25632 load1=3.60 gate=closed heavy=busy remainS=478 HEAVY_JOBS busy n=2;hot pid=2510 cpu=30.7 claude --dangerously-skip-p
+reading 09:26:05 si=560 so=130664 load1=3.29 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=1;hot pid=2344888 cpu=100 grep -o "shared": *[0-9]*\
+reading 09:26:36 si=13588 so=0 load1=3.37 gate=closed heavy=busy remainS=417 HEAVY_JOBS busy n=1;hot pid=2344888 cpu=99 grep -o "shared": *[0-9]*\|"ga
+reading 09:27:05 si=7080 so=12 load1=2.89 gate=closed heavy=busy remainS=388 HEAVY_JOBS busy n=1;hot pid=2344888 cpu=99 grep -o "shared": *[0-9]*\|"ga
+reading 09:27:35 si=1884 so=23904 load1=2.73 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=1;hot pid=2344888 cpu=100 grep -o "shared": *[0-9]*\
+reading 09:28:05 si=588 so=0 load1=2.78 gate=open heavy=busy remainS=328 HEAVY_JOBS busy n=1;hot pid=2347066 cpu=100 /workspace/gm/build/release/nativ
+reading 09:28:35 si=240 so=0 load1=2.73 gate=open heavy=busy remainS=298 HEAVY_JOBS busy n=1;hot pid=2348876 cpu=99 grep -o "shared": *[0-9]*\|"gaps":
+reading 09:29:06 si=804 so=0 load1=2.79 gate=open heavy=busy remainS=267 HEAVY_JOBS busy n=1;hot pid=2348876 cpu=99 grep -o "shared": *[0-9]*\|"gaps":
+reading 09:29:35 si=1028 so=7192 load1=2.85 gate=closed heavy=busy remainS=238 HEAVY_JOBS busy n=1;hot pid=2348876 cpu=99 grep -o "shared": *[0-9]*\|"
+reading 09:30:05 si=424 so=0 load1=2.25 gate=open heavy=busy remainS=208 HEAVY_JOBS busy n=1;hot pid=2348876 cpu=100 grep -o "shared": *[0-9]*\|"gaps"
+reading 09:30:36 si=164 so=0 load1=1.88 gate=open heavy=busy remainS=177 HEAVY_JOBS busy n=2;hot pid=1998 cpu=26.7 claude --dangerously-skip-permissio
+reading 09:31:05 si=29776 so=0 load1=1.91 gate=closed heavy=busy remainS=148 HEAVY_JOBS busy n=3;hot pid=2345314 cpu=21.8 /usr/lib/chromium/chromium.r
+reading 09:31:35 si=100 so=0 load1=1.66 gate=open heavy=busy remainS=118 HEAVY_JOBS busy n=2;hot pid=2345376 cpu=21.8 /usr/lib/chromium/chromium.real 
+reading 09:32:06 si=252 so=0 load1=1.50 gate=open heavy=busy remainS=87 HEAVY_JOBS busy n=1;hot pid=2345410 cpu=106.9 /usr/lib/chromium/chromium.real 
+reading 09:32:35 si=104 so=0 load1=1.44 gate=open heavy=busy remainS=58 HEAVY_JOBS busy n=1;hot pid=2345410 cpu=96 /usr/lib/chromium/chromium.real --t
+reading 09:33:05 si=276 so=0 load1=1.88 gate=open heavy=busy remainS=28 HEAVY_JOBS busy n=1;hot pid=2345410 cpu=104 /usr/lib/chromium/chromium.real --
+WINDOW-ENDED-WITHOUT-CLEAR 09:33:33
+
+Result. heavy-jobs read clear on three samples (09:24:05 and 09:24:35 with the gate closed, and the 09:23:26 pre-window read), and read busy on every sample when the gate was open (09:25:06, 09:28:05, 09:28:35, 09:29:06, 09:30:05, 09:30:36, 09:31:35, 09:32:06, 09:32:35, 09:33:05). The busy processes were peer chromium renderers, a peer grep (pid 2344888, then pid 2348876), a peer gm worker (pid 2347066) and a Claude session (pid 1998). None was stopped. The window ended at 09:33:33 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set (/tmp/bt/r101-witnesses.sh) did not start, so this record claims no witness result for the window.
+
+Push. None. origin main stays at 36dfe62; ae07edd remains local. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear on the same sample; then run the witness set under timeout and push once if every witness passes.
+
+Note on earlier probe runs. The ASTC probe (Round 99, 36dfe62) and the weight fit (Round 100, ae07edd) ran their GPU readbacks outside a clear window, although the reopen condition written for item 2 asked for a clear window. Their witnesses and red checks passed, and their numbers are recorded as measurements from an ungated run. The Phase B witnesses for them (Round 100, 36dfe62) ran in a clear window.
