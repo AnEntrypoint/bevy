@@ -4462,3 +4462,15 @@ Not run. The SwiftShader readback: scripts/check-astc-gpu.cjs (texture mode, one
 Reopen. Item 2, the readback: in a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs.cjs reads clear, run node scripts/check-astc-gpu.cjs texture once under timeout, then commit the driver and page and push. The tail layout: replace assumption A1 once the ASTC spec text or a conformant encoder's output for a one-value trit tail is available, and rerun the fixture witness and the cache diagnostic.
 
 Commit: local only, as lanmower, no trailers. Not pushed.
+
+## Round 91 Phase A: the ASTC readback as the cache check (witness and red check, no window)
+
+Files: scripts/check-astc-gpu.cjs (driver: texture, analyse and selftest modes) and scripts/browser/readback-astc.html (page). The driver's FLAGS array is the flag list recorded in the 1804a12 ledger line (--headless=new --no-sandbox --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist --no-first-run --disable-background-networking --disable-component-update --disable-default-apps --disable-sync, plus --user-data-dir under target/readback/profile-astc). The page requests COMPRESSED_RGBA_ASTC_4x4 (0x93b0) and WEBGL_compressed_texture_astc, uploads a void-extent block (144,76,8, alpha 255) as a GPU fixture, then uploads the 1024 by 1024 ASTC level 0 of the cache texture and posts the readPixels output to the driver. The driver stops the Chromium process tree it started, by PID, when the result arrives.
+
+Witness: node scripts/check-astc-gpu.cjs selftest, with no browser. Eight checks, ALL PASS, exit 0: the page's ASTC_4X4 constant is 0x93b0; the page's fixture block is 16 bytes and decodes through astc-decode to 144,76,8,255 on all 16 texels; fixtureOk rejects one wrong channel; PSNR of identical images is infinite; PSNR of a one-level offset is 10 log10(255^2) = 48.13 dB; mismatchCount counts one changed texel; decodeAll fills the 1024 by 1024 image with the fixture colour, 0 errors. The first selftest run failed on a bug in the check itself (adding 1 to alpha 255 wraps to 0); the check was changed to a one-level offset, not the driver.
+
+Red check: a dot-file mutant (scripts/.check-astc-gpu.mutant.cjs) with the PSNR denominator doubled was run through selftest. It printed one FAIL (the one-level offset check) and exited 1 (DETECTED). The mutant was deleted, cmp matched the saved driver copy (RESTORED_IDENTICAL), and git status showed only the two new files.
+
+Unchanged from Round 90: the CPU decoder against the RGBA8 cache (analyse mode, no browser) gives R 62.81, G 62.29, B 5.47, A infinite dB. The GPU readback has not run yet; it is Phase B.
+
+Commit: local only, as lanmower, no trailers. Not pushed in Phase A.
