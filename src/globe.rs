@@ -664,6 +664,8 @@ pub fn provenance() -> BTreeMap<&'static str, &'static str> {
 
 #[cfg(test)]
 mod tests {
+    const BAKED_HEIGHT_TOLERANCE_M: f64 = 1e-9;
+
     use super::*;
 
     fn globe() -> GlobeWorld {
@@ -821,6 +823,28 @@ mod tests {
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "reliefScale elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn baked_height_field_matches_the_spoint_loader() {
+        let artifact: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield.json")).unwrap();
+        let points: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-points.json")).unwrap();
+        let field = crate::height::baked::BakedHeightField::from_json(&artifact).unwrap();
+        let mut worst = 0.0_f64;
+        for sample in points["samples"].as_array().unwrap() {
+            let (x, z, expected) = (sample[0].as_f64().unwrap(), sample[1].as_f64().unwrap(), sample[2].as_f64().unwrap());
+            worst = worst.max((field.height_at_local(x, z) - expected).abs());
+        }
+        assert!(worst <= BAKED_HEIGHT_TOLERANCE_M, "baked height differs from spoint by up to {worst} m, bound {BAKED_HEIGHT_TOLERANCE_M} m");
+    }
+
+    #[test]
+    fn baked_height_field_refuses_a_truncated_artifact_like_spoint() {
+        let short: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-short.json")).unwrap();
+        let points: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-points.json")).unwrap();
+        let refusal = crate::height::baked::BakedHeightField::from_json(&short).err().expect("truncated artifact accepted");
+        let spoint = points["refusalShort"].as_str().unwrap();
+        assert!(spoint.ends_with(&refusal), "refusal {refusal:?} is not spoint's {spoint:?}");
     }
 
     #[test]

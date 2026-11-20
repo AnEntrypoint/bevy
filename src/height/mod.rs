@@ -1,3 +1,5 @@
+#[cfg(test)]
+pub(crate) mod baked;
 mod anchor;
 mod height_spec;
 mod ops_jsgen;
