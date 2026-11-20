@@ -4328,3 +4328,17 @@ The texture readback ran once in the window (job r86-phaseb, witness etc2-readba
 
 Red check: the old denominator (samples / 4) was put back in the driver. The analyse output printed 22.75 / 30.32 / 22.47 dB and 262144 texels, the wrong numbers. The file was restored with cmp (cmp-restored), and the analyse output returned to 28.77 / 36.34 / 28.49 dB.
 
+
+## Round 86 Phase B: the separate-browser readback and the witness set (record)
+
+Readings. Pre-check vmstat 1 2 second sample before the job: si 36, so 0. Window job readings (every 30 s): 04:44:29 si 260, so 216, load 1.59, gate open, heavy BUSY (a renderer of another project's Chromium, pid 2088866, 20.8% CPU; not stopped); 04:45:00 si 964, so 14320, gate closed, heavy BUSY (a Claude session, pid 2356, 22%; not stopped); 04:45:29 si 18856, so 0, gate closed, heavy clear; 04:45:59 si 2784, so 0, gate closed, heavy clear; 04:46:30 si 280, so 0, gate open, heavy BUSY (gm-core worker pid 2102064, 99%, another project's; not stopped); 04:46:59 si 12, so 3984, gate closed, heavy clear; 04:47:29 si 300, so 41404, gate closed, heavy clear; 04:48:00 si 544, so 0, load 1.75, gate open, heavy clear, 387 s remaining, GATE-CLEAR.
+
+Witnesses, each once, from the clear sample at 04:48:00: etc2-readback-texture rc=0, wall 4.3 s (Chromium pid 2104502, tree 8, leftover 0, page wall 1.0 s); the printed numbers are the corrected ones in the commit above. etc2-readback-fixture rc=0, wall 3.8 s (Chromium pid 2104703, tree 8, leftover 0, page wall 0.7 s), ok 16 of 16 texels. check-texel-decode rc=0, wall 1.7 s, 8 of 8. check-etc2-second rc=0, wall 1.9 s, 8 of 8. check-pair-window rc=0, wall 0.2 s, 6 of 6. check-window-job rc=0, wall 15.7 s, 10 of 10. Set overall 0 at 04:48:27.
+
+Browser: Chromium 155.0.8059.39 under SwiftShader (renderer ANGLE, Vulkan 1.3, SwiftShader Device), with the flags recorded in the Round 86 Phase A line. Each run started its own browser under target/readback/profile-<case> and was stopped by PID; neither left a process.
+
+Result. The separate software GL decodes the flat ETC2 block to the expected colour (fixture). For the cache texture value.17c7bd864f7f18268f, level 0 (1024 x 1024), the readback against the RGBA8 cache has RGB PSNR 28.77 / 36.34 / 28.49 dB and alpha exact. The readback equals the first decoder on all 1048576 texels (0 differ). So the side the readback agrees with is the decoder reading of the spec, and the cache is the side that disagrees at the blue top end. The cache line is OPEN at a minimum of 28.49 dB against the unchanged 35 dB bar.
+
+Caveat on independence: SwiftShader is a conformant GL ES implementation, separate from my code. The first and second decoders come from one recollection of the spec, so they are not independent of each other. The readback agreeing with both is evidence that the decoder reading is correct for the ETC2 blocks in this cache, but it is one implementation, not the spec text. Reopen the cache question only with the cache's encoder configuration or a second GPU decode.
+
+Longest step: the wait for the clear sample, about 4 min from the first reading (04:44:29) to GATE-CLEAR (04:48:00). Nothing was stopped by this run; the busy processes are another project's renderer, a Claude session and another project's gm-core worker.
