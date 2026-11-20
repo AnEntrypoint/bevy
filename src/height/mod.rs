@@ -4,6 +4,7 @@ pub(crate) mod planet_frame;
 mod anchor;
 mod height_spec;
 pub(crate) mod ops_jsgen;
+pub(crate) mod placement;
 mod planet;
 
 pub use height_spec::{HashVersion, MAX_TERRAIN_CARVES};
