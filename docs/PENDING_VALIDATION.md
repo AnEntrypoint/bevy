@@ -4179,3 +4179,29 @@ What changed:
 Red check: the wrapper's window was hard-coded to 780 s (the old value). The witness exited 1 with three FAILs: the window constant, the latest start, and the 500 s budget case. The wrapper was restored with `cmp`, and the witness exited 0 with 6 of 6 ok.
 
 No window was used in Phase A. The window-job witness and the pair-budget witness are unchanged. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 83 Phase B: the pair-window witnesses on the clear sample (record)
+
+Run: `scripts/window-job.sh -- bash /tmp/bt/r83-witnesses.sh` at commit 03bc1a7, with the committed defaults (window 600 s, interval 30 s, gate 1000 KB/s, load limit 4, `scripts/heavy-jobs.cjs` at 495fff6, unchanged in HEAD). The witness script ran `check-pair-window.cjs`, `check-pair-budget.cjs` and `check-window-job.cjs`, once each.
+
+Readings, verbatim from the job log `target/witness/window-job.log` (every reading in the window):
+
+reading 03:52:02 si=7420 so=4728 load1=1.12 gate=closed heavy=clear remainS=598 HEAVY_JOBS clear
+reading 03:52:33 si=956 so=3808 load1=1.35 gate=closed heavy=clear remainS=567 HEAVY_JOBS clear
+reading 03:53:02 si=296 so=0 load1=1.22 gate=open heavy=clear remainS=538 HEAVY_JOBS clear
+GATE-CLEAR 03:53:02 remainS=538
+WITNESS check-pair-window rc=0 wall=0.2s ok=6 fail=0
+WITNESS check-pair-budget rc=0 wall=0.0s ok=17 fail=0
+WITNESS check-window-job rc=0 wall=17.3s ok=10 fail=0
+WITNESS rc=0 03:53:19
+END 03:53:19 overall=0
+
+The first two samples closed the gate on swap-in and swap-out (7420 and 4728 KB/s, then 956 and 3808 KB/s). The third sample is the gate reading: swap-in 296, swap-out 0, load 1.22, heavy clear, 538 s remaining. The witnesses started at that sample.
+
+The `WITNESS rc=0 03:53:19` line is the witness script's combined status, 0 only when all three pass.
+
+Wall times: check-pair-window 0.2 s; check-pair-budget under 0.05 s (shown as 0.0 s); check-window-job 17.3 s; the whole job 17 s.
+
+Process check: the only process above 20% CPU in top at the end was a gm-core worker started with `--handshake` (pid 1002562), which is exempt. No process of mine remained, and no peer process was stopped.
+
+Docs only: no red check applies to this record.
