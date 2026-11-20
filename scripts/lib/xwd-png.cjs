@@ -41,6 +41,12 @@ function encodePng(width, height, rgb) {
   ]);
 }
 
+function shiftOf(mask) {
+  let shift = 0;
+  while (mask && !((mask >>> shift) & 1)) shift += 1;
+  return shift;
+}
+
 function readXwd(buffer) {
   const field = (index) => buffer.readUInt32BE(index * 4);
   const headerSize = field(0);
@@ -51,27 +57,23 @@ function readXwd(buffer) {
   const byteOrder = field(7);
   const bitsPerPixel = field(11);
   const bytesPerLine = field(12);
-  const redMask = field(14);
-  const greenMask = field(15);
-  const blueMask = field(16);
-  const colormapEntries = field(19);
-  const ncolors = field(20);
-  if (bitsPerPixel !== 32) throw new Error('unsupported bits per pixel: ' + bitsPerPixel);
+  const masks = [field(14), field(15), field(16)];
+  const ncolors = field(19);
+  if (bitsPerPixel !== 24 && bitsPerPixel !== 32) throw new Error('unsupported bits per pixel: ' + bitsPerPixel);
+  const bytesPerPixel = bitsPerPixel / 8;
   const pixels = headerSize + ncolors * 12;
-  const shiftOf = (mask) => { let s = 0; while (mask && !((mask >>> s) & 1)) s += 1; return s; };
-  const shifts = [shiftOf(redMask), shiftOf(greenMask), shiftOf(blueMask)];
-  const masks = [redMask, greenMask, blueMask];
+  const shifts = masks.map(shiftOf);
   const rgb = Buffer.alloc(width * height * 3);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const at = pixels + y * bytesPerLine + x * 4;
-      const value = byteOrder === 0 ? buffer.readUInt32LE(at) : buffer.readUInt32BE(at);
+      const at = pixels + y * bytesPerLine + x * bytesPerPixel;
+      const value = byteOrder === 0 ? buffer.readUIntLE(at, bytesPerPixel) : buffer.readUIntBE(at, bytesPerPixel);
       for (let c = 0; c < 3; c += 1) {
         rgb[(y * width + x) * 3 + c] = ((value & masks[c]) >>> shifts[c]) & 0xff;
       }
     }
   }
-  return { width, height, rgb, colormapEntries, ncolors };
+  return { width, height, rgb };
 }
 
 module.exports = { encodePng, readXwd, crc32 };
