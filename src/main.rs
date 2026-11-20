@@ -5,6 +5,7 @@ mod height;
 mod hitscan;
 mod character;
 mod player_bodies;
+mod hud;
 mod terrain_physics;
 mod terrain_stream;
 mod globe;

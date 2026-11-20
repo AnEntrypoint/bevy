@@ -1,0 +1,1027 @@
+{
+  "spoint": "5f43c86c",
+  "now": 100000,
+  "combat": {
+    "magazineSize": 30,
+    "reloadTime": 2000,
+    "spawnInvulnMs": 1500
+  },
+  "cases": [
+    {
+      "name": "idle",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {}
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "hit-marker-rtt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 40,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "hitMarkerTime": 99900
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": true,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "hit-marker-expired",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "hitMarkerTime": 99840
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "headshot-marker",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "headshotMarkerTime": 99800
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitColor": "#ffcc33",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": true,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "kill-multi-rtt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 300,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 99000,
+          "streak": 4
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "MULTI KILL",
+        "killOpacity": "1",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": true
+        }
+      }
+    },
+    {
+      "name": "kill-triple-expired",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 98400,
+          "streak": 3
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "kill-double",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 99700,
+          "streak": 2
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "DOUBLE KILL",
+        "killOpacity": "1",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": true
+        }
+      }
+    },
+    {
+      "name": "kill-single",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 99900,
+          "streak": 1
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "KILL",
+        "killOpacity": "1",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": true
+        }
+      }
+    },
+    {
+      "name": "recoil-on",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "lastShootTime": 99900
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1.6)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "recoil-off",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "lastShootTime": 99800
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "dmg-dealt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "dmgDealtTime": 99800,
+          "lastDamageDealt": 25
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "+25",
+        "dmgDealtOpacity": "1",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "dmg-dealt-expired",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "dmgDealtTime": 99400,
+          "lastDamageDealt": 25
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "dmg-taken-low-hp",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 25,
+        "onGround": true,
+        "tps": {
+          "lastHitTime": 99700,
+          "lastDamageTaken": 12
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "-12",
+        "dmgTakenOpacity": "1",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.1490990010630236",
+        "punch": [],
+        "ui": {
+          "hp": 25,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "dmg-flash",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "lastHitTime": 99900,
+          "lastDamageTaken": 12
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "-12",
+        "dmgTakenOpacity": "1",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.32",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "shield-on",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "spawnShieldUntil": 101000
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0.39999999999999997",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "shield-off",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {}
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "reload-half",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "reloading": true,
+          "reloadEndTime": 100500,
+          "ammo": 0
+        }
+      },
+      "outputs": {
+        "ammoStat": "0/30",
+        "reloadingStat": true,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 0,
+          "magazine": 30,
+          "reloading": true,
+          "reloadProgress": 75,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "boost",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "boost": {
+            "expiresAt": 102500,
+            "fireRate": 2
+          }
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 3,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "fall-punch",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "_wasOnGround": false,
+          "_fallVy": -10
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [
+          0.18
+        ],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "low-hp-vignette",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 10,
+        "onGround": true,
+        "tps": {}
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.1490990010630236",
+        "punch": [],
+        "ui": {
+          "hp": 10,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "ammo-low",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "ammo": 3
+        }
+      },
+      "outputs": {
+        "ammoStat": "3/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 3,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "hit-marker-rtt-pad",
+      "inputs": {
+        "now": 100000,
+        "rtt": 40,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "hitMarkerTime": 99830
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": true,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "kill-confirm-cap",
+      "inputs": {
+        "now": 100000,
+        "rtt": 2000,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 97700,
+          "streak": 1
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    },
+    {
+      "name": "kill-triple",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "killTime": 99700,
+          "streak": 3
+        }
+      },
+      "outputs": {
+        "ammoStat": "30/30",
+        "reloadingStat": false,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "TRIPLE KILL",
+        "killOpacity": "1",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 30,
+          "magazine": 30,
+          "reloading": false,
+          "reloadProgress": 0,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": true
+        }
+      }
+    },
+    {
+      "name": "reload-round-up",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "onGround": true,
+        "tps": {
+          "reloading": true,
+          "reloadEndTime": 101003,
+          "ammo": 0
+        }
+      },
+      "outputs": {
+        "ammoStat": "0/30",
+        "reloadingStat": true,
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitColor": "#ffffff",
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0",
+        "punch": [],
+        "ui": {
+          "hp": 100,
+          "ammo": 0,
+          "magazine": 30,
+          "reloading": true,
+          "reloadProgress": 50,
+          "boostSec": 0,
+          "kills": 0,
+          "hitMarkerActive": false,
+          "headshot": false,
+          "killConfirm": false
+        }
+      }
+    }
+  ],
+  "spointStatusBefore": "",
+  "spointStatusAfter": ""
+}
