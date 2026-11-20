@@ -6006,3 +6006,73 @@ Result: WINDOW-ENDED-WITHOUT-CLEAR at 15:13:15 local (13:13:15 UTC). The window 
 
 Not run: the witnesses and red checks of this stack (class, code, records, constant, readback, encoder, block) and the readback measurement. Their Phase A runs are recorded above. Nothing pushed: origin/main is c56ee46.
 
+
+## Round 119 Phase A: the gate's classification, with its measurement and decision (witness and red check; not pushed)
+
+Measurement (scripts/check-heavy-jobs-durations.cjs, reads target/witness/window-gate-r116.log, -r117.log and -r118.log; 80 readings, 78 busy; PID not applicable, read-only). Readings are 30 s apart, so a run of one reading lasted between 1 and 60 s, and a run of two or more lasted at least 30 s. Output:
+
+```
+readings 80 (busy 78)
+   compile | sustained (2 readings): 1 runs
+   compile | sustained (8 readings): 2 runs
+   compile | transient (one reading): 55 runs
+   hot | sustained (2 readings): 10 runs
+   hot | sustained (3 readings): 4 runs
+   hot | sustained (4 readings): 3 runs
+   hot | sustained (5 readings): 10 runs
+   hot | transient (one reading): 32 runs
+   hot+chromium-renderer | sustained (5 readings): 1 runs
+
+   sustained compile pid=7062 from 14:21:51 (window-gate-r116.log) for about 240 s
+   sustained compile pid=7063 from 14:21:51 (window-gate-r116.log) for about 240 s
+   sustained hot pid=27886 from 14:33:02 (window-gate-r117.log) for about 150 s
+   sustained hot pid=27886 from 14:37:03 (window-gate-r117.log) for about 150 s
+   sustained hot+chromium-renderer pid=28947 from 14:33:02 (window-gate-r117.log) for about 150 s
+   sustained hot pid=32683 from 14:36:02 (window-gate-r117.log) for about 150 s
+   sustained hot pid=2525 from 14:53:17 (window-gate-r118.log) for about 150 s
+   sustained hot pid=61480 from 14:55:48 (window-gate-r118.log) for about 150 s
+   sustained hot pid=62881 from 14:58:48 (window-gate-r118.log) for about 150 s
+   sustained hot pid=65638 from 15:02:17 (window-gate-r118.log) for about 150 s
+   sustained hot pid=67691 from 15:04:48 (window-gate-r118.log) for about 150 s
+   sustained hot pid=70135 from 15:07:17 (window-gate-r118.log) for about 150 s
+   sustained hot pid=71704 from 15:10:48 (window-gate-r118.log) for about 150 s
+   sustained hot pid=2525 from 14:36:02 (window-gate-r117.log) for about 120 s
+   sustained hot pid=2525 from 14:39:02 (window-gate-r117.log) for about 120 s
+   sustained hot pid=2525 from 14:59:17 (window-gate-r118.log) for about 120 s
+   sustained hot pid=2525 from 14:17:21 (window-gate-r116.log) for about 90 s
+   sustained hot pid=2525 from 14:19:50 (window-gate-r116.log) for about 90 s
+   sustained hot pid=2525 from 14:25:50 (window-gate-r116.log) for about 90 s
+   sustained hot pid=2525 from 15:08:47 (window-gate-r118.log) for about 90 s
+   sustained compile pid=7827 from 14:22:20 (window-gate-r116.log) for about 60 s
+   sustained hot pid=12593 from 14:26:21 (window-gate-r116.log) for about 60 s
+   sustained hot pid=12679 from 14:26:21 (window-gate-r116.log) for about 60 s
+   sustained hot pid=12744 from 14:26:21 (window-gate-r116.log) for about 60 s
+   sustained hot pid=12812 from 14:26:21 (window-gate-r116.log) for about 60 s
+   sustained hot pid=2525 from 14:31:03 (window-gate-r117.log) for about 60 s
+   sustained hot pid=19870 from 14:31:03 (window-gate-r117.log) for about 60 s
+   sustained hot pid=65502 from 15:02:17 (window-gate-r118.log) for about 60 s
+   sustained hot pid=67580 from 15:04:48 (window-gate-r118.log) for about 60 s
+   sustained hot pid=67635 from 15:04:48 (window-gate-r118.log) for about 60 s
+   sustained hot pid=70048 from 15:07:17 (window-gate-r118.log) for about 60 s
+```
+
+What the measurement shows.
+- compile: 55 of 58 compile runs lasted one reading, so most compile matches were short. Three runs were sustained: cmake pid 7062 (and its sibling 7063) for about 240 s, and pid 7827 for about 60 s. The logs carry no CPU figure for compile lines, so whether a compile was using CPU at each reading is not in the data.
+- hot: 32 runs lasted one reading; 27 lasted two to five readings. The one that recurs is oscraft's gm-core worker, pid 2525, matched on 11 readings across the three windows at 70 to 100% CPU. It is sustained load, not a transient.
+- chromium-renderer: no match from the RSS rule alone. Every renderer match was also above the CPU limit (hot+chromium-renderer, one run, pid 28947).
+
+Decision and reason.
+- hot: a process counts only if its CPU is above 20 in every frame of the gate's top call (the two frames top -n 2 -d 1 gives, one second apart). Reason: a one-reading match cannot be resolved below 30 s from the logs, so the rule checks the only window the gate takes. The change drops a process that was above the limit in one frame only.
+- compile (and cargo test): counts only while CPU is above 5 in every frame. Reason: an idle or blocked compiler is not compiling; 5 is a judgment, the logs carry no CPU for compile lines, so the floor is not measured.
+- chromium-renderer: needs RSS above 1 GiB and CPU above 20 in every frame. Reason: no measured match was idle, and an idle big renderer is not contention.
+- Not changed: the owner scope. The request's rule is the duration and CPU rule, and the measurement shows the recurring holder (pid 2525) is sustained load that a duration rule keeps as busy. Owner scope is the next decision, if the owner says so. Not changed either: scripts/heavy-jobs.cjs, whose top call is still -n 2 -d 1, so the sample window is one second. A longer window would change that script, which is out of scope here.
+- Limit. With a one-second window, a compile or hot process lasting 30 s or more still counts. The new rule removes the one-frame spikes and idle compilers, which the measurement shows are part of the transient matches; it does not remove sustained peer load.
+
+Witness (CPU only). scripts/check-heavy-jobs-classify-witness.cjs, nine checks on synthetic ps rows and two top frames: ok parseTop keeps every frame in order; ok a node process above 20% in one frame only is not busy (wrong output: hot for pid 11); ok an app above 20% in one frame only is not busy (wrong output: hot for pid 14); ok an idle zig build is not reported as compiling (wrong output: compile for pid 10); ok a cmake above the compile floor in both frames is reported as compile; ok an idle renderer above 1 GiB is not busy (wrong output: chromium-renderer for pid 12); ok a process above 20% in both frames is hot; ok an idle cargo test is not reported (wrong output: test-check for pid 17); ok a cargo test above the compile floor in both frames is reported. ALL PASS 9 checks, rc 0 (PID 87481).
+
+Red checks (mutation in place, witness under timeout, restore from /tmp copy, cmp):
+- every-frame rule changed to some-frame: PID 87533, FAIL 2 of 9 (pid 11 hot; pid 14 hot), DETECTED, RESTORED_IDENTICAL.
+- compile CPU floor removed (if true): PID 87554, FAIL 1 of 9 (pid 10 compile), DETECTED, RESTORED_IDENTICAL.
+- git status after the red checks: only scripts/lib/heavy-jobs.cjs modified (the change), plus the two new scripts.
+
+The gate's own verdict on this checkout (scripts/heavy-jobs.cjs with the new library) reads busy on pid 2525 at 99% CPU, which is sustained, so it is the expected verdict.
