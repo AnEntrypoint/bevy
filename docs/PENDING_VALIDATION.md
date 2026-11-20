@@ -4142,3 +4142,26 @@ Witnesses: `check-pair-budget.cjs` 17 of 17 ok, exit 0. `check-window-job.cjs` 1
 Red check: `pairStartAllowedAt` ignored the elapsed time (`canStartPair(PAIR_WINDOW_S, pairS)`, the bug the ruling removes). `check-pair-budget.cjs` exited 1 with `FAIL a start at 800 s into the 1200 s window is refused` and `FAIL a start at 481 s into the window is refused`. The library was restored with `cmp`, and the witness exited 0 with 17 of 17 ok.
 
 No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 82 Phase B: the start-window witnesses on the clear sample (record)
+
+Run: `scripts/window-job.sh -- bash /tmp/bt/r82-witnesses.sh` at commit c7e3158, with the committed defaults (window 600 s, interval 30 s, gate 1000 KB/s, load limit 4, `scripts/heavy-jobs.cjs` at 495fff6, unchanged in HEAD). The witness script ran `scripts/check-pair-budget.cjs` and `scripts/check-window-job.cjs`, once each. The start-window cases live in those two files (17 and 10 cases); no third witness file was created.
+
+Readings, verbatim from the job log `target/witness/window-job.log` (every reading in the window):
+
+reading 03:42:58 si=512 so=0 load1=2.02 gate=open heavy=clear remainS=598 HEAVY_JOBS clear
+GATE-CLEAR 03:42:58 remainS=598
+WITNESS check-pair-budget rc=0 wall=0.0s ok=17 fail=0
+WITNESS check-window-job rc=0 wall=15.3s ok=10 fail=0
+WITNESS rc=1 03:43:13
+END 03:43:13 overall=0
+
+Note: the `WITNESS rc=0 03:43:13` line in the job log is the window job's own line for the witness script, which ran both witnesses; its `rc=0` is the overall status of the two (the script's exit is 0 only when both pass).
+
+The gate reading is the first `vmstat 1 2` sample: swap-in 512, swap-out 0, load 2.02, heavy clear, 598 s remaining. The first sample cleared the gate, so the witnesses started at once.
+
+Wall times: check-pair-budget under 0.05 s (shown as 0.0 s); check-window-job 15.3 s; the whole job 15 s.
+
+No process of mine remained after the window, and no peer process was stopped.
+
+Docs only: no red check applies to this record.
