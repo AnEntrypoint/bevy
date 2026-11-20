@@ -1,0 +1,134 @@
+{
+  "spoint": "5f43c86c",
+  "transfer": {
+    "tiltRad": 0.02,
+    "translation": [
+      0.5,
+      0,
+      -0.25
+    ]
+  },
+  "counts": {
+    "characters": 3,
+    "groundedUpwardClamped": 2
+  },
+  "cases": [
+    {
+      "name": "grounded-floor",
+      "before": {
+        "p": [
+          0,
+          1.299999952,
+          0
+        ],
+        "v": [
+          0,
+          0.0005,
+          0
+        ],
+        "onGround": true,
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "walls": 0
+      },
+      "after": {
+        "p": [
+          0.5,
+          1.299739957,
+          -0.224001735
+        ],
+        "v": [
+          0,
+          0,
+          0.000009999
+        ],
+        "onGround": true,
+        "normal": [
+          0,
+          0.999800007,
+          0.019998667
+        ],
+        "walls": 0
+      }
+    },
+    {
+      "name": "grounded-tilt-bound",
+      "before": {
+        "p": [
+          -10,
+          1.299999952,
+          0
+        ],
+        "v": [
+          1,
+          0.017000001,
+          0
+        ],
+        "onGround": true,
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "walls": 0
+      },
+      "after": {
+        "p": [
+          -9.5,
+          1.299739957,
+          -0.224001735
+        ],
+        "v": [
+          1,
+          0,
+          0.000339977
+        ],
+        "onGround": true,
+        "normal": [
+          0,
+          0.999800007,
+          0.019998667
+        ],
+        "walls": 0
+      }
+    },
+    {
+      "name": "airborne",
+      "before": {
+        "p": [
+          1,
+          2.95912528,
+          0
+        ],
+        "v": [
+          1,
+          2,
+          0.5
+        ],
+        "onGround": false,
+        "normal": null,
+        "walls": 0
+      },
+      "after": {
+        "p": [
+          1.5,
+          2.958533525,
+          -0.190821439
+        ],
+        "v": [
+          1,
+          1.989600658,
+          0.539897323
+        ],
+        "onGround": false,
+        "normal": null,
+        "walls": 0
+      }
+    }
+  ],
+  "spointStatusBefore": "",
+  "spointStatusAfter": ""
+}

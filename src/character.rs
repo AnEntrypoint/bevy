@@ -118,6 +118,48 @@ impl CharacterController {
     }
 }
 
+const TILT_BOUND_MARGIN: f64 = 1.1;
+const TILT_BOUND_FLOOR_MPS: f64 = 1e-3;
+
+pub trait ChartTransfer {
+    fn point(&self, p: [f64; 3]) -> [f64; 3];
+    fn vec(&self, v: [f64; 3]) -> [f64; 3];
+    fn tilt_rad(&self) -> f64;
+}
+
+pub fn clamp_tilt_induced_upward<T: ChartTransfer>(transfer: &T, v: &mut [f64; 3]) -> bool {
+    if !(v[1] > 0.0) {
+        return false;
+    }
+    let bound = v[0].hypot(v[2]) * transfer.tilt_rad() * TILT_BOUND_MARGIN + TILT_BOUND_FLOOR_MPS;
+    if v[1] > bound {
+        return false;
+    }
+    v[1] = 0.0;
+    true
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChartTransferCounts {
+    pub characters: usize,
+    pub grounded_upward_clamped: usize,
+}
+
+pub fn apply_chart_transfer<T: ChartTransfer>(characters: &mut [CharacterController], transfer: &T) -> ChartTransferCounts {
+    let mut grounded_upward_clamped = 0;
+    for ch in characters.iter_mut() {
+        ch.position = transfer.point(ch.position);
+        let mut v = transfer.vec(ch.velocity);
+        if ch.on_ground && clamp_tilt_induced_upward(transfer, &mut v) {
+            grounded_upward_clamped += 1;
+        }
+        ch.velocity = v;
+        ch.ground_normal = ch.ground_normal.map(|n| transfer.vec(n));
+        ch.walls.clear();
+    }
+    ChartTransferCounts { characters: characters.len(), grounded_upward_clamped }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -233,6 +275,58 @@ mod tests {
                         })
                 })
                 .unwrap()
+        }
+    }
+
+    struct FixedTransfer {
+        tilt_rad: f64,
+        translation: [f64; 3],
+    }
+
+    impl ChartTransfer for FixedTransfer {
+        fn point(&self, p: [f64; 3]) -> [f64; 3] {
+            let rotated = self.vec(p);
+            [rotated[0] + self.translation[0], rotated[1] + self.translation[1], rotated[2] + self.translation[2]]
+        }
+
+        fn vec(&self, v: [f64; 3]) -> [f64; 3] {
+            let (s, c) = self.tilt_rad.sin_cos();
+            [v[0], c * v[1] - s * v[2], s * v[1] + c * v[2]]
+        }
+
+        fn tilt_rad(&self) -> f64 {
+            self.tilt_rad
+        }
+    }
+
+    #[test]
+    fn chart_transfer_matches_spoint_for_fixed_transfer() {
+        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-chart-transfer.json")).unwrap();
+        let transfer = FixedTransfer { tilt_rad: fixture["transfer"]["tiltRad"].as_f64().unwrap(), translation: vec3(&fixture["transfer"]["translation"]) };
+        let cases = fixture["cases"].as_array().unwrap();
+        let mut characters: Vec<CharacterController> = cases
+            .iter()
+            .map(|c| {
+                let mut ch = CharacterController::new(vec3(&c["before"]["p"]), 1.3);
+                ch.velocity = vec3(&c["before"]["v"]);
+                ch.on_ground = c["before"]["onGround"].as_bool().unwrap();
+                ch.ground_normal = c["before"]["normal"].as_array().map(|_| vec3(&c["before"]["normal"]));
+                ch
+            })
+            .collect();
+        let counts = apply_chart_transfer(&mut characters, &transfer);
+        assert_eq!(counts.characters, fixture["counts"]["characters"].as_u64().unwrap() as usize);
+        assert_eq!(counts.grounded_upward_clamped, fixture["counts"]["groundedUpwardClamped"].as_u64().unwrap() as usize);
+        for (ch, c) in characters.iter().zip(cases) {
+            let name = c["name"].as_str().unwrap();
+            assert!(distance(ch.position, vec3(&c["after"]["p"])) <= 1e-6, "{name}: position {:?}", ch.position);
+            assert!(distance(ch.velocity, vec3(&c["after"]["v"])) <= 1e-6, "{name}: velocity {:?}", ch.velocity);
+            match (ch.ground_normal, c["after"]["normal"].as_array()) {
+                (Some(n), Some(_)) => assert!(distance(n, vec3(&c["after"]["normal"])) <= 1e-6, "{name}: normal {n:?}"),
+                (None, None) => {}
+                (got, want) => panic!("{name}: ground normal {got:?} against spoint {want:?}"),
+            }
+            assert!(ch.walls.is_empty(), "{name}: wall planes");
         }
     }
 
