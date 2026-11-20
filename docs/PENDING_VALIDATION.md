@@ -4474,3 +4474,21 @@ Red check: a dot-file mutant (scripts/.check-astc-gpu.mutant.cjs) with the PSNR 
 Unchanged from Round 90: the CPU decoder against the RGBA8 cache (analyse mode, no browser) gives R 62.81, G 62.29, B 5.47, A infinite dB. The GPU readback has not run yet; it is Phase B.
 
 Commit: local only, as lanmower, no trailers. Not pushed in Phase A.
+
+## Round 91 Phase B: the ASTC readback window (cleared, witnesses passed)
+
+Readings. vmstat 1 2 first: the first line (average since boot) si 5219, so 7217; the gate sample si 1584, so 0 (closed on swap-in above 1000 KB/s, not on so). heavy-jobs.cjs matched 495fff6 (cmp, zero diff) and read busy with six peer processes (playwriter, Chromium GPU and renderer processes, standalone-dump, witness-shell). None was stopped.
+
+Window: scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, LOAD_MAX at the script default 4, log target/witness/window-gate-r91.log. One reading every 30 s (si / so / load1 / gate / heavy): 06:03:26 540/0/13.12 closed busy; 06:03:55 364/0/15.02 closed busy; 06:04:26 312/0/16.29 closed clear; 06:04:55 380/5172/10.71 closed busy; 06:05:25 180/0/7.53 closed busy; 06:05:56 76/0/5.48 closed busy; 06:06:25 124/0/4.26 closed busy; 06:06:55 60/0/3.24 open busy; 06:07:26 344/0/3.79 open busy; 06:07:55 1108/0/3.93 closed clear; 06:08:25 2632/0/2.97 closed clear; 06:08:56 132/0/2.51 open clear, GATE-CLEAR with 267 s left.
+
+Witnesses on the 06:08:56 clear sample, each under timeout with PID captured (log target/witness/window-job-r91.log): astc-decode-fixture (node scripts/check-astc-decode.cjs), rc 0, wall 0.3 s, timeout pid 2193994, all 43 checks PASS. readback-selftest (node scripts/check-astc-gpu.cjs selftest), rc 0, wall 0.2 s, timeout pid 2194016, 8 of 8 ok. readback-red-check (bash /tmp/bt/r91-redcheck.sh, the driver PSNR denominator mutant), rc 0, wall 0.2 s, timeout pid 2194038: the mutant printed one FAIL and exited 1 (DETECTED), the driver was restored (RESTORED_IDENTICAL). readback-texture (node scripts/check-astc-gpu.cjs texture), rc 0, wall 9.4 s, timeout pid 2194067, Chromium child pid 2194082, tree 8 processes, outcome done, leftover 0 (the driver stopped the tree by PID). WITNESS-SET overall 0 at 06:09:07.
+
+Readback output. Renderer ANGLE (Google, Vulkan 1.3.0, SwiftShader Device (Subzero)), WebGL 2.0. The GPU fixture (void-extent 144,76,8, alpha 255) decoded on the software GL on 16 of 16 texels. The page's astcListed field reads false and nativeFormats 0 because WebGL2 returns no COMPRESSED_TEXTURE_FORMATS; the uploads succeeded, so the field is a metadata artefact, not a failure. Texture value.17c7bd864f7f18268f, 1024 by 1024 ASTC 4x4 level 0 (1,048,576 bytes): readback vs RGBA8 cache PSNR R/G/B/A 61.62 / 61.00 / 54.6 / infinite dB. CACHE CLEAR at the 35 dB bar, readback min RGB 54.6 dB.
+
+Disagreement, recorded as numbers, not a failed witness. The CPU decoder (scripts/lib/astc-decode.cjs) against the same RGBA8 cache: 62.81 / 62.29 / 5.47 / infinite dB. Readback vs CPU decoder: 842,757 of 1,048,576 texels differ (80.37%). The blue channel is the cause: the GPU's blue matches the cache at 54.6 dB, the CPU decoder's blue does not. This points at the one-value partial trit group in the endpoint (assumption A1 in the Round 90 entry), which the GPU decodes differently from the decoder. The decoder is not changed in this stretch.
+
+Result. The ASTC cache is consistent with its RGBA8 reference on the GPU at 54.6 dB min RGB, so the cache's ASTC data is valid. The open item is the CPU decoder's partial-group layout, not the cache.
+
+Reopen of the decoder item: replace A1 with the layout the GPU uses (or the spec text when it is on disk), rerun the fixture witness with a fixture that has a one-value trit tail, and rerun the readback to check the CPU-vs-GPU mismatch falls.
+
+Push: this record and the Phase A commit 2b7ae8f are pushed to origin main once, after every witness passed (rc 0 on all four; the red check's rc 0 is DETECTED).
