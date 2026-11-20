@@ -3,7 +3,7 @@ use bevy::asset::RenderAssetUsages;
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use serde_json::{Map, Value, json};
-use crate::height::Planet;
+use crate::height::{CarveConfig, MAX_TERRAIN_CARVES, Planet};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -22,6 +22,7 @@ pub struct GlobeWorld {
     pub body_altitude: f32,
     pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
+    pub carves: Vec<CarveConfig>,
     pub planet: Arc<Planet>,
 }
 
@@ -44,9 +45,19 @@ impl Default for GlobeWorld {
             body_altitude: 0.5,
             drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
-            planet: Arc::new(Planet::new(DEFAULT_SEED as i32)),
+            carves: Vec::new(),
+            planet: Arc::new(Planet::new(DEFAULT_SEED as i32, &[])),
         }
     }
+}
+
+fn carve_of(value: &Value) -> Option<CarveConfig> {
+    let dir = value.get("dir")?.as_array()?;
+    let dir = [dir.first()?.as_f64()?, dir.get(1)?.as_f64()?, dir.get(2)?.as_f64()?];
+    let inner_m = value.get("innerM")?.as_f64()?;
+    let outer_m = value.get("outerM")?.as_f64()?;
+    let length = dir.iter().map(|component| component * component).sum::<f64>().sqrt();
+    (length > 0.0 && inner_m >= 0.0 && outer_m > inner_m).then_some(CarveConfig { dir, inner_m, outer_m })
 }
 
 #[derive(Component, Clone, Debug)]
@@ -126,8 +137,24 @@ impl GlobeWorld {
         self.radius = self.radius.max(1.0);
         self.stream_radius = self.stream_radius.max(self.radius * self.chunk_span);
         self.chunk_span = self.chunk_span.clamp(0.02, std::f32::consts::PI);
-        if self.seed != seed {
-            self.planet = Arc::new(Planet::new(self.seed as i32));
+        if let Some(carves) = object.get("carves").and_then(Value::as_array) {
+            self.carves = carves
+                .iter()
+                .filter_map(|value| {
+                    let carve = carve_of(value);
+                    if carve.is_none() {
+                        eprintln!("globe: dropping a carve that needs dir, innerM and outerM, with innerM >= 0 and outerM > innerM: {value}");
+                    }
+                    carve
+                })
+                .collect();
+            if self.carves.len() > MAX_TERRAIN_CARVES {
+                eprintln!("globe: {} carves given, only the first {MAX_TERRAIN_CARVES} are used", self.carves.len());
+                self.carves.truncate(MAX_TERRAIN_CARVES);
+            }
+        }
+        if self.seed != seed || object.contains_key("carves") {
+            self.planet = Arc::new(Planet::new(self.seed as i32, &self.carves));
         }
     }
 
@@ -628,6 +655,16 @@ mod tests {
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn carved_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "carves");
+        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "carved elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
     }
 
     #[test]

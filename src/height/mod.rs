@@ -3,7 +3,8 @@ mod height_spec;
 mod ops_jsgen;
 mod planet;
 
-pub use planet::Planet;
+pub use height_spec::MAX_TERRAIN_CARVES;
+pub use planet::{CarveConfig, Planet};
 
 #[cfg(test)]
 mod tests {
@@ -141,7 +142,7 @@ mod tests {
     #[test]
     fn planet_matches_the_spoint_fixture() {
         let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet.json")).unwrap();
-        let planet = Planet::new(fixture["seed"].as_i64().unwrap() as i32);
+        let planet = Planet::new(fixture["seed"].as_i64().unwrap() as i32, &[]);
         let digests: Vec<String> = planet.hpf.iter().map(|face| fnv1a(face)).collect();
         let expected_digests: Vec<String> = fixture["faceDigests"].as_array().unwrap().iter().map(|d| d.as_str().unwrap().to_string()).collect();
         assert_eq!(digests, expected_digests, "seaBias face digests differ from spoint");
