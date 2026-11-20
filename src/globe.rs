@@ -417,13 +417,16 @@ pub fn add_census_systems(app: &mut App) {
     app.add_systems(Update, census_freeze);
 }
 
-fn census_freeze(time: Res<Time<Virtual>>, mut strategy: ResMut<TimeUpdateStrategy>, mut frozen: Local<bool>) {
+fn census_freeze(time: Res<Time<Virtual>>, bodies: Query<&Position, With<GlobeBody>>, mut strategy: ResMut<TimeUpdateStrategy>, mut frozen: Local<bool>) {
     if *frozen || time.elapsed_secs_f64() < CENSUS_FREEZE_S {
         return;
     }
     *strategy = TimeUpdateStrategy::ManualDuration(Duration::ZERO);
     *frozen = true;
     eprintln!("census: simulation frozen at {:.3} s of virtual time", time.elapsed_secs_f64());
+    for position in &bodies {
+        eprintln!("census: body frozen at {:?}", position.0);
+    }
 }
 
 fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<GlobeFocus>, census: Option<Res<CensusMode>>, mut latched: Local<bool>) {
@@ -433,6 +436,9 @@ fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<Glo
     if let Some(position) = bodies.iter().next() {
         focus.0 = position.0;
         *latched = census.is_some();
+        if *latched {
+            eprintln!("census: camera latched at {:?}", focus.0);
+        }
     }
 }
 
