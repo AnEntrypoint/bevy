@@ -6373,3 +6373,5 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Row 161 red check: /tmp/bt/r126-redcheck.sh changes decode_indices(..., false) to (..., true) in src/glb.rs (sequence decode of an index buffer); the test must fail with 'meshopt_views_decode_to_the_spoint_bytes ... FAILED'; the file is restored and cmp must match.
 - Regression: cargo test --bin bevy-jayzee glb:: must pass (the existing glb tests).
 - Counts after Phase A: present 4, present-candidate 1 (161), blocked 32. Open 796.
+
+- Round 126 Phase B, window 17:18 (target/witness/window-job-r126.log): WITNESS-SET overall=0; meshopt-witness rc 0 (1 passed), glb-module-tests rc 0 (8 passed), docs-witness rc 0 (open 796, present 4, blocked 32, candidate 1), meshopt-red-check rc 0 (mutant panicked at glb.rs:770, RESTORED_IDENTICAL, DETECTED). Row 161 is present.
