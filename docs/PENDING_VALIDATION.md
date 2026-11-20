@@ -4205,3 +4205,17 @@ Wall times: check-pair-window 0.2 s; check-pair-budget under 0.05 s (shown as 0.
 Process check: the only process above 20% CPU in top at the end was a gm-core worker started with `--handshake` (pid 1002562), which is exempt. No process of mine remained, and no peer process was stopped.
 
 Docs only: no red check applies to this record.
+
+## Round 84 Phase A: the ETC2 RGBA8 block decoder (cache agreement open)
+
+Added `scripts/lib/texel-decode.cjs`: `decodeEtc2Rgba8Block(block)` takes one 16-byte block and returns 64 bytes of RGBA (row-major, 4x4). The alpha half is EAC (bytes 0 to 7). The colour half is ETC1 individual and differential modes (bytes 8 to 15), with big-endian 32-bit words, the spec's bit fields, and column-major texel indices. A T, H or planar block throws, so no output is ever guessed for one. ASTC 4x4 is not written in this round.
+
+Reference premise, corrected: the per-format files `rgba8-software-<format>` (`neon-wasm-witness-*` and `neon-rows-*`) are load-timing rows and page screenshots under the gitignored `target/`. They hold no decoded texels and are not committed. The pixel reference used is the RGBA8 KTX2 cache (`target/gltf-cache-rgba8`, vkFormat 37), level 0, against the ETC2 cache (vkFormat 151, the same texture set). Only 12 of 61 `value.*` models hold KTX2 images, and those 12 hold the 61 textures.
+
+Witness: `scripts/check-texel-decode.cjs`. Fixtures, 8 of 8 ok: flat index 01, a left and right split, a differential base with zero delta, a negative delta, the flip split, the texel-4 index layout, table 7, and an EAC alpha case. Cache, FAIL: RGB PSNR minimum 25.25 dB across the 12 textures, against the 35 dB bar used by the texel criteria. The bar fails on blue. Red and green calibrate close to identity, but decoded blue 247 maps to a reference of about 254 (173,000 texels), and no bit-field offset or expansion variant removed the gap (search over blue field shifts 9 to 13 and delta shifts 5 to 9, best 29.9 dB). The cause is unresolved. It is either a decoder fault in the blue top end or a cache that does not follow the spec. Reopen: a second, independent decode of one cache texture (a GPU readback or a reference decoder) to decide which side is wrong.
+
+Not validated and not claimed: the cache has no T, H or planar blocks (0 unsupported), so those modes are untested; EAC alpha is untested beyond fixtures, because the cache alpha is constant 255.
+
+Red check: `ETC1_INDEX_TO_MODIFIER` changed from `[2, 3, 1, 0]` to `[0, 1, 2, 3]`. The witness reported 0 of 8 fixtures ok and exited 1. The file was restored and `cmp` matched. The witness then reported 8 of 8 ok, and `git status` showed only the two new files.
+
+No window in Phase A. No cargo. Local commit only, not pushed. The witness exits 1 on the cache check, so this commit must not be pushed until the cache check is resolved.
