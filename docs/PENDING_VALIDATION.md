@@ -5308,3 +5308,128 @@ A CPU-only check was tried first. scripts/lib/astc-decode.cjs unquantEndpoint ov
 
 Status. Item 2 stays open, and its next step is blocked on a clear window. Reopen: a clear window (vmstat second sample under 1000 KB/s both ways, heavy-jobs clear on the same sample), then the per-block repair save and tabulation described above.
 
+
+## Round 108 Phase B: the Round 107 witnesses for afe3744 in the window (cleared, witnesses passed, pushed 31c988e)
+
+Scope. Pushed afe3744 (the endpoint-repair step: endpointRepairs, its witness and red check, and the measurement) and 31c988e (the Round 107 ledger record). The witnessed step is afe3744. Its witness and red check ran in this window (the endpoint-repair witness and the residual classifier witness, each with its red check).
+
+Pre-window. vmstat 1 2 at 09:30:51 UTC: the first line is the average since boot (si 1811, so 3006); the gate sample is si 1452, so 0 (closed: swap-in above 1000 KB/s). heavy-jobs matched bevy commit 495fff6 (cmp, zero diff) and read clear. The window job waited for the gate and did not force it.
+
+Window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r108.log). Readings, local time (UTC is two hours earlier):
+
+reading 11:30:56 si=396 so=0 load1=2.74 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=1;hot pid=2197 cpu=21.8 claude --dangerously-skip-permissio
+reading 11:31:27 si=140 so=0 load1=2.37 gate=open heavy=busy remainS=567 HEAVY_JOBS busy n=1;hot pid=2172 cpu=72.3 /config/.gmnew/versions/0f9e3bb-542
+reading 11:31:56 si=44 so=0 load1=2.24 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=1;hot pid=2172 cpu=89.1 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:32:26 si=28 so=16 load1=2.11 gate=open heavy=busy remainS=508 HEAVY_JOBS busy n=1;hot pid=2172 cpu=99 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:32:57 si=216 so=0 load1=2.47 gate=open heavy=busy remainS=477 HEAVY_JOBS busy n=3;hot pid=2172 cpu=97 /config/.gmnew/versions/0f9e3bb-542/g
+reading 11:33:26 si=416 so=10728 load1=4.15 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=3;hot pid=2172 cpu=86.1 /config/.gmnew/versions/0f9e3
+reading 11:33:56 si=480 so=0 load1=4.39 gate=closed heavy=busy remainS=418 HEAVY_JOBS busy n=3;hot pid=2172 cpu=22.8 /config/.gmnew/versions/0f9e3bb-5
+reading 11:34:27 si=1248 so=48 load1=4.96 gate=closed heavy=busy remainS=387 HEAVY_JOBS busy n=2;hot pid=2172 cpu=69.3 /config/.gmnew/versions/0f9e3bb
+reading 11:34:56 si=572 so=444 load1=4.68 gate=closed heavy=busy remainS=358 HEAVY_JOBS busy n=2;hot pid=2172 cpu=100 /config/.gmnew/versions/0f9e3bb-
+reading 11:35:26 si=500 so=0 load1=4.20 gate=closed heavy=busy remainS=328 HEAVY_JOBS busy n=1;hot pid=2172 cpu=68.3 /config/.gmnew/versions/0f9e3bb-5
+reading 11:35:57 si=276 so=1032 load1=3.38 gate=closed heavy=busy remainS=297 HEAVY_JOBS busy n=1;hot pid=2172 cpu=76.2 /config/.gmnew/versions/0f9e3b
+reading 11:36:26 si=4448 so=748 load1=3.24 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=3;hot pid=2172 cpu=98 /config/.gmnew/versions/0f9e3bb-
+reading 11:36:57 si=9428 so=20 load1=3.98 gate=closed heavy=busy remainS=237 HEAVY_JOBS busy n=6;hot pid=422 cpu=23.8 /lsiopy/bin/python3 /lsiopy/bin/
+reading 11:37:26 si=68 so=0 load1=3.94 gate=open heavy=busy remainS=208 HEAVY_JOBS busy n=2;hot pid=2172 cpu=99 /config/.gmnew/versions/0f9e3bb-542/gm
+reading 11:37:56 si=328 so=96828 load1=3.64 gate=closed heavy=busy remainS=178 HEAVY_JOBS busy n=2;hot pid=2172 cpu=81.2 /config/.gmnew/versions/0f9e3
+reading 11:38:27 si=3480 so=376 load1=3.58 gate=closed heavy=busy remainS=147 HEAVY_JOBS busy n=1;hot pid=2172 cpu=72.3 /config/.gmnew/versions/0f9e3b
+reading 11:38:56 si=632 so=0 load1=3.27 gate=open heavy=clear remainS=118 HEAVY_JOBS clear
+GATE-CLEAR 11:38:56 remainS=118
+WITNESS rc=0 11:38:57
+END 11:38:57 overall=0
+
+Gate. The gate was open on a sample with heavy-jobs busy several times, and the first sample with both conditions was at 11:38:56 local (09:38:56 UTC): si 632, so 0, heavy-jobs clear, 118 s remaining. GATE-CLEAR. The witness set (/tmp/bt/r107-witnesses.sh, log target/witness/window-job-r107.log, since that script writes to the r107 file name) ran under timeout with each PID captured:
+
+PID residual-witness timeout=60082 child= 11:38:56
+WITNESS residual-witness rc=0 wall=0.1s
+ok   a block built at a table weight has no missing channel and fits that weight
+ok   an unreachable value in one channel with equal endpoints is reported as that channel missing
+ok   each channel fits alone but no weight fits all three (joint only)
+ALL PASS 3 checks
+PID residual-red-check timeout=60104 child=  60108 11:38:56
+WITNESS residual-red-check rc=0 wall=0.2s
+MUTATED
+PID residual-mutant pid=60120 11:38:56
+RESTORED_IDENTICAL
+FAIL an unreachable value in one channel with equal endpoints is reported as that channel missing: {"missing":[],"joint":[]}
+FAIL 1 of 3
+mutant_rc=1
+DETECTED
+PID endpoint-witness timeout=60141 child= 11:38:56
+WITNESS endpoint-witness rc=0 wall=0.3s
+ok   joint-only blocks with one planted endpoint error have that repair (5198 of 5198 joint-only trials)
+ok   an unreachable value in one channel is repaired by a one-level change to that channel
+ALL PASS 2 checks
+PID endpoint-red-check timeout=60162 child= 11:38:57
+WITNESS endpoint-red-check rc=0 wall=0.2s
+MUTATED
+PID endpoint-mutant pid=60178 11:38:57
+RESTORED_IDENTICAL
+FAIL joint-only blocks with one planted endpoint error have that repair (2674 of 5198 joint-only trials): {"jointOnly":5198,"found":2674,"missed":[{"cpu0":[30,195,198],"cpu1":[128,135,254],"c":1,"end"
+FAIL an unreachable value in one channel is repaired by a one-level change to that channel: []
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 11:38:57
+
+Witness set overall 0 at 11:38:57 local. Every witness passed.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then e90e5f5..31c988e main -> main, push rc 0. git ls-remote origin main: 31c988e211465ca2b26819dfa4ae26621cef2494 refs/heads/main.
+
+Longest step. The window wait, from 09:30:53 to 09:38:56 UTC (about 8 min), of which the gate was closed for most samples; the witnesses took under a second each.
+
+## Round 108 Phase A: the code classification of the endpoint repairs for item 2 (witness and red check, measurement in a clear window, not pushed)
+
+The step. For each joint-only block's endpoint repair, find the CPU endpoint's quantised code (range 19 is 192 codes and 192 distinct values, so each value has one code) and classify the GPU's value. The three outcomes are: an adjacent code (a one-code shift in the quantised value), another code (a value of some other code, not adjacent), and no code (a value that no code produces, so the unquantisation itself differs).
+
+Change. scripts/lib/astc-endpoint-code.cjs (codeMap and classifyGpuValue). New: scripts/check-astc-endpoint-code-witness.cjs and scripts/check-astc-endpoint-code.cjs (the measurement).
+
+Witness. node scripts/check-astc-endpoint-code-witness.cjs: ok range 19 has 192 codes with 192 distinct values; ok a GPU value one code up is classified as an adjacent code; ok a GPU value five codes up is classified as another code; ok a value that no code produces is classified as not a code value; ALL PASS 4 checks, rc 0 (PID 60465 before the window).
+
+Red check (in the window). The adjacent test in classifyGpuValue was changed from === 1 to === 2 in place (saved to /tmp/bt/r108-code.good first). The witness gave FAIL a GPU value one code up is classified as an adjacent code: other code, FAIL 1 of 4, mutant rc 1, DETECTED. The file was restored, and cmp reported RESTORED_IDENTICAL.
+
+Measurement (a clear window, not a witness; log target/witness/window-job-r108p.log, gate in target/witness/window-gate-r108p.log). Gate:
+
+reading 11:40:02 si=200 so=0 load1=2.68 gate=open heavy=busy remainS=597 HEAVY_JOBS busy n=2;hot pid=2172 cpu=100 /config/.gmnew/versions/0f9e3bb-542/
+reading 11:40:31 si=184 so=45908 load1=2.51 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=1;hot pid=2172 cpu=100 /config/.gmnew/versions/0f9e3b
+reading 11:41:01 si=740 so=0 load1=2.68 gate=open heavy=clear remainS=538 HEAVY_JOBS clear
+GATE-CLEAR 11:41:01 remainS=538
+WITNESS rc=0 11:41:12
+END 11:41:12 overall=0
+
+PID code-witness timeout=61442 child= 11:41:01
+WITNESS code-witness rc=0 wall=0.1s
+ok   range 19 has 192 codes with 192 distinct values
+ok   a GPU value one code up is classified as an adjacent code
+ok   a GPU value five codes up is classified as another code
+ok   a value that no code produces is classified as not a code value
+ALL PASS 4 checks
+PID code-red-check timeout=61463 child=  61467 11:41:01
+WITNESS code-red-check rc=0 wall=0.1s
+MUTATED
+PID code-mutant pid=61479 11:41:01
+RESTORED_IDENTICAL
+FAIL a GPU value one code up is classified as an adjacent code: other code
+FAIL 1 of 4
+mutant_rc=1
+DETECTED
+WITNESS-SET overall=0 11:41:02
+PID endpoint-code-measure timeout=61503 child= 11:41:02
+WITNESS endpoint-code-measure rc=0 wall=10.1s
+gpu run pid 61517 outcome done wall 6.5 s leftover 0
+joint-only blocks with a one-level endpoint repair 943, repair candidates 2714
+   other code: 2007 (73.9% of candidates)
+   gpu value not a code value: 707 (26.1% of candidates)
+wall 10.0 s
+
+Result. 943 joint-only blocks have a one-level endpoint repair (the same 943 as Round 106). The repair candidates are 2,714 (a block can have more than one repair). Outcomes over the candidates:
+
+- adjacent code: 0.
+- another code (not adjacent): 2,007 (73.9%).
+- no code produces the GPU value: 707 (26.1%).
+- the CPU value itself is not a code value: 0 (every CPU endpoint is a code value, as expected).
+
+Reading. The GPU's endpoint is never the next code up or down from the CPU's code. So the disagreement is not a one-code shift in the quantised value. About a quarter of the candidates (707) produce a value that no range-19 code produces at all, which points at the unquantisation of those codes differing between the CPU table and the GPU. The rest (2,007) land on another code's value, which would need a further check. Caveat: a block can have several repair candidates, and the candidates are not the GPU's true values, so these are counts of candidates, not of blocks. The measurement is not a witness, and a disagreement here is recorded as numbers.
+
+Status. Item 2 stays open. Its next step is to test the 707 no-code candidates against the unquantisation of range 19 (for example, whether the GPU value is the unquant of the same code with a different digit or low-bit rounding), which is a CPU test on the saved candidates, and to test the 2,007 other-code candidates for a code-distance pattern. The saved candidates are not on disk yet: the measurement prints counts, not per-candidate records.
+
+Not pushed. Local commit only, as lanmower, no trailers.
