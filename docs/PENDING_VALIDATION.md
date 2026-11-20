@@ -5890,3 +5890,34 @@ Red checks (mutants run under timeout, restored from a /tmp copy, cmp RESTORED_I
 - quint tail length fixed at the 1-value length: FAIL 1 of 3, 360 of 3,360 failed (first: range 3, count 2 wrote 4,3 read 3,0, bits 3 against 5), PID 27507, DETECTED.
 
 Not verified here. The encoder is checked against the decoder's own layout and length, not against an external ASTC encoder. The GPU readback of these tails is the test that would show the layout matches the GPU, and it has not run.
+
+## Round 117 Phase B: window did not clear (no witness run, nothing pushed; readings recorded)
+
+No separate vmstat 1 2 was recorded before the window started (12:31:00 UTC): the first reading below is the window's own first sample. The window (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r117.log) ran with local time (UTC+2). Every reading, in order:
+
+reading 14:31:03 si=24 so=284 load1=4.70 gate=closed heavy=busy remainS=597 HEAVY_JOBS busy n=3;hot pid=2525 cpu=74.3 /config/.gmnew/versions/d595173e
+reading 14:31:32 si=80 so=320 load1=4.25 gate=closed heavy=busy remainS=568 HEAVY_JOBS busy n=2;hot pid=2525 cpu=73.3 /config/.gmnew/versions/d595173e
+reading 14:32:02 si=68 so=0 load1=3.72 gate=open heavy=busy remainS=538 HEAVY_JOBS busy n=1;compile pid=27175 /tmp/zig-toolchain/zig-x86_64-linux-0.17
+reading 14:32:33 si=40 so=0 load1=3.56 gate=open heavy=busy remainS=507 HEAVY_JOBS busy n=1;hot pid=2525 cpu=24.8 /config/.gmnew/versions/d595173eaec6
+reading 14:33:02 si=176 so=6880 load1=2.90 gate=closed heavy=busy remainS=478 HEAVY_JOBS busy n=2;hot pid=27886 cpu=100 ./.zig-cache/o/b70d68189168de0
+reading 14:33:32 si=120 so=0 load1=3.41 gate=open heavy=busy remainS=448 HEAVY_JOBS busy n=3;hot pid=27886 cpu=99 ./.zig-cache/o/b70d68189168de09e2a63
+reading 14:34:03 si=4204 so=6600 load1=3.06 gate=closed heavy=busy remainS=417 HEAVY_JOBS busy n=2;hot pid=27886 cpu=99 ./.zig-cache/o/b70d68189168de0
+reading 14:34:32 si=16 so=0 load1=3.06 gate=open heavy=busy remainS=388 HEAVY_JOBS busy n=2;hot pid=27886 cpu=99 ./.zig-cache/o/b70d68189168de09e2a63e
+reading 14:35:02 si=68 so=0 load1=2.82 gate=open heavy=busy remainS=358 HEAVY_JOBS busy n=2;hot pid=27886 cpu=83.2 ./.zig-cache/o/b70d68189168de09e2a6
+reading 14:35:33 si=8 so=0 load1=2.75 gate=open heavy=busy remainS=327 HEAVY_JOBS busy n=1;hot pid=32243 cpu=39.6 /workspace/fx/fx/zig-out/bin/fx __fx
+reading 14:36:02 si=1284 so=0 load1=2.39 gate=closed heavy=busy remainS=298 HEAVY_JOBS busy n=4;hot pid=2525 cpu=97 /config/.gmnew/versions/d595173eae
+reading 14:36:32 si=1208 so=0 load1=2.91 gate=closed heavy=busy remainS=268 HEAVY_JOBS busy n=2;hot pid=2525 cpu=24.8 /config/.gmnew/versions/d595173e
+reading 14:37:03 si=6264 so=1140 load1=3.04 gate=closed heavy=busy remainS=237 HEAVY_JOBS busy n=3;hot pid=2525 cpu=91.1 /config/.gmnew/versions/d5951
+reading 14:37:32 si=27272 so=2648 load1=4.05 gate=closed heavy=busy remainS=208 HEAVY_JOBS busy n=3;hot pid=2525 cpu=84.2 /config/.gmnew/versions/d595
+reading 14:38:02 si=7140 so=0 load1=4.54 gate=closed heavy=busy remainS=178 HEAVY_JOBS busy n=2;hot pid=27886 cpu=100 ./.zig-cache/o/b70d68189168de09e
+reading 14:38:33 si=356 so=0 load1=4.20 gate=closed heavy=busy remainS=147 HEAVY_JOBS busy n=1;hot pid=27886 cpu=99 ./.zig-cache/o/b70d68189168de09e2a
+reading 14:39:02 si=20 so=0 load1=4.17 gate=closed heavy=busy remainS=118 HEAVY_JOBS busy n=2;hot pid=2525 cpu=85.1 /config/.gmnew/versions/d595173eae
+reading 14:39:32 si=0 so=0 load1=3.26 gate=open heavy=busy remainS=88 HEAVY_JOBS busy n=1;hot pid=2525 cpu=98 /config/.gmnew/versions/d595173eaec6-dev
+reading 14:40:03 si=108 so=0 load1=3.39 gate=open heavy=busy remainS=57 HEAVY_JOBS busy n=2;hot pid=2525 cpu=100 /config/.gmnew/versions/d595173eaec6-
+reading 14:40:32 si=4 so=0 load1=4.25 gate=closed heavy=busy remainS=28 HEAVY_JOBS busy n=2;hot pid=2525 cpu=97 /config/.gmnew/versions/d595173eaec6-d
+WINDOW-ENDED-WITHOUT-CLEAR 14:41:00
+
+Result: WINDOW-ENDED-WITHOUT-CLEAR at 14:41:00 local (12:41:00 UTC). The gate never had a sample with both swap directions under 1000 KB/s and heavy-jobs clear together. Heavy-jobs read busy on every sample. The busy processes were peers': gm-core pid 2525 (most samples), a zig build pid 27886 (14:33–14:38), a zig test pid 32243 (14:35), and a cmake build earlier (not started by this round). Swap-in peaked at 27272 KB/s at 14:37:32.
+
+Witnesses not run in this window: the class, code, records, constant, readback and encoder witnesses and their red checks, and the readback measurement (d6fcb30). The encoder's Phase A run is recorded in Round 117 Phase A (witness ALL PASS 3, red checks DETECTED). Nothing pushed: origin/main is c56ee46.
+
