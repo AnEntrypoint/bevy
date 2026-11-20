@@ -6678,3 +6678,7 @@ PHASEB-DONE rc=0 20:17:03Z
 - The first Phase B run (window 4, gate driver pid 656531, stopped by PID before any witness was valid) found that src/height/mod.rs test planet_matches_the_spoint_fixture did not have PlanetConfig in scope (error E0422 at src/height/mod.rs:145). Its cargo test runs failed to compile, so the red checks that ran through cargo in that run were not valid and are rerun. The mutated files were restored from their backups before the stop: src/globe.rs (r5), src/height/planet.rs (r10). cmp matched the backups and git status was clean before this fix.
 - Change: src/height/mod.rs test uses crate::height::PlanetConfig. No behaviour change.
 - Witness: cargo test --bin bevy-jayzee compiles and the planet_matches_the_spoint_fixture test passes (Phase B, bin witness).
+
+## Round 131 correction to Phase A 3
+
+- The Phase A 3 line said open 795 after rows 1074 to 1077. The count is 796 open (792 before, plus four open rows), with blocked 30 (29 plus row 1077). Present 8 and candidate-only 0 are unchanged at that point.
