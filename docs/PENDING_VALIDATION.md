@@ -4431,3 +4431,19 @@ Result, the same numbers as Phase A. The bar stays OPEN. The exhaustive blue sea
 
 Which side agrees with which: the separate software GL and both decoders agree with the ETC2 bits, so the disagreement is between the ETC2 transcode and the RGBA8 unpack. The RGBA8 cache is the side that differs from the decoded ETC2.
 
+
+## Round 90 Phase A: the ASTC 4x4 decoder, checked on fixtures (no window)
+
+Spec on disk: none. No ASTC specification file exists in the workspace, the cargo registry or the vendored tree, and basisu_astc_decomp is not vendored (basisu_gpu_texture.cpp calls basisu_astc::astc::decompress only under BASISU_USE_ASTC_DECOMPRESS). The block layout therefore comes from the vendored transcoder: pack_astc_block and pack_astc_solid_block (basisu_transcoder.cpp, 11889 and 11708), the BISE range table (11291), the trit and quint codes (5068 and 11804), unquant_astc_endpoint and its parameters (11368 and 11335), the partition hash and function (11731 and 11740), and the UASTC mode tables (11276 to 11290). The decoder, scripts/lib/astc-decode.cjs, is generated from those tables by a generator outside the repo.
+
+Assumptions from memory, to be checked against the cache readback and not by the fixtures: (A1) a final partial trit group of k values stores k trits as a base-3 number in [0, 2, 4, 5, 7][k] bits, then the k value fields; a final partial quint group uses [0, 3, 5][k] bits the same way. (A2) endpoints are paired lo/hi per channel in the packer's order (RR GG BB, with the pair order taken from the packer comment). (A3) the dual-plane flag is bit 10 of the 11-bit block mode, which matches every dual field in the vendored table (0x441, 0x442). (A4) the weight bit order is the reverse of the packer's stored order, as the packer writes reverse_bits(weight) at the top of the block, weight i at bits 128 - N(i+1).
+
+Finding 1: the vendored packer writes the final trit or quint group as a full 8-bit (or 7-bit) group. Under that rule the endpoint bits overflow into the weight bits for modes 0, 3, 10, 11 and 12 (mode 0 needs 76 bits and 47 are free). Under rule A1 every one of the 18 UASTC modes fits the vendored endpoint range, and the largest-fitting rule reproduces the vendored endpoint range for all 18 (witness below). Which rule the GPU uses is not settled by anything on disk.
+
+Finding 2: the cache holds 61 ASTC KTX2 images (vkFormat 157, supercompression 0, target/gltf-cache-astc, 64 GLB files), 2,256,523 non-void level-0 blocks and 583,029 void-extent blocks. Block-mode fields: 0x242 2,005,112 (modes 0, 10, 15), 0x42 118,082, 0x441 113,576, 0x442 17,869, 0x53 1,884. The 0x242 family includes modes 0 and 10, which overflow under the full-group rule, so the cache data is not in the full-group form the vendored packer writes. The readback decides whether A1 is right.
+
+Fixture witness: scripts/check-astc-decode.cjs. Void-extent blocks from the vendored pack_astc_solid_block layout (three colours), a flat block (two equal endpoints, mode 1), two-endpoint blocks (RGB mode 1, RGBA mode 14, LA mode 15 with 4-bit weights), each compared to expected pixels computed from the inputs, plus the block-mode field table and the endpoint-range rule for all 18 vendored UASTC modes. Result: ALL PASS, 43 checks.
+
+Red check: the decoder was copied to /tmp/bt/astc-decode.pre.cjs, a dot-file mutant (scripts/lib/.astc-decode.mutant.cjs, weight reversal removed by sed) was run through the witness via ASTC_DECODE_PATH. The mutant failed the RGB, RGBA and LA fixtures and exited 1 (DETECTED). The mutant was deleted, cmp matched the saved copy (RESTORED_IDENTICAL), and the witness passed again on the restored file. git status showed only the two new files before the commit.
+
+Commit: local only, as lanmower, no trailers. Not pushed in Phase A.
