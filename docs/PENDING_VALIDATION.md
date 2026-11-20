@@ -3924,6 +3924,62 @@ Caveat, the window evidence. ASTC's verdict is same-window: its witness and the 
 
 No window was needed for this change. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
 
+### Correction, Round 72 caveat: the ETC2 same-window pair (Round 77 Phase B)
+
+The Round 72 ETC2 verdict was cross-window (witness 21:41, reference 00:04, a gap of 8580.541 s). This run settles it with an interleaved pair in one window, under the Round 76 design: each arm has its own fixed budget of at least 360 s, and the pair starts only with at least 720 s left in the job's own 780 s window.
+
+Window: the pair started at 02:52:29 with 780 s left (the job's first clear sample, gate open, heavy clear). The window ended at 03:02:59 (job END). Pair step wall 629.4 s; ETC2 arm 302.4 s; reference arm 307.2 s. The ETC2 arm did not reach its 360 s budget.
+
+Readings, verbatim from the job log (the second `vmstat 1 2` sample is the gate; the heavy reading is `scripts/heavy-jobs.cjs` at bevy's commit 495fff6, which is unchanged in HEAD):
+
+```
+reading 02:52:29 si=940 so=0 load1=2.77 gate=open heavy=clear remainS=778 HEAVY_JOBS clear;
+P1 measure-astc-pair started pid=1910672 jobRemainS=780 at 02:52:29
+reading 02:52:32 si=2976 so=0 load1=2.71 gate=closed heavy=clear remainS=775 HEAVY_JOBS clear;
+reading 02:52:59 si=372 so=0 load1=3.74 gate=open heavy=busy remainS=748 HEAVY_JOBS busy n=2 hot pid=2510 cpu=25 claude --dangerously-skip-permissions --model claude-haiku-5-5 --resume 0f054132-9d13-4196-b9d1-da8e68e7c630 hot pid=1910802 cpu=893.3 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:53:26 si=692 so=0 load1=6.20 gate=closed heavy=busy remainS=721 HEAVY_JOBS busy n=2 hot pid=1910802 cpu=80.2 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1910941 cpu=57.4 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=1910766 --enable-crash-reporter=, --user-data-dir=/workspace/bevy/.playwriter/browser-pro;
+reading 02:53:54 si=412 so=176 load1=5.13 gate=closed heavy=busy remainS=693 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=113.9 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:54:21 si=220 so=336 load1=4.05 gate=closed heavy=busy remainS=666 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=191 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:54:48 si=592 so=0 load1=3.98 gate=open heavy=busy remainS=639 HEAVY_JOBS busy n=2 hot pid=1910802 cpu=340.2 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1910941 cpu=46.1 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=1910766 --enable-crash-reporter=, --user-data-dir=/workspace/bevy/.playwriter/browser-pro;
+reading 02:55:16 si=316 so=31236 load1=3.37 gate=closed heavy=busy remainS=611 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=925.5 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:55:43 si=18824 so=128 load1=4.49 gate=closed heavy=busy remainS=584 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=1002 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:56:11 si=24 so=68 load1=3.97 gate=open heavy=busy remainS=556 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=113.9 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:56:38 si=308 so=0 load1=4.51 gate=closed heavy=busy remainS=529 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=109.9 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:57:05 si=3492 so=0 load1=6.71 gate=closed heavy=busy remainS=502 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=730.1 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:57:33 si=49912 so=2804 load1=8.24 gate=closed heavy=busy remainS=474 HEAVY_JOBS busy n=1 hot pid=1910802 cpu=118 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:58:00 si=156 so=0 load1=6.51 gate=closed heavy=busy remainS=447 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=951.4 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:58:27 si=760 so=0 load1=7.99 gate=closed heavy=busy remainS=420 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=112.9 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:58:55 si=1416 so=0 load1=6.87 gate=closed heavy=busy remainS=392 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=184.2 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 02:59:22 si=112 so=5500 load1=5.49 gate=closed heavy=busy remainS=365 HEAVY_JOBS busy n=2 hot pid=1915830 cpu=556.4 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1915934 cpu=28.7 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=1915801 --enable-crash-reporter=, --user-data-dir=/workspace/bevy/.playwriter/browser-pro;
+reading 02:59:49 si=284 so=0 load1=9.60 gate=closed heavy=busy remainS=338 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=112.9 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 03:00:17 si=2160 so=32180 load1=9.14 gate=closed heavy=busy remainS=310 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=919.6 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 03:00:44 si=1096 so=21344 load1=8.87 gate=closed heavy=busy remainS=283 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=115.8 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 03:01:11 si=1896 so=0 load1=7.06 gate=closed heavy=busy remainS=256 HEAVY_JOBS busy n=1 hot pid=1915830 cpu=190.1 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra;
+reading 03:01:39 si=1824 so=0 load1=6.98 gate=closed heavy=busy remainS=228 HEAVY_JOBS busy n=4 hot pid=1915799 cpu=21 /usr/lib/chromium/chromium.real --user-data-dir=/workspace/bevy/.playwriter/browser-profile --remote-debugging-port=10232 --no-first-run --no-default-browser-ch hot pid=1915830 cpu=535 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1915934 cpu=33 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=1915801 --enable-crash-reporter=, --user-data-dir=/workspace/bevy/.playwriter/browser-pro hot pid=1919571 cpu=82 strings -n 6 /usr/lib/chromium/chromium.real;
+reading 03:02:06 si=3216 so=51596 load1=8.98 gate=closed heavy=busy remainS=201 HEAVY_JOBS busy n=3 hot pid=1915830 cpu=77.2 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1915934 cpu=68.3 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=1915801 --enable-crash-reporter=, --user-data-dir=/workspace/bevy/.playwriter/browser-pro hot pid=1920079 cpu=95 grep -rl requestMemoryDump /config/.gmnew /usr/lib/node_modules /usr/local/lib/node_modules /usr/share/chromium /usr/lib/chromium;
+reading 03:02:34 si=5780 so=772 load1=8.32 gate=closed heavy=busy remainS=173 HEAVY_JOBS busy n=2 hot pid=1915830 cpu=183.2 /usr/lib/chromium/chromium.real --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --ozone-platform=x11 --cra hot pid=1920079 cpu=56.4 grep -rl requestMemoryDump /config/.gmnew /usr/lib/node_modules /usr/local/lib/node_modules /usr/share/chromium /usr/lib/chromium;
+P1 rc=0 wall=629.4s
+PAIR_OUT: ETC2_PAIR run_ok=true window=2026-11-20T00-52-29-798Z archive=target/witness/etc2-load-pair-archive/2026-11-20T00-52-29-798Z order=etc2,reference interleaved=true load_start_etc2=2.77 load_start_reference=7.43 etc2_ms=1014 reference_ms=1032 ratio=0.983 tolerance=1.1 pair_ok=true footprint_load_ok=true etc2_clean=64/64 reference_clean=64/64 etc2_wall_s=302.4 reference_wall_s=307.2 run_pids=1910688,1915757 stragglers=0 reason=interleaved
+PAIR_STDERR_TAIL: 
+END 03:02:59
+```
+
+Result line, verbatim:
+
+```
+ETC2_PAIR run_ok=true window=2026-11-20T00-52-29-798Z archive=target/witness/etc2-load-pair-archive/2026-11-20T00-52-29-798Z order=etc2,reference interleaved=true load_start_etc2=2.77 load_start_reference=7.43 etc2_ms=1014 reference_ms=1032 ratio=0.983 tolerance=1.1 pair_ok=true footprint_load_ok=true etc2_clean=64/64 reference_clean=64/64 etc2_wall_s=302.4 reference_wall_s=307.2 run_pids=1910688,1915757 stragglers=0 reason=interleaved
+```
+
+What the pair shows:
+- In the same window, ETC2 took 1014 ms against the reference's 1032 ms. The ratio is 0.983, inside the 1.1 tolerance. The ETC2 verdict holds: the footprint now records `etc2` usable, with `loadEvidence.sameWindow` true (gap 315.753 s).
+- The ETC2 arm started at load 2.77 and the reference at 7.43. A reference that starts under higher load runs slower, which lowers the ratio, so the load difference does not favour ETC2.
+- Both arms 64 of 64 clean. Stragglers 0. The runner ended on its own with rc 0. All PIDs from the run were gone after the job ended (1910672, 1910688, 1915757, 1910802, 1915830).
+- The footprint after the run: decision `bc7` (unchanged), `fallbackFormats` `{"astc4x4":true,"etc2":true}` (unchanged). `scripts/check-fallback-list.cjs` reports the live list matches the verdicts.
+
+A side effect, recorded here rather than hidden: every pair overwrites the shared reference witness `neon-wasm-witness-rgba8-software.json`. The ASTC footprint entry reads that file, so its `loadEvidence` is now cross-window (witness 23:59:22, reference 01:02:52, gap 3809.826 s; `sameWindow` false). ASTC still passes the footprint rule (990 against 1032, ratio 0.959). The ASTC decision stands on its own same-window pair in Round 71, which is unchanged. The footprint's evidence should read the reference from each pair's archive, not the shared file. That is a separate change, and it is on the ranked list.
+
+Design effect, recorded: a pair can start only in the first 60 s of the job's 780 s window, because it needs 720 s. This run started at the first sample. Rounds 73 to 75 ended without a start, so this design takes a clear gate in the first minute to start at all.
+
 ## Round 73 Phase A: the pair runner takes the format, and the ETC2 pair is added
 
 The ETC2 verdict is cross-window (Round 72): its witness is from 21:41, its reference from 00:04, a gap of 8580.541 s. The same-window pair that settled ASTC is generalised so it can settle ETC2 too.
