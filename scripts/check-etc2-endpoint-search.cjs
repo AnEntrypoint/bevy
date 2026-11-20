@@ -346,4 +346,5 @@ function main() {
     process.exit(ok ? 0 : 1);
 }
 
-main();
+module.exports = { word, parseDiff, baselineSelectors, encode, predict, toRgb, runScenario, SCENARIOS, TOP_BLOCK, BLUE };
+if (require.main === module) main();

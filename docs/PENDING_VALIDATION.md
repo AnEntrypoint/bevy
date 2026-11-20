@@ -4699,3 +4699,56 @@ WINDOW-ENDED-WITHOUT-CLEAR 07:48:05
 Result. The gate never cleared with heavy-jobs clear on the same sample: heavy-jobs read clear once, at 07:42:37, and that sample's gate was closed (si 848, so 3040). The job ended at 07:48:05 with WINDOW-ENDED-WITHOUT-CLEAR. The witness set (scripts/check-etc1-individual-witness.cjs with its red check, scripts/check-etc2-transfer-witness.cjs, scripts/check-block-geometry-witness.cjs with the combined red check) did not start in the window, so this record claims no witness result for the window. Phase A results are in commit 3412091 and in the Round 96 Phase A entry above.
 
 Push. None. origin main stays where it was; the unpushed commits 437e14a and 3412091 remain local. Reopen: a window where vmstat's second sample is under 1000 KB/s both ways and heavy-jobs reads clear on the same sample, then run the witness set in /tmp/bt/r96-witnesses.sh under timeout, and push once if every witness passes.
+
+## Round 97 Phase B: the Round 96 witness set in the window (cleared, witnesses passed, pushed 8038827)
+
+Readings. vmstat 1 2 first, at 07:51:28: the first line is the average since boot (si 5206, so 7114); the second line, the gate sample, is si 8, so 0 (under 1000 KB/s both ways: open). scripts/heavy-jobs.cjs matched bevy commit 495fff6 (cmp, zero diff) and read busy: a chromium renderer, pid 2290168, at 108% CPU. It is not this round's process and was not stopped.
+
+Window job (scripts/window-job.sh, WINDOW_S 600, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, log target/witness/window-gate-r97.log). Every reading, one per 30 s:
+
+reading 07:51:36 si=24 so=0 load1=2.18 gate=open heavy=busy remainS=598 HEAVY_JOBS busy n=2;hot pid=2290047 cpu=20.8 /usr/lib/chromium/chromium.real -
+reading 07:52:07 si=2180 so=2056 load1=2.75 gate=closed heavy=busy remainS=567 HEAVY_JOBS busy n=2;hot pid=2290168 cpu=105.9 /usr/lib/chromium/chromiu
+reading 07:52:36 si=1428 so=0 load1=4.79 gate=closed heavy=busy remainS=538 HEAVY_JOBS busy n=4;hot pid=2356 cpu=29.7 claude --dangerously-skip-permis
+reading 07:53:06 si=7344 so=0 load1=5.60 gate=closed heavy=busy remainS=508 HEAVY_JOBS busy n=2;hot pid=2290168 cpu=115.8 /usr/lib/chromium/chromium.r
+reading 07:53:37 si=2856 so=0 load1=5.07 gate=closed heavy=busy remainS=477 HEAVY_JOBS busy n=2;hot pid=2290127 cpu=28.7 [chromium.real] <defunct>;hot
+reading 07:54:06 si=8720 so=3136 load1=3.88 gate=closed heavy=busy remainS=448 HEAVY_JOBS busy n=1;hot pid=2291256 cpu=35.6 find / -name iso14651_t1* 
+reading 07:54:36 si=8568 so=7716 load1=3.21 gate=closed heavy=clear remainS=418 HEAVY_JOBS clear
+reading 07:55:07 si=7036 so=6268 load1=2.47 gate=closed heavy=clear remainS=387 HEAVY_JOBS clear
+reading 07:55:36 si=276 so=0 load1=2.39 gate=open heavy=clear remainS=358 HEAVY_JOBS clear
+GATE-CLEAR 07:55:36 remainS=358
+WITNESS rc=0 07:55:37
+END 07:55:37 overall=0
+
+Gate. Heavy-jobs read busy on the early samples. It read clear at 07:54:36 with the gate closed (si 8568, so 7716) and at 07:55:07 (si 7036, so 6268, gate closed). The gate opened and heavy-jobs read clear on the same sample at 07:55:36 (si 276, so 0, remaining 358 s): GATE-CLEAR. The witness set (/tmp/bt/r96-witnesses.sh, log target/witness/window-job-r96.log) started at 07:55:36. Each run was under timeout with its PID captured:
+
+- etc1-individual-witness: timeout pid 2293705, rc 0, wall 0.2 s, ALL PASS 6 checks.
+- etc1-individual-red-check: timeout pid 2293725, rc 0, wall 0.2 s, mutant FAIL 2 of 6, DETECTED, RESTORED_IDENTICAL.
+- etc2-transfer-witness: timeout pid 2293759, rc 0, wall 0.2 s, ALL PASS 8 checks.
+- block-geometry-witness: timeout pid 2293779, rc 0, wall 0.2 s, ALL PASS 6 checks.
+- transfer-geometry-red-check: timeout pid 2293799, child 2293801, rc 0, wall 0.3 s, DETECTED_BOTH (transfer mutant and geometry mutant both FAIL), both RESTORED_IDENTICAL.
+
+Witness set overall 0. Every witness passed, so the push ran once.
+
+Push. git push origin main, output: To https://github.com/AnEntrypoint/bevy.git, then 9f71b79..8038827 main -> main, push rc 0. git ls-remote origin main: 8038827a375a253cc3036af3550c39055201976d refs/heads/main. The three unpushed commits (437e14a, 3412091, 8038827) are on origin.
+
+Longest step: the wait for the clear sample, about 4 min (07:51:36 to 07:55:36). Nothing was stopped by this run.
+
+## Round 97 Phase A: the per-block mode union (tested, witnesses green, committed locally)
+
+Mechanism. Each ETC2 block may take any mode the bitstream allows, and the encoder chooses one per block. Each arm below was tested alone in an earlier round; the union was not. The Round 94 and Round 95 reopen items name the unions: planar with the E4 search, and the individual-mode arm with the special modes. This round tests both, as a per-block choice by total squared error over the three channels, on the 47,224 top-end blocks (mean cache blue at least 250). Non-top blocks keep the library decode.
+
+Why it is next. The T, H and planar bit layouts are not on disk (the ETC2 specification and decoder source were searched in the workspace, the cargo registry and the system), so the special-mode arms are predictions from palette models, not decoded bits. A readback of those layouts on SwiftShader, one fixture per mode, is the untested mechanism that would settle them. It needs the layouts first, which this host cannot supply, so it is blocked (see the reopen below). The union tests run on decodable blocks now.
+
+Test A, all modes (scripts/check-etc2-all-modes.cjs with scripts/lib/block-modes.cjs). Arms per top-end block: cache, T, H, planar, individual (fitIndividual). Result (rc 0, wall 209.6 s): cache 28.77 / 36.34 / 28.49, min 28.49; cache, T, H or planar (recomputed as the reference, equal to Round 94) 29.74 / 36.20 / 30.78, min 29.74; cache or individual (Round 95 arm) 29.23 / 34.26 / 30.56, min 29.23; cache, T, H, planar or individual 29.74 / 36.21 / 30.78, min 29.74. Chosen blocks: P 36,847, H 4,980, T 2,846, individual 1,286, cache 1,265. Individual wins on 1,286 blocks but adds nothing to the minimum channel. The union never loses to its own arms (0 violations).
+
+Test B, E4 with the special modes (scripts/check-etc2-union-e4.cjs). The E4 helpers are exported from scripts/check-etc2-endpoint-search.cjs, and its main is now guarded by require.main, so the module loads without running. Arms per top-end block: cache; E4 on differential blocks (46,193 of the 47,224 top-end blocks, cache on the rest); individual; T, H and planar. Result (rc 0, wall 292.0 s): base 28.77 / 36.34 / 28.49; E4 alone (reproduced, Round 88 numbers) 29.43 / 34.99 / 30.67, min 29.43; realisable union, cache or E4 or individual (each choice is an encodable block; the individual bits are not re-decoded here) 29.44 / 34.98 / 30.70, min 29.44; model union, adding T, H and planar (not decodable here) 29.76 / 36.29 / 30.78, min 29.76. Chosen in the realisable union: E4 39,960, individual 4,642, cache 2,622. Chosen in the model union: P 34,018, E4 5,027, H 4,065, T 2,218, individual 667, cache 1,229. Ordering violations 0.
+
+Verdict. Neither union closes the gap. The best realisable mode union reaches 29.44 dB (R), and the best model union 29.76 dB (R), against the 35 dB bar. The model union adds 0.02 dB over the special-mode union (29.74) on the minimum. Blue stays 30.70 to 30.78 dB. The bar stays OPEN.
+
+Witnesses. scripts/check-block-modes-witness.cjs: ALL PASS 6 checks, rc 0. totalOf sums the channels; chooseBest picks the lowest total (b, total 3); ties keep the first option; the individual search is exact on a constructed block (sse 0); chooseBest picks the exact individual block over a grey cache block; baseline blue 28.49 dB, min 28.49 dB. scripts/check-union-e4-witness.cjs: ALL PASS 6 checks, rc 0. 3,736 differential blocks in the first 4,000 blocks; re-encoding the transcoder bits is byte-identical on all 3,736; the evaluator equals the library decode on every differential texel; 300 E4 top-end blocks checked; E4 output decodes to its own prediction on every checked texel (0 mismatches); baseline blue 28.49 dB.
+
+Red checks. /tmp/bt/r97-redcheck.sh: the chooseBest comparison flipped (picks the worst) in a dot-file mutant. The witness exited 1 with 2 of 6 FAIL (lowest total, and grey versus individual): DETECTED, RESTORED_IDENTICAL. /tmp/bt/r98-redcheck.sh: signed3 changed to treat a 3-bit delta of 4 as +4 in a dot-file mutant of the endpoint script (E4_PATH override). The witness exited 1 with 1 of 6 FAIL (evaluator mismatch, 832 texels): DETECTED, ENDPOINT_RESTORED_IDENTICAL.
+
+Reopen for item 1, the one still open. The T, H and planar bit layouts, from the ETC2 specification or fitted to a SwiftShader readback of one fixture block per mode. The readback page scripts/browser/readback.html decodes a single 4x4 fixture, so a multi-block page is needed. Until then the model union's 29.76 dB is a bound on the palette models, not a decoded result.
+
+Output files: target/witness/window-job-r96.log (Phase B witness set), /tmp/bt/r97-allmodes.out, /tmp/bt/r98-union.out, /tmp/bt/r97-mutant.out, /tmp/bt/r98-mutant.out.
