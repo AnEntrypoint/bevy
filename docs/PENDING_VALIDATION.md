@@ -4269,3 +4269,15 @@ Run: the unmodified body passed both BC1 fixtures and reported ETC2 as skipped.
 Red check: the `texelFetch` output was swizzled to `.bgra`. The red fixture became (0,0,255,255) and failed, and the green fixture still passed (its channels are symmetric under the swap). The file was restored, `cmp` matched, and `git status` showed only the new files.
 
 The playwriter tab for this run is the only page this run opened; it is closed when the run finishes. No cargo, no window in Phase A, local commit only.
+
+## Round 85 Phase A: the second software decode of the ETC2 cache texture
+
+`scripts/lib/etc2-second.cjs` is the fallback decode, written in a different structure from `scripts/lib/texel-decode.cjs`: per sub-block palettes, with the offsets written as small and large pairs (+small, +large, -small, -large) instead of a modifier index map. It handles the same modes (ETC1 individual and differential, EAC alpha), and throws on T, H or planar blocks.
+
+Caveat, stated as a limit: there is no written spec on this host, so both decoders come from the same recollection of the Khronos ETC2 text. Agreement between them rules out a slip in either one's code. It does not show the spec reading is right.
+
+Witness: `scripts/check-etc2-second.cjs`. Fixtures 8 of 8 ok (the same vectors as the first decoder). Measured on the 12 KTX2 textures: the second decode against the RGBA8 cache has a minimum RGB PSNR of 25.25 dB, and texture 1 gives 28.77 / 36.34 / 28.49 dB. The two decoders disagree on 0 of 12,582,912 texels. The bar stays 35 dB, and the cache line reads OPEN.
+
+Red check: the blue channel's palette was reordered from [+small, +large, -small, -large] to [+small, -small, +large, -large]. Fixtures 5 of 8, 3 FAIL lines, exit 1. The file was restored, `cmp` matched, and the fixtures returned to 8 of 8.
+
+Result: both decodes give the same answer, so the cache disagreement at the blue top end is still open. Neither the browser nor a second decode settles which side is wrong. The next independent source is a decoder with ETC2 support (a software GL such as SwiftShader in a separately launched Chromium, which INVARIANT 11 permits once the playwriter setup is shown unable to do the job), or a spec text on disk.
