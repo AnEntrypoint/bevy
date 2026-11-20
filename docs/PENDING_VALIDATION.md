@@ -6076,3 +6076,40 @@ Red checks (mutation in place, witness under timeout, restore from /tmp copy, cm
 - git status after the red checks: only scripts/lib/heavy-jobs.cjs modified (the change), plus the two new scripts.
 
 The gate's own verdict on this checkout (scripts/heavy-jobs.cjs with the new library) reads busy on pid 2525 at 99% CPU, which is sustained, so it is the expected verdict.
+
+## Round 119 Phase B: the window cleared; every witness passed; both verdicts recorded per sample
+
+Correction to the Round 119 Phase A entry above. Pid 2525 matched on 33 readings across the three logs (10 in window-gate-r116, 11 in -r117, 12 in -r118), not 11. The measurement output is unchanged; only the count in the prose was wrong.
+
+Pre-window vmstat 1 2 at 13:23:40 UTC: sample 1 (average since boot) si 1270, so 2364, bi 18022, bo 16541; sample 2 si 8, so 0, bi 656, bo 0. The old rule (495fff6) read clear at 13:23:41 UTC before the window started.
+
+Window (scripts/window-job.sh, WINDOW_S 1200, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, HEAVY_CMD bash /tmp/bt/r119-heavy.sh, log target/witness/window-gate-r119.log, local time UTC+2). The verdict used for the gate is the 495fff6 rule: scripts/heavy-jobs.cjs and scripts/lib/heavy-jobs.cjs from commit 495fff6 (cmp identical; /tmp/bt/old). The new classifier (this branch, scripts/lib/heavy-jobs.cjs at 20b9050) ran on the same reading, a second call about a second later. Every reading, with both verdicts and the gate's swap sample:
+
+| time (local) | si / so (KB/s) | gate | 495fff6 rule (gate verdict) | new classifier |
+|---|---|---|---|---|
+| 15:23:54 | 3660 / 13472 | closed | busy, 6 matches (holders: pid 2236 cwd /workspace/bevy at 31.7% CPU; pid 69277 cwd /workspace/signal at 45.5%) | busy, 3 matches |
+| 15:24:25 | 980 / 3964 | closed | busy, 2 matches (pid 88214 chromium gpu-process at 205.9%; pid 88367 chromium renderer, RSS above 1 GiB) | busy, 2 matches |
+| 15:24:55 | 1536 / 0 | closed | busy, 4 matches (pid 88165 chromium at 33.7%; pid 88214 at 224.8%) | busy, 4 matches |
+| 15:25:24 | 7056 / 0 | closed | busy, 1 match (pid 2236, gm-core, cwd /workspace/bevy, at 21% CPU in one frame) | clear |
+| 15:25:55 | 172 / 0 | open | clear | clear: GATE-CLEAR, 1076 s remaining |
+
+The gate was open only on the last reading, so only that reading could start the witnesses. Both verdicts agreed there. The two rules disagreed only on 15:23:54 (6 against 3 matches) and 15:25:24 (busy against clear): the old rule counted a single frame above 20%, which is what the new rule removes. The holders named on the busy readings were a peer's Chromium (pids 88165, 88214, 88218, 88367, 88694; user-data-dir /tmp/verify/…, cwd gone with the processes), a peer's playwriter (pid 69277, cwd /workspace/signal, live), and this session's own gm-core worker (pid 2236, cwd /workspace/bevy, live).
+
+Witnesses (job, under timeout, PIDs captured in target/witness/window-job-r119.log). All passed, and every red check was DETECTED with RESTORED_IDENTICAL:
+- classify witness: ALL PASS 9 checks, rc 0; red checks: every-frame rule, FAIL 2 of 9, DETECTED; compile floor, FAIL 1 of 9, DETECTED.
+- item 2 class witness: ALL PASS 2 checks, rc 0; red check DETECTED.
+- code witness: ALL PASS 4 checks, rc 0; red check DETECTED.
+- records witness: ALL PASS 2 checks, rc 0; red check DETECTED.
+- constant witness: ALL PASS 2 checks, rc 0; red check DETECTED.
+- readback witness: ALL PASS 6 checks, rc 0; three red checks DETECTED.
+- encode witness: ALL PASS 3 checks, rc 0; two red checks DETECTED.
+- block witness: ALL PASS 3 checks, rc 0; red check DETECTED.
+- WITNESS-SET overall=0 at 13:25:57 UTC.
+
+Measurement, after the witnesses (scripts/check-astc-endpoint-readback.cjs, a GPU run, rc 0, 4.2 s; the probe run was pid 89875, outcome done, leftover 0):
+- endpoints compared 1920 (blocks at weight 0 and weight 64), non-uniform GPU blocks 0, channel rows with a CPU value that is not a code value 0, channel rows saved 5760.
+- every row has delta 0: end 0 and end 1, channels R, G and B, 960 rows each.
+- class counts: match, cpu code digit 0: 2363; match, cpu code digit 1: 1368.
+So the GPU decodes the endpoints exactly as the CPU table does, for all 1920 endpoints. Item 2's endpoint question is answered: the ±1 residual is not in the endpoint unquantisation. It must be in the interpolation between the endpoints (the weight step), which the next Phase A step tests.
+
+Push. Decision: every witness run passed, so the push is allowed. The push output and the remote head are in the next record.
