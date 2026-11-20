@@ -5736,3 +5736,24 @@ Result, and why it does not discriminate. All 707 no-code GPU values are at dist
 Status. Item 2 stays open. The distance test cannot separate the GPU's values from the table's gaps, so it does not identify a cause. A discriminating test needs a different observable, such as the GPU's own decoded endpoint values for the same blocks, which the probe does not read back, or a hypothesis for the unquantisation table that is checked on all 2,714 candidates, not on the 707 alone.
 
 Not pushed. Local commit only, as lanmower, no trailers.
+
+## Round 115 Phase A: the item 2 test that can fail (replaces the distance test; witness and red check; not pushed until the Round 115 Phase B)
+
+Why the distance test was replaced. The distance witness (cd84afa) and its analysis checked that every no-code value is at distance 1 from a code value. The baseline is the same for every unproduced value (64 of 64), so the test could not fail on any broken classifier. It is deleted.
+
+The replacement. scripts/check-astc-endpoint-class-witness.cjs asserts two outputs that a broken classifier would produce, and fails if either appears:
+
+- Wrong output 1: an unproduced GPU value reported as a code shift (other code or adjacent code) instead of gpu value not a code value. This is the output a classifier produces when its unknown-code guard is missing. Assertion: none of the 64 unproduced values is classified other than gpu value not a code value.
+- Wrong output 2: a value some code produces reported as gpu value not a code value. Assertion: none of the 191 other code values is classified that way.
+
+Witness (real library). node scripts/check-astc-endpoint-class-witness.cjs: ok a GPU value no code produces is never reported as a code shift; ok a GPU value that some code produces is never reported as not a code value; ALL PASS 2 checks, rc 0 (PID 142076).
+
+Red check. The guard line (if (gpuCode === undefined) return 'gpu value not a code value';) was removed from scripts/lib/astc-endpoint-code.cjs in place (saved to /tmp/bt/r115-code.good first). The witness gave the failing row:
+
+FAIL a GPU value no code produces is never reported as a code shift (wrong output: other code or adjacent code): wrong classes on 64 unproduced values: {"other code":64}
+
+Then FAIL 1 of 2, mutant rc 1, DETECTED. The file was restored, and cmp reported RESTORED_IDENTICAL. git diff shows no change to the library.
+
+Removed. scripts/lib/astc-endpoint-distance.cjs, scripts/check-astc-endpoint-distance-witness.cjs and scripts/check-astc-endpoint-distance.cjs (git rm). They remain in history at cd84afa.
+
+Commit. Local, as lanmower, no trailers. Pushed with the Round 115 Phase B, if its witnesses pass.
