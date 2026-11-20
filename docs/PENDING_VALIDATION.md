@@ -4492,3 +4492,21 @@ Result. The ASTC cache is consistent with its RGBA8 reference on the GPU at 54.6
 Reopen of the decoder item: replace A1 with the layout the GPU uses (or the spec text when it is on disk), rerun the fixture witness with a fixture that has a one-value trit tail, and rerun the readback to check the CPU-vs-GPU mismatch falls.
 
 Push: this record and the Phase A commit 2b7ae8f are pushed to origin main once, after every witness passed (rc 0 on all four; the red check's rc 0 is DETECTED).
+
+## Round 92 Phase A: the partial trit layout against the GPU decode (witness and red check, no window)
+
+The case. Every non-void block in cache level 0 is block mode 0x242 with CEM 8 (RGB, six endpoint values) and endpoint range 19. Five values fill one trit group, and the sixth is a one-value partial trit group. So the one-value tail is the only partial case the cache uses. Two- to four-value trit tails and quint tails are not in the cache.
+
+Finding. The GPU readback (target/readback/gpu-astc-rgba8.bin, the 06:08 window run) gives each block's blue endpoints. The blue low, value 4, fits the GPU exactly on 51,886 blocks. On those blocks the blue high is the one-value tail. I tested every placement of the 2 trit bits and 6 value bits inside the 8 tail bits (112 candidates). The best is value bits 55 to 60 and the 2-bit trit at 61 to 62, digit taken as the 2-bit value. It agrees with the GPU's blue high on 51,883 of 51,886 blocks (99.99%). The layout in the Round 90 entry (assumption A1: trit at 55 to 56, value bits at 57 to 62) agreed on 41. The 3 misses are off by one in unquantisation, not in the layout.
+
+Change. scripts/lib/astc-decode.cjs: the one-value trit tail reads its value bits first, then the trit digit. Only that case is changed, because it is the one the GPU data pins. Two- to four-value trit tails and quint tails keep assumption A1, and they remain unpinned.
+
+Witness: scripts/check-astc-trit-tail.cjs. It pins eight cache blocks, chosen to match the GPU on all 64 bytes with eight distinct tail codes covering digits 0, 1 and 2. Each pin holds the 16-byte block and the GPU's 16 RGBA texels from the 06:08 readback. The decoder must match all 64 bytes. Result: ALL PASS 8 of 8, exit 0. The Round 90 decoder (HEAD, old layout) fails all 8, with 8 to 15 mismatched bytes each.
+
+Red check: a dot-file mutant (scripts/lib/.astc-decode.mutant.cjs) with the two reads swapped back to A1 was run through the witness via ASTC_DECODE_PATH. Nine FAIL lines (eight pins and the summary), mutant rc 1, DETECTED. The mutant was removed, cmp matched the saved decoder (RESTORED_IDENTICAL), and the witness passed again.
+
+Numbers, cache level 0 (1024 by 1024), before and after the change. CPU decoder vs RGBA8 cache PSNR R/G/B/A: before 62.81 / 62.29 / 5.47 / infinite; after 62.81 / 62.29 / 55.16 / infinite. GPU vs RGBA8 cache, unchanged: 61.62 / 61.00 / 54.6 / infinite. CPU vs GPU texels differing: before 842,757 of 1,048,576 (80.37%); after 105,484 (10.06%). Channel-texel differences after: R 43,132, G 42,997, B 28,530, A 0. Blocks where blue matches the GPU on all 16 texels: 51,883 of 62,121 (was 41).
+
+Still open, recorded and not fixed here. R and G differ by one level on endpoints in about 16,000 blocks each (ungated rounding of some unquantised trit-group values; the fit gives low endpoints off by minus one in about 750 blocks for R and G). Blue low is off by minus one in about 435 blocks. The 3 blue-high misses are off by one. None of these is pinned, and each needs its own witness.
+
+Commit: local only, as lanmower, no trailers. Not pushed in Phase A.

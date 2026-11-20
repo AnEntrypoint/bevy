@@ -213,6 +213,12 @@ function readIntegerSequence(bytes, position, count, range) {
                 lows = [first & mask, (first >> (bits + 2)) & mask, (second >> 2) & mask, (second >> (3 + bits)) & mask, (second >> (5 + 2 * bits)) & mask];
                 const code = ((first >> bits) & 3) | ((second & 3) << 2) | (((second >> (2 + bits)) & 1) << 4) | (((second >> (3 + 2 * bits)) & 3) << 5) | (((second >> (5 + 3 * bits)) & 1) << 7);
                 digits = digitsOf(TRIT_DECODE[code], 3, 5);
+            } else if (remaining === 1) {
+                const low = readBits(bytes, cursor, bits);
+                const digit = readBits(bytes, cursor + bits, TRIT_TAIL_BITS[1]);
+                lows = [low];
+                digits = digitsOf(digit, 3, 1);
+                cursor += bits + TRIT_TAIL_BITS[1];
             } else {
                 const tailBits = TRIT_TAIL_BITS[remaining];
                 const code = readBits(bytes, cursor, tailBits);
