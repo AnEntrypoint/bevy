@@ -168,9 +168,88 @@ pub fn raycast_ground_local(ground: impl Fn(f64, f64) -> Option<f64>, origin: V3
     None
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, PartialEq)]
+pub enum SurfaceSolve {
+    Tolerance,
+    ChartRange,
+    NoGround,
+    NoConvergence { residual: f64 },
+}
+
+const SURFACE_SOLVE_MAX_EVALS: usize = 64;
+const BRACKET_HALVING_WINDOW: usize = 6;
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>, tolerance_m: f64, guess: Option<f64>) -> Result<f64, SurfaceSolve> {
+    if !tolerance_m.is_finite() || tolerance_m <= 0.0 {
+        return Err(SurfaceSolve::Tolerance);
+    }
+    let r2 = x * x + z * z;
+    if radius.is_finite() && r2 >= radius * radius {
+        return Err(SurfaceSolve::ChartRange);
+    }
+    let render_y_on_sphere = |elevation: f64| (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation);
+    let mut y = match guess {
+        Some(g) if g.is_finite() => g,
+        _ => render_y_on_sphere(0.0),
+    };
+    let (mut y_prev, mut g_prev) = (0.0, 0.0);
+    let (mut below, mut above) = (f64::NEG_INFINITY, f64::INFINITY);
+    let (mut g_below, mut g_above) = (0.0, 0.0);
+    let mut checkpoint: Option<(usize, f64)> = None;
+    let mut last_g = f64::INFINITY;
+    for k in 0..SURFACE_SOLVE_MAX_EVALS {
+        let dir = tangent_local_to_dir(basis, radius + anchor_height + y, x, z);
+        let h = match height(dir) {
+            Some(h) if h.is_finite() => h,
+            _ => return Err(SurfaceSolve::NoGround),
+        };
+        let y_f = render_y_on_sphere(h);
+        let g = y_f - y;
+        last_g = g;
+        if g.is_finite() && g.abs() <= tolerance_m {
+            return Ok(y);
+        }
+        if g > 0.0 {
+            if y > below {
+                below = y;
+                g_below = g;
+            }
+        } else if y < above {
+            above = y;
+            g_above = g;
+        }
+        if below > f64::NEG_INFINITY && above < f64::INFINITY && above - below <= tolerance_m {
+            return Ok(0.5 * ((below + g_below) + (above + g_above)));
+        }
+        let bracketed = below > f64::NEG_INFINITY && above < f64::INFINITY;
+        let mut must_bisect = false;
+        if bracketed {
+            let width = above - below;
+            match checkpoint {
+                None => checkpoint = Some((k, width)),
+                Some((checkpoint_k, checkpoint_width)) if k - checkpoint_k >= BRACKET_HALVING_WINDOW => {
+                    must_bisect = width > 0.5 * checkpoint_width;
+                    checkpoint = Some((k, width));
+                }
+                Some(_) => {}
+            }
+        }
+        let mut y_next = if k > 0 && g != g_prev { y - g * (y - y_prev) / (g - g_prev) } else { y_f };
+        if must_bisect || !(y_next > below && y_next < above) {
+            y_next = if bracketed { 0.5 * (below + above) } else { y_f };
+        }
+        y_prev = y;
+        g_prev = g;
+        y = y_next;
+    }
+    Err(SurfaceSolve::NoConvergence { residual: last_g })
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, tangent_local_to_dir, Frame, GroundFault};
+    use super::{anchor_basis, guarded_ground_height, raycast_ground_local, solve_surface_y, tangent_local_to_dir, Frame, GroundFault, SurfaceSolve};
     use serde_json::Value;
 
     const PLANET_FRAME_TOLERANCE_M: f64 = 1e-9;
@@ -299,5 +378,51 @@ mod tests {
                 }
             }
         }
+    }
+
+    fn fixture_surface() -> Value {
+        serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-surface.json")).unwrap()
+    }
+
+    fn surface_height(kind: &str, d: [f64; 3]) -> Option<f64> {
+        let smooth = 40.0 + 25.0 * d[0] - 15.0 * d[1] + 10.0 * d[2] * d[2];
+        match kind {
+            "null" => None,
+            "smooth" => Some(smooth),
+            "step" => Some(if d[0] > 0.3 { 100.0 } else { 40.0 }),
+            "nullish" => if d[0] > 0.9 { None } else { Some(smooth) },
+            other => panic!("unknown height kind {other}"),
+        }
+    }
+
+    fn surface_error_name(err: &SurfaceSolve) -> &'static str {
+        match err {
+            SurfaceSolve::Tolerance => "SolveToleranceError",
+            SurfaceSolve::ChartRange => "ChartRangeError",
+            SurfaceSolve::NoGround => "NoGroundHeightError",
+            SurfaceSolve::NoConvergence { .. } => "SurfaceSolveError",
+        }
+    }
+
+    #[test]
+    fn solve_surface_y_matches_the_spoint_frame() {
+        let fixture = fixture_surface();
+        let basis = anchor_basis(vec3(&fixture["anchorDir"]));
+        let radius = fixture["radius"].as_f64().unwrap();
+        let anchor_height = fixture["anchorHeight"].as_f64().unwrap();
+        let mut worst = 0.0_f64;
+        for case in fixture["cases"].as_array().unwrap() {
+            let (x, z) = (case["x"].as_f64().unwrap(), case["z"].as_f64().unwrap());
+            let kind = case["kind"].as_str().unwrap();
+            let tolerance = case["tol"].as_f64().unwrap();
+            let guess = case["guess"].as_f64();
+            let got = solve_surface_y(&basis, radius, anchor_height, x, z, |d| surface_height(kind, d), tolerance, guess);
+            match (got, case["error"].as_str()) {
+                (Ok(y), None) => worst = worst.max((y - case["y"].as_f64().unwrap()).abs()),
+                (Err(err), Some(name)) => assert_eq!(surface_error_name(&err), name, "error at {kind} ({x}, {z})"),
+                (got, want) => panic!("spoint {want:?} with y {:?}, bevy {got:?} at {kind} ({x}, {z})", case["y"]),
+            }
+        }
+        assert!(worst <= PLANET_FRAME_TOLERANCE_M, "solveSurfaceY differs from spoint by up to {worst} m");
     }
 }
