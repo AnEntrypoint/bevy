@@ -4321,3 +4321,10 @@ Fixture: a flat ETC2 RGBA8 block, alpha block ff00000000000000, colour block 884
 Red check: the fragment output was swizzled to .bgra. The fixture reported FAIL and exited 1. The page was restored with cmp (cmp-restored), the fixture passed again with exit 0, and git status showed only the new files. The probe-only ETC2_PROBE_FLAGS hook was removed afterwards and the fixture passed with exit 0 again.
 
 Not run in Phase A: the texture readback. It runs in Phase B, once, on the clear window.
+
+## Round 86 Phase B: the driver correction (fixed without a browser run)
+
+The texture readback ran once in the window (job r86-phaseb, witness etc2-readback-texture), and its printed PSNR numbers were wrong. The driver divided the sample count by 4 in the PSNR and texel counts, so every printed PSNR was 6.02 dB low and the texel count was a quarter of the true one. The printed line was 22.75 / 30.32 / 22.47 dB and '0 of 262144 texels differ'. This commit corrects the count and adds an analyse mode, which re-reads the saved readback output (target/readback/gpu-rgba8.bin) without starting a browser. The analysis of the saved output gives 28.77 / 36.34 / 28.49 dB and '0 of 1048576 texels differ'. The witness exit code was not affected, because the cache result is a measurement.
+
+Red check: the old denominator (samples / 4) was put back in the driver. The analyse output printed 22.75 / 30.32 / 22.47 dB and 262144 texels, the wrong numbers. The file was restored with cmp (cmp-restored), and the analyse output returned to 28.77 / 36.34 / 28.49 dB.
+

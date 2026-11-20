@@ -29,6 +29,7 @@ const FIXTURE_EXPECT = [144, 76, 8, 255];
 const root = path.join(__dirname, '..');
 const pageFile = path.join(__dirname, 'browser', 'readback.html');
 const outDir = path.join(root, 'target', 'readback');
+const gpuPath = path.join(outDir, 'gpu-rgba8.bin');
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,7 +72,7 @@ function startServer(state) {
             req.on('end', () => {
                 const body = Buffer.concat(chunks);
                 if (url.pathname === '/gpu-rgba8') {
-                    fs.writeFileSync(path.join(outDir, 'gpu-rgba8.bin'), body);
+                    fs.writeFileSync(gpuPath, body);
                 }
                 if (url.pathname === '/result') {
                     state.result = JSON.parse(body.toString('utf8'));
@@ -148,13 +149,11 @@ function fixtureCheck(result) {
 function textureCheck(gpu, reference, etc2) {
     const sq = [0, 0, 0, 0];
     let mismatch = 0;
-    let decodedBlocks = 0;
     const samples = gpu.length / 4;
     for (let block = 0; block < etc2.length / 16; block += 1) {
         let first = null;
         try {
             first = decodeEtc2Rgba8Block(etc2.subarray(block * 16, block * 16 + 16));
-            decodedBlocks += 1;
         } catch (error) {
             first = null;
         }
@@ -174,47 +173,54 @@ function textureCheck(gpu, reference, etc2) {
             }
         }
     }
-    const rgb = [0, 1, 2].map((c) => psnr(sq[c], samples / 4));
-    return { rgbPsnr: rgb, alphaPsnr: psnr(sq[3], samples / 4), firstDecoderMismatch: mismatch, texels: samples / 4, decodedBlocks };
+    const rgb = [0, 1, 2].map((c) => psnr(sq[c], samples));
+    return { rgbPsnr: rgb, alphaPsnr: psnr(sq[3], samples), firstDecoderMismatch: mismatch, texels: samples };
 }
 
-async function main() {
-    const caseName = process.argv[2] === 'fixture' ? 'fixture' : 'texture';
-    fs.mkdirSync(outDir, { recursive: true });
-    let data = null;
-    if (caseName === 'texture') {
-        data = texture();
-        fs.writeFileSync(path.join(outDir, 'etc2-level0.bin'), data.etc2);
-        fs.rmSync(path.join(outDir, 'gpu-rgba8.bin'), { force: true });
-    }
-    const run = await runCase(caseName);
-    const meta = run.result || {};
-    console.log('CHROMIUM case=' + caseName + ' pid=' + run.pid + ' tree=' + run.treeSize + ' outcome=' + run.outcome + ' wall=' + (run.wall / 1000).toFixed(1) + 's leftover=' + run.leftover);
-    console.log('GL extensions=' + JSON.stringify(meta.extensions) + ' renderer=' + meta.renderer + ' version=' + meta.version + ' etc2Listed=' + meta.etc2Listed + ' nativeFormats=' + meta.nativeFormats + (meta.error ? ' error=' + meta.error : ''));
-    if (caseName === 'fixture') {
-        const ok = !meta.error && fixtureCheck(meta);
-        console.log((ok ? 'ok   ' : 'FAIL ') + 'ETC2 flat block (colour 144,76,8, alpha 255) decodes on the software GL, 16 of 16 texels');
-        process.exit(ok ? 0 : 1);
-    }
-    const gpuPath = path.join(outDir, 'gpu-rgba8.bin');
-    if (meta.error || !fs.existsSync(gpuPath)) {
-        console.log('FAIL readback produced no texture output' + (meta.error ? ': ' + meta.error : ''));
-        process.exit(1);
+function reportTexture(data) {
+    if (!fs.existsSync(gpuPath)) {
+        console.log('FAIL readback produced no texture output');
+        return 1;
     }
     const gpu = fs.readFileSync(gpuPath);
-    const reference = level0Rgba8(data);
-    const check = textureCheck(gpu, reference, data.etc2);
+    const check = textureCheck(gpu, data.rgba8, data.etc2);
     const minPsnr = Math.min(...check.rgbPsnr);
     const agreeFirst = check.firstDecoderMismatch / check.texels < MISMATCH_AGREE_FRACTION;
     console.log('TEXTURE ' + data.name.slice(0, 24) + ' readback vs RGBA8 cache RGB PSNR ' + check.rgbPsnr.join(' / ') + ' dB, alpha ' + check.alphaPsnr + ' dB');
     console.log('READBACK vs first decoder: ' + check.firstDecoderMismatch + ' of ' + check.texels + ' texels differ (' + (100 * check.firstDecoderMismatch / check.texels).toFixed(2) + '%)');
     console.log('CACHE ' + (minPsnr >= BAR_DB ? 'CLEAR' : 'OPEN') + ' bar ' + BAR_DB + ' dB, readback min ' + minPsnr + ' dB');
     console.log('SIDE ' + (minPsnr >= BAR_DB ? 'readback agrees with the cache' : (agreeFirst ? 'readback agrees with the first decoder and the cache disagrees' : 'readback disagrees with both the cache and the first decoder')));
-    process.exit(0);
+    return 0;
 }
 
-function level0Rgba8(data) {
-    return data.rgba8;
+async function main() {
+    const mode = process.argv[2];
+    const caseName = mode === 'fixture' || mode === 'analyse' ? mode : 'texture';
+    fs.mkdirSync(outDir, { recursive: true });
+    if (caseName === 'analyse') {
+        console.log('ANALYSE source=' + path.relative(root, gpuPath) + ' (no browser started)');
+        process.exit(reportTexture(texture()));
+    }
+    let data = null;
+    if (caseName === 'texture') {
+        data = texture();
+        fs.writeFileSync(path.join(outDir, 'etc2-level0.bin'), data.etc2);
+        fs.rmSync(gpuPath, { force: true });
+    }
+    const run = await runCase(caseName);
+    const meta = run.result || {};
+    console.log('CHROMIUM case=' + caseName + ' pid=' + run.pid + ' tree=' + run.treeSize + ' outcome=' + run.outcome + ' wall=' + (run.wall / 1000).toFixed(1) + 's leftover=' + run.leftover);
+    console.log('GL renderer=' + meta.renderer + ' version=' + meta.version + ' etc2Listed=' + meta.etc2Listed + ' nativeFormats=' + meta.nativeFormats + (meta.error ? ' error=' + meta.error : ''));
+    if (caseName === 'fixture') {
+        const ok = !meta.error && fixtureCheck(meta);
+        console.log((ok ? 'ok   ' : 'FAIL ') + 'ETC2 flat block (colour 144,76,8, alpha 255) decodes on the software GL, 16 of 16 texels');
+        process.exit(ok ? 0 : 1);
+    }
+    if (meta.error) {
+        console.log('FAIL readback: ' + meta.error);
+        process.exit(1);
+    }
+    process.exit(reportTexture(data));
 }
 
 main().catch((error) => {
