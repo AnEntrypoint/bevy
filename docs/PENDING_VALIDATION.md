@@ -4289,3 +4289,19 @@ Result: both decodes give the same answer, so the cache disagreement at the blue
 Current numbers: the first decoder's RGB PSNR minimum across the 12 textures is 25.25 dB (OPEN).
 
 Red check: a fixture expectation was changed from 8 to 9 in the red channel. Exit 1. The file was restored, `cmp` matched, and the witness exited 0 with 8 of 8 fixtures ok and cache OPEN.
+
+## Round 85 Phase B: the ETC2 readback and the witness set (record)
+
+Readings. Pre-check `vmstat 1 2` (second sample, read before the window job started): si 420, so 0. Window job reading at 04:37:36: si 196, so 0, load1 1.85, gate open, heavy clear, 598 s remaining, then `GATE-CLEAR`. Post-clear check at 04:38:05: `vmstat 1 2` second sample si 256, so 0; `node scripts/heavy-jobs.cjs` HEAVY_JOBS clear; `/proc/loadavg` 1.79. The window job exits after its witnesses, so it took one reading in the window; the post-clear check is the second. Both gate samples were below 1000 KB/s both ways.
+
+Witnesses, each once, on the clear sample at 04:37:36 (window-job log): `check-texel-decode` rc=0, wall 1.2 s, 8 of 8 fixtures ok, cache OPEN. `check-etc2-second` rc=0, wall 2.2 s, 8 of 8 fixtures ok, cache OPEN. `check-pair-window` rc=0, wall 0.2 s, 6 of 6 ok. `check-window-job` rc=0, wall 15.3 s, 10 of 10 ok. Set overall 0, finished 04:37:55.
+
+Readback, once, after the post-clear check: `scripts/check-gl-readback.js` in the bevy playwriter tab. WebGL2 with zero native compressed formats; ETC2 RGBA8 not listed, so the texture readback was not run (no ETC2 in this browser). Fixtures: BC1 flat red read back as (255,0,0,255) and BC1 flat green as (0,255,0,255), both ok. Wall time was not captured for this call, and that is recorded as unmeasured. The browser step ran for this readback only; the tab was closed with `p.close()` after the run.
+
+Cache numbers, both decoders (same texture set, 12 KTX2 textures, level 0): RGB PSNR minimum 25.25 dB against the 35 dB bar, OPEN. Texture 1 (value.17c7bd864f7f18268f): 28.77 / 36.34 / 28.49 dB. The two decoders agree on every texel (0 of 12,582,912 differ).
+
+Which side the readback agrees with: neither. The browser cannot decode ETC2, so the readback did not reach the texture. The software fallback agrees with the first decoder, so the blue top-end disagreement is a question of the spec reading or of the cache, and it stays open. The next source that can settle it is a decoder with ETC2 support (see the Round 85 Phase A ledger line on SwiftShader) or a spec text on disk.
+
+Renderers. Before the readback, two bevy renderers (pids 2089773 and 2089782) belonged to this round's tab. They were stopped by PID after the tab was closed; afterwards no bevy renderer was left. The bevy browser process (pid 2089696, under the gate pid 2089666) was left running, since it is the gate's. The oscraft browser (pids 2088779 to 2088866) belongs to another project and was not touched.
+
+Longest step: the witness set's `check-window-job` (15.3 s); the readback call returned within its 90 s timeout. Nothing was stopped except the two bevy renderers named above.
