@@ -4522,3 +4522,36 @@ Witnesses on the 06:20:06 clear sample, each under timeout with PID captured (lo
 Result. The one-value trit tail now decodes as the GPU decodes it on the pinned blocks. The cache's CPU-vs-GPU disagreement is down from 80.37% to 10.06% of texels (the numbers and the open R, G and blue-low rounding items are in the Phase A entry above). The open items are the rounding in R and G, and the unpinned tails of two to four values and of quints.
 
 Push: this record, together with the Phase A commit 8034b7b, is pushed to origin main once, after every witness passed.
+
+## Round 93 Phase A: the ETC2 T, H and planar modes on the blue top end (tested, witness green)
+
+Question. Were the T, H and planar modes tested on the top-end blocks? No. The ETC2 cache holds only differential (60,556 blocks) and individual (4,980) colour blocks (Round 87), and both the library decode (scripts/lib/texel-decode.cjs) and the earlier parser throw on a special-mode block (`ETC2 T, H or planar block is not decoded`). They were excluded, not tested. The transcoder that writes the cache emits ETC1 modes only.
+
+Models. scripts/lib/etc2-special.cjs. No ETC2 spec and no ETC2 decoder source is on disk (searched the workspace, the cargo registry and the system), so the palettes come from memory of the ETC2 description: T is C0 (444), C1 (444) and the paints C0, C1+d, C1, C1-d; H is the paints C0+-d and C1+-d; planar is C(x,y) = (x(H-O) + y(V-O) + 4O + 2) >> 2 with O, H, V at 6, 7 and 6 bits per channel; d takes the eight values 3, 6, 11, 16, 23, 32, 41, 64. The bit layouts are not modelled. So this is a what-if test of what each model can reach, not a decodable encoding, and the models are unverified against the GPU. A SwiftShader fixture check needs the bit layouts first.
+
+Test. scripts/check-etc2-special-modes.cjs. The 47,224 top-end blocks (mean cache blue at least 250) are re-encoded in each mode by a least-squares search (Lloyd iterations over 33 starts per distance, the best three polished by +-1 code steps; planar least squares then +-1 and +-2 grid steps). Every other block keeps the library decode. PSNR over the whole texture with the 255-squared denominator over 1,048,576 texels, the same metric as scripts/check-etc2-endpoint-search.cjs. The minimum channel is the bar's measure.
+
+Result (rc 0, wall 145.9 s, job pid 2248174):
+
+| Arm | R / G / B dB | min dB | blue dB |
+| --- | --- | --- | --- |
+| cache as it is | 28.77 / 36.34 / 28.49 | 28.49 | 28.49 |
+| T on top-end blocks | 29.34 / 34.61 / 30.53 | 29.34 | 30.53 |
+| H on top-end blocks | 29.41 / 34.84 / 30.64 | 29.41 | 30.64 |
+| planar on top-end blocks | 29.50 / 35.11 / 30.82 | 29.50 | 30.82 |
+| cache or T, best per block | 29.39 / 34.83 / 30.50 | 29.39 | 30.50 |
+| cache or H, best per block | 29.44 / 34.97 / 30.63 | 29.44 | 30.63 |
+| cache or planar, best per block | 29.55 / 35.43 / 30.72 | 29.55 | 30.72 |
+| cache, T, H or planar, best per block | 29.74 / 36.20 / 30.78 | 29.74 | 30.78 |
+
+Counts. Top-end blocks 47,224 of 65,536. The mode beats the cache block on 41,969 (T), 42,950 (H) and 44,833 (planar). Best of the four per block: cache 1,277, T 3,201, H 5,429, planar 37,317.
+
+Comparison with the open E4 search (Round 88, check-etc2-endpoint-search.cjs): E4 is R/G/B 29.43 / 34.99 / 30.67, min 29.43. The best special-mode arm on the minimum channel is 29.74 (cache, T, H or planar, per block), +0.31 dB. Planar alone takes G over 35 (35.11) but leaves R at 29.50. The R channel is the limit in every arm.
+
+Verdict. The special modes are not the fix for the blue top end. They raise blue from 28.49 to about 30.8 under these models, and the minimum channel from 28.49 to 29.74, still 5.3 dB short of the 35 dB bar. The bar stays OPEN. The fits minimise the summed R, G and B error, and the search is local, so these are lower bounds for each model, not the models' optima.
+
+Witness. scripts/check-etc2-special-witness.cjs, 10 checks, ALL PASS 10 checks, rc 0: palette fixtures for T (c0 0, c1 8, d 17 gives 0, 153, 136, 119) and H (c0 4, c1 12, d 9 gives 77, 59, 213, 195); planar fixtures for a horizontal ramp (0, 64, 128, 191), a vertical ramp, and the rounding term (x 1, H 2 gives 1); exact round trips (sse 0) for T (d 23), H (d 41) and planar on constructed blocks; the baseline library decode, blue 28.49 dB, min 28.49 dB over the full texture; and the library still refuses a T, H or planar block.
+
+Red check. The planar rounding term (`+ 2`) was removed in a dot-file mutant (scripts/lib/.etc2-special.mutant.cjs, via ETC2_SPECIAL_PATH). The witness exited 1 with 3 of 10 FAIL (the three planar fixtures). mutant_rc 1, DETECTED. The mutant was deleted, and scripts/lib/etc2-special.cjs was cmp-identical to its saved copy (RESTORED_IDENTICAL). git status showed only the three new files.
+
+Reopen. The bit layouts of T, H and planar, from the ETC2 specification or fitted to a SwiftShader readback of fixture blocks in each mode. Then re-run the top-end arms with a decodable encoder, and combine planar with the E4 search on the R channel, the limit in every arm.
