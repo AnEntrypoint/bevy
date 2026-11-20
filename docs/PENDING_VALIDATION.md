@@ -6639,3 +6639,10 @@ PHASEB-DONE rc=0 20:17:03Z
 - Row 278: present (parts A, B and C witnessed; scope in docs/parity-matrix.tsv).
 - Counts: open 792, present 8, candidate-only 0, blocked 29.
 
+
+## Round 131 Phase A: heavy-jobs counts only compile and build processes (witness and red check listed; not run)
+
+- Change: scripts/lib/heavy-jobs.cjs counts a process only when it is a compiler or build tool (cc1plus, cc1, rustc, cargo, zig, cmake, ninja, the linkers and sccache) and it stays above 5 percent CPU in every top frame. The generic hot rule (any process above 20 percent), the Chromium renderer rule and the 20 percent limit are removed, so a resident worker such as gm-core, a browser, grep and a node export are not counted. The gm-core handshake exemption is removed with them, because a worker that is not a compiler is never counted. Cargo test, check and nextest are test-check. scripts/check-heavy-jobs-classify-witness.cjs is removed; its checks are folded into scripts/check-heavy-jobs.cjs, whose fixture now lists each process in every top frame. The baseline before this change: check-heavy-jobs.cjs failed 8 of 13 cases, because its compiler pids were absent from the top frames.
+- Witness: node scripts/check-heavy-jobs.cjs must print 18 ok lines and exit 0. It has resident-worker cases (gm-core with and without --handshake), browser cases (renderer over and under 1 GiB, GPU process), a node export at 113 percent, grep, a compiler in one frame only, and a compiler below the floor.
+- Red check: scripts/lib/heavy-jobs.cjs `let kind = null;` becomes `let kind = sustained(row.pid) ? 'hot' : null;` (the generic hot rule back). The witness must exit 1 with FAIL on the resident, browser and node cases. The file is restored from its backup, cmp must match, and git status must show only the intended files.
+- Gate: /tmp/bt/r131-gate.sh reads node scripts/heavy-jobs.cjs alone. The old gate read /tmp/bt/old/scripts/heavy-jobs.cjs and exited with its code, so a busy reading came from the old classifier even when the new one read clear.

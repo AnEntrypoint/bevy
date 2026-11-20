@@ -1,7 +1,5 @@
 const COMPILERS = new Set(['cc1plus', 'cc1', 'rustc', 'cargo', 'zig', 'cmake', 'ninja', 'collect2', 'clang', 'lld', 'mold', 'sccache']);
-const CPU_LIMIT = 20;
 const COMPILE_CPU_FLOOR = 5;
-const RENDERER_RSS_KIB = 1048576;
 
 function parseTop(text) {
     const frames = [];
@@ -26,24 +24,17 @@ function parsePs(text) {
 
 function classify(psRows, topFrames) {
     const maps = topFrames.map((frame) => new Map(frame.map((row) => [row.pid, row.cpu])));
-    const sustained = (pid, limit) => maps.length > 0 && maps.every((map) => (map.get(pid) ?? -Infinity) > limit);
+    const sustained = (pid) => maps.length > 0 && maps.every((map) => (map.get(pid) ?? -Infinity) > COMPILE_CPU_FLOOR);
     const found = [];
     for (const row of psRows) {
         const words = row.args.split(' ');
         const base = (words[0] || '').split('/').pop();
-        if (/gm-core/.test(row.args) && /--handshake/.test(row.args)) continue;
         let kind = null;
-        if (base === 'cargo' && ['test', 'check', 'nextest'].includes(words[1])) {
-            if (sustained(row.pid, COMPILE_CPU_FLOOR)) kind = 'test-check';
-        } else if (COMPILERS.has(base)) {
-            if (sustained(row.pid, COMPILE_CPU_FLOOR)) kind = 'compile';
-        } else if (/--type=renderer/.test(row.args) && /chrom/.test(row.args) && row.rss > RENDERER_RSS_KIB) {
-            if (sustained(row.pid, CPU_LIMIT)) kind = 'chromium-renderer';
-        }
-        if (kind === null && sustained(row.pid, CPU_LIMIT)) kind = 'hot';
-        if (kind !== null) found.push({ kind, pid: row.pid, cpu: maps[maps.length - 1].get(row.pid), args: row.args });
+        if (base === 'cargo' && ['test', 'check', 'nextest'].includes(words[1])) kind = 'test-check';
+        else if (COMPILERS.has(base)) kind = 'compile';
+        if (kind !== null && sustained(row.pid)) found.push({ kind, pid: row.pid, cpu: maps[maps.length - 1].get(row.pid), args: row.args });
     }
     return found;
 }
 
-module.exports = { parseTop, parsePs, classify, CPU_LIMIT, COMPILE_CPU_FLOOR };
+module.exports = { parseTop, parsePs, classify, COMPILE_CPU_FLOOR };
