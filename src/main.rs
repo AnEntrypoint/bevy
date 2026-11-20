@@ -4,6 +4,7 @@ mod glb;
 mod height;
 mod hitscan;
 mod terrain_physics;
+mod terrain_stream;
 mod globe;
 mod gltf_check;
 mod png_check;
