@@ -6127,3 +6127,66 @@ Witness (CPU only). ALL PASS 3 checks, rc 0 (PID 90902): ok the three formulas g
 Red check (spec's +32 removed in place, saved to /tmp/bt/r119-interp.good first). FAIL 3 of 3, DETECTED (PID 91104): the first check gives 1,1,2; the second spec-floor 0, spec-even 438,272; the third 61 of 120 decoded values differ from the spec (first: k 1 channel 0, decoded 18, spec 17). RESTORED_IDENTICAL; git status shows only the new files.
 
 Next step. Run scripts/check-astc-interp-readback.cjs in a clear window, with the witness and its red check. If the GPU matches the spec on every mid weight, the residual is not in the interpolation either, and the next candidates are the weights of the real blocks (the probe sets one weight per block). If one of the other formulas matches, the residual is that rounding, and the decoder's weight step is the fix to make.
+
+## Round 120 Phase B: window did not clear (no witness run, no measurement, nothing pushed; readings and both verdicts recorded)
+
+Pre-window, 13:31:05 UTC (vmstat 1 2, then the old rule): sample 1 (average since boot) si 1557, so 2723, bi 17534, bo 15797; sample 2 si 6644, so 0, bi 335852, bo 7884. The second sample was closed on swap-in (6644 KB/s, above the 1000 KB/s gate). The old rule read busy: pid 2525 (oscraft gm-core, 64.4%) and pid 91870 (a peer's grep over /workspace/fx, 89.1%). heavy-jobs matched bevy commit 495fff6 (cmp, identical).
+
+Window (scripts/window-job.sh, WINDOW_S 1200, INTERVAL_S 30, GATE_KB 1000, MIN_REMAINING_S 0, HEAVY_CMD bash /tmp/bt/r119-heavy.sh, log target/witness/window-gate-r120.log, local time UTC+2). The gate verdict is the 495fff6 rule (OLD); NEW is the classifier on this branch, read on the same reading a second later. Every reading, in order:
+
+reading 15:31:12 si=6496 so=0 load1=1.51 gate=closed heavy=busy remainS=1196 OLD495fff6 HEAVY_JOBS busy n=3;hot pid=2065 cpu=21.8 claude --dangerously-skip-permissions --model claude-haiku-5-5 --resume 0f054132-9d13-4196-b9d1-da8e
+reading 15:31:41 si=5936 so=0 load1=2.14 gate=closed heavy=busy remainS=1167 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=64.4 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /wo
+reading 15:32:12 si=6184 so=0 load1=2.77 gate=closed heavy=busy remainS=1136 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=64.4 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /wo
+reading 15:32:42 si=6580 so=0 load1=3.71 gate=closed heavy=busy remainS=1106 OLD495fff6 HEAVY_JOBS busy n=3;hot pid=2236 cpu=55.4 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/bevy --run-dir /works
+reading 15:33:11 si=5724 so=0 load1=3.66 gate=closed heavy=busy remainS=1077 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=91870 cpu=94.1 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;hot pid=92918 cpu=38.6 /data/cache/node/
+reading 15:33:42 si=8 so=0 load1=3.18 gate=open heavy=busy remainS=1046 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=94.1 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=94.
+reading 15:34:11 si=12 so=0 load1=3.70 gate=open heavy=busy remainS=1017 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=96 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=96 g
+reading 15:34:42 si=4 so=0 load1=3.31 gate=open heavy=busy remainS=986 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=99 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /workspace/
+reading 15:35:12 si=92 so=0 load1=3.16 gate=open heavy=busy remainS=956 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=100 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /workspac
+reading 15:35:41 si=100 so=0 load1=2.87 gate=open heavy=busy remainS=927 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=95 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=96 g
+reading 15:36:12 si=8 so=0 load1=2.67 gate=open heavy=busy remainS=896 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=96 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=97 gre
+reading 15:36:42 si=4 so=0 load1=2.23 gate=open heavy=busy remainS=866 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=96 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=97 gre
+reading 15:37:11 si=8 so=0 load1=2.09 gate=open heavy=busy remainS=837 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=95 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=94.1 g
+reading 15:37:42 si=0 so=0 load1=2.01 gate=open heavy=busy remainS=806 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=91870 cpu=93.1 grep -rln -i rank 139\|rank 174\|ranked list /workspace/fx;NEW HEAVY_JOBS busy n=1;hot pid=91870 cpu=94.1
+reading 15:38:11 si=60 so=0 load1=3.21 gate=open heavy=busy remainS=777 OLD495fff6 HEAVY_JOBS busy n=4;hot pid=422 cpu=101 /lsiopy/bin/python3 /lsiopy/bin/selkies --addr=localhost;hot pid=92951 cpu=30.7 /usr/lib/chromium/chromium.
+reading 15:38:42 si=80 so=0 load1=4.69 gate=closed heavy=busy remainS=746 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=98 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /workspa
+reading 15:39:12 si=1068 so=432 load1=4.90 gate=closed heavy=busy remainS=716 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=99 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /wor
+reading 15:39:41 si=152 so=12 load1=5.09 gate=closed heavy=busy remainS=687 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2525 cpu=101 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /work
+reading 15:40:12 si=368 so=0 load1=4.31 gate=closed heavy=busy remainS=656 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=93046 cpu=105.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=92977 --enable-crash-reporter
+reading 15:40:42 si=1748 so=0 load1=4.39 gate=closed heavy=busy remainS=626 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=1680 cpu=44.6 claude --dangerously-skip-permissions --model claude-haiku-5-5 --resume 70909ee0-b1b9-49cc-aa97-bc8b1
+reading 15:41:11 si=228 so=0 load1=5.07 gate=closed heavy=busy remainS=597 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=97959 cpu=24.8 /usr/lib/chromium/chromium.real --use-vulkan --enable-features=Vulkan,VaapiVideoDecoder --ignore-gpu-
+reading 15:41:42 si=20 so=0 load1=4.04 gate=closed heavy=busy remainS=566 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=98054 cpu=113.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=97976 --enable-crash-reporter=
+reading 15:42:12 si=8 so=0 load1=3.76 gate=open heavy=busy remainS=536 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=98054 cpu=111.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=97976 --enable-crash-reporter=,bu
+reading 15:42:41 si=4 so=0 load1=3.19 gate=open heavy=busy remainS=507 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=2236 cpu=34.7 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/bevy --run-dir /workspace/b
+reading 15:43:12 si=4 so=0 load1=2.34 gate=open heavy=busy remainS=476 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=100723 cpu=46.5 /usr/lib/chromium/chromium.real --use-vulkan --enable-features=Vulkan,VaapiVideoDecoder --ignore-gpu-blo
+reading 15:43:42 si=0 so=0 load1=2.06 gate=open heavy=busy remainS=446 OLD495fff6 HEAVY_JOBS busy n=3;hot pid=100723 cpu=23.8 /usr/lib/chromium/chromium.real --use-vulkan --enable-features=Vulkan,VaapiVideoDecoder --ignore-gpu-blo
+reading 15:44:11 si=0 so=0 load1=2.23 gate=open heavy=busy remainS=417 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=100834 cpu=116.8 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=100750 --enable-crash-reporter=,
+reading 15:44:42 si=0 so=0 load1=1.85 gate=open heavy=busy remainS=386 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=100834 cpu=106.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=100750 --enable-crash-reporter=,
+reading 15:45:12 si=8 so=0 load1=2.00 gate=open heavy=busy remainS=356 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=100834 cpu=106 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=100750 --enable-crash-reporter=,bu
+reading 15:45:41 si=4 so=2792 load1=2.62 gate=closed heavy=busy remainS=327 OLD495fff6 HEAVY_JOBS busy n=3;hot pid=1762 cpu=30.7 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/signal --run-dir /work
+reading 15:46:12 si=4 so=0 load1=2.59 gate=open heavy=busy remainS=296 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=2525 cpu=88 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/oscraft --run-dir /workspace/
+reading 15:46:41 si=4 so=19716 load1=2.35 gate=closed heavy=busy remainS=267 OLD495fff6 HEAVY_JOBS busy n=2;hot pid=1762 cpu=36.6 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/signal --run-dir /wor
+reading 15:47:12 si=112 so=0 load1=3.57 gate=open heavy=busy remainS=236 OLD495fff6 HEAVY_JOBS busy n=4;hot pid=422 cpu=40.6 /lsiopy/bin/python3 /lsiopy/bin/selkies --addr=localhost;hot pid=1762 cpu=25.7 /config/.gmnew/versions/d5
+reading 15:47:42 si=12 so=0 load1=3.43 gate=open heavy=busy remainS=206 OLD495fff6 HEAVY_JOBS busy n=4;hot pid=422 cpu=58.4 /lsiopy/bin/python3 /lsiopy/bin/selkies --addr=localhost;hot pid=103771 cpu=24.8 /usr/lib/chromium/chromiu
+reading 15:48:11 si=228 so=0 load1=2.85 gate=open heavy=busy remainS=177 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=103857 cpu=114.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=103788 --enable-crash-reporter
+reading 15:48:42 si=460 so=0 load1=2.80 gate=open heavy=busy remainS=146 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=103857 cpu=115.8 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=103788 --enable-crash-reporter
+reading 15:49:12 si=168 so=0 load1=2.57 gate=open heavy=busy remainS=116 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=103857 cpu=111.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=103788 --enable-crash-reporter
+reading 15:49:41 si=164 so=0 load1=2.50 gate=open heavy=busy remainS=87 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=2236 cpu=74.3 /config/.gmnew/versions/d595173eaec6-dev/gm-core worker --workspace /workspace/bevy --run-dir /workspace/
+reading 15:50:12 si=16 so=0 load1=2.40 gate=open heavy=busy remainS=56 OLD495fff6 HEAVY_JOBS busy n=3;hot pid=105809 cpu=31.7 /usr/lib/chromium/chromium.real --use-vulkan --enable-features=Vulkan,VaapiVideoDecoder --ignore-gpu-blo
+reading 15:50:42 si=0 so=0 load1=2.38 gate=open heavy=busy remainS=26 OLD495fff6 HEAVY_JOBS busy n=1;hot pid=105896 cpu=105.9 /usr/lib/chromium/chromium.real --type=renderer --crashpad-handler-pid=105826 --enable-crash-reporter=,b
+WINDOW-ENDED-WITHOUT-CLEAR 15:51:08
+
+Result: WINDOW-ENDED-WITHOUT-CLEAR at 15:51:08 local (13:51:08 UTC). Of 40 readings the swap gate was open on 26 and closed on 14 (the largest swap-in was 19716 KB/s, at 15:46:41). Heavy-jobs read busy on all 40 under the old rule and on all 40 under the new classifier. Neither verdict was clear on any reading, so the gate never held the two conditions together.
+
+Holders, by PID and cwd (checked against /proc at 13:38 UTC and after the window):
+- pid 2525, gm-core worker, cwd /workspace/oscraft, live, user abc: the most frequent holder (14 readings, 88 to 101% CPU). A peer's job.
+- pid 2236, gm-core worker, cwd /workspace/bevy, live, user abc: 5 readings, 21 to 74% CPU. This session's own gm worker, not a compute job.
+- pid 1762, gm-core worker, cwd /workspace/signal, live: 3 readings, 30 to 37% CPU. A peer's job.
+- pid 1680, claude, cwd /workspace/signal, live: 1 reading, 44.6% CPU. A peer's session.
+- pid 422, selkies, cwd /run/s6-rc:s6-rc-init:DOgnaN/servicedirs/svc-selkies, live: 7 readings, 40 to 101% CPU. A host service, not a project.
+- pid 91870, a grep over /workspace/fx, cwd not recorded, exited by 13:38 UTC: 8 readings, 93 to 96% CPU. A peer's search.
+- Chromium renderer and GPU processes (for example pids 93046, 98054, 100834, 103857, 105896), with user-data-dir under /workspace/os…, the oscraft browser profile prefix. They exited within the window, so their cwd is not recorded.
+
+None of these holders is a bevy compile, witness or probe. The window's own witnesses were not started because the gate never cleared.
+
+Not run: the witnesses and red checks of this stack, and the interpolation measurement (scripts/check-astc-interp-readback.cjs). Its inputs were checked offline before the window (215,040 fixtures, 3,440,640 bytes, readback height 3,360, decoder against spec on 8,400 values with 0 mismatches). Nothing pushed: origin/main is 2c3ca0a.
