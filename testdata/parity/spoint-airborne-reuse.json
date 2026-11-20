@@ -1,0 +1,4152 @@
+{
+ "spoint": "5f43c86c",
+ "ops": [
+  {
+   "op": "add",
+   "id": "p",
+   "key": 1,
+   "position": [
+    0,
+    6,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "add",
+   "id": "g",
+   "key": 2,
+   "position": [
+    40,
+    5,
+    40
+   ],
+   "velocity": [
+    0,
+    0,
+    0
+   ],
+   "onGround": true
+  },
+  {
+   "op": "add",
+   "id": "b",
+   "key": 3,
+   "position": [
+    0,
+    6,
+    0
+   ],
+   "velocity": [
+    0,
+    -4,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.09,
+    6,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.09,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.18,
+    6,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.18,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.27,
+    6,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.27,
+   "z": 0
+  },
+  {
+   "op": "epoch",
+   "value": 1
+  },
+  {
+   "op": "height",
+   "x": 0.27,
+   "z": 0
+  },
+  {
+   "op": "epoch",
+   "value": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.271,
+    5.9,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.271,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.272,
+    5.800000000000001,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.272,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.273,
+    5.700000000000001,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.273,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.274,
+    5.600000000000001,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.274,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.275,
+    5.500000000000002,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.275,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.276,
+    5.400000000000002,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.276,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.277,
+    5.3000000000000025,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.277,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.278,
+    5.200000000000003,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.278,
+   "z": 0
+  },
+  {
+   "op": "height",
+   "x": 40,
+   "z": 40
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.279,
+    5.100000000000003,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.279,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28,
+    5.0000000000000036,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.281,
+    4.900000000000004,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.281,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28200000000000003,
+    4.800000000000004,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28200000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28300000000000003,
+    4.700000000000005,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28300000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28400000000000003,
+    4.600000000000005,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28400000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28500000000000003,
+    4.500000000000005,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28500000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28600000000000003,
+    4.400000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28600000000000003,
+   "z": 0
+  },
+  {
+   "op": "height",
+   "x": 40,
+   "z": 40
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28700000000000003,
+    4.300000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28700000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28800000000000003,
+    4.200000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28800000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.28900000000000003,
+    4.100000000000007,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.28900000000000003,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29000000000000004,
+    4.000000000000007,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29000000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29100000000000004,
+    3.900000000000007,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29100000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29200000000000004,
+    3.800000000000007,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29200000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29300000000000004,
+    3.700000000000007,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29300000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29400000000000004,
+    3.6000000000000068,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29400000000000004,
+   "z": 0
+  },
+  {
+   "op": "height",
+   "x": 40,
+   "z": 40
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29500000000000004,
+    3.5000000000000067,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29500000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29600000000000004,
+    3.4000000000000066,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29600000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29700000000000004,
+    3.3000000000000065,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29700000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29800000000000004,
+    3.2000000000000064,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29800000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.29900000000000004,
+    3.1000000000000063,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.29900000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30000000000000004,
+    3.000000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30000000000000004,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30100000000000005,
+    2.900000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30100000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30200000000000005,
+    2.800000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30200000000000005,
+   "z": 0
+  },
+  {
+   "op": "height",
+   "x": 40,
+   "z": 40
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30300000000000005,
+    2.700000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30300000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30400000000000005,
+    2.600000000000006,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30400000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30500000000000005,
+    2.5000000000000058,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30500000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30600000000000005,
+    2.4000000000000057,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30600000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30700000000000005,
+    2.3000000000000056,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30700000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30800000000000005,
+    2.2000000000000055,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30800000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.30900000000000005,
+    2.1000000000000054,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.30900000000000005,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.31000000000000005,
+    2.0000000000000053,
+    0
+   ],
+   "velocity": [
+    5,
+    -30,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.31000000000000005,
+   "z": 0
+  },
+  {
+   "op": "height",
+   "x": 40,
+   "z": 40
+  },
+  {
+   "op": "epoch",
+   "value": 1
+  },
+  {
+   "op": "height",
+   "x": 0.31000000000000005,
+   "z": 0
+  },
+  {
+   "op": "epoch",
+   "value": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.31000000000000005,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.31000000000000005,
+   "z": 0
+  },
+  {
+   "op": "verify",
+   "value": true
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.33000000000000007,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.33000000000000007,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.3500000000000001,
+    4.01,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.3500000000000001,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.3700000000000001,
+    4.02,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.3700000000000001,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.3900000000000001,
+    4.03,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.3900000000000001,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.41000000000000014,
+    4.04,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.41000000000000014,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.43000000000000016,
+    4.05,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.43000000000000016,
+   "z": 0
+  },
+  {
+   "op": "verify",
+   "value": false
+  },
+  {
+   "op": "override",
+   "value": 0.5
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.44000000000000017,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.44000000000000017,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.4500000000000002,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.4500000000000002,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.4600000000000002,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.4600000000000002,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.4700000000000002,
+    4,
+    0
+   ],
+   "velocity": [
+    5,
+    2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.4700000000000002,
+   "z": 0
+  },
+  {
+   "op": "override",
+   "value": null
+  },
+  {
+   "op": "enabled",
+   "value": false
+  },
+  {
+   "op": "height",
+   "x": 0.4700000000000002,
+   "z": 0
+  },
+  {
+   "op": "enabled",
+   "value": true
+  },
+  {
+   "op": "remove",
+   "id": "p"
+  },
+  {
+   "op": "height",
+   "x": 0.4700000000000002,
+   "z": 0
+  },
+  {
+   "op": "add",
+   "id": "p",
+   "key": 4,
+   "position": [
+    0.4700000000000002,
+    9,
+    0
+   ],
+   "velocity": [
+    5,
+    -2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "reset"
+  },
+  {
+   "op": "height",
+   "x": 0.4700000000000002,
+   "z": 0
+  },
+  {
+   "op": "move",
+   "id": "p",
+   "position": [
+    0.4800000000000002,
+    9,
+    0
+   ],
+   "velocity": [
+    5,
+    -2,
+    0
+   ],
+   "onGround": false
+  },
+  {
+   "op": "height",
+   "x": 0.4800000000000002,
+   "z": 0
+  }
+ ],
+ "expect": [
+  {
+   "y": null,
+   "stats": {
+    "served": 0,
+    "exact": 0,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 0,
+    "exact": 0,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 0,
+    "exact": 0,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3,
+   "stats": {
+    "served": 1,
+    "exact": 1,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 1,
+    "exact": 1,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.0225,
+   "stats": {
+    "served": 2,
+    "exact": 2,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 2,
+    "exact": 2,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.045,
+   "stats": {
+    "served": 3,
+    "exact": 3,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 3,
+    "exact": 3,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.0675,
+   "stats": {
+    "served": 4,
+    "exact": 4,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 4,
+    "exact": 4,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.0675,
+   "stats": {
+    "served": 5,
+    "exact": 5,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 5,
+    "exact": 5,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 5,
+    "exact": 5,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 6,
+    "exact": 6,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 6,
+    "exact": 6,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 7,
+    "exact": 6,
+    "reused": 1,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0010000000000000009,
+    "sumReuseM": 0.0010000000000000009,
+    "maxReuseRatio": 0.01756793851221522,
+    "limitMinM": 0.05692187500000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.7322500000000005,
+    "maxRatioToDerived": 0.01756793851221522
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 7,
+    "exact": 6,
+    "reused": 1,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0010000000000000009,
+    "sumReuseM": 0.0010000000000000009,
+    "maxReuseRatio": 0.01756793851221522,
+    "limitMinM": 0.05692187500000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.7322500000000005,
+    "maxRatioToDerived": 0.01756793851221522
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 8,
+    "exact": 6,
+    "reused": 2,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0020000000000000018,
+    "sumReuseM": 0.0030000000000000027,
+    "maxReuseRatio": 0.03647069997150729,
+    "limitMinM": 0.054838541666666685,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.632250000000001,
+    "maxRatioToDerived": 0.03647069997150729
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 8,
+    "exact": 6,
+    "reused": 2,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0020000000000000018,
+    "sumReuseM": 0.0030000000000000027,
+    "maxReuseRatio": 0.03647069997150729,
+    "limitMinM": 0.054838541666666685,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.632250000000001,
+    "maxRatioToDerived": 0.03647069997150729
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 9,
+    "exact": 6,
+    "reused": 3,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0030000000000000027,
+    "sumReuseM": 0.006000000000000005,
+    "maxReuseRatio": 0.056866423141475,
+    "limitMinM": 0.05275520833333336,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.5322500000000012,
+    "maxRatioToDerived": 0.056866423141475
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 9,
+    "exact": 6,
+    "reused": 3,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0030000000000000027,
+    "sumReuseM": 0.006000000000000005,
+    "maxReuseRatio": 0.056866423141475,
+    "limitMinM": 0.05275520833333336,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.5322500000000012,
+    "maxRatioToDerived": 0.056866423141475
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 10,
+    "exact": 6,
+    "reused": 4,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0040000000000000036,
+    "sumReuseM": 0.010000000000000009,
+    "maxReuseRatio": 0.07893925377736666,
+    "limitMinM": 0.05067187500000003,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.4322500000000016,
+    "maxRatioToDerived": 0.07893925377736666
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 10,
+    "exact": 6,
+    "reused": 4,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0040000000000000036,
+    "sumReuseM": 0.010000000000000009,
+    "maxReuseRatio": 0.07893925377736666,
+    "limitMinM": 0.05067187500000003,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.4322500000000016,
+    "maxRatioToDerived": 0.07893925377736666
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 11,
+    "exact": 6,
+    "reused": 5,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0050000000000000044,
+    "sumReuseM": 0.015000000000000013,
+    "maxReuseRatio": 0.10290492014149427,
+    "limitMinM": 0.04858854166666671,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.332250000000002,
+    "maxRatioToDerived": 0.10290492014149427
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 11,
+    "exact": 6,
+    "reused": 5,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.0050000000000000044,
+    "sumReuseM": 0.015000000000000013,
+    "maxReuseRatio": 0.10290492014149427,
+    "limitMinM": 0.04858854166666671,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.332250000000002,
+    "maxRatioToDerived": 0.10290492014149427
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 12,
+    "exact": 6,
+    "reused": 6,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.006000000000000005,
+    "sumReuseM": 0.02100000000000002,
+    "maxReuseRatio": 0.129017807145257,
+    "limitMinM": 0.04650520833333338,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.2322500000000023,
+    "maxRatioToDerived": 0.129017807145257
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 12,
+    "exact": 6,
+    "reused": 6,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.006000000000000005,
+    "sumReuseM": 0.02100000000000002,
+    "maxReuseRatio": 0.129017807145257,
+    "limitMinM": 0.04650520833333338,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.2322500000000023,
+    "maxRatioToDerived": 0.129017807145257
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 13,
+    "exact": 6,
+    "reused": 7,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.007000000000000006,
+    "sumReuseM": 0.028000000000000025,
+    "maxReuseRatio": 0.15758002110446706,
+    "limitMinM": 0.044421875000000055,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.1322500000000026,
+    "maxRatioToDerived": 0.15758002110446706
+   }
+  },
+  {
+   "y": 9,
+   "stats": {
+    "served": 14,
+    "exact": 7,
+    "reused": 7,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.007000000000000006,
+    "sumReuseM": 0.028000000000000025,
+    "maxReuseRatio": 0.15758002110446706,
+    "limitMinM": 0.044421875000000055,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.1322500000000026,
+    "maxRatioToDerived": 0.15758002110446706
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 14,
+    "exact": 7,
+    "reused": 7,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.007000000000000006,
+    "sumReuseM": 0.028000000000000025,
+    "maxReuseRatio": 0.15758002110446706,
+    "limitMinM": 0.044421875000000055,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.1322500000000026,
+    "maxRatioToDerived": 0.15758002110446706
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 15,
+    "exact": 7,
+    "reused": 8,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.008000000000000007,
+    "sumReuseM": 0.03600000000000003,
+    "maxReuseRatio": 0.1889531307663918,
+    "limitMinM": 0.04233854166666673,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.032250000000003,
+    "maxRatioToDerived": 0.1889531307663918
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 15,
+    "exact": 7,
+    "reused": 8,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.008000000000000007,
+    "sumReuseM": 0.03600000000000003,
+    "maxReuseRatio": 0.1889531307663918,
+    "limitMinM": 0.04233854166666673,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 2.032250000000003,
+    "maxRatioToDerived": 0.1889531307663918
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 16,
+    "exact": 7,
+    "reused": 9,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.009000000000000008,
+    "sumReuseM": 0.04500000000000004,
+    "maxReuseRatio": 0.22357355414671995,
+    "limitMinM": 0.0402552083333334,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.9322500000000034,
+    "maxRatioToDerived": 0.22357355414671995
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 16,
+    "exact": 7,
+    "reused": 9,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.009000000000000008,
+    "sumReuseM": 0.04500000000000004,
+    "maxReuseRatio": 0.22357355414671995,
+    "limitMinM": 0.0402552083333334,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.9322500000000034,
+    "maxRatioToDerived": 0.22357355414671995
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 17,
+    "exact": 7,
+    "reused": 10,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.010000000000000009,
+    "sumReuseM": 0.05500000000000005,
+    "maxReuseRatio": 0.261972984036021,
+    "limitMinM": 0.03817187500000008,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.8322500000000037,
+    "maxRatioToDerived": 0.261972984036021
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 17,
+    "exact": 7,
+    "reused": 10,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.010000000000000009,
+    "sumReuseM": 0.05500000000000005,
+    "maxReuseRatio": 0.261972984036021,
+    "limitMinM": 0.03817187500000008,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.8322500000000037,
+    "maxRatioToDerived": 0.261972984036021
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 18,
+    "exact": 7,
+    "reused": 11,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.01100000000000001,
+    "sumReuseM": 0.06600000000000006,
+    "maxReuseRatio": 0.3048058882955689,
+    "limitMinM": 0.03608854166666675,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.732250000000004,
+    "maxRatioToDerived": 0.3048058882955689
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 18,
+    "exact": 7,
+    "reused": 11,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.01100000000000001,
+    "sumReuseM": 0.06600000000000006,
+    "maxReuseRatio": 0.3048058882955689,
+    "limitMinM": 0.03608854166666675,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.732250000000004,
+    "maxRatioToDerived": 0.3048058882955689
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 19,
+    "exact": 7,
+    "reused": 12,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.01200000000000001,
+    "sumReuseM": 0.07800000000000007,
+    "maxReuseRatio": 0.35288711900750436,
+    "limitMinM": 0.034005208333333425,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.6322500000000044,
+    "maxRatioToDerived": 0.35288711900750436
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 19,
+    "exact": 7,
+    "reused": 12,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.01200000000000001,
+    "sumReuseM": 0.07800000000000007,
+    "maxReuseRatio": 0.35288711900750436,
+    "limitMinM": 0.034005208333333425,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.6322500000000044,
+    "maxRatioToDerived": 0.35288711900750436
+   }
+  },
+  {
+   "y": 3.06775,
+   "stats": {
+    "served": 20,
+    "exact": 7,
+    "reused": 13,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 20,
+    "exact": 7,
+    "reused": 13,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07125,
+   "stats": {
+    "served": 21,
+    "exact": 8,
+    "reused": 13,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 21,
+    "exact": 8,
+    "reused": 13,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0715,
+   "stats": {
+    "served": 22,
+    "exact": 9,
+    "reused": 13,
+    "groundedServed": 1,
+    "groundedExact": 1,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 9,
+   "stats": {
+    "served": 23,
+    "exact": 10,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 23,
+    "exact": 10,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07175,
+   "stats": {
+    "served": 24,
+    "exact": 11,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 24,
+    "exact": 11,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.072,
+   "stats": {
+    "served": 25,
+    "exact": 12,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 25,
+    "exact": 12,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07225,
+   "stats": {
+    "served": 26,
+    "exact": 13,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 26,
+    "exact": 13,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0725,
+   "stats": {
+    "served": 27,
+    "exact": 14,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 27,
+    "exact": 14,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07275,
+   "stats": {
+    "served": 28,
+    "exact": 15,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 28,
+    "exact": 15,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.073,
+   "stats": {
+    "served": 29,
+    "exact": 16,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 29,
+    "exact": 16,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07325,
+   "stats": {
+    "served": 30,
+    "exact": 17,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 30,
+    "exact": 17,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0735,
+   "stats": {
+    "served": 31,
+    "exact": 18,
+    "reused": 13,
+    "groundedServed": 2,
+    "groundedExact": 2,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 9,
+   "stats": {
+    "served": 32,
+    "exact": 19,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 32,
+    "exact": 19,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07375,
+   "stats": {
+    "served": 33,
+    "exact": 20,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 33,
+    "exact": 20,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.074,
+   "stats": {
+    "served": 34,
+    "exact": 21,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 34,
+    "exact": 21,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07425,
+   "stats": {
+    "served": 35,
+    "exact": 22,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 35,
+    "exact": 22,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0745,
+   "stats": {
+    "served": 36,
+    "exact": 23,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 36,
+    "exact": 23,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07475,
+   "stats": {
+    "served": 37,
+    "exact": 24,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 37,
+    "exact": 24,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.075,
+   "stats": {
+    "served": 38,
+    "exact": 25,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 38,
+    "exact": 25,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07525,
+   "stats": {
+    "served": 39,
+    "exact": 26,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 39,
+    "exact": 26,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0755,
+   "stats": {
+    "served": 40,
+    "exact": 27,
+    "reused": 13,
+    "groundedServed": 3,
+    "groundedExact": 3,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 9,
+   "stats": {
+    "served": 41,
+    "exact": 28,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 41,
+    "exact": 28,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07575,
+   "stats": {
+    "served": 42,
+    "exact": 29,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 42,
+    "exact": 29,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.076,
+   "stats": {
+    "served": 43,
+    "exact": 30,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 43,
+    "exact": 30,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07625,
+   "stats": {
+    "served": 44,
+    "exact": 31,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 44,
+    "exact": 31,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0765000000000002,
+   "stats": {
+    "served": 45,
+    "exact": 32,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 45,
+    "exact": 32,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07675,
+   "stats": {
+    "served": 46,
+    "exact": 33,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 46,
+    "exact": 33,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.077,
+   "stats": {
+    "served": 47,
+    "exact": 34,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 47,
+    "exact": 34,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.07725,
+   "stats": {
+    "served": 48,
+    "exact": 35,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 48,
+    "exact": 35,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0775,
+   "stats": {
+    "served": 49,
+    "exact": 36,
+    "reused": 13,
+    "groundedServed": 4,
+    "groundedExact": 4,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 9,
+   "stats": {
+    "served": 50,
+    "exact": 37,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 50,
+    "exact": 37,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0775,
+   "stats": {
+    "served": 51,
+    "exact": 38,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 51,
+    "exact": 38,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 51,
+    "exact": 38,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0775,
+   "stats": {
+    "served": 52,
+    "exact": 39,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 52,
+    "exact": 39,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 52,
+    "exact": 39,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0825,
+   "stats": {
+    "served": 53,
+    "exact": 40,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 53,
+    "exact": 40,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0875,
+   "stats": {
+    "served": 54,
+    "exact": 41,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 54,
+    "exact": 41,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0925000000000002,
+   "stats": {
+    "served": 55,
+    "exact": 42,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 55,
+    "exact": 42,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.0975,
+   "stats": {
+    "served": 56,
+    "exact": 43,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 56,
+    "exact": 43,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1025,
+   "stats": {
+    "served": 57,
+    "exact": 44,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 57,
+    "exact": 44,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1075,
+   "stats": {
+    "served": 58,
+    "exact": 45,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 58,
+    "exact": 45,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 58,
+    "exact": 45,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 58,
+    "exact": 45,
+    "reused": 13,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.09100000000000008,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.05692187500000001,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 1.5322500000000048,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1075,
+   "stats": {
+    "served": 59,
+    "exact": 45,
+    "reused": 14,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.10100000000000009,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 59,
+    "exact": 45,
+    "reused": 14,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.013000000000000012,
+    "sumReuseM": 0.10100000000000009,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1075,
+   "stats": {
+    "served": 60,
+    "exact": 45,
+    "reused": 15,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.020000000000000018,
+    "sumReuseM": 0.12100000000000011,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 60,
+    "exact": 45,
+    "reused": 15,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.020000000000000018,
+    "sumReuseM": 0.12100000000000011,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1075,
+   "stats": {
+    "served": 61,
+    "exact": 45,
+    "reused": 16,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.030000000000000027,
+    "sumReuseM": 0.15100000000000013,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 61,
+    "exact": 45,
+    "reused": 16,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.030000000000000027,
+    "sumReuseM": 0.15100000000000013,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1075,
+   "stats": {
+    "served": 62,
+    "exact": 45,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 62,
+    "exact": 45,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 62,
+    "exact": 45,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1175,
+   "stats": {
+    "served": 63,
+    "exact": 46,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 63,
+    "exact": 46,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 63,
+    "exact": 46,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": 3.1175,
+   "stats": {
+    "served": 64,
+    "exact": 47,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 64,
+    "exact": 47,
+    "reused": 17,
+    "groundedServed": 5,
+    "groundedExact": 5,
+    "maxReuseM": 0.040000000000000036,
+    "sumReuseM": 0.19100000000000017,
+    "maxReuseRatio": 0.4072442486539394,
+    "limitMinM": 0.0319218750000001,
+    "limitMaxM": 0.5,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 0.8925000000000001,
+    "maxRatioToDerived": 0.4072442486539394
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 0,
+    "exact": 0,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.1175,
+   "stats": {
+    "served": 1,
+    "exact": 1,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": null,
+   "stats": {
+    "served": 1,
+    "exact": 1,
+    "reused": 0,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0,
+    "sumReuseM": 0,
+    "maxReuseRatio": 0,
+    "limitMinM": "Infinity",
+    "limitMaxM": 0,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": "Infinity",
+    "maxRatioToDerived": 0
+   }
+  },
+  {
+   "y": 3.1175,
+   "stats": {
+    "served": 2,
+    "exact": 1,
+    "reused": 1,
+    "groundedServed": 0,
+    "groundedExact": 0,
+    "maxReuseM": 0.010000000000000009,
+    "sumReuseM": 0.010000000000000009,
+    "maxReuseRatio": 0.005439864003399919,
+    "limitMinM": 1.83828125,
+    "limitMaxM": 1.83828125,
+    "verifySamples": 0,
+    "maxServedVsExactM": 0,
+    "sumServedVsExactM": 0,
+    "verifyExactSolves": 0,
+    "minAboveM": 5.8825,
+    "maxRatioToDerived": 0.005439864003399919
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
