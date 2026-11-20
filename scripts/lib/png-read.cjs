@@ -55,7 +55,7 @@ function readPng(buffer) {
   }
   const rgb = new Uint8Array(width * height * 3);
   for (let i = 0; i < width * height; i++) for (let c = 0; c < 3; c++) rgb[i * 3 + c] = pixels[i * channels + c];
-  return { width, height, rgb };
+  return { width, height, rgb: Buffer.from(rgb) };
 }
 
 module.exports = { readPng };
