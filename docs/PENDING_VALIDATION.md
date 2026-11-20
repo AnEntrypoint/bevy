@@ -6343,3 +6343,13 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - Result: every requested group has zero witnessable rows. The planet group (rank 1) has the most counterparts, nine candidates, all now blocked. The top reachable group is therefore blocked, not witnessed. No new witness is written in Phase A.
 - Witness: the Totals line must equal the sum of the TSV outcomes. awk -F'\t' 'NR>1 && $6 !~ /not applicable/ {n++} END{print n}' docs/parity-matrix.tsv must print the open total in the doc (799).
 - Red check: change the open total in the Totals line to a wrong number; the comparison must FAIL; restore the committed file; cmp must match; git status must show only the intended files.
+
+## Round 124 Phase A: the static group is read against spoint and classified (witness and red check listed; not run in Phase B yet)
+
+- Group: static, nine open rows (473, 561 to 568). The static group is the first group in docs/REMAINING_PARITY.md with a partial bevy counterpart (GLB decode in src/glb.rs, basis transcode in src/basisu.rs).
+- Read against spoint: GLBKtx2.js (bin/ktx lookup), GLBTransformer.js and BakeCodeVersion.js (cache keyed by source hash), GLBDraco.js, GLBKtx2 conversion, GLBVrmPassthrough.js, KTX2Extract.js (writes <imageIndex>.ktx2 and meta.json, read back by resolveKtx2File), ProgressiveBake.js, FetchManifest.js. bevy: gltf_check.rs decode_to_cache rewrites every decode on each run (no cache reuse); glb::ktx2_images has two in-crate callers, texture_quality.rs and gltf_check; Cargo.toml has meshopt 0.7 and no Draco or KTX2 encoder crate.
+- Outcomes: 473 blocked (no external binary lookup in bevy by design); 562 blocked (Draco needs a decoder crate and Cargo.toml may not change; meshopt encode has no caller); 563 blocked (no KTX2 encoder crate). 561, 564, 565, 566, 567, 568 stay missing, with the cause appended to their evidence column.
+- Counts after the change: static open 9, need a witness now 0, blocked 3, missing 6. Matrix totals: 1069 rows, missing 763, not applicable 269, present-candidate 14, blocked 22, present 1. No row became present.
+- Dedup: 561 and 568 both key a cache; they stay separate rows, because spoint lists them as separate features. No code was changed, so no YAGNI cut applied to code.
+- Witness: /tmp/bt/r124-docs-check.sh (open 799, present 1, blocked 22, candidate 14, static open 9, static blocked 3, no duplicate row numbers). It was run once in Phase A by mistake, before the gate cleared, and passed; it runs again in Phase B.
+- Red check: /tmp/bt/r124-docs-redcheck.sh (mutation: in a scratch copy, row 473 outcome blocked is changed to present; the witness must fail; the committed TSV is restored and cmp must match; git status must show only the intended files).
