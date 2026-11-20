@@ -15,6 +15,12 @@ const cases = [
     { name: 'a pair at exactly the tolerance passes', runs: [run('w1', 'astc', 1000, 1100), run('w1', 'reference', 1400, 1000)], check: (r) => r.ok },
     { name: 'out-of-order input is sorted by start time', runs: [run('w1', 'reference', 1400, 1048), run('w1', 'astc', 1000, 1045)], check: (r) => r.interleaved && r.ok && r.pairs[0].order === 'astc,reference' },
     { name: 'no runs is not a pass', runs: [], check: (r) => !r.ok },
+    { name: 'one interleaved ETC2 pair within the tolerance passes (955 against 1018)', runs: [run('w1', 'etc2', 1000, 955), run('w1', 'reference', 1400, 1018)], check: (r) => r.interleaved && r.ok && r.pairs[0].order === 'etc2,reference' },
+    { name: 'ETC2 arms that run back to back are not interleaved', runs: [run('w1', 'etc2', 1000, 955), run('w1', 'etc2', 1400, 960), run('w1', 'reference', 1800, 1018), run('w1', 'reference', 2200, 1020)], check: (r) => !r.interleaved && !r.ok },
+    { name: 'an ETC2 pair split across two windows is not interleaved', runs: [run('w1', 'etc2', 1000, 955), run('w2', 'reference', 1400, 1018)], check: (r) => !r.interleaved && !r.ok },
+    { name: 'an ETC2 run with no reference in its window fails', runs: [run('w1', 'etc2', 1000, 955), run('w1', 'etc2', 1400, 960)], check: (r) => !r.ok && r.reason === 'window w1: a pair lacks one arm' },
+    { name: 'an ETC2 pair ratio above the tolerance fails (1200 against 1018)', runs: [run('w1', 'etc2', 1000, 1200), run('w1', 'reference', 1400, 1018)], check: (r) => r.interleaved && !r.ok && r.reason === 'a pair ratio is above the tolerance' },
+    { name: 'an ETC2 pair at exactly the tolerance passes', runs: [run('w1', 'etc2', 1000, 1100), run('w1', 'reference', 1400, 1000)], check: (r) => r.ok },
 ];
 
 let fail = 0;

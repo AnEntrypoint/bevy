@@ -3923,3 +3923,23 @@ Red check: the list comparison in the library was disabled (`if (false) failures
 Caveat, the window evidence. ASTC's verdict is same-window: its witness and the pair's reference are 309.082 s apart. ETC2's verdict is not: its witness is from 21:41 and its reference from 00:04, a gap of 8580.541 s. ETC2 is listed usable under the footprint's rule, so the list is right by that rule. But its load comparison is cross-window, the same kind of evidence the pair replaced for ASTC. A same-window ETC2 pair needs about 11 minutes of window. It is not run here, and it is on the ranked list.
 
 No window was needed for this change. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.
+
+## Round 73 Phase A: the pair runner takes the format, and the ETC2 pair is added
+
+The ETC2 verdict is cross-window (Round 72): its witness is from 21:41, its reference from 00:04, a gap of 8580.541 s. The same-window pair that settled ASTC is generalised so it can settle ETC2 too.
+
+What changed:
+- `scripts/measure-astc-pair.cjs`: takes the format as its argument (`astc4x4` by default, or `etc2`; `PAIR_FORMAT` also works). It runs the format arm, then the reference arm (`rgba8-software`), in one window. The ASTC behaviour is unchanged: the same arm order, the same stop-by-PID, the same `ASTC_PAIR` line shape and field names, and the same archive directory. ETC2 prints `ETC2_PAIR` with `etc2_ms`, `etc2_clean`, and its own archive directory (`etc2-load-pair-archive`). The footprint check reads `formats[format]`. The format driver is `PAIR_FORMAT_DRIVER`, falling back to `ASTC_LOAD_DRIVER`.
+- `scripts/lib/astc-load-ratio.cjs`: `checkPairs` treats any arm other than `reference` as the format arm. The interleaving and tolerance rules are the same as before.
+- `scripts/check-astc-pair.cjs`: the ten ASTC cases are unchanged, and six ETC2 cases are added (interleaved pass, back to back fails, split across windows fails, no reference fails, above the tolerance fails, at the tolerance passes). 16 of 16 ok, exit 0.
+
+Checks without a browser:
+- The ASTC stand-in (a driver that writes nothing) gives `ASTC_PAIR run_ok=false stage=astc fresh=false exit_code=0`, exit 1. The line shape is the same as before.
+- The ETC2 stand-in gives `ETC2_PAIR run_ok=false stage=etc2 fresh=false exit_code=0`, exit 1.
+- The ETC2 hanging stand-in under a 2 s budget gives `stage=etc2 timed_out=true`, exit 1. Its PID was stopped, and no stand-in process was left.
+- An unknown format name throws at start.
+- The ASTC and ETC2 witnesses and the footprint are byte-identical after the stand-ins (`cmp`). Each shot directory has 64 files.
+
+Red check: the pair check's tolerance rule was disabled (`ok: interleaved`). The witness exited 1 with three FAILs: the two ASTC ratio cases and the new ETC2 ratio case (1200 against 1018). The library was restored with `cmp`, and the witness exited 0 with 16 of 16 ok.
+
+No window was used in Phase A. No cargo ran, and the `jobs` setting, `Cargo.toml`, `/config/.cargo/config.toml`, and the cargo shim are unchanged. Local commit only; not pushed in Phase A.

@@ -37,14 +37,14 @@ function checkPairs(runs, tolerance) {
         }
         for (let i = 0; i + 1 < group.length; i += 2) {
             const chunk = [group[i], group[i + 1]];
-            const astc = chunk.find((run) => run.arm === 'astc');
+            const formatRun = chunk.find((run) => run.arm !== 'reference');
             const reference = chunk.find((run) => run.arm === 'reference');
-            if (!astc || !reference) {
+            if (!formatRun || !reference) {
                 interleaved = false;
                 reason = `window ${window}: a pair lacks one arm`;
                 continue;
             }
-            pairs.push({ window, order: chunk.map((run) => run.arm).join(','), astcLoadStart: astc.loadStart, referenceLoadStart: reference.loadStart, ...decideLoad({ astcMs: astc.loadMs, referenceMs: reference.loadMs, tolerance }) });
+            pairs.push({ window, order: chunk.map((run) => run.arm).join(','), formatLoadStart: formatRun.loadStart, referenceLoadStart: reference.loadStart, ...decideLoad({ astcMs: formatRun.loadMs, referenceMs: reference.loadMs, tolerance }) });
         }
     }
     const allUsable = pairs.length > 0 && pairs.every((pair) => pair.usable);
