@@ -864,6 +864,28 @@ mod tests {
     }
 
     #[test]
+    fn hf_encode_matches_the_spoint_encoder() {
+        let points: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hf-encode.json")).unwrap();
+        for case in points["cases"].as_array().unwrap() {
+            let header = case["header"].as_str().unwrap().as_bytes();
+            let bits = case["bits"].as_u64().unwrap() as u32;
+            let floats = |key: &str| -> Vec<f32> { case[key].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect() };
+            let q: Vec<u32> = case["q"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u32).collect();
+            let bytes = crate::height::baked::encode_hf(header, bits, &floats("sectorMin"), &floats("sectorMax"), &q);
+            let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+            assert_eq!(hex, case["bytesHex"].as_str().unwrap(), "encode differs from spoint for bits {bits}");
+        }
+    }
+
+    #[test]
+    fn tps_game_hf_reencodes_to_the_shipped_bytes() {
+        let bytes = include_bytes!("../testdata/parity/tps-game.hf");
+        let (_, parts) = crate::height::baked::split_hf(bytes).unwrap();
+        let again = crate::height::baked::encode_hf(&parts.header, parts.bits, &parts.sector_min, &parts.sector_max, &parts.q);
+        assert!(again.as_slice() == bytes.as_slice(), "re-encoded tps-game.hf differs from the shipped bytes ({} against {})", again.len(), bytes.len());
+    }
+
+    #[test]
     fn baked_height_field_refuses_a_truncated_artifact_like_spoint() {
         let short: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-short.json")).unwrap();
         let points: Value = serde_json::from_str(include_str!("../testdata/parity/baked-heightfield-points.json")).unwrap();
