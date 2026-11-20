@@ -230,8 +230,9 @@ impl GlobeWorld {
     }
 
     pub fn elevation(&self, latitude: f32, longitude: f32) -> f32 {
-        let unit = self.lat_lon_to_unit(latitude, longitude);
-        self.planet.height([f64::from(unit.x), f64::from(unit.y), f64::from(unit.z)], f64::from(self.radius)) as f32
+        let (lat, lon) = (f64::from(latitude).to_radians(), f64::from(longitude).to_radians());
+        let unit = [lat.cos() * lon.sin(), lat.sin(), lat.cos() * lon.cos()];
+        self.planet.height(unit, f64::from(self.radius)) as f32
     }
 
     pub fn surface_position(&self, latitude: f32, longitude: f32, altitude: f32) -> Vec3 {
