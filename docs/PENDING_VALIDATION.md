@@ -6336,3 +6336,10 @@ Next step. (a) Item 2: run scripts/check-astc-interp-readback.cjs in a clear win
 - docs/parity-matrix.tsv is the source; docs/PARITY_MATRIX.md is regenerated from it. Counts: 1069 rows; missing 766, not applicable 269, present-candidate 14, blocked 19, present 1.
 - Witness: awk -F'\t' 'NR>1{c[$6]++} END{for(k in c) print c[k], k}' docs/parity-matrix.tsv must print 19 blocked and 14 present-candidate; cut -f1 docs/parity-matrix.tsv | sort | uniq -d must print nothing.
 - Red check: append a copy of row 197 to a scratch copy of the TSV; uniq -d must print 197; restore the committed file; cmp must match; git status must show only the intended files.
+
+## Round 123 Phase A 2: ranked remaining parity list (witness and red check listed; not run)
+
+- docs/REMAINING_PARITY.md: the open rows (present-candidate, blocked and missing) grouped by spoint area in the order the request gave, ranked by whether bevy has a counterpart. Each row gives open, present, candidate-only, blocked, missing and not-applicable counts, and the blocker. Totals: open 799, present 1, candidate-only 14, blocked 19.
+- Result: every requested group has zero witnessable rows. The planet group (rank 1) has the most counterparts, nine candidates, all now blocked. The top reachable group is therefore blocked, not witnessed. No new witness is written in Phase A.
+- Witness: the Totals line must equal the sum of the TSV outcomes. awk -F'\t' 'NR>1 && $6 !~ /not applicable/ {n++} END{print n}' docs/parity-matrix.tsv must print the open total in the doc (799).
+- Red check: change the open total in the Totals line to a wrong number; the comparison must FAIL; restore the committed file; cmp must match; git status must show only the intended files.
