@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const { encodePng, readXwd } = require('./lib/xwd-png.cjs');
+const { readPng } = require('./lib/png-read.cjs');
 
 const GREEN_MIN_PERCENT = 0.43;
 const TREES_MIN = 16;
@@ -10,7 +11,7 @@ if (!xwdPath || !logPath || !pngPath) {
   process.exit(2);
 }
 
-const image = readXwd(fs.readFileSync(xwdPath));
+const image = xwdPath.endsWith('.png') ? readPng(fs.readFileSync(xwdPath)) : readXwd(fs.readFileSync(xwdPath));
 const png = encodePng(image.width, image.height, image.rgb);
 fs.writeFileSync(pngPath, png);
 

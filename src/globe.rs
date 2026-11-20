@@ -6,6 +6,8 @@ use serde_json::{Map, Value, json};
 use crate::height::{CarveConfig, HashVersion, MAX_TERRAIN_CARVES, Planet, PlanetConfig};
 use bevy::app::App;
 use bevy::time::{Time, TimeUpdateStrategy, Virtual};
+use bevy::render::view::window::screenshot::{Screenshot, save_to_disk};
+use std::path::PathBuf;
 use std::time::Duration;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -400,10 +402,14 @@ pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut ca
 }
 
 pub const CENSUS_ENV: &str = "BEVY_JAYZEE_CENSUS";
+pub const CENSUS_OUT_ENV: &str = "BEVY_JAYZEE_CENSUS_OUT";
 const CENSUS_FREEZE_S: f64 = 10.0;
+const CENSUS_CAPTURE_FRAME: u32 = 660;
 
 #[derive(Resource)]
-pub struct CensusMode;
+pub struct CensusMode {
+    out: PathBuf,
+}
 
 fn census_frame() -> Duration {
     Duration::from_secs_f64(1.0 / 60.0)
@@ -413,9 +419,10 @@ pub fn add_census_systems(app: &mut App) {
     if std::env::var(CENSUS_ENV).as_deref() != Ok("1") {
         return;
     }
-    app.insert_resource(CensusMode);
+    let out = std::env::var(CENSUS_OUT_ENV).unwrap_or_else(|_| String::from("census.png"));
+    app.insert_resource(CensusMode { out: PathBuf::from(out) });
     app.insert_resource(TimeUpdateStrategy::ManualDuration(census_frame()));
-    app.add_systems(Update, census_freeze);
+    app.add_systems(Update, (census_freeze, census_capture));
 }
 
 fn census_freeze(time: Res<Time<Virtual>>, bodies: Query<&Position, With<GlobeBody>>, mut strategy: ResMut<TimeUpdateStrategy>, mut frozen: Local<bool>) {
@@ -427,6 +434,14 @@ fn census_freeze(time: Res<Time<Virtual>>, bodies: Query<&Position, With<GlobeBo
     eprintln!("census: simulation frozen at {:.3} s of virtual time", time.elapsed_secs_f64());
     for position in &bodies {
         eprintln!("census: body frozen at {:?}", position.0);
+    }
+}
+
+fn census_capture(mut commands: Commands, census: Res<CensusMode>, mut frames: Local<u32>) {
+    *frames += 1;
+    if *frames == CENSUS_CAPTURE_FRAME {
+        commands.spawn(Screenshot::primary_window()).observe(save_to_disk(census.out.clone()));
+        eprintln!("census: captured frame {} to {}", CENSUS_CAPTURE_FRAME, census.out.display());
     }
 }
 
