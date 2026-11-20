@@ -3,7 +3,7 @@ use bevy::asset::RenderAssetUsages;
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use serde_json::{Map, Value, json};
-use crate::height::{CarveConfig, MAX_TERRAIN_CARVES, Planet};
+use crate::height::{CarveConfig, HashVersion, MAX_TERRAIN_CARVES, Planet, PlanetConfig};
 use bevy::app::App;
 use bevy::time::{Time, TimeUpdateStrategy, Virtual};
 use std::time::Duration;
@@ -26,6 +26,9 @@ pub struct GlobeWorld {
     pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
     pub hpf_tex_res: usize,
+    pub hash_version: HashVersion,
+    pub relief_scale: f64,
+    pub anchor_dir: [f64; 3],
     pub carves: Vec<CarveConfig>,
     pub planet: Arc<Planet>,
 }
@@ -51,10 +54,17 @@ impl Default for GlobeWorld {
             drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
             hpf_tex_res: DEFAULT_HPF_TEX_RES,
+            hash_version: HashVersion::Integer,
+            relief_scale: 0.0,
+            anchor_dir: [0.0, 1.0, 0.0],
             carves: Vec::new(),
-            planet: Arc::new(Planet::new(DEFAULT_SEED as i32, DEFAULT_HPF_TEX_RES, &[])),
+            planet: Arc::new(Planet::new(&default_planet_config())),
         }
     }
+}
+
+fn default_planet_config() -> PlanetConfig {
+    PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: 0.0, anchor_dir: [0.0, 1.0, 0.0], radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
 }
 
 fn carve_of(value: &Value) -> Option<CarveConfig> {
@@ -117,6 +127,10 @@ struct ChunkGeometry {
 }
 
 impl GlobeWorld {
+    fn planet_config(&self) -> PlanetConfig {
+        PlanetConfig { seed: self.seed as i32, hpf_res: self.hpf_tex_res, hash: self.hash_version, relief_scale: self.relief_scale, anchor_dir: self.anchor_dir, radius: f64::from(self.radius), carves: self.carves.clone() }
+    }
+
     pub fn from_value(value: Option<&Value>) -> Self {
         let mut globe = Self::default();
         if let Some(value) = value {
@@ -127,7 +141,7 @@ impl GlobeWorld {
 
     pub fn from_json(&mut self, value: &Value) {
         let Some(object) = value.as_object() else { return; };
-        let (seed, hpf_tex_res) = (self.seed, self.hpf_tex_res);
+        let before = self.planet_config();
         if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
         if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
         for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
@@ -146,6 +160,22 @@ impl GlobeWorld {
         if let Some(res) = object.get("hpfTexRes").and_then(Value::as_f64) {
             self.hpf_tex_res = (res as usize).max(2);
         }
+        if let Some(hash) = object.get("hashVersion").and_then(Value::as_f64) {
+            if hash == 1.0 {
+                self.hash_version = HashVersion::Float;
+            } else if hash == 2.0 {
+                self.hash_version = HashVersion::Integer;
+            } else {
+                eprintln!("globe: hashVersion {hash} is not 1 or 2, keeping the current one");
+            }
+        }
+        if let Some(scale) = object.get("reliefScale").and_then(Value::as_f64) {
+            self.relief_scale = scale;
+        }
+        let anchor: Option<Vec<f64>> = object.get("anchorDir").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_f64).collect());
+        if let Some(v) = anchor.filter(|v| v.len() == 3) {
+            self.anchor_dir = [v[0], v[1], v[2]];
+        }
         if let Some(carves) = object.get("carves").and_then(Value::as_array) {
             self.carves = carves
                 .iter()
@@ -162,8 +192,8 @@ impl GlobeWorld {
                 self.carves.truncate(MAX_TERRAIN_CARVES);
             }
         }
-        if self.seed != seed || self.hpf_tex_res != hpf_tex_res || object.contains_key("carves") {
-            self.planet = Arc::new(Planet::new(self.seed as i32, self.hpf_tex_res, &self.carves));
+        if self.planet_config() != before {
+            self.planet = Arc::new(Planet::new(&self.planet_config()));
         }
     }
 
@@ -737,6 +767,28 @@ mod tests {
         assert!((elapsed[60] - elapsed[0] - 60.0 * frame).abs() < 1e-9, "60 census frames advanced {} s, not 1 s", elapsed[60] - elapsed[0]);
         assert!(elapsed[399] >= CENSUS_FREEZE_S && elapsed[399] <= CENSUS_FREEZE_S + 2.0 * frame, "census froze at {} s", elapsed[399]);
         assert_eq!(elapsed[399], elapsed[300], "the census simulation kept moving after the freeze");
+    }
+
+    #[test]
+    fn hash_version_one_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "hashVersion1");
+        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        assert_eq!(globe.hash_version, HashVersion::Float);
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "hashVersion 1 elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
+    }
+
+    #[test]
+    fn relief_scale_elevation_matches_the_spoint_sampler() {
+        let fixture = spoint_sampler_fixture();
+        let case = spoint_case(&fixture, "reliefScale");
+        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        assert_eq!(globe.relief_scale, case["config"]["reliefScale"].as_f64().unwrap());
+        let worst = worst_elevation_difference(&globe, &fixture, case);
+        let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
+        assert!(worst <= f64::from(ulp), "reliefScale elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
     }
 
     #[test]

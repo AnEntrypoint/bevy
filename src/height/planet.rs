@@ -5,11 +5,20 @@ use super::ops_jsgen::{Ops, Precision, V3};
 const RELIEF_DESIGN_RADIUS_M: f64 = 63_600_000.0;
 const LAND_BIAS_M: f64 = -100_000.0;
 
-#[derive(Clone, Debug)]
-pub struct CarveConfig {
-    pub dir: V3,
-    pub inner_m: f64,
-    pub outer_m: f64,
+#[derive(Clone, Debug, PartialEq)]
+pub enum CarveConfig {
+    Parsed { dir: V3, inner_m: f64, outer_m: f64 },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlanetConfig {
+    pub seed: i32,
+    pub hpf_res: usize,
+    pub hash: HashVersion,
+    pub relief_scale: f64,
+    pub anchor_dir: V3,
+    pub radius: f64,
+    pub carves: Vec<CarveConfig>,
 }
 
 #[derive(Clone)]
@@ -24,12 +33,14 @@ struct ResolvedCarve {
 pub struct Planet {
     pub(super) hpf: Vec<Vec<f32>>,
     hpf_res: usize,
+    hash: HashVersion,
+    relief_scale: f64,
     carves: Vec<ResolvedCarve>,
 }
 
-fn spec(hpf: &[Vec<f32>], hpf_res: usize, carves: Vec<Carve>) -> HeightSpec<'_> {
-    let params = Params { hpf_res: hpf_res as f64, land_bias: LAND_BIAS_M, beach_shelf_m: 0.0, relief_scale: 0.0 };
-    HeightSpec::new(HashVersion::Integer, Precision::F64, params, carves, hpf).expect("a planet spec within the carve limit always builds")
+fn spec(hpf: &[Vec<f32>], hpf_res: usize, hash: HashVersion, relief_scale: f64, carves: Vec<Carve>) -> HeightSpec<'_> {
+    let params = Params { hpf_res: hpf_res as f64, land_bias: LAND_BIAS_M, beach_shelf_m: 0.0, relief_scale };
+    HeightSpec::new(hash, Precision::F64, params, carves, hpf).expect("a planet spec within the carve limit always builds")
 }
 
 fn carve_chord2(radius_m: f64, planet_radius: f64) -> f64 {
@@ -38,17 +49,22 @@ fn carve_chord2(radius_m: f64, planet_radius: f64) -> f64 {
 }
 
 impl Planet {
-    pub fn new(seed: i32, hpf_res: usize, carves: &[CarveConfig]) -> Self {
-        let hpf = sea_bias_faces(i64::from(seed), hpf_res);
-        let natural = spec(&hpf, hpf_res, Vec::new());
-        let carves = carves
-            .iter()
-            .map(|carve| {
-                let dir = Ops::new(Precision::F64).normalize(carve.dir);
-                ResolvedCarve { dir, inner_m: carve.inner_m, outer_m: carve.outer_m, target_h: natural.compose(dir) }
-            })
-            .collect();
-        Self { hpf, hpf_res, carves }
+    pub fn new(config: &PlanetConfig) -> Self {
+        let hpf = sea_bias_faces(i64::from(config.seed), config.hpf_res);
+        let carves: &[CarveConfig] = if config.hash == HashVersion::Float { &[] } else { &config.carves };
+        let resolved: Vec<ResolvedCarve> = {
+            let natural = spec(&hpf, config.hpf_res, config.hash, config.relief_scale, Vec::new());
+            carves
+                .iter()
+                .map(|carve| match carve {
+                    CarveConfig::Parsed { dir, inner_m, outer_m } => {
+                        let dir = Ops::new(Precision::F64).normalize(*dir);
+                        ResolvedCarve { dir, inner_m: *inner_m, outer_m: *outer_m, target_h: natural.compose(dir) }
+                    }
+                })
+                .collect()
+        };
+        Self { hpf, hpf_res: config.hpf_res, hash: config.hash, relief_scale: config.relief_scale, carves: resolved }
     }
 
     pub fn height(&self, dir: V3, radius: f64) -> f64 {
@@ -62,7 +78,7 @@ impl Planet {
                 target_h: carve.target_h,
             })
             .collect();
-        spec(&self.hpf, self.hpf_res, carves).compose(Ops::new(Precision::F64).normalize(dir)) * (radius / RELIEF_DESIGN_RADIUS_M)
+        spec(&self.hpf, self.hpf_res, self.hash, self.relief_scale, carves).compose(Ops::new(Precision::F64).normalize(dir)) * (radius / RELIEF_DESIGN_RADIUS_M)
     }
 }
 

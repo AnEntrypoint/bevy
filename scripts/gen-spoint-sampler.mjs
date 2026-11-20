@@ -15,6 +15,11 @@ const CARVES = [
   { dir: [0.3, -0.8, 0.5], innerM: 300, outerM: 900 },
   { dir: [-1, 0.2, 0.1], innerM: 1200, outerM: 2000 },
 ]
+const CENTRE_CARVES = [
+  { center: [1200, -800], radius: 300, falloff: 600 },
+  { center: [-2500, 900], radius: 1000, falloff: 1000 },
+]
+const ANCHOR_DIR = [0, 1, 0]
 const HPF_TEX_RES = 64
 
 let state = 20260
@@ -26,18 +31,26 @@ const unitOf = ({ lat, lon }) => [Math.cos(toRadians(lat)) * Math.sin(toRadians(
 
 const random_points = Array.from({ length: POINT_COUNT }, () => ({ lat: Math.fround(random() * 170 - 85), lon: Math.fround(random() * 360 - 180) }))
 const carve_points = CARVES.flatMap((c) => { const centre = latLonOf(c.dir); return [centre, { lat: Math.fround(centre.lat + 0.5), lon: centre.lon }] })
-const points = [...random_points, ...carve_points]
+const centre_points = planetSamplerOptsOf({ radius: RADIUS, seed: SEED, anchorDir: ANCHOR_DIR, carves: CENTRE_CARVES }).carves.flatMap((c) => { const centre = latLonOf(c.dir); return [centre, { lat: Math.fround(centre.lat + 0.5), lon: centre.lon }] })
+const points = [...random_points, ...carve_points, ...centre_points]
 
 const cases = [
   { name: 'default', tcfg: { radius: RADIUS, seed: SEED } },
   { name: 'carves', tcfg: { radius: RADIUS, seed: SEED, carves: CARVES } },
   { name: 'hpfTexRes', tcfg: { radius: RADIUS, seed: SEED, physics: { hpfTexRes: HPF_TEX_RES } } },
+  { name: 'hashVersion1', tcfg: { radius: RADIUS, seed: SEED, hashVersion: 1 } },
+  { name: 'reliefScale', tcfg: { radius: RADIUS, seed: SEED, reliefScale: 0.001 } },
+  { name: 'carveCentre', tcfg: { radius: RADIUS, seed: SEED, anchorDir: ANCHOR_DIR, carves: CENTRE_CARVES } },
 ]
 const out = []
 for (const { name, tcfg } of cases) {
   const opts = planetSamplerOptsOf(tcfg)
   const sampler = await loadPlanetSampler(opts)
-  out.push({ name, config: { radius: RADIUS, seed: SEED, carves: opts.carves, hpfTexRes: opts.hpfTexRes ?? 128 }, hashVersion: sampler.hashVersion, heights: points.map((p) => sampler.heightAt(unitOf(p))) })
+  const config = { radius: RADIUS, seed: SEED, carves: tcfg.carves ?? [], hpfTexRes: opts.hpfTexRes ?? 128 }
+  if (tcfg.hashVersion !== undefined) config.hashVersion = tcfg.hashVersion
+  if (tcfg.reliefScale !== undefined) config.reliefScale = tcfg.reliefScale
+  if (tcfg.anchorDir !== undefined) config.anchorDir = tcfg.anchorDir
+  out.push({ name, config, hashVersion: sampler.hashVersion, heights: points.map((p) => sampler.heightAt(unitOf(p))) })
 }
 mkdirSync(outDir, { recursive: true })
 const fixture = { source: `spoint ${rev}: src/terrain/TerrainPhysics.js planetSamplerOptsOf and loadPlanetSampler, then heightAt at fixed points`, seed: SEED, points, cases: out }
