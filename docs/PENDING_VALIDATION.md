@@ -4400,3 +4400,21 @@ Result, the same numbers as Phase A. The bar stays OPEN. Attributed: the bias st
 
 Which side agrees with which: the separate software GL and both decoders agree with the ETC2 bits, so the disagreement is between the ETC2 transcode and the RGBA8 unpack. The RGBA8 cache is the side that differs from the decoded ETC2.
 
+
+## Round 89 Phase A: the MSE-optimal endpoint search on the top-end differential blocks
+
+Script: scripts/check-etc2-endpoint-search.cjs. It checks first: re-encoding each differential block from its parsed fields gives its bytes exactly (60,556 of 60,556), and the evaluator built on the same fields matches decodeEtc2Rgba8Block on every texel (0 mismatches). Search: for each top-end differential block (cache block mean blue >= 250, 46,193 blocks), each subset's cost is separable (a texel's selector lies within its own subset), so the search runs over the 8 intensity tables of each subset and the 32 base values, with the differential delta limited to -4..3, and the best pair is taken. Every searched block is re-encoded and decoded by the library; the search's predictions match the library on all texels (0 mismatches in every scenario).
+
+Results, PSNR in dB over the whole image; only the top-end differential blocks change:
+- baseline (transcoder): R/G/B 28.77 / 36.34 / 28.49, min 28.49.
+- SEL blue-optimal selectors, transcoder endpoints: R/G/B 26.75 / 29.10 / 30.12, min 26.75.
+- E1 blue-error endpoint search over tables, base pairs and flip (blue-optimal selectors): R/G/B 9.47 / 9.52 / 30.83, min 9.47. Blue gains 0.71 dB over SEL.
+- E2 blue-error endpoint search over tables and base pairs (RGB selectors): R/G/B 17.33 / 17.53 / 30.79, min 17.33.
+- E3 E2, then base-only R and G searches with tables fixed: R/G/B 22.76 / 33.66 / 22.69, min 22.69.
+- E4 joint RGB coordinate search over tables and base pairs, RGB selectors, two rounds (a local optimum, not a proven one): R/G/B 29.43 / 34.99 / 30.67, min 29.43.
+
+What it shows: the transcoder's endpoints are already close to blue-optimal for these blocks (the exhaustive search adds 0.71 dB on blue over SEL). The loss on R and G in E1 to E3 comes from the intensity table, which is shared by the three channels of a subset. A table picked for blue is wide, so it wrecks R and G; the joint search (E4) is the only one that keeps them, and at 29.43 dB its minimum is still below the bar. The mechanism left after the search is the ETC1 palette itself: four levels per subset, one table per subset shared by R, G and B. For blue the search covers every table, flip and base pair, so the 30.8 dB blue figure on these blocks is the format's limit with this partition. For the minimum channel only a local search was run, so no bound is proven.
+
+Verdict: OPEN. No endpoint search reaches 35 dB on all three channels. The minimum-channel best is E4 at 29.43 dB against the 35 dB bar. Reopen: a per-block joint search that is exhaustive for R, G and B together (too large for this run, about 8 x 32^3 bases per subset), or a different ETC2 encode of this texture.
+
+Red check: MODIFIER_TO_INDEX was changed from [3, 2, 0, 1] to [3, 2, 1, 0]. The re-encode was then byte-identical on only 1,422 of 60,556 blocks and the search mismatched the library on about 2 million texel channels per scenario; the check printed FAIL and exited 1 (MUTANT rc=1). The file was restored, cmp matched (cmp-restored), and git status showed only the new script before the commit.
