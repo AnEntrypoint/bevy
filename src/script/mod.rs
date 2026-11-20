@@ -4106,39 +4106,47 @@ mod tests {
         }
     }
 
-    #[test]
-    fn ballistics_and_quat_rotate_match_the_spoint_fixture() {
-        fn close(actual: &serde_json::Value, expected: &serde_json::Value) -> bool {
-            match (actual, expected) {
-                (serde_json::Value::Null, serde_json::Value::Null) => true,
-                (serde_json::Value::Number(a), serde_json::Value::Number(b)) => {
-                    (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-9
-                }
-                (serde_json::Value::Array(a), serde_json::Value::Array(b)) => {
-                    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| close(a, b))
-                }
-                (serde_json::Value::Object(a), serde_json::Value::Object(b)) => {
-                    a.len() == b.len() && b.iter().all(|(key, value)| a.get(key).is_some_and(|x| close(x, value)))
-                }
-                _ => false,
+    fn close(actual: &serde_json::Value, expected: &serde_json::Value) -> bool {
+        match (actual, expected) {
+            (serde_json::Value::Null, serde_json::Value::Null) => true,
+            (serde_json::Value::Number(a), serde_json::Value::Number(b)) => {
+                (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() < 1e-9
             }
+            (serde_json::Value::Array(a), serde_json::Value::Array(b)) => {
+                a.len() == b.len() && a.iter().zip(b).all(|(a, b)| close(a, b))
+            }
+            (serde_json::Value::Object(a), serde_json::Value::Object(b)) => {
+                a.len() == b.len() && b.iter().all(|(key, value)| a.get(key).is_some_and(|x| close(x, value)))
+            }
+            _ => false,
         }
-        let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../testdata/parity/spoint-ballistics-quat.json")).unwrap();
-        let source = format!(
-            "(() => {{ const run = (c) => {{ if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const q = Array.isArray(c.q) ? {{ x: c.q[0], y: c.q[1], z: c.q[2], w: c.q[3] }} : c.q; const r = __builtins.vec3.rotate(q, c.v); return [r.x, r.y, r.z]; }}; return JSON.stringify({}.map(run)); }})()",
-            fixture["cases"]
-        );
+    }
+
+    fn evaluate_cases(cases: &serde_json::Value, runner: &str) -> serde_json::Value {
+        let source = format!("(() => {{ const run = {runner}; return JSON.stringify({cases}.map(run)); }})()");
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world");
         let mut engine = ScriptEngine::new(&root).unwrap();
         let text: String = engine.context.with(|ctx| ctx.eval::<String, _>(source.as_str())).unwrap();
         engine.shutdown();
-        let actual: serde_json::Value = serde_json::from_str(&text).unwrap();
-        assert!(
-            close(&actual, &fixture["expected"]),
-            "bevy {actual} differs from spoint {}",
-            fixture["expected"]
-        );
+        serde_json::from_str(&text).unwrap()
+    }
+
+    #[test]
+    fn ballistics_and_quat_rotate_match_the_spoint_fixture() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/parity/spoint-ballistics-quat.json")).unwrap();
+        let runner = r#"(c) => { if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const q = Array.isArray(c.q) ? { x: c.q[0], y: c.q[1], z: c.q[2], w: c.q[3] } : c.q; const r = __builtins.vec3.rotate(q, c.v); return [r.x, r.y, r.z]; }"#;
+        let actual = evaluate_cases(&fixture["cases"], runner);
+        assert!(close(&actual, &fixture["expected"]), "bevy {actual} differs from spoint {}", fixture["expected"]);
+    }
+
+    #[test]
+    fn noise_matches_the_spoint_fixture() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/parity/spoint-noise.json")).unwrap();
+        let runner = r#"(c) => { if (c.kind === 'noise2d') return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: 1 }); return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: c.octaves, gain: c.persistence, lacunarity: c.lacunarity }); }"#;
+        let actual = evaluate_cases(&fixture["cases"], runner);
+        assert!(close(&actual, &fixture["expected"]), "bevy {actual} differs from spoint {}", fixture["expected"]);
     }
 
     #[test]

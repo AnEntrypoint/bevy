@@ -451,7 +451,46 @@ globalThis.__builtins.noise = (() => {
     const x11 = sample(0, 1, 1) * (1 - tx) + sample(1, 1, 1) * tx;
     return (x00 * (1 - ty) + x10 * ty) * (1 - tz) + (x01 * (1 - ty) + x11 * ty) * tz;
   };
+  const GRADIENTS2 = [[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]];
+  const gradientPermutations = new Map();
+  const gradientPermutation = (seed) => {
+    const key = seed >>> 0;
+    if (gradientPermutations.has(key)) return gradientPermutations.get(key);
+    let state = key;
+    const rng = () => {
+      state |= 0; state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    rng(); rng();
+    const perm = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) perm[i] = i;
+    for (let i = 255; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const tmp = perm[i]; perm[i] = perm[j]; perm[j] = tmp; }
+    const doubled = new Uint8Array(512);
+    for (let i = 0; i < 512; i++) doubled[i] = perm[i & 255];
+    gradientPermutations.set(key, doubled);
+    return doubled;
+  };
+  const gradientNoise2D = (perm, x, y) => {
+    const x0 = Math.floor(x), y0 = Math.floor(y);
+    const xf = x - x0, yf = y - y0;
+    const u = fade(xf), v = fade(yf);
+    const dot = (ix, iy, dx, dy) => { const g = GRADIENTS2[perm[(perm[ix & 255] + iy) & 255] & 7]; return g[0] * dx + g[1] * dy; };
+    const n00 = dot(x0, y0, xf, yf), n10 = dot(x0 + 1, y0, xf - 1, yf), n01 = dot(x0, y0 + 1, xf, yf - 1), n11 = dot(x0 + 1, y0 + 1, xf - 1, yf - 1);
+    const nx0 = n00 + u * (n10 - n00), nx1 = n01 + u * (n11 - n01);
+    return (nx0 + v * (nx1 - nx0)) * Math.SQRT2;
+  };
+  const gradientFbm2 = (opts) => {
+    const perm = gradientPermutation(opts.seed ?? 1337);
+    const frequency = opts.frequency ?? 1, octaves = Math.max(1, opts.octaves ?? 5), gain = opts.gain ?? 0.5, lacunarity = opts.lacunarity ?? 2;
+    const x = __num(opts.x) * frequency, z = __num(opts.z) * frequency;
+    let amplitude = 1, scale = 1, sum = 0, norm = 0;
+    for (let o = 0; o < octaves; o++) { sum += gradientNoise2D(perm, x * scale, z * scale) * amplitude; norm += amplitude; amplitude *= gain; scale *= lacunarity; }
+    return norm > 0 ? sum / norm : 0;
+  };
   const fbm = (opts, mode) => {
+
     const x = __num(opts.x) * (opts.frequency ?? 1);
     const z = __num(opts.z) * (opts.frequency ?? 1);
     let amplitude = 1, sum = 0, norm = 0;
@@ -468,7 +507,7 @@ globalThis.__builtins.noise = (() => {
   return {
     simplex2: (opts) => (value2(__num(opts.x) * (opts.frequency ?? 1), __num(opts.z) * (opts.frequency ?? 1), opts.seed ?? 0) * 2 - 1) * (opts.amplitude ?? 1),
     simplex3: (opts) => (value3(__num(opts.x) * (opts.frequency ?? 1), __num(opts.y) * (opts.frequency ?? 1), __num(opts.z) * (opts.frequency ?? 1), opts.seed ?? 0) * 2 - 1) * (opts.amplitude ?? 1),
-    fbm2: (opts) => fbm(opts, 'fbm'),
+    fbm2: (opts) => gradientFbm2(opts),
     ridged: (opts) => fbm(opts, 'ridged'),
     billowed2: (opts) => fbm(opts, 'billowed'),
     gradient2: (opts) => {
