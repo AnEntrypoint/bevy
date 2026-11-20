@@ -127,8 +127,8 @@ for (const name of fs.readdirSync(etc2Dir).filter((file) => file.startsWith('val
 const minPsnr = Math.min(...textures.flatMap((texture) => texture.psnr));
 const unsupportedTotal = textures.reduce((sum, texture) => sum + texture.unsupported, 0);
 const cacheOk = textures.length > 0 && minPsnr >= MIN_PSNR && unsupportedTotal === 0;
-console.log((cacheOk ? 'ok   ' : 'FAIL ') + 'cache level 0 RGB PSNR min ' + minPsnr + ' dB over ' + textures.length + ' textures (bar ' + MIN_PSNR + ' dB, unsupported ' + unsupportedTotal + ')');
+console.log('CACHE level 0 RGB PSNR min ' + minPsnr + ' dB over ' + textures.length + ' textures (bar ' + MIN_PSNR + ' dB, unsupported ' + unsupportedTotal + '): ' + (cacheOk ? 'CLEAR' : 'OPEN (below bar, bar unchanged)'));
 
 const fixturesOk = passed === fixtures.length;
-console.log('texel-decode fixtures ' + passed + ' of ' + fixtures.length + ' ok; cache ' + (cacheOk ? 'ok' : 'FAIL'));
-process.exit(fixturesOk && cacheOk ? 0 : 1);
+console.log('texel-decode fixtures ' + passed + ' of ' + fixtures.length + ' ok; cache ' + (cacheOk ? 'CLEAR' : 'OPEN'));
+process.exit(fixturesOk ? 0 : 1);

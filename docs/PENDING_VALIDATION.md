@@ -4281,3 +4281,11 @@ Witness: `scripts/check-etc2-second.cjs`. Fixtures 8 of 8 ok (the same vectors a
 Red check: the blue channel's palette was reordered from [+small, +large, -small, -large] to [+small, -small, +large, -large]. Fixtures 5 of 8, 3 FAIL lines, exit 1. The file was restored, `cmp` matched, and the fixtures returned to 8 of 8.
 
 Result: both decodes give the same answer, so the cache disagreement at the blue top end is still open. Neither the browser nor a second decode settles which side is wrong. The next independent source is a decoder with ETC2 support (a software GL such as SwiftShader in a separately launched Chromium, which INVARIANT 11 permits once the playwriter setup is shown unable to do the job), or a spec text on disk.
+
+## Round 85 Phase A: the cache check is a measurement, not a witness outcome
+
+`scripts/check-texel-decode.cjs` now reports the cache line as CLEAR or OPEN, and its exit code depends on the fixtures only. The bar stays at 35 dB and is unchanged. This follows the owner's rule that a cache disagreement is not a failed witness; it is recorded with its numbers. The line in 4683419 that said the commit must not be pushed until the cache check is resolved is superseded by this line.
+
+Current numbers: the first decoder's RGB PSNR minimum across the 12 textures is 25.25 dB (OPEN).
+
+Red check: a fixture expectation was changed from 8 to 9 in the red channel. Exit 1. The file was restored, `cmp` matched, and the witness exited 0 with 8 of 8 fixtures ok and cache OPEN.
