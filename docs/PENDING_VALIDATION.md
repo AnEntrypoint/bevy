@@ -4342,3 +4342,17 @@ Result. The separate software GL decodes the flat ETC2 block to the expected col
 Caveat on independence: SwiftShader is a conformant GL ES implementation, separate from my code. The first and second decoders come from one recollection of the spec, so they are not independent of each other. The readback agreeing with both is evidence that the decoder reading is correct for the ETC2 blocks in this cache, but it is one implementation, not the spec text. Reopen the cache question only with the cache's encoder configuration or a second GPU decode.
 
 Longest step: the wait for the clear sample, about 4 min from the first reading (04:44:29) to GATE-CLEAR (04:48:00). Nothing was stopped by this run; the busy processes are another project's renderer, a Claude session and another project's gm-core worker.
+
+## Round 87 Phase A: the blue top end of the ETC2 cache (analysis)
+
+Script: scripts/check-etc2-blue-top.cjs reads the level-0 images of the ETC2 cache and the RGBA8 cache for value.17c7bd864f7f18268f (no browser, no cargo). The ETC2 RGBA block is 16 bytes: the alpha block first (bytes 0 to 7), then the ETC colour block (bytes 8 to 15).
+
+Source: the cache's source GLB is UASTC (DFD model 166, supercompression 2 for two images and 1 for one). The ETC2 cache comes from transcode_uastc_to_etc1 (the basis transcoder in the vendored crate) and the RGBA8 cache from the UASTC unpack.
+
+Result, from the script: every block is either differential (60,556 blocks) or individual (4,980 blocks); none is in the T, H or planar special mode. Top-end texels (cache blue >= 240) number 924,872, and 865,639 of them differ from the ETC2 decode. Mean signed error over those texels (etc2 minus cache): R +0.37, G +0.36, B -5.68. Among the 46,193 top-end differential blocks, the 5-bit blue base is 30 in 29,570, 29 in 15,463 and 31 in 402. The apply_etc1_bias table in the vendored transcoder moves blue subset 0 by one level for bias codes 6 (-1) and 15 (+1), which accounts for the base of 30.
+
+Counterfactual: raising the blue base by one and lowering the blue delta by one on the 45,791 top-end differential blocks that allow it takes the blue PSNR from 28.49 to 29.38 dB. So the one-level bias explains only a part of the loss. The rest is not explained yet.
+
+Verdict so far: the ETC2 bits decode to the same texels in my decoder and in the separate software GL (see the Round 86 record), so the disagreement is between the transcoded ETC2 content and the full-precision RGBA8 unpack, not a decode error. The cache stays OPEN against the unchanged 35 dB bar (blue 28.49 dB). Reopen: a source encode without the bias, or a ruling on the 35 dB bar for the blue top end.
+
+Red check: the squared error in the script was swapped for an absolute error. The blue PSNR became 39.82 dB, the check printed FAIL and exited 1 (mut_rc=1). The file was restored, cmp matched (cmp-restored), the check passed with exit 0, and git status showed only the new script before the commit.
