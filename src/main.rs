@@ -3,6 +3,7 @@ mod features_ecs;
 mod glb;
 mod height;
 mod hitscan;
+mod character;
 mod terrain_physics;
 mod terrain_stream;
 mod globe;
