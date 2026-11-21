@@ -1,0 +1,654 @@
+{
+ "spoint": "5f43c86c",
+ "cellM": 8,
+ "paintRequires": [
+  "x is finite",
+  "z is finite",
+  "radius is finite and positive",
+  "target carries a finite temp, humidity and erosion"
+ ],
+ "presets": {
+  "desert": {
+   "temp": 0.85,
+   "humidity": 0.1,
+   "erosion": 0.55
+  },
+  "tundra": {
+   "temp": 0.1,
+   "humidity": 0.45,
+   "erosion": 0.35
+  },
+  "forest": {
+   "temp": 0.55,
+   "humidity": 0.75,
+   "erosion": 0.25
+  },
+  "grassland": {
+   "temp": 0.55,
+   "humidity": 0.4,
+   "erosion": 0.3
+  },
+  "wetland": {
+   "temp": 0.6,
+   "humidity": 0.95,
+   "erosion": 0.15
+  }
+ },
+ "names": [
+  "desert",
+  "tundra",
+  "forest",
+  "grassland",
+  "wetland"
+ ],
+ "samplePoints": [
+  [
+   0,
+   0
+  ],
+  [
+   7.9,
+   0.1
+  ],
+  [
+   12,
+   4
+  ],
+  [
+   30,
+   4
+  ],
+  [
+   14,
+   -10
+  ],
+  [
+   -22,
+   6
+  ],
+  [
+   -40,
+   -40
+  ],
+  [
+   5,
+   40
+  ],
+  [
+   100,
+   100
+  ],
+  [
+   -200,
+   -200
+  ]
+ ],
+ "paints": [
+  {
+   "x": 0,
+   "z": 0,
+   "radius": 20,
+   "strength": 1,
+   "target": {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55
+   }
+  },
+  {
+   "x": 30,
+   "z": 4,
+   "radius": 12,
+   "strength": 0.6,
+   "target": {
+    "temp": 0.6,
+    "humidity": 0.95,
+    "erosion": 0.15
+   }
+  },
+  {
+   "x": 14,
+   "z": -10,
+   "radius": 9,
+   "strength": 0.8,
+   "target": {
+    "temp": 1.4,
+    "humidity": -0.2,
+    "erosion": 0.5
+   }
+  },
+  {
+   "x": "NaN",
+   "z": 0,
+   "radius": 5,
+   "strength": 0.5,
+   "target": {
+    "temp": 0.1,
+    "humidity": 0.45,
+    "erosion": 0.35
+   }
+  },
+  {
+   "x": -22,
+   "z": 6,
+   "radius": 10,
+   "strength": 0,
+   "target": {
+    "temp": 0.55,
+    "humidity": 0.75,
+    "erosion": 0.25
+   }
+  },
+  {
+   "x": -40,
+   "z": -40,
+   "radius": 7,
+   "strength": 0.9,
+   "target": {
+    "temp": 0.55,
+    "humidity": 0.4,
+    "erosion": 0.3
+   }
+  },
+  {
+   "x": 5,
+   "z": 40,
+   "radius": 6,
+   "strength": 1.5,
+   "target": {
+    "temp": 0.2,
+    "humidity": 0.2,
+    "erosion": 0.9
+   }
+  }
+ ],
+ "paint": {
+  "cellCount": 31,
+  "strokeCount": 5,
+  "overrideAt": [
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.8152587410550381
+   },
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.8152587410550381
+   },
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.29789208962641156
+   },
+   {
+    "temp": 0.6,
+    "humidity": 0.95,
+    "erosion": 0.15,
+    "w": 0.5598076211353317
+   },
+   {
+    "temp": 0.9950686503602634,
+    "humidity": 0.0032875664264910703,
+    "erosion": 0.5016437832132455,
+    "w": 0.6414641684359154
+   },
+   null,
+   {
+    "temp": 0.55,
+    "humidity": 0.4,
+    "erosion": 0.3,
+    "w": 0.07931249089680731
+   },
+   {
+    "temp": 0.2,
+    "humidity": 0.2,
+    "erosion": 0.9,
+    "w": 0.2226273841448827
+   },
+   null,
+   null
+  ],
+  "toJSON": {
+   "version": 1,
+   "cellM": 8,
+   "strokes": [
+    {
+     "x": 0,
+     "z": 0,
+     "radius": 20,
+     "strength": 1,
+     "target": {
+      "temp": 0.85,
+      "humidity": 0.1,
+      "erosion": 0.55
+     }
+    },
+    {
+     "x": 30,
+     "z": 4,
+     "radius": 12,
+     "strength": 0.6,
+     "target": {
+      "temp": 0.6,
+      "humidity": 0.95,
+      "erosion": 0.15
+     }
+    },
+    {
+     "x": 14,
+     "z": -10,
+     "radius": 9,
+     "strength": 0.8,
+     "target": {
+      "temp": 1,
+      "humidity": 0,
+      "erosion": 0.5
+     }
+    },
+    {
+     "x": -40,
+     "z": -40,
+     "radius": 7,
+     "strength": 0.9,
+     "target": {
+      "temp": 0.55,
+      "humidity": 0.4,
+      "erosion": 0.3
+     }
+    },
+    {
+     "x": 5,
+     "z": 40,
+     "radius": 6,
+     "strength": 1,
+     "target": {
+      "temp": 0.2,
+      "humidity": 0.2,
+      "erosion": 0.9
+     }
+    }
+   ]
+  },
+  "wrap": {
+   "climateUsesLocalXZ": true,
+   "samples": [
+    {
+     "temp": 0.748392307580271,
+     "humidity": 0.1738965035779847,
+     "erosion": 0.5222888111582558,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.7513112194716014,
+     "humidity": 0.17387802945209024,
+     "erosion": 0.5222888111582558,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.4806912391434925,
+     "humidity": 0.378034732507941,
+     "erosion": 0.44468381344396174,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.4943538290724796,
+     "humidity": 0.7501526599954406,
+     "erosion": 0.2600480947161671,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.7559006370930148,
+     "humidity": 0.1849621301616301,
+     "erosion": 0.465200844875565,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.256,
+     "humidity": 0.494,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.55,
+     "humidity": 0.4,
+     "erosion": 0.3,
+     "seaBias": 0
+    },
+    {
+     "temp": 0.2855109877440629,
+     "humidity": 0.4021168801223305,
+     "erosion": 0.5113136920724414,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.5,
+     "humidity": 0.4,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    null
+   ]
+  },
+  "emptyWrap": {
+   "climateUsesLocalXZ": true,
+   "samples": [
+    {
+     "temp": 0.3,
+     "humidity": 0.5,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.31579999999999997,
+     "humidity": 0.4999,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.324,
+     "humidity": 0.496,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.36,
+     "humidity": 0.496,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.328,
+     "humidity": 0.51,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.256,
+     "humidity": 0.494,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    null,
+    {
+     "temp": 0.31,
+     "humidity": 0.46,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    {
+     "temp": 0.5,
+     "humidity": 0.4,
+     "erosion": 0.4,
+     "seaBias": 0.25
+    },
+    null
+   ]
+  },
+  "direct": {
+   "calls": [
+    {
+     "name": "zero radius",
+     "args": [
+      0,
+      0,
+      0,
+      {
+       "temp": 0.85,
+       "humidity": 0.1,
+       "erosion": 0.55
+      },
+      1
+     ],
+     "result": {
+      "rejected": true,
+      "requires": [
+       "x is finite",
+       "z is finite",
+       "radius is finite and positive",
+       "target carries a finite temp, humidity and erosion"
+      ],
+      "violates": "radius is finite and positive",
+      "touched": 0
+     }
+    },
+    {
+     "name": "target missing erosion",
+     "args": [
+      0,
+      0,
+      5,
+      {
+       "temp": 0.5,
+       "humidity": 0.5
+      },
+      1
+     ],
+     "result": {
+      "rejected": true,
+      "requires": [
+       "x is finite",
+       "z is finite",
+       "radius is finite and positive",
+       "target carries a finite temp, humidity and erosion"
+      ],
+      "violates": "target carries a finite temp, humidity and erosion",
+      "touched": 0
+     }
+    },
+    {
+     "name": "zero strength",
+     "args": [
+      0,
+      0,
+      5,
+      {
+       "temp": 0.85,
+       "humidity": 0.1,
+       "erosion": 0.55
+      },
+      0
+     ],
+     "result": {
+      "rejected": true,
+      "requires": [
+       "strength clamps above zero"
+      ],
+      "violates": "strength clamps above zero",
+      "touched": 0
+     }
+    },
+    {
+     "name": "accepted",
+     "args": [
+      0,
+      0,
+      9,
+      {
+       "temp": 0.85,
+       "humidity": 0.1,
+       "erosion": 0.55
+      },
+      0.5
+     ],
+     "result": {
+      "rejected": false,
+      "requires": null,
+      "violates": null,
+      "touched": 4
+     }
+    }
+   ],
+   "after": {
+    "cellCount": 4,
+    "strokeCount": 1
+   },
+   "cleared": {
+    "cellCount": 0,
+    "strokeCount": 0,
+    "overrideAt": null
+   }
+  }
+ },
+ "load": {
+  "input": {
+   "version": 1,
+   "cellM": 8,
+   "strokes": [
+    {
+     "x": 0,
+     "z": 0,
+     "radius": 20,
+     "strength": 1,
+     "target": {
+      "temp": 0.85,
+      "humidity": 0.1,
+      "erosion": 0.55
+     }
+    },
+    {
+     "x": 30,
+     "z": 4,
+     "radius": 12,
+     "strength": 0.6,
+     "target": {
+      "temp": 0.6,
+      "humidity": 0.95,
+      "erosion": 0.15
+     }
+    },
+    {
+     "x": 14,
+     "z": -10,
+     "radius": 9,
+     "strength": 0.8,
+     "target": {
+      "temp": 1.4,
+      "humidity": -0.2,
+      "erosion": 0.5
+     }
+    },
+    {
+     "x": "NaN",
+     "z": 0,
+     "radius": 5,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.1,
+      "humidity": 0.45,
+      "erosion": 0.35
+     }
+    },
+    {
+     "x": -22,
+     "z": 6,
+     "radius": 10,
+     "strength": 0,
+     "target": {
+      "temp": 0.55,
+      "humidity": 0.75,
+      "erosion": 0.25
+     }
+    },
+    {
+     "x": -40,
+     "z": -40,
+     "radius": 7,
+     "strength": 0.9,
+     "target": {
+      "temp": 0.55,
+      "humidity": 0.4,
+      "erosion": 0.3
+     }
+    },
+    {
+     "x": 5,
+     "z": 40,
+     "radius": 6,
+     "strength": 1.5,
+     "target": {
+      "temp": 0.2,
+      "humidity": 0.2,
+      "erosion": 0.9
+     }
+    }
+   ]
+  },
+  "cellCount": 31,
+  "strokeCount": 5,
+  "overrideAt": [
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.8152587410550381
+   },
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.8152587410550381
+   },
+   {
+    "temp": 0.85,
+    "humidity": 0.1,
+    "erosion": 0.55,
+    "w": 0.29789208962641156
+   },
+   {
+    "temp": 0.6,
+    "humidity": 0.95,
+    "erosion": 0.15,
+    "w": 0.5598076211353317
+   },
+   {
+    "temp": 0.9950686503602634,
+    "humidity": 0.0032875664264910703,
+    "erosion": 0.5016437832132455,
+    "w": 0.6414641684359154
+   },
+   null,
+   {
+    "temp": 0.55,
+    "humidity": 0.4,
+    "erosion": 0.3,
+    "w": 0.07931249089680731
+   },
+   {
+    "temp": 0.2,
+    "humidity": 0.2,
+    "erosion": 0.9,
+    "w": 0.2226273841448827
+   },
+   null,
+   null
+  ],
+  "roundTrip": {
+   "cellCount": 31,
+   "strokeCount": 5
+  },
+  "nullInput": {
+   "cellCount": 0,
+   "strokeCount": 0,
+   "overrideAt": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "nonArrayStrokes": {
+   "cellCount": 0,
+   "strokeCount": 0
+  }
+ }
+}
