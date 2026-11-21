@@ -5,6 +5,7 @@ mod height;
 mod hitscan;
 mod character;
 mod chart_transfer;
+mod height_delta;
 mod terrain_grid_sample;
 mod hud_overlay;
 mod chart_reanchor_service;
