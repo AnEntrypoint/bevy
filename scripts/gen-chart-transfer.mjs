@@ -10,7 +10,7 @@ const statusBefore = execFileSync('git', ['-C', spoint, 'status', '--porcelain']
 const { PhysicsWorld } = await import(pathToFileURL(join(spoint, 'src/physics/World.js')).href)
 const { verticalVelocity } = await import(pathToFileURL(join(spoint, 'src/shared/characterStep.js')).href)
 const { createPlanetFrame } = await import(pathToFileURL(join(spoint, 'src/terrain/PlanetFrame.js')).href)
-const { createChartAnchorLattice, reanchorChartFor } = await import(pathToFileURL(join(spoint, 'src/shared/chartAnchor.js')).href)
+const { createChartAnchorLattice, reanchorChartFor, snapshotChart, createChartTransfer } = await import(pathToFileURL(join(spoint, 'src/shared/chartAnchor.js')).href)
 
 const GRAVITY = -9.81
 const DT = 1 / 60
@@ -20,6 +20,8 @@ const IDENTITY = [0, 0, 0, 1]
 const PLANET_RADIUS = 60
 const ANCHOR_DIR = [0, 1, 0]
 const REANCHOR_DIR = [0.9, 0.3, 0.2]
+const HANDOFF_SOURCE = { anchorDir: [0, 1, 0], offsetY: 0.25 }
+const HANDOFF_DEST = { anchorDir: [0.6, 0.8, 0], offsetY: 0.3 }
 const POINTS = [[0, 0, 0], [1, 2, 3], [-4, 0.5, 6]]
 const VECTORS = [[1, 0, 0], [0, 1, 0], [0.3, -0.7, 2]]
 const round = (v) => v.map((c) => Number(c.toFixed(9)))
@@ -32,12 +34,17 @@ const reanchor = reanchorChartFor({ frame, lattice, dir: unit(REANCHOR_DIR) })
 if (!reanchor) throw new Error('chart re-anchor did not trigger')
 const { from, to, transfer } = reanchor
 const TILT_RAD = transfer.tiltRad
-const probes = {
+const probesOf = (t) => ({
   points: POINTS,
-  pointResults: POINTS.map((p) => round(transfer.point(p))),
+  pointResults: POINTS.map((p) => round(t.point(p))),
   vectors: VECTORS,
-  vectorResults: VECTORS.map((v) => round(transfer.vec(v))),
-}
+  vectorResults: VECTORS.map((v) => round(t.vec(v))),
+})
+const probes = probesOf(transfer)
+const handoffFrom = snapshotChart(createPlanetFrame({ sampler, anchorDir: HANDOFF_SOURCE.anchorDir, offsetY: HANDOFF_SOURCE.offsetY, reliefScale: 1 }))
+const handoffTo = snapshotChart(createPlanetFrame({ sampler, anchorDir: HANDOFF_DEST.anchorDir, offsetY: HANDOFF_DEST.offsetY, reliefScale: 1 }))
+const handoffTransfer = createChartTransfer(handoffFrom, handoffTo)
+const handoff = { from: handoffFrom, to: handoffTo, tiltRad: handoffTransfer.tiltRad, probes: probesOf(handoffTransfer) }
 
 const w = new PhysicsWorld({ gravity: [0, GRAVITY, 0] })
 await w.init()
@@ -96,5 +103,5 @@ const after = [...states.keys()].map(snapshot)
 const statusAfter = execFileSync('git', ['-C', spoint, 'status', '--porcelain']).toString()
 if (statusAfter !== statusBefore) throw new Error('spoint working tree changed')
 const cases = before.map((b, i) => ({ name: b.name, before: { p: b.p, v: b.v, onGround: b.onGround, normal: b.normal, walls: b.walls }, after: { p: after[i].p, v: after[i].v, onGround: after[i].onGround, normal: after[i].normal, walls: after[i].walls } }))
-writeFileSync(outPath, JSON.stringify({ spoint: rev, planetRadius: PLANET_RADIUS, from, to, tiltRad: TILT_RAD, probes, counts: { characters: counts.characters, groundedUpwardClamped: counts.groundedUpwardClamped }, cases, spointStatusBefore: statusBefore, spointStatusAfter: statusAfter }, null, 1) + '\n')
+writeFileSync(outPath, JSON.stringify({ spoint: rev, planetRadius: PLANET_RADIUS, from, to, tiltRad: TILT_RAD, probes, handoff, counts: { characters: counts.characters, groundedUpwardClamped: counts.groundedUpwardClamped }, cases, spointStatusBefore: statusBefore, spointStatusAfter: statusAfter }, null, 1) + '\n')
 console.log(JSON.stringify({ tiltRad: TILT_RAD, counts, probes: probes.pointResults, cases }, null, 1))

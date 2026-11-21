@@ -92,17 +92,29 @@ mod tests {
         }
     }
 
-    #[test]
-    fn chart_epoch_transfer_matches_spoint_create_chart_transfer() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-chart-transfer.json")).unwrap();
-        let transfer = create_chart_transfer(&fixture_snapshot(&fixture["from"]), &fixture_snapshot(&fixture["to"]));
-        assert!((transfer.tilt_rad() - fixture["tiltRad"].as_f64().unwrap()).abs() <= TOLERANCE);
-        let probes = &fixture["probes"];
+    fn fixture() -> Value {
+        serde_json::from_str(include_str!("../testdata/parity/spoint-chart-transfer.json")).unwrap()
+    }
+
+    fn assert_matches_spoint(case: &Value) {
+        let transfer = create_chart_transfer(&fixture_snapshot(&case["from"]), &fixture_snapshot(&case["to"]));
+        assert!((transfer.tilt_rad() - case["tiltRad"].as_f64().unwrap()).abs() <= TOLERANCE, "tilt_rad against spoint {}", case["tiltRad"]);
+        let probes = &case["probes"];
         for (p, want) in probes["points"].as_array().unwrap().iter().zip(probes["pointResults"].as_array().unwrap()) {
             assert_close(transfer.point(json_vec3(p)), json_vec3(want), "point");
         }
         for (v, want) in probes["vectors"].as_array().unwrap().iter().zip(probes["vectorResults"].as_array().unwrap()) {
             assert_close(transfer.vec(json_vec3(v)), json_vec3(want), "vec");
         }
+    }
+
+    #[test]
+    fn chart_epoch_transfer_matches_spoint_create_chart_transfer() {
+        assert_matches_spoint(&fixture());
+    }
+
+    #[test]
+    fn server_handoff_transfer_matches_spoint_create_chart_transfer() {
+        assert_matches_spoint(&fixture()["handoff"]);
     }
 }
