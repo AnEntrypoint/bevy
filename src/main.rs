@@ -23,6 +23,7 @@ mod canonical_json;
 mod fnv1a;
 mod world_name;
 mod baked_field_load;
+mod game_rules;
 mod chart_anchor;
 mod chart_reanchor_policy;
 mod hud_overlay;
