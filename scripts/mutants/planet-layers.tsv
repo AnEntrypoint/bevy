@@ -1,0 +1,28 @@
+gain_max	src/planet_material/layers.rs	const GAIN_MAX: f64 = 2.5;	const GAIN_MAX: f64 = 2.0;	cargo test --bin bevy-jayzee planet_material::layers
+gain_min	src/planet_material/layers.rs	const GAIN_MIN: f64 = 0.4;	const GAIN_MIN: f64 = 0.6;	cargo test --bin bevy-jayzee planet_material::layers
+gain_exponent	src/planet_material/layers.rs	const GAIN_EXPONENT: f64 = 0.8;	const GAIN_EXPONENT: f64 = 1.0;	cargo test --bin bevy-jayzee planet_material::layers
+contrast_stretch	src/planet_material/layers.rs	const CONTRAST_STRETCH: f64 = 1.35;	const CONTRAST_STRETCH: f64 = 1.2;	cargo test --bin bevy-jayzee planet_material::layers
+grid_size	src/planet_material/layers.rs	const GRID: usize = 32;	const GRID: usize = 16;	cargo test --bin bevy-jayzee planet_material::layers
+grid_wrap	src/planet_material/layers.rs	(g.floor() as i64 + GRID as i64) as usize % GRID	(g.floor() as i64).max(0) as usize	cargo test --bin bevy-jayzee planet_material::layers
+gamma_table	src/planet_material/layers.rs	const GAMMA: f64 = 2.2;	const GAMMA: f64 = 2.4;	cargo test --bin bevy-jayzee planet_material::layers
+delin_exponent	src/planet_material/layers.rs	linear.powf(1.0 / GAMMA)	linear.powf(1.0 / 2.4)	cargo test --bin bevy-jayzee planet_material::layers
+lin_table_exponent	src/planet_material/layers.rs	(v as f64 / 255.0).powf(GAMMA) as f32	(v as f64 / 255.0).powf(2.4) as f32	cargo test --bin bevy-jayzee planet_material::layers
+albedo_channel_order	src/planet_material/layers.rs	albedo[o..o + 3].copy_from_slice(&colour[i..i + 3]);	albedo[o] = colour[i + 2]; albedo[o + 1] = colour[i + 1]; albedo[o + 2] = colour[i];	cargo test --bin bevy-jayzee planet_material::layers
+normal_channel_order	src/planet_material/layers.rs	normal[o..o + 2].copy_from_slice(&normals[i..i + 2]);	normal[o] = normals[i + 1]; normal[o + 1] = normals[i];	cargo test --bin bevy-jayzee planet_material::layers
+layer_order	src/planet_material/layers.rs	["grass", "rock", "sand", "snow"];	["grass", "sand", "rock", "snow"];	cargo test --bin bevy-jayzee planet_material::layers
+rock_normals_file	src/planet_material/layers.rs	"ground-normals.jpg",	"grass-normals.jpg",	cargo test --bin bevy-jayzee planet_material::layers
+rock_layer_index	src/planet_material/layers.rs	const ROCK_LAYER: usize = 1;	const ROCK_LAYER: usize = 2;	cargo test --bin bevy-jayzee planet_material::layers
+luma_weights	src/planet_material/layers.rs	const LUMA: [f64; 3] = [0.2126, 0.7152, 0.0722];	const LUMA: [f64; 3] = [0.0722, 0.7152, 0.2126];	cargo test --bin bevy-jayzee planet_material::layers
+displacement_in_albedo_alpha	src/planet_material/layers.rs	albedo[o + 3] = displacement[i];	albedo[o + 3] = 255;	cargo test --bin bevy-jayzee planet_material::layers
+displacement_in_normal_blue	src/planet_material/layers.rs	normal[o + 2] = displacement[i];	normal[o + 2] = colour[i];	cargo test --bin bevy-jayzee planet_material::layers
+normal_alpha	src/planet_material/layers.rs	normal[o + 3] = 255;	normal[o + 3] = 0;	cargo test --bin bevy-jayzee planet_material::layers
+mip_albedo_gamma_space	src/planet_material/layers.rs	if average_in_linear_light && ch < 3 {	if !average_in_linear_light && ch < 3 {	cargo test --bin bevy-jayzee planet_material::layers
+mip_normal_linear_space	src/planet_material/layers.rs	array_image(&layers.normal, TextureFormat::Rgba8Unorm, false)	array_image(&layers.normal, TextureFormat::Rgba8Unorm, true)	cargo test --bin bevy-jayzee planet_material::layers
+mip_albedo_not_linear	src/planet_material/layers.rs	array_image(&layers.albedo, TextureFormat::Rgba8UnormSrgb, true)	array_image(&layers.albedo, TextureFormat::Rgba8UnormSrgb, false)	cargo test --bin bevy-jayzee planet_material::layers
+albedo_format	src/planet_material/layers.rs	TextureFormat::Rgba8UnormSrgb, true)	TextureFormat::Rgba8Unorm, true)	cargo test --bin bevy-jayzee planet_material::layers
+mip_levels	src/planet_material/layers.rs	pub const MIP_LEVELS: u32 = 11;	pub const MIP_LEVELS: u32 = 10;	cargo test --bin bevy-jayzee planet_material::layers
+anisotropy	src/planet_material/layers.rs	pub const ANISOTROPY: u16 = 8;	pub const ANISOTROPY: u16 = 4;	cargo test --bin bevy-jayzee planet_material::layers
+address_mode	src/planet_material/layers.rs	address_mode_u: ImageAddressMode::Repeat,	address_mode_u: ImageAddressMode::ClampToEdge,	cargo test --bin bevy-jayzee planet_material::layers
+mipmap_filter	src/planet_material/layers.rs	mipmap_filter: ImageFilterMode::Linear,	mipmap_filter: ImageFilterMode::Nearest,	cargo test --bin bevy-jayzee planet_material::layers
+view_dimension	src/planet_material/layers.rs	dimension: Some(TextureViewDimension::D2Array),	dimension: Some(TextureViewDimension::D2),	cargo test --bin bevy-jayzee planet_material::layers
+note_build_removed	src/planet_material/layers.rs	crate::planet_lod::guard::note_build();		cargo test --bin bevy-jayzee planet_material::layers
