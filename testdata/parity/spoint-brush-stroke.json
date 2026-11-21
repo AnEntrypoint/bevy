@@ -1,0 +1,951 @@
+{
+ "spoint": "5f43c86c",
+ "strokeKinds": {
+  "raise": [
+   "radius"
+  ],
+  "lower": [
+   "radius"
+  ],
+  "smooth": [
+   "radius"
+  ],
+  "flatten": [
+   "radius",
+   "targetHeight"
+  ],
+  "rectangularCarve": [
+   "halfWidth",
+   "halfDepth",
+   "targetDepth"
+  ]
+ },
+ "biomeStrokeFields": [
+  "x",
+  "z",
+  "radius",
+  "strength"
+ ],
+ "loadability": {
+  "height": [
+   {
+    "name": "raise valid",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": true
+   },
+   {
+    "name": "raise without x",
+    "input": {
+     "brush": "raise",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "raise without z",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "raise without strength",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "z": -2,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "raise without radius",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5
+    },
+    "result": false
+   },
+   {
+    "name": "raise non-finite x",
+    "input": {
+     "brush": "raise",
+     "x": "Infinity",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "raise NaN radius",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "NaN"
+    },
+    "result": false
+   },
+   {
+    "name": "raise string radius",
+    "input": {
+     "brush": "raise",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "4"
+    },
+    "result": false
+   },
+   {
+    "name": "lower valid",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": true
+   },
+   {
+    "name": "lower without x",
+    "input": {
+     "brush": "lower",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "lower without z",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "lower without strength",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "z": -2,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "lower without radius",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5
+    },
+    "result": false
+   },
+   {
+    "name": "lower non-finite x",
+    "input": {
+     "brush": "lower",
+     "x": "Infinity",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "lower NaN radius",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "NaN"
+    },
+    "result": false
+   },
+   {
+    "name": "lower string radius",
+    "input": {
+     "brush": "lower",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "4"
+    },
+    "result": false
+   },
+   {
+    "name": "smooth valid",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": true
+   },
+   {
+    "name": "smooth without x",
+    "input": {
+     "brush": "smooth",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "smooth without z",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "smooth without strength",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "z": -2,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "smooth without radius",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5
+    },
+    "result": false
+   },
+   {
+    "name": "smooth non-finite x",
+    "input": {
+     "brush": "smooth",
+     "x": "Infinity",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "smooth NaN radius",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "NaN"
+    },
+    "result": false
+   },
+   {
+    "name": "smooth string radius",
+    "input": {
+     "brush": "smooth",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": "4"
+    },
+    "result": false
+   },
+   {
+    "name": "flatten valid",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": 1.25
+    },
+    "result": true
+   },
+   {
+    "name": "flatten without x",
+    "input": {
+     "brush": "flatten",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": 1.25
+    },
+    "result": false
+   },
+   {
+    "name": "flatten without z",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": 1.25
+    },
+    "result": false
+   },
+   {
+    "name": "flatten without strength",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "targetHeight": 1.25
+    },
+    "result": false
+   },
+   {
+    "name": "flatten without radius",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "targetHeight": 1.25
+    },
+    "result": false
+   },
+   {
+    "name": "flatten without targetHeight",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "flatten non-finite x",
+    "input": {
+     "brush": "flatten",
+     "x": "Infinity",
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": 1.25
+    },
+    "result": false
+   },
+   {
+    "name": "flatten NaN targetHeight",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": "NaN"
+    },
+    "result": false
+   },
+   {
+    "name": "flatten string targetHeight",
+    "input": {
+     "brush": "flatten",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4,
+     "targetHeight": "4"
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve valid",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": true
+   },
+   {
+    "name": "rectangularCarve without x",
+    "input": {
+     "brush": "rectangularCarve",
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve without z",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve without strength",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve without halfWidth",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve without halfDepth",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve without targetDepth",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve non-finite x",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": "Infinity",
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": -0.5
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve NaN targetDepth",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": "NaN"
+    },
+    "result": false
+   },
+   {
+    "name": "rectangularCarve string targetDepth",
+    "input": {
+     "brush": "rectangularCarve",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "halfWidth": 3,
+     "halfDepth": 2,
+     "targetDepth": "4"
+    },
+    "result": false
+   },
+   {
+    "name": "unknown brush",
+    "input": {
+     "brush": "bogus",
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "brush absent",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "radius": 4
+    },
+    "result": false
+   },
+   {
+    "name": "null input",
+    "input": null,
+    "result": false
+   },
+   {
+    "name": "number input",
+    "input": 3,
+    "result": false
+   },
+   {
+    "name": "string input",
+    "input": "raise",
+    "result": false
+   }
+  ],
+  "biome": [
+   {
+    "name": "valid",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": true
+   },
+   {
+    "name": "without x",
+    "input": {
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "without z",
+    "input": {
+     "x": 3,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "without radius",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "without strength",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "non-finite x",
+    "input": {
+     "x": "Infinity",
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "NaN radius",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": "NaN",
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "target without erosion",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": 0.3,
+      "humidity": 0.6
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "target NaN temp",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5,
+     "target": {
+      "temp": "NaN",
+      "humidity": 0.6,
+      "erosion": 0.2
+     }
+    },
+    "result": false
+   },
+   {
+    "name": "target absent",
+    "input": {
+     "x": 3,
+     "z": -2,
+     "radius": 4,
+     "strength": 0.5
+    },
+    "result": false
+   },
+   {
+    "name": "null input",
+    "input": null,
+    "result": false
+   },
+   {
+    "name": "number input",
+    "input": 3,
+    "result": false
+   }
+  ]
+ },
+ "replay": {
+  "mixed": [
+   {
+    "brush": "raise",
+    "x": 1,
+    "z": 2,
+    "radius": 3,
+    "strength": 0.4
+   },
+   {
+    "brush": "lower",
+    "x": -1,
+    "z": 2,
+    "radius": 2.5,
+    "strength": -0.3
+   },
+   {
+    "brush": "smooth",
+    "x": 0,
+    "z": 0,
+    "radius": 4,
+    "strength": 0.2
+   },
+   {
+    "brush": "flatten",
+    "x": 5,
+    "z": -3,
+    "radius": 6,
+    "targetHeight": 1.5,
+    "strength": 0.7
+   },
+   {
+    "brush": "rectangularCarve",
+    "x": -4,
+    "z": 1,
+    "halfWidth": 2,
+    "halfDepth": 3,
+    "targetDepth": -1,
+    "strength": 0.9
+   },
+   {
+    "x": 2,
+    "z": 2,
+    "radius": 3,
+    "strength": 0.5,
+    "target": {
+     "temp": 0.3,
+     "humidity": 0.6,
+     "erosion": 0.2
+    }
+   },
+   {
+    "brush": "raise",
+    "x": "NaN",
+    "z": 0,
+    "radius": 1,
+    "strength": 0.5
+   },
+   {
+    "brush": "flatten",
+    "x": 1,
+    "z": 1,
+    "radius": 2,
+    "strength": 0.5
+   },
+   {
+    "brush": "bogus",
+    "x": 0,
+    "z": 0,
+    "radius": 1,
+    "strength": 0.5
+   },
+   null,
+   {
+    "x": 1,
+    "z": 1,
+    "radius": 0,
+    "strength": 0.5,
+    "target": {
+     "temp": 0.5,
+     "humidity": 0.5,
+     "erosion": 0.5
+    }
+   },
+   {
+    "x": 4,
+    "z": -4,
+    "radius": 5,
+    "strength": 0,
+    "target": {
+     "temp": 0.9,
+     "humidity": 0.1,
+     "erosion": 0.2
+    }
+   },
+   {
+    "x": 4,
+    "z": -4,
+    "radius": 5,
+    "strength": 0.6,
+    "target": {
+     "temp": 0.9,
+     "humidity": 0.1
+    }
+   },
+   {
+    "brush": "rectangularCarve",
+    "x": 3,
+    "z": 3,
+    "halfWidth": 1,
+    "halfDepth": 1,
+    "strength": 0.5
+   }
+  ],
+  "heightWithBase": {
+   "count": 5,
+   "calls": [
+    {
+     "call": "applyRaiseBrush",
+     "args": [
+      1,
+      2,
+      3,
+      0.4
+     ]
+    },
+    {
+     "call": "applyRaiseBrush",
+     "args": [
+      -1,
+      2,
+      2.5,
+      -0.3
+     ]
+    },
+    {
+     "call": "applySmoothBrush",
+     "args": [
+      0,
+      0,
+      4,
+      0.2
+     ]
+    },
+    {
+     "call": "applyFlattenBrush",
+     "args": [
+      5,
+      -3,
+      6,
+      1.5,
+      0.7
+     ]
+    },
+    {
+     "call": "applyRectangularCarve",
+     "args": [
+      -4,
+      1,
+      2,
+      3,
+      -1,
+      0.9
+     ]
+    }
+   ]
+  },
+  "heightWithoutBase": {
+   "count": 3,
+   "calls": [
+    {
+     "call": "applyRaiseBrush",
+     "args": [
+      1,
+      2,
+      3,
+      0.4
+     ]
+    },
+    {
+     "call": "applyRaiseBrush",
+     "args": [
+      -1,
+      2,
+      2.5,
+      -0.3
+     ]
+    },
+    {
+     "call": "applySmoothBrush",
+     "args": [
+      0,
+      0,
+      4,
+      0.2
+     ]
+    }
+   ]
+  },
+  "biome": {
+   "count": 3,
+   "calls": [
+    {
+     "call": "applyPaintBrush",
+     "args": [
+      2,
+      2,
+      3,
+      {
+       "temp": 0.3,
+       "humidity": 0.6,
+       "erosion": 0.2
+      },
+      0.5
+     ]
+    },
+    {
+     "call": "applyPaintBrush",
+     "args": [
+      1,
+      1,
+      0,
+      {
+       "temp": 0.5,
+       "humidity": 0.5,
+       "erosion": 0.5
+      },
+      0.5
+     ]
+    },
+    {
+     "call": "applyPaintBrush",
+     "args": [
+      4,
+      -4,
+      5,
+      {
+       "temp": 0.9,
+       "humidity": 0.1,
+       "erosion": 0.2
+      },
+      0
+     ]
+    }
+   ]
+  },
+  "nonArray": {
+   "nullInput": 0,
+   "stringInput": 0
+  }
+ }
+}
