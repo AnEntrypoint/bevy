@@ -5,6 +5,7 @@ mod height;
 mod hitscan;
 mod character;
 mod chart_transfer;
+mod chart_local_point;
 mod cave_sdf;
 mod biome_override;
 mod brush_stroke;
