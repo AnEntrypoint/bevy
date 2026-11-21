@@ -1,4 +1,3 @@
-#[cfg(test)]
 pub(crate) mod baked;
 pub(crate) mod planet_frame;
 mod anchor;
