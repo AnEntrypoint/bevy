@@ -733,6 +733,22 @@ mod tests {
     }
 
     #[test]
+    fn ground_height_local_matches_the_spoint_frame() {
+        let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-planet-ground-local.json")).unwrap();
+        let mut frame = ChartFrame::new(vec3(&fixture["anchorDir"]), fixture["radius"].as_f64().unwrap(), fixture["offsetY"].as_f64().unwrap(), fixture["reliefScale"].as_f64(), |d| surface_height("smooth", d).unwrap());
+        let mut worst = 0.0_f64;
+        for case in fixture["groundHeightLocal"].as_array().unwrap() {
+            let (x, z) = (case["x"].as_f64().unwrap(), case["z"].as_f64().unwrap());
+            match (frame.ground_height_local(x, z, |d| surface_height("smooth", d)), case["error"].as_str()) {
+                (Ok(y), None) => worst = worst.max((y - case["y"].as_f64().unwrap()).abs()),
+                (Err(err), Some(name)) => assert_eq!(surface_error_name(&err), name, "error at ({x}, {z})"),
+                (got, want) => panic!("spoint {want:?} with y {:?}, bevy {got:?} at ({x}, {z})", case["y"]),
+            }
+        }
+        assert!(worst <= PLANET_FRAME_TOLERANCE_M, "groundHeightLocal differs from spoint by up to {worst} m");
+    }
+
+    #[test]
     fn solve_surface_y_reaches_the_closure_and_cap_paths_like_spoint() {
         let fixture: Value = serde_json::from_str(include_str!("../../testdata/parity/spoint-solve-paths.json")).unwrap();
         let basis = anchor_basis([0.0, 1.0, 0.0]);

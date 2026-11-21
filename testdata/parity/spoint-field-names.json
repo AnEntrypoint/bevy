@@ -1,0 +1,1 @@
+{"spoint":"5f43c86c","module":"src/terrain/fieldPaint.js","terrainFieldNames":["terrain:height","terrain:water","terrain:natural-mask"],"fieldLayerNames":["PLAYER","CREATOR"],"paintedHeightField":"terrain:height","naturalMaskField":"terrain:natural-mask","spointStatusBefore":"","spointStatusAfter":""}
