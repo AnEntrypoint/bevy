@@ -1,0 +1,560 @@
+{
+ "rev": "5f43c86c",
+ "slotsAcross": 4,
+ "slotsDown": 4,
+ "lattice": {
+  "cellsPerFace": 24
+ },
+ "refusedConstruct": {
+  "error": "[fireStageMap] lattice too small"
+ },
+ "steps": [
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 0,
+   "tj": 0,
+   "expect": 0
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 0,
+   "tj": 1,
+   "expect": 1
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 0,
+   "tj": 2,
+   "expect": 2
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 1,
+   "tj": 0,
+   "expect": 3
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 1,
+   "tj": 1,
+   "expect": 4
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 1,
+   "tj": 2,
+   "expect": 5
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 2,
+   "tj": 0,
+   "expect": 6
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 2,
+   "tj": 1,
+   "expect": 7
+  },
+  {
+   "op": "acquire",
+   "face": 0,
+   "ti": 2,
+   "tj": 2,
+   "expect": 8
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 0,
+   "tj": 0,
+   "expect": 9
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 0,
+   "tj": 1,
+   "expect": 10
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 0,
+   "tj": 2,
+   "expect": 11
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 1,
+   "tj": 0,
+   "expect": 12
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 1,
+   "tj": 1,
+   "expect": 13
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 1,
+   "tj": 2,
+   "expect": 14
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 2,
+   "tj": 0,
+   "expect": 15
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 2,
+   "tj": 1,
+   "expect": {
+    "error": "[fireStageMap] all 16 tile slots are in use"
+   }
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 2,
+   "tj": 2,
+   "expect": {
+    "error": "[fireStageMap] all 16 tile slots are in use"
+   }
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 16,
+    "hash": 1670433989,
+    "watched": 16,
+    "stats": {
+     "syncs": 1,
+     "tilesWritten": 16,
+     "bytesWritten": 4096,
+     "resolves": 1
+    },
+    "dirty": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15
+    ]
+   }
+  },
+  {
+   "op": "slotOfCell",
+   "face": 0,
+   "I": 0,
+   "J": 0,
+   "expect": 0
+  },
+  {
+   "op": "slotOfCell",
+   "face": 0,
+   "I": 9,
+   "J": 17,
+   "expect": 329
+  },
+  {
+   "op": "slotOfCell",
+   "face": 1,
+   "I": 23,
+   "J": 2,
+   "expect": 983
+  },
+  {
+   "op": "slotOfCell",
+   "face": 1,
+   "I": 8,
+   "J": 8,
+   "expect": 832
+  },
+  {
+   "op": "slotOfCell",
+   "face": 1,
+   "I": 20,
+   "J": 20,
+   "expect": -1
+  },
+  {
+   "op": "slotOfTrunk",
+   "id": 0,
+   "expect": 0
+  },
+  {
+   "op": "slotOfTrunk",
+   "id": 1,
+   "expect": 637
+  },
+  {
+   "op": "slotOfTrunk",
+   "id": 5,
+   "expect": -1
+  },
+  {
+   "op": "slotOfTrunk",
+   "id": 9,
+   "expect": 509
+  },
+  {
+   "op": "slotOfTrunk",
+   "id": 14,
+   "expect": -1
+  },
+  {
+   "op": "texel",
+   "value": 0,
+   "expect": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "op": "texel",
+   "value": 63,
+   "expect": {
+    "x": 7,
+    "y": 7
+   }
+  },
+  {
+   "op": "texel",
+   "value": 64,
+   "expect": {
+    "x": 8,
+    "y": 0
+   }
+  },
+  {
+   "op": "texel",
+   "value": 1000,
+   "expect": {
+    "x": 24,
+    "y": 29
+   }
+  },
+  {
+   "op": "blockOrigin",
+   "slot": 0,
+   "expect": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "op": "blockOrigin",
+   "slot": 3,
+   "expect": {
+    "x": 24,
+    "y": 0
+   }
+  },
+  {
+   "op": "blockOrigin",
+   "slot": 4,
+   "expect": {
+    "x": 0,
+    "y": 8
+   }
+  },
+  {
+   "op": "blockOrigin",
+   "slot": 15,
+   "expect": {
+    "x": 24,
+    "y": 24
+   }
+  },
+  {
+   "op": "burnMask",
+   "face": 0,
+   "I0": 2,
+   "J0": 3,
+   "w": 5,
+   "h": 4,
+   "expect": {
+    "lit": 13,
+    "out": [
+     128,
+     0,
+     255,
+     128,
+     0,
+     255,
+     128,
+     0,
+     255,
+     128,
+     0,
+     255,
+     128,
+     0,
+     255,
+     128,
+     0,
+     255,
+     128,
+     0
+    ]
+   }
+  },
+  {
+   "op": "burnMask",
+   "face": 2,
+   "I0": 0,
+   "J0": 0,
+   "w": 3,
+   "h": 3,
+   "expect": {
+    "lit": 6,
+    "out": [
+     0,
+     255,
+     128,
+     128,
+     0,
+     255,
+     255,
+     128,
+     0
+    ]
+   }
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 0,
+    "hash": 1670433989,
+    "watched": 16,
+    "stats": {
+     "syncs": 2,
+     "tilesWritten": 16,
+     "bytesWritten": 4096,
+     "resolves": 1
+    },
+    "dirty": []
+   }
+  },
+  {
+   "op": "serial",
+   "t": 0,
+   "value": 5,
+   "expect": null
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 1,
+    "hash": 730560709,
+    "watched": 16,
+    "stats": {
+     "syncs": 3,
+     "tilesWritten": 17,
+     "bytesWritten": 4352,
+     "resolves": 1
+    },
+    "dirty": [
+     0
+    ]
+   }
+  },
+  {
+   "op": "release",
+   "face": 0,
+   "ti": 0,
+   "tj": 0,
+   "expect": true
+  },
+  {
+   "op": "release",
+   "face": 0,
+   "ti": 0,
+   "tj": 0,
+   "expect": false
+  },
+  {
+   "op": "acquire",
+   "face": 2,
+   "ti": 0,
+   "tj": 0,
+   "expect": 0
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 1,
+    "hash": 2064586949,
+    "watched": 16,
+    "stats": {
+     "syncs": 4,
+     "tilesWritten": 18,
+     "bytesWritten": 4608,
+     "resolves": 1
+    },
+    "dirty": [
+     0
+    ]
+   }
+  },
+  {
+   "op": "generation",
+   "value": 1,
+   "expect": null
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 16,
+    "hash": 2064586949,
+    "watched": 16,
+    "stats": {
+     "syncs": 5,
+     "tilesWritten": 34,
+     "bytesWritten": 8704,
+     "resolves": 2
+    },
+    "dirty": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15
+    ]
+   }
+  },
+  {
+   "op": "slotOfCell",
+   "face": 2,
+   "I": 3,
+   "J": 3,
+   "expect": 27
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 2,
+   "tj": 2,
+   "expect": {
+    "error": "[fireStageMap] all 16 tile slots are in use"
+   }
+  },
+  {
+   "op": "release",
+   "face": 1,
+   "ti": 0,
+   "tj": 0,
+   "expect": true
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 0,
+    "hash": 2738530245,
+    "watched": 15,
+    "stats": {
+     "syncs": 6,
+     "tilesWritten": 34,
+     "bytesWritten": 8704,
+     "resolves": 2
+    },
+    "dirty": []
+   }
+  },
+  {
+   "op": "acquire",
+   "face": 1,
+   "ti": 2,
+   "tj": 2,
+   "expect": 9
+  },
+  {
+   "op": "sync",
+   "expect": {
+    "changed": 1,
+    "hash": 3876678341,
+    "watched": 16,
+    "stats": {
+     "syncs": 7,
+     "tilesWritten": 35,
+     "bytesWritten": 8960,
+     "resolves": 2
+    },
+    "dirty": [
+     9
+    ]
+   }
+  },
+  {
+   "op": "burnMask",
+   "face": 1,
+   "I0": 20,
+   "J0": 20,
+   "w": 4,
+   "h": 4,
+   "expect": {
+    "lit": 10,
+    "out": [
+     0,
+     255,
+     128,
+     0,
+     128,
+     0,
+     255,
+     128,
+     255,
+     128,
+     0,
+     255,
+     0,
+     255,
+     128,
+     0
+    ]
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
