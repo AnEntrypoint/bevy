@@ -30,7 +30,8 @@ PY
   wait $pid; rc=$?
   cp $scratch/$name.good "$file"
   cmp "$file" $scratch/$name.good && note "RESTORED $name identical"
-  if [ "$rc" -ne 0 ]; then note "DETECTED $name rc=$rc $(grep -a -o 'FAILED\|FAIL \|differs from spoint\|centre carve elevation differs\|hashVersion 1 elevation differs\|reliefScale elevation differs\|carved elevation differs\|hpf elevation differs\|elevation differs\|census froze\|census kept\|60 census frames' target/witness/$name.out | sort | uniq -c | tr '\n' ' ')"; else note "NOT-DETECTED $name rc=$rc"; overall=1; fi
+  evidence=$(grep -a -o 'FAILED\|FAIL \|differs from spoint\|centre carve elevation differs\|hashVersion 1 elevation differs\|reliefScale elevation differs\|carved elevation differs\|hpf elevation differs\|elevation differs\|census froze\|census kept\|60 census frames' target/witness/$name.out | sort | uniq -c | tr '\n' ' ')
+  if [ "$rc" -ne 0 ] && [ -n "$evidence" ]; then note "DETECTED $name rc=$rc $evidence"; else note "NOT-DETECTED $name rc=$rc evidence=${evidence:-none}"; overall=1; fi
 }
 mutants() {
   while IFS=$'\t' read -r name file old new cmd; do mutant "$name" "$file" "$old" "$new" "$cmd"; done < "$1"
