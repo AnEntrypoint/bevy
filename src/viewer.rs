@@ -215,7 +215,7 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     .insert_resource(ViewerBrowserReport { path: browser_report_path(directory, place) })
     .init_resource::<HtmlUiSource>()
     .add_plugins(HtmlUiPlugin)
-    .add_systems(Startup, spawn_viewer)
+    .add_systems(Startup, (spawn_viewer, spawn_flat_sun))
     .init_resource::<AnchorReport>()
     .add_systems(Update, (update_overlay, primary_window_title, place_world_anchors, write_browser_report.after(place_world_anchors)));
     if let Some(globe) = place_def.config.extra.get("globe") {
@@ -268,6 +268,17 @@ struct ViewerStatsOverlay;
 #[derive(Resource, Clone, Debug, Default)]
 pub struct ViewerObjects(pub Vec<ObjectSpec>);
 
+fn spawn_flat_sun(mut commands: Commands, globe: Option<Res<crate::globe::GlobeWorld>>) {
+    if globe.is_some() {
+        return;
+    }
+    commands.spawn((
+        DirectionalLight { illuminance: 2600.0, shadow_maps_enabled: false, contact_shadows_enabled: false, ..default() },
+        Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.7, 0.4, 0.0)),
+        Name::new("viewer-sun"),
+    ));
+}
+
 fn spawn_viewer(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -317,11 +328,6 @@ fn spawn_viewer(
             Name::new(id),
         ));
     }
-    commands.spawn((
-        DirectionalLight { illuminance: 2600.0, shadow_maps_enabled: false, contact_shadows_enabled: false, ..default() },
-        Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.7, 0.4, 0.0)),
-        Name::new("viewer-sun"),
-    ));
     commands.spawn((
         Camera3d::default(),
         Camera { clear_color: ClearColorConfig::Default, ..default() },
@@ -588,7 +594,24 @@ pub fn browser_report_path(_directory: &str, place: Option<&str>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{AnchorPlacement, classify_anchor, device_request, fixed_eye};
+    use super::{AnchorPlacement, classify_anchor, device_request, fixed_eye, spawn_flat_sun};
+    use bevy::prelude::{App, DirectionalLight, Startup};
+
+    fn suns_after_startup(globe: Option<crate::globe::GlobeWorld>) -> usize {
+        let mut app = App::new();
+        app.add_systems(Startup, spawn_flat_sun);
+        if let Some(globe) = globe {
+            app.insert_resource(globe);
+        }
+        app.update();
+        app.world_mut().query::<&DirectionalLight>().iter(app.world()).count()
+    }
+
+    #[test]
+    fn the_flat_viewer_has_its_own_sun_and_the_globe_viewer_leaves_the_sun_to_the_light_plugin() {
+        assert_eq!(suns_after_startup(None), 1);
+        assert_eq!(suns_after_startup(Some(crate::globe::GlobeWorld::default())), 0);
+    }
     use bevy::prelude::{Vec2, Vec3};
     use bevy::render::settings::{RenderCreation, WgpuFeatures};
 

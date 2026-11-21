@@ -4,8 +4,15 @@ use crate::planet_lod::collider::{Chart, ColliderGround, ColliderStreamPlugin, L
 use crate::planet_lod::near_field::{NearField, NearFieldOptions};
 use crate::planet_lod::quadtree::QuadtreeConfig;
 use crate::planet_lod::stream::{PlanetLodPlugin, PlanetLodStats};
+use crate::planet_material::terrain::{TerrainFrame, TerrainMaterialPlugin};
+use crate::planet_sky::light::{FILL_FROM, Fill, LightPlugin, Quality, Sun};
+use crate::planet_sky::lut::{AtmosphereLutPlugin, luts_ready};
+use crate::planet_sky::sky::{PlanetSkyPlugin, SkyCamera, SkyPlanet, SkySun};
+use crate::planet_sky::tonemap::{ToneMapPlugin, reference_view};
+use crate::planet_water::surface::WaterPlugin;
 use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
 use bevy::app::App;
+use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::math::DVec3;
 use bevy::prelude::*;
 use bevy::render::view::window::screenshot::{Screenshot, save_to_disk};
@@ -47,6 +54,7 @@ const DEFAULT_ANCHOR_DIR: [f64; 3] = [-0.641, 0.2558, 0.7237];
 const CAMERA_VIEWPORT_HEIGHT_PX: f64 = 720.0;
 const CAMERA_FOV_Y_RAD: f64 = std::f64::consts::FRAC_PI_4;
 const CAMERA_FAR_RADII: f32 = 4.0;
+const VIEWER_QUALITY: Quality = Quality::Ultra;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
@@ -242,6 +250,15 @@ impl GlobeWorld {
         PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3(), seed: self.seed as i32 }
     }
 
+    fn water_plugin(&self) -> WaterPlugin {
+        WaterPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3() }
+    }
+
+    fn terrain_frame(&self) -> TerrainFrame {
+        let radius = f64::from(self.radius);
+        TerrainFrame { centre: self.center.as_dvec3(), radius, relief_scale: self.planet.relief(radius) }
+    }
+
     pub(crate) fn quadtree_config(&self) -> QuadtreeConfig {
         let radius = f64::from(self.radius);
         let reference = QuadtreeConfig::reference(radius, CAMERA_VIEWPORT_HEIGHT_PX, CAMERA_FOV_Y_RAD);
@@ -296,11 +313,66 @@ fn insert_collider_ground(mut commands: Commands, globe: Res<GlobeWorld>) {
     commands.insert_resource(ColliderGround(Arc::new(move |body| chart_at(&planet, centre, radius, relief_scale, body))));
 }
 
+const TEXTURES_SUBDIR: &str = "assets/planet/textures";
+
+fn first_with_textures(roots: impl IntoIterator<Item = PathBuf>) -> Option<PathBuf> {
+    roots.into_iter().map(|root| root.join(TEXTURES_SUBDIR)).find(|dir| dir.is_dir())
+}
+
+pub(crate) fn texture_dir() -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok();
+    let beside_build_tree = executable.iter().flat_map(|path| path.ancestors().skip(2).take(2).map(PathBuf::from));
+    first_with_textures(std::iter::once(PathBuf::from(env!("CARGO_MANIFEST_DIR"))).chain(beside_build_tree).chain(std::iter::once(PathBuf::from("."))))
+}
+
+fn align_lights_with_focus(
+    globe: Res<GlobeWorld>,
+    focus: Res<GlobeFocus>,
+    mut toward_sun: ResMut<SkySun>,
+    mut sun: Query<&mut Transform, (With<Sun>, Without<Fill>)>,
+    mut fill: Query<&mut Transform, (With<Fill>, Without<Sun>)>,
+) {
+    let up = (focus.0 - globe.center).normalize_or(Vec3::Y);
+    let local = Quat::from_rotation_arc(Vec3::Y, up);
+    toward_sun.0 = local * toward_sun.0;
+    for mut transform in &mut sun {
+        transform.rotation = local * transform.rotation;
+    }
+    for mut transform in &mut fill {
+        *transform = Transform::from_rotation(local) * Transform::IDENTITY.looking_to(-FILL_FROM, Vec3::Y);
+    }
+}
+
+fn equip_camera(mut commands: Commands, cameras: Query<Entity, Added<Camera3d>>) {
+    for camera in &cameras {
+        commands.entity(camera).insert((SkyCamera, reference_view(VIEWER_QUALITY)));
+    }
+}
+
+fn warn_missing_textures() {
+    if texture_dir().is_none() {
+        warn!("planet textures not found: terrain keeps the placeholder look");
+    }
+}
+
 pub fn register(app: &mut App) {
     let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
     let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
     if app.world().contains_resource::<Assets<Mesh>>() {
-        app.add_plugins(globe.lod_plugin());
+        app.add_plugins((
+            globe.lod_plugin(),
+            TerrainMaterialPlugin,
+            globe.water_plugin(),
+            AtmosphereLutPlugin,
+            PlanetSkyPlugin,
+            LightPlugin { quality: VIEWER_QUALITY },
+            ToneMapPlugin,
+        ))
+        .insert_resource(globe.terrain_frame())
+        .insert_resource(SkyPlanet { centre: globe.center, radius: globe.radius })
+        .add_systems(Startup, warn_missing_textures)
+        .add_systems(Update, equip_camera)
+        .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
     } else {
         app.add_plugins(ColliderStreamPlugin);
     }
@@ -336,12 +408,17 @@ fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>) {
 
 const FRAMING_HEIGHT_M: f32 = 10.0;
 const FRAMING_BACK_M: f32 = 14.0;
+const FRAMING_DIP: f32 = 0.1;
 
-pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut cameras: Query<(&mut Transform, &mut Projection), With<Camera3d>>) {
+pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut cameras: Query<(&mut Transform, &mut Projection, &mut Tonemapping), With<Camera3d>>) {
     let up = (focus.0 - globe.center).normalize_or_zero();
-    let eye = focus.0 + up * FRAMING_HEIGHT_M + up.any_orthogonal_vector() * FRAMING_BACK_M;
-    for (mut transform, mut projection) in &mut cameras {
-        *transform = Transform::from_translation(eye).looking_at(focus.0, up);
+    let back = up.any_orthogonal_vector();
+    let altitude = (focus.0 - globe.center).length().max(globe.radius);
+    let eye = globe.center + up * (altitude + FRAMING_HEIGHT_M) + back * FRAMING_BACK_M;
+    let gaze = -back - up * FRAMING_DIP;
+    for (mut transform, mut projection, mut tonemapping) in &mut cameras {
+        *tonemapping = Tonemapping::None;
+        *transform = Transform::from_translation(eye).looking_to(gaze, up);
         if let Projection::Perspective(perspective) = &mut *projection {
             perspective.far = globe.radius * CAMERA_FAR_RADII;
         }
@@ -369,7 +446,7 @@ pub fn add_census_systems(app: &mut App) {
     let out = std::env::var(CENSUS_OUT_ENV).unwrap_or_else(|_| String::from("census.png"));
     app.insert_resource(CensusMode { out: PathBuf::from(out) });
     app.insert_resource(TimeUpdateStrategy::ManualDuration(census_frame()));
-    app.add_systems(Update, (census_freeze, census_capture));
+    app.add_systems(Update, (census_freeze, census_capture.run_if(luts_ready)));
 }
 
 fn census_freeze(time: Res<Time<Virtual>>, bodies: Query<&Position, With<GlobeBody>>, mut strategy: ResMut<TimeUpdateStrategy>, mut frozen: Local<bool>) {
@@ -835,6 +912,120 @@ mod tests {
         app.finish();
         app.cleanup();
         app
+    }
+
+    fn viewer_app(globe: GlobeWorld) -> App {
+        let mut app = App::new();
+        app.add_plugins((bevy::MinimalPlugins, bevy::transform::TransformPlugin, bevy::asset::AssetPlugin::default(), avian3d::prelude::PhysicsPlugins::default()));
+        app.init_asset::<Mesh>().init_asset::<Image>().init_asset::<Shader>();
+        app.insert_resource(globe);
+        register(&mut app);
+        app.add_systems(Update, frame_globe_camera);
+        app
+    }
+
+    #[test]
+    fn the_viewer_adds_the_terrain_material_and_a_frame_matching_the_planet() {
+        let globe = GlobeWorld { radius: 6360.0, center: Vec3::new(1.0, 2.0, 3.0), relief_scale: Some(0.25), ..GlobeWorld::default() };
+        let globe = GlobeWorld { planet: Arc::new(Planet::new(&globe.planet_config())), ..globe };
+        let app = viewer_app(globe);
+        assert!(app.is_plugin_added::<TerrainMaterialPlugin>());
+        let frame = app.world().resource::<TerrainFrame>();
+        assert_eq!((frame.radius, frame.relief_scale, frame.centre), (6360.0, 0.25, DVec3::new(1.0, 2.0, 3.0)));
+    }
+
+    #[test]
+    fn the_default_planet_frame_uses_the_radius_proportional_relief() {
+        let mut app = viewer_app(globe());
+        app.finish();
+        let frame = *app.world().resource::<TerrainFrame>();
+        assert_eq!((frame.radius, frame.relief_scale, frame.centre), (63_600.0, 0.001, DVec3::ZERO));
+    }
+
+    #[test]
+    fn the_globe_camera_renders_without_tonemapping() {
+        let mut app = viewer_app(globe());
+        app.world_mut().spawn((Camera3d::default(), Tonemapping::TonyMcMapface));
+        app.update();
+        app.update();
+        let tonemapping = app.world_mut().query_filtered::<&Tonemapping, With<Camera3d>>().single(app.world()).unwrap();
+        assert_eq!(*tonemapping, Tonemapping::None);
+    }
+
+    #[test]
+    fn the_viewer_adds_each_sky_water_light_and_tone_map_plugin_once() {
+        let app = viewer_app(globe());
+        assert!(app.is_plugin_added::<WaterPlugin>());
+        assert!(app.is_plugin_added::<AtmosphereLutPlugin>());
+        assert!(app.is_plugin_added::<PlanetSkyPlugin>());
+        assert!(app.is_plugin_added::<LightPlugin>());
+        assert!(app.is_plugin_added::<ToneMapPlugin>());
+    }
+
+    #[test]
+    fn the_sky_planet_is_the_globe_centre_and_radius() {
+        let globe = GlobeWorld { radius: 6360.0, center: Vec3::new(1.0, 2.0, 3.0), ..GlobeWorld::default() };
+        let app = viewer_app(globe);
+        assert_eq!(*app.world().resource::<SkyPlanet>(), SkyPlanet { centre: Vec3::new(1.0, 2.0, 3.0), radius: 6360.0 });
+    }
+
+    #[test]
+    fn a_new_globe_camera_gets_the_sky_marker_and_the_reference_tone_map() {
+        let mut app = viewer_app(globe());
+        app.world_mut().spawn((Camera3d::default(), Tonemapping::TonyMcMapface));
+        app.update();
+        let mut cameras = app.world_mut().query_filtered::<(&Tonemapping, &crate::planet_sky::tonemap::ToneMap), (With<Camera3d>, With<SkyCamera>)>();
+        let (tonemapping, tone_map) = cameras.single(app.world()).unwrap();
+        assert_eq!(*tonemapping, Tonemapping::None);
+        assert_eq!(*tone_map, crate::planet_sky::tonemap::ToneMap::for_quality(VIEWER_QUALITY));
+    }
+
+    #[test]
+    fn the_sun_and_the_sky_sun_rise_above_the_local_horizon_of_the_focus() {
+        let mut app = viewer_app(globe());
+        app.update();
+        app.update();
+        let up = (app.world().resource::<GlobeFocus>().0 - app.world().resource::<GlobeWorld>().center).normalize();
+        let toward_sun = app.world().resource::<SkySun>().0;
+        let sun = app.world_mut().query_filtered::<&Transform, With<Sun>>().single(app.world()).unwrap().forward();
+        assert!(toward_sun.dot(up) > 0.3, "the sky sun is below the local horizon: {toward_sun:?} against up {up:?}");
+        assert!((-sun.as_vec3()).dot(toward_sun) > 0.999, "the light does not point from the sky sun: {sun:?} against {toward_sun:?}");
+    }
+
+    #[test]
+    fn the_globe_camera_sits_above_the_sea_and_gazes_towards_the_horizon() {
+        let mut app = viewer_app(globe());
+        let camera = app.world_mut().spawn(Camera3d::default()).id();
+        app.update();
+        app.update();
+        let (centre, radius) = (app.world().resource::<GlobeWorld>().center, app.world().resource::<GlobeWorld>().radius);
+        let transform = *app.world().get::<Transform>(camera).unwrap();
+        let from_centre = transform.translation - centre;
+        assert!(from_centre.length() >= radius + FRAMING_HEIGHT_M - 0.01, "the eye is {} m from the centre, sea level is {radius} m", from_centre.length());
+        let dip = transform.forward().dot(from_centre.normalize());
+        assert!((-0.2..0.0).contains(&dip), "the gaze dips by {dip}");
+    }
+
+    #[test]
+    fn exactly_one_shadow_casting_sun_exists_once_the_plugins_build() {
+        let mut app = viewer_app(globe());
+        app.update();
+        let mut lights = app.world_mut().query::<&DirectionalLight>();
+        let shadowed = lights.iter(app.world()).filter(|light| light.shadow_maps_enabled).count();
+        assert_eq!(shadowed, 1);
+    }
+
+    #[test]
+    fn textures_are_found_under_the_first_root_that_has_them() {
+        let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/globe-texture-roots");
+        let (empty, stocked, other) = (scratch.join("empty"), scratch.join("stocked"), scratch.join("other"));
+        std::fs::create_dir_all(&empty).unwrap();
+        std::fs::create_dir_all(stocked.join(TEXTURES_SUBDIR)).unwrap();
+        std::fs::create_dir_all(other.join(TEXTURES_SUBDIR)).unwrap();
+        assert_eq!(first_with_textures([stocked.clone(), other]), Some(stocked.join(TEXTURES_SUBDIR)));
+        assert_eq!(first_with_textures([empty.clone(), stocked.clone()]), Some(stocked.join(TEXTURES_SUBDIR)));
+        assert_eq!(first_with_textures([empty]), None);
+        assert!(texture_dir().is_some());
     }
 
     #[test]

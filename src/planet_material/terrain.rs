@@ -280,7 +280,7 @@ struct DecodedLayers {
 struct LayerDecode(Task<Result<DecodedLayers, Refusal>>);
 
 fn decode_all() -> Result<DecodedLayers, Refusal> {
-    let layers = decode_layers(Path::new(TEXTURE_DIR))?;
+    let layers = decode_layers(&crate::globe::texture_dir().unwrap_or_else(|| Path::new(TEXTURE_DIR).to_path_buf()))?;
     let (albedo, normals) = build_images(&layers);
     Ok(DecodedLayers { albedo, normals, rock_mean: layers.rock_mean, mean_l: layers.mean_l })
 }

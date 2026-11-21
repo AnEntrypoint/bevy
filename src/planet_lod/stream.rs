@@ -5,6 +5,7 @@ use super::patch::{PatchMesh, build_patch};
 use super::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
 use crate::height::Planet;
 use crate::height::climate::HpfFaces;
+use crate::planet_material::terrain::TerrainMaterialHandle;
 use bevy::asset::RenderAssetUsages;
 use bevy::math::DVec3;
 use bevy::mesh::{Indices, PrimitiveTopology};
@@ -17,7 +18,6 @@ pub const PATCH_SPAWNS_PER_FRAME: usize = 8;
 pub const MAX_TASKS_IN_FLIGHT: usize = 64;
 const CLIMATE_BAKE_RES: usize = 128;
 const CLIMATE_BAKE_MAX_LEVEL: u32 = 7;
-const LAND_GREEN: Color = Color::srgb(0.25, 0.55, 0.22);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct PatchKey(pub NodeKey);
@@ -60,9 +60,6 @@ fn bake_climate(seed: i32) -> Arc<HpfFaces> {
     Arc::new(HpfFaces::bake(i64::from(seed), CLIMATE_BAKE_RES, CLIMATE_BAKE_MAX_LEVEL))
 }
 
-#[derive(Resource)]
-struct PatchMaterial(Handle<StandardMaterial>);
-
 struct LivePatch {
     entity: Entity,
     vertices: usize,
@@ -93,11 +90,6 @@ fn patch_mesh(patch: PatchMesh) -> Mesh {
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, patch.climate)
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, heights)
         .with_inserted_indices(Indices::U32(patch.indices))
-}
-
-fn insert_material(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {
-    let material = StandardMaterial { base_color: LAND_GREEN, perceptual_roughness: 0.95, ..default() };
-    commands.insert_resource(PatchMaterial(materials.add(material)));
 }
 
 fn leaves_at(source: &Source, position: DVec3) -> Vec<NodeKey> {
@@ -157,7 +149,7 @@ fn finish_tasks(
     mut commands: Commands,
     source: Res<Source>,
     origin: Res<FloatingOrigin>,
-    material: Res<PatchMaterial>,
+    material: Res<TerrainMaterialHandle>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut streamer: ResMut<Streamer>,
     mut stats: ResMut<PlanetLodStats>,
@@ -228,7 +220,6 @@ impl Plugin for PlanetLodPlugin {
             .init_resource::<Streamer>()
             .init_resource::<PlanetLodStats>()
             .add_plugins(ColliderStreamPlugin)
-            .add_systems(Startup, insert_material)
             .add_systems(Update, (rebase_system, plan_leaves, poll_climate, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
     }
 }
@@ -239,6 +230,7 @@ mod tests {
     use crate::height::{HashVersion, PlanetConfig};
     use crate::planet_lod::guard::builds_on_main_thread;
     use crate::planet_lod::origin::REBASE_DISTANCE_M;
+    use crate::planet_material::terrain::{TerrainKey, TerrainMaterial, terrain_material};
     use bevy::asset::AssetPlugin;
     use bevy::ecs::schedule::SingleThreadedExecutor;
     use std::time::Duration;
@@ -269,6 +261,10 @@ mod tests {
         app_with(Arc::new(planet), config, camera)
     }
 
+    fn insert_terrain_handle(mut commands: Commands, mut materials: ResMut<Assets<TerrainMaterial>>, mut images: ResMut<Assets<Image>>) {
+        commands.insert_resource(TerrainMaterialHandle(materials.add(terrain_material(TerrainKey::default(), &mut images))));
+    }
+
     fn app_with(planet: Arc<Planet>, config: QuadtreeConfig, camera: DVec3) -> App {
         let mut app = App::new();
         app.edit_schedule(Update, |schedule| {
@@ -276,8 +272,10 @@ mod tests {
         });
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Mesh>()
-            .init_asset::<StandardMaterial>()
+            .init_asset::<Image>()
+            .init_asset::<TerrainMaterial>()
             .insert_resource(FloatingOrigin { position: camera })
+            .add_systems(Startup, insert_terrain_handle)
             .add_plugins(PlanetLodPlugin { planet, config, centre: DVec3::ZERO, seed: TEST_SEED });
         app.world_mut().spawn((Camera3d::default(), Transform::IDENTITY, OriginRelative));
         app
@@ -452,14 +450,12 @@ mod tests {
     }
 
     #[test]
-    fn every_patch_shares_one_land_green_material() {
+    fn every_patch_shares_the_one_terrain_material() {
         let radius = 63_600.0;
         let mut app = app_at(radius, 13, surface_direction() * radius * 2.0);
         settle(&mut app, &HashSet::new());
-        let handles: HashSet<AssetId<StandardMaterial>> = app.world_mut().query::<&MeshMaterial3d<StandardMaterial>>().iter(app.world()).map(|material| material.0.id()).collect();
-        assert_eq!(handles.len(), 1);
-        let material = app.world().resource::<Assets<StandardMaterial>>().get(*handles.iter().next().unwrap()).unwrap();
-        assert_eq!(material.base_color, LAND_GREEN);
+        let handles: HashSet<AssetId<TerrainMaterial>> = app.world_mut().query::<&MeshMaterial3d<TerrainMaterial>>().iter(app.world()).map(|material| material.0.id()).collect();
+        assert_eq!(handles, HashSet::from([app.world().resource::<TerrainMaterialHandle>().0.id()]));
     }
 
     #[test]
