@@ -1,0 +1,778 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/shared/terrainConfig.js (minimapDescriptor, minimapBakeParams, terrainBakeKey, withTerrainSeed); canonicalJSON.js for the withTerrainSeed text",
+ "minimapDescriptor": [
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 20260,
+    "radius": 6360,
+    "center": [
+     10,
+     -5
+    ],
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     },
+     {
+      "center": [
+       -1200,
+       900
+      ],
+      "falloff": 250,
+      "radius": 0
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.20260.minimap",
+     "center": [
+      10,
+      -5
+     ],
+     "extent": 1590
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": -4.5,
+    "radius": 20000
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.-4.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": 5000
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 7,
+    "radius": 6360,
+    "hashVersion": 1,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.7.h1.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": 1590
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 2147483653,
+    "radius": 6360,
+    "minimapExtent": 300,
+    "minimapRes": 64
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.-2147483643.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": 300
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 3,
+    "radius": 1000,
+    "minimapExtent": 300,
+    "minimapRes": 64
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.3.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": 300
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 5
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.5.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": null
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 7,
+    "radius": 6360,
+    "enabled": false
+   },
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 7,
+    "radius": 6360,
+    "enabled": 0
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "base": "/apps/world/town.7.minimap",
+     "center": [
+      0,
+      0
+     ],
+     "extent": 1590
+    }
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "radius": 6360
+   },
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldId": "bad name",
+   "tcfg": {
+    "seed": 1,
+    "radius": 90
+   },
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldId": null,
+   "tcfg": {
+    "seed": 1,
+    "radius": 90
+   },
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": null,
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 1,
+    "radius": -5
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain radius: must be a positive finite number"
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 9,
+    "radius": 6360,
+    "hashVersion": 3
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain hashVersion: terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "worldId": "town",
+   "tcfg": {
+    "seed": 9,
+    "radius": 6360,
+    "carves": "x"
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain carves: terrain carves must be an array, got \"x\""
+   }
+  }
+ ],
+ "minimapBakeParams": [
+  {
+   "tcfg": {
+    "seed": 20260,
+    "radius": 6360,
+    "reliefScale": 0.5,
+    "hashVersion": 2,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ],
+    "center": [
+     10,
+     -5
+    ],
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "radius": 6360,
+     "reliefScale": 0.5,
+     "hashVersion": 2,
+     "carves": [
+      {
+       "dir": [
+        0.3559966340218292,
+        -0.7883337612687337,
+        0.5017930623364766
+       ],
+       "innerM": 500,
+       "outerM": 1500
+      }
+     ],
+     "anchorDir": [
+      0.3,
+      -0.8,
+      0.5
+     ],
+     "extent": 1590,
+     "res": 256,
+     "center": [
+      10,
+      -5
+     ]
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 1,
+    "radius": 90,
+    "hashVersion": 1,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "radius": 90,
+     "reliefScale": null,
+     "hashVersion": 1,
+     "carves": [],
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "extent": 22.5,
+     "res": 256,
+     "center": [
+      0,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 4
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "radius": null,
+     "reliefScale": null,
+     "hashVersion": 2,
+     "carves": [],
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "extent": null,
+     "res": 256,
+     "center": [
+      0,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "carves": [
+     {
+      "dir": [
+       0.3,
+       -0.8,
+       0.5
+      ],
+      "innerM": 300,
+      "outerM": 900
+     },
+     {
+      "center": [
+       -1200,
+       900
+      ],
+      "falloff": 250,
+      "radius": 0
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "radius": 6360,
+     "reliefScale": null,
+     "hashVersion": 2,
+     "carves": [
+      {
+       "dir": [
+        0.3,
+        -0.8,
+        0.5
+       ],
+       "innerM": 300,
+       "outerM": 900
+      },
+      {
+       "dir": [
+        0.08021765653403602,
+        -0.8676678734311752,
+        0.4906297881250276
+       ],
+       "innerM": 0,
+       "outerM": 250
+      }
+     ],
+     "anchorDir": [
+      0.3,
+      -0.8,
+      0.5
+     ],
+     "extent": 1590,
+     "res": 256,
+     "center": [
+      0,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 3,
+    "radius": 6360,
+    "hashVersion": 3
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain hashVersion: terrain hashVersion must be one of 1, 2, got 3"
+   }
+  }
+ ],
+ "terrainBakeKey": [
+  {
+   "tcfg": {
+    "seed": 20260,
+    "radius": 6360,
+    "reliefScale": 0.5,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "center": [
+     10,
+     -5
+    ],
+    "hashVersion": 2,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": "279786b1"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 7,
+    "radius": 6360
+   },
+   "expect": {
+    "ok": true,
+    "value": "3a143ead"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 7,
+    "radius": 90,
+    "hashVersion": 1,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": "da756c2e"
+   }
+  },
+  {
+   "tcfg": {},
+   "expect": {
+    "ok": true,
+    "value": "6816a463"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": -4.5,
+    "radius": 6360,
+    "carveInputs": [
+     {
+      "center": [
+       -1200,
+       900
+      ],
+      "falloff": 250,
+      "radius": 0
+     }
+    ],
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": "0af1f491"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 1,
+    "radius": 6360,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "carves": [
+     {
+      "dir": [
+       0.3,
+       -0.8,
+       0.5
+      ],
+      "innerM": 300,
+      "outerM": 900
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": "54de366a"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 3,
+    "radius": 6360,
+    "hashVersion": 3
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain hashVersion: terrain hashVersion must be one of 1, 2, got 3"
+   }
+  }
+ ],
+ "withTerrainSeed": [
+  {
+   "worldDef": {
+    "name": "town",
+    "entities": [
+     {
+      "app": "terrain",
+      "config": {
+       "seed": 7,
+       "radius": 6360,
+       "carves": [
+        {
+         "center": [
+          300,
+          -200
+         ],
+         "falloff": 1000,
+         "radius": 500
+        }
+       ],
+       "bakedHeightfield": {
+        "big": [
+         1,
+         2
+        ]
+       },
+       "vegetation": {
+        "seed": 7,
+        "density": 0.4
+       }
+      }
+     }
+    ]
+   },
+   "seed": 20260,
+   "expect": {
+    "ok": true,
+    "value": "{\"entities\":[{\"app\":\"terrain\",\"config\":{\"carves\":[{\"center\":[300,-200],\"falloff\":1000,\"radius\":500}],\"radius\":6360,\"seed\":20260,\"vegetation\":{\"density\":0.4,\"seed\":20260}}}],\"name\":\"town\"}"
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "radius": 90
+    }
+   },
+   "seed": 3,
+   "expect": {
+    "ok": true,
+    "value": "{\"terrain\":{\"radius\":90,\"seed\":3}}"
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain",
+      "custom": {
+       "seed": 5,
+       "radius": 9
+      }
+     },
+     {
+      "app": "sky",
+      "config": {
+       "seed": 9
+      }
+     },
+     {
+      "app": "terrain",
+      "config": null
+     }
+    ]
+   },
+   "seed": 11,
+   "expect": {
+    "ok": true,
+    "value": "{\"entities\":[{\"app\":\"terrain\",\"custom\":{\"radius\":9,\"seed\":11}},{\"app\":\"sky\",\"config\":{\"seed\":9}},{\"app\":\"terrain\",\"config\":null}]}"
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "seed": 4,
+     "radius": 9
+    }
+   },
+   "seed": 4,
+   "expect": {
+    "ok": true,
+    "value": "{\"terrain\":{\"radius\":9,\"seed\":4}}"
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain",
+      "custom": {
+       "seed": "x"
+      }
+     }
+    ]
+   },
+   "seed": 2,
+   "expect": {
+    "ok": true,
+    "value": "{\"entities\":[{\"app\":\"terrain\",\"custom\":{\"seed\":\"x\"}}]}"
+   }
+  },
+  {
+   "worldDef": null,
+   "seed": 1,
+   "expect": {
+    "ok": true,
+    "value": "null"
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "seed": 1,
+     "radius": 6360,
+     "vegetation": "none"
+    }
+   },
+   "seed": 2,
+   "expect": {
+    "ok": true,
+    "value": "{\"terrain\":{\"radius\":6360,\"seed\":2,\"vegetation\":\"none\"}}"
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "seed": 1
+    }
+   },
+   "seed": 2.5,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "withTerrainSeed: seed must be an integer, got 2.5"
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "seed": 1
+    }
+   },
+   "seed": "7",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "withTerrainSeed: seed must be an integer, got \"7\""
+   }
+  },
+  {
+   "worldDef": {
+    "terrain": {
+     "seed": 1
+    }
+   },
+   "seed": null,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "withTerrainSeed: seed must be an integer, got null"
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

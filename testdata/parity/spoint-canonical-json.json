@@ -1,0 +1,116 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/shared/canonicalJSON.js (JSON.stringify with sorted-key replacer)",
+ "nonFiniteEncoding": "NaN, Infinity and -Infinity serialise as null; the fixture input stores the JSON.stringify form (null), so the bevy input is null",
+ "undefinedEncoding": "undefined object members are omitted and undefined array items are null; the fixture input stores the JSON.stringify form",
+ "cases": [
+  {
+   "name": "nestedKeyOrder",
+   "input": {
+    "2": "two",
+    "10": "ten",
+    "4294967294": "maxIndex",
+    "zeta": {
+     "beta": [
+      1,
+      2.5,
+      -0.25,
+      1e-7,
+      0.000001,
+      100000000000000000000,
+      1e+21,
+      123456789.125
+     ],
+     "alpha": null
+    },
+    "alpha": true,
+    "01": "lead",
+    "4294967295": "max",
+    "": "empty",
+    "é": "e-acute",
+    "😀": "emoji",
+    "�": "replacement"
+   },
+   "expect": "{\"2\":\"two\",\"10\":\"ten\",\"4294967294\":\"maxIndex\",\"\":\"empty\",\"01\":\"lead\",\"4294967295\":\"max\",\"alpha\":true,\"zeta\":{\"alpha\":null,\"beta\":[1,2.5,-0.25,1e-7,0.000001,100000000000000000000,1e+21,123456789.125]},\"é\":\"e-acute\",\"😀\":\"emoji\",\"�\":\"replacement\"}"
+  },
+  {
+   "name": "stringEscapes",
+   "input": {
+    "s": "a\"b\\c\n\r\t\b\f\u0001\u001f é 😀  "
+   },
+   "expect": "{\"s\":\"a\\\"b\\\\c\\n\\r\\t\\b\\f\\u0001\\u001f é 😀  \"}"
+  },
+  {
+   "name": "arraysAndEmpties",
+   "input": [
+    [],
+    {},
+    [
+     {}
+    ],
+    [
+     []
+    ],
+    null,
+    true,
+    false,
+    "x"
+   ],
+   "expect": "[[],{},[{}],[[]],null,true,false,\"x\"]"
+  },
+  {
+   "name": "nonFinite",
+   "input": {
+    "n": null,
+    "i": null,
+    "m": null,
+    "arr": [
+     null,
+     1
+    ]
+   },
+   "expect": "{\"arr\":[null,1],\"i\":null,\"m\":null,\"n\":null}"
+  },
+  {
+   "name": "undefinedDropped",
+   "input": {
+    "b": 1,
+    "c": [
+     null,
+     2
+    ]
+   },
+   "expect": "{\"b\":1,\"c\":[null,2]}"
+  },
+  {
+   "name": "numberFormats",
+   "input": [
+    0,
+    0,
+    1,
+    -1,
+    0.1,
+    100,
+    1e+21,
+    1.7976931348623157e+308,
+    5e-324,
+    9007199254740992,
+    0.000001,
+    12.345
+   ],
+   "expect": "[0,0,1,-1,0.1,100,1e+21,1.7976931348623157e+308,5e-324,9007199254740992,0.000001,12.345]"
+  },
+  {
+   "name": "topLevelNull",
+   "input": null,
+   "expect": "null"
+  },
+  {
+   "name": "topLevelString",
+   "input": "x",
+   "expect": "\"x\""
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

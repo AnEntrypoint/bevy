@@ -1,9 +1,12 @@
 #![cfg_attr(not(test), allow(dead_code))]
 
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 
+use crate::canonical_json::canonical_json;
+use crate::fnv1a;
 use crate::height::ops_jsgen::V3;
 use crate::height::planet_frame::{anchor_basis, tangent_local_to_dir, Basis};
+use crate::world_name::{world_stem, WORLD_DIR};
 
 const DEFAULT_HASH_VERSION: u32 = 2;
 const LEGACY_HASH_VERSION: u32 = 1;
@@ -248,6 +251,146 @@ pub fn resolve_terrain_config(world_def: &Value) -> Value {
         .unwrap_or(Value::Null)
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct MinimapDescriptor {
+    pub base: String,
+    pub center: Value,
+    pub extent: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MinimapBakeParams {
+    pub radius: Option<f64>,
+    pub relief_scale: Option<f64>,
+    pub hash_version: u32,
+    pub carves: Vec<Carve>,
+    pub anchor_dir: Value,
+    pub extent: f64,
+    pub res: f64,
+    pub center: Value,
+}
+
+fn to_int32(n: f64) -> i32 {
+    if !n.is_finite() {
+        return 0;
+    }
+    n.trunc().rem_euclid(4_294_967_296.0) as u32 as i32
+}
+
+fn parsed_terrain_of(tcfg: &Value) -> Result<TerrainConfig, Refusal> {
+    parse_terrain_config(tcfg).map_err(|p| {
+        let prefix = if p.path.is_empty() { String::new() } else { format!("{}: ", p.path) };
+        Refusal { name: "TypeError", message: format!("terrain {prefix}{}", p.reason) }
+    })
+}
+
+fn minimap_base_name(world_id: &str, c: &TerrainConfig) -> String {
+    let hash_tag = if c.hash_version == DEFAULT_HASH_VERSION { String::new() } else { format!(".h{}", c.hash_version) };
+    let seed = c.seed.map_or(0, to_int32);
+    format!("{world_id}.{seed}{hash_tag}.minimap")
+}
+
+pub fn minimap_descriptor(world_id: &Value, tcfg: &Value) -> Result<Option<MinimapDescriptor>, Refusal> {
+    let Some(world_id) = world_stem(world_id) else {
+        return Ok(None);
+    };
+    if !truthy(tcfg) || tcfg.get("enabled") == Some(&Value::Bool(false)) || finite(tcfg.get("seed")).is_none() {
+        return Ok(None);
+    }
+    let c = parsed_terrain_of(tcfg)?;
+    Ok(Some(MinimapDescriptor {
+        base: format!("/{WORLD_DIR}/{}", minimap_base_name(world_id, &c)),
+        center: c.center,
+        extent: c.extent,
+    }))
+}
+
+pub fn minimap_bake_params(tcfg: &Value) -> Result<MinimapBakeParams, Refusal> {
+    let c = parsed_terrain_of(tcfg)?;
+    Ok(MinimapBakeParams {
+        radius: c.radius,
+        relief_scale: c.relief_scale,
+        hash_version: c.hash_version,
+        carves: c.carves,
+        anchor_dir: c.anchor_dir,
+        extent: c.extent,
+        res: c.res,
+        center: c.center,
+    })
+}
+
+pub fn terrain_bake_key(tcfg: &Value) -> Result<String, Refusal> {
+    let c = parsed_terrain_of(tcfg)?;
+    let slice = json!({
+        "seed": c.seed.map_or(Value::Null, Value::from),
+        "radius": c.radius.map_or(Value::Null, Value::from),
+        "reliefScale": c.relief_scale.map_or(Value::Null, Value::from),
+        "anchorDir": c.anchor_dir,
+        "hashVersion": c.hash_version,
+        "carves": c.carve_inputs,
+    });
+    Ok(format!("{:08x}", fnv1a::step_string(fnv1a::FNV1A_32_OFFSET_BASIS, &canonical_json(&slice))))
+}
+
+pub fn with_terrain_seed(world_def: &Value, seed: &Value) -> Result<Value, Refusal> {
+    let seed = seed.as_f64().filter(|n| n.is_finite() && n.fract() == 0.0).ok_or_else(|| Refusal {
+        name: "TypeError",
+        message: format!("withTerrainSeed: seed must be an integer, got {}", canonical_json(seed)),
+    })?;
+    Ok(map_terrain_configs(world_def, &|cfg| reseed_terrain_config(cfg, seed)))
+}
+
+fn reseed_terrain_config(cfg: &Map<String, Value>, seed: f64) -> Value {
+    let mut reseeded: Map<String, Value> = cfg
+        .iter()
+        .filter(|(key, _)| key.as_str() != "bakedHeightfield")
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    if cfg.get("seed").and_then(Value::as_f64) != Some(seed) {
+        reseeded.insert("seed".to_string(), Value::from(seed));
+    }
+    if let Some(Value::Object(vegetation)) = cfg.get("vegetation") {
+        let mut vegetation = vegetation.clone();
+        vegetation.insert("seed".to_string(), Value::from(seed));
+        reseeded.insert("vegetation".to_string(), Value::Object(vegetation));
+    }
+    Value::Object(reseeded)
+}
+
+fn map_terrain_configs(world_def: &Value, patch: &dyn Fn(&Map<String, Value>) -> Value) -> Value {
+    let Value::Object(def) = world_def else {
+        return world_def.clone();
+    };
+    let mut next = def.clone();
+    if let Some(Value::Object(terrain)) = def.get("terrain") {
+        next.insert("terrain".to_string(), patch(terrain));
+    }
+    if let Some(Value::Array(entities)) = def.get("entities") {
+        let patched = entities.iter().map(|e| patch_entity(e, patch)).collect();
+        next.insert("entities".to_string(), Value::Array(patched));
+    }
+    Value::Object(next)
+}
+
+fn patch_entity(e: &Value, patch: &dyn Fn(&Map<String, Value>) -> Value) -> Value {
+    let Value::Object(entity) = e else {
+        return e.clone();
+    };
+    if entity.get("app") != Some(&Value::from("terrain")) {
+        return e.clone();
+    }
+    let mut next = entity.clone();
+    if let Some(Value::Object(config)) = entity.get("config") {
+        next.insert("config".to_string(), patch(config));
+    }
+    if let Some(Value::Object(custom)) = entity.get("custom") {
+        if finite(custom.get("seed")).is_some() {
+            next.insert("custom".to_string(), patch(custom));
+        }
+    }
+    Value::Object(next)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -357,6 +500,47 @@ mod tests {
         }
         for case in cases(&f, "parse") {
             check_parse(case);
+        }
+    }
+
+    fn bake_fixture() -> Value {
+        serde_json::from_str(include_str!("../testdata/parity/spoint-terrain-bake.json")).unwrap()
+    }
+
+    #[test]
+    fn terrain_bake_matches_spoint() {
+        let f = bake_fixture();
+        for case in cases(&f, "minimapDescriptor") {
+            check("minimapDescriptor", minimap_descriptor(&case["worldId"], &case["tcfg"]), &case["expect"], |got: &Option<MinimapDescriptor>, want: &Value| match got {
+                None => assert!(want.is_null(), "minimapDescriptor null"),
+                Some(d) => {
+                    assert_eq!(d.base, want["base"].as_str().unwrap(), "minimapDescriptor base");
+                    assert_eq!(canonical_json(&d.center), canonical_json(&want["center"]), "minimapDescriptor center");
+                    close("minimapDescriptor extent", d.extent, &want["extent"]);
+                }
+            });
+        }
+        for case in cases(&f, "minimapBakeParams") {
+            check("minimapBakeParams", minimap_bake_params(&case["tcfg"]), &case["expect"], |p: &MinimapBakeParams, want: &Value| {
+                close_opt("minimapBakeParams radius", p.radius, &want["radius"]);
+                close_opt("minimapBakeParams reliefScale", p.relief_scale, &want["reliefScale"]);
+                assert_eq!(u64::from(p.hash_version), want["hashVersion"].as_u64().unwrap(), "minimapBakeParams hashVersion");
+                carves_match("minimapBakeParams", &p.carves, &want["carves"]);
+                assert_eq!(canonical_json(&p.anchor_dir), canonical_json(&want["anchorDir"]), "minimapBakeParams anchorDir");
+                close("minimapBakeParams extent", p.extent, &want["extent"]);
+                close("minimapBakeParams res", p.res, &want["res"]);
+                assert_eq!(canonical_json(&p.center), canonical_json(&want["center"]), "minimapBakeParams center");
+            });
+        }
+        for case in cases(&f, "terrainBakeKey") {
+            check("terrainBakeKey", terrain_bake_key(&case["tcfg"]), &case["expect"], |key: &String, want: &Value| {
+                assert_eq!(key.as_str(), want.as_str().unwrap(), "terrainBakeKey");
+            });
+        }
+        for case in cases(&f, "withTerrainSeed") {
+            check("withTerrainSeed", with_terrain_seed(&case["worldDef"], &case["seed"]).map(|v| canonical_json(&v)), &case["expect"], |text: &String, want: &Value| {
+                assert_eq!(text.as_str(), want.as_str().unwrap(), "withTerrainSeed");
+            });
         }
     }
 }

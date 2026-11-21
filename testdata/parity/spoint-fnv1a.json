@@ -1,0 +1,168 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/shared/fnv1a.js (32-bit FNV-1a; string steps hash UTF-16 code units)",
+ "offsetBasis": 2166136261,
+ "prime": 16777619,
+ "string": [
+  {
+   "input": "",
+   "expect": 2166136261
+  },
+  {
+   "input": "a",
+   "expect": 3826002220
+  },
+  {
+   "input": "spoint",
+   "expect": 3974938036
+  },
+  {
+   "input": "héllo",
+   "expect": 4058363231
+  },
+  {
+   "input": "日本語",
+   "expect": 1409693518
+  },
+  {
+   "input": "😀",
+   "expect": 3409036472
+  },
+  {
+   "input": "a\u0000b",
+   "expect": 284404690
+  },
+  {
+   "input": "terrain 20260",
+   "expect": 48551592
+  },
+  {
+   "input": "é",
+   "expect": 1812687940
+  }
+ ],
+ "bytes": [
+  {
+   "input": [],
+   "expect": 2166136261
+  },
+  {
+   "input": [
+    0
+   ],
+   "expect": 84696351
+  },
+  {
+   "input": [
+    97,
+    255
+   ],
+   "expect": 3525695273
+  },
+  {
+   "input": [
+    195,
+    169
+   ],
+   "expect": 513665217
+  },
+  {
+   "input": [
+    222,
+    173,
+    190,
+    239
+   ],
+   "expect": 73223091
+  },
+  {
+   "input": [
+    0,
+    128,
+    127,
+    1
+   ],
+   "expect": 3182211861
+  }
+ ],
+ "stepString": [
+  {
+   "hash": 3735928559,
+   "input": "x",
+   "expect": 579012533
+  },
+  {
+   "hash": 12345,
+   "input": "é😀",
+   "expect": 1009725077
+  }
+ ],
+ "stepBytes": [
+  {
+   "hash": 12345,
+   "input": [
+    1,
+    2,
+    3
+   ],
+   "expect": 1327119271
+  },
+  {
+   "hash": 4294967295,
+   "input": [
+    200
+   ],
+   "expect": 922665877
+  }
+ ],
+ "stepFloat32": [
+  {
+   "hash": 2166136261,
+   "input": 0.5,
+   "expect": 3837723546
+  },
+  {
+   "hash": 2166136261,
+   "input": -2.25,
+   "expect": 1006334885
+  },
+  {
+   "hash": 7,
+   "input": 10000000000,
+   "expect": 1529034349
+  },
+  {
+   "hash": 2166136261,
+   "input": 3.4e+38,
+   "expect": 2768156096
+  }
+ ],
+ "stepFloat64": [
+  {
+   "hash": 2166136261,
+   "input": 0.5,
+   "byteOffset": 0,
+   "expect": 1717470170
+  },
+  {
+   "hash": 2166136261,
+   "input": -2.25,
+   "byteOffset": 3,
+   "expect": 2630274663
+  },
+  {
+   "hash": 9,
+   "input": 1e+300,
+   "byteOffset": 0,
+   "expect": 139924351
+  },
+  {
+   "hash": 9,
+   "input": 0,
+   "byteOffset": 255,
+   "expect": 358374177
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

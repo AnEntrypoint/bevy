@@ -1,0 +1,409 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/shared/worldName.js (isWorldName, worldFileRel, worldFileCandidates, defaultWorldNameOf)",
+ "worldDir": "apps/world",
+ "worldIndex": "index",
+ "worldFixturesDir": "apps/world/_fixtures",
+ "isWorldName": [
+  {
+   "input": "index",
+   "expect": true
+  },
+  {
+   "input": "a-b_C9",
+   "expect": true
+  },
+  {
+   "input": "ABC123_-z",
+   "expect": true
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": true
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": false
+  },
+  {
+   "input": "",
+   "expect": false
+  },
+  {
+   "input": "a b",
+   "expect": false
+  },
+  {
+   "input": "a.b",
+   "expect": false
+  },
+  {
+   "input": "é",
+   "expect": false
+  },
+  {
+   "input": "x\n",
+   "expect": false
+  },
+  {
+   "input": "a/b",
+   "expect": false
+  },
+  {
+   "input": "../x",
+   "expect": false
+  },
+  {
+   "input": null,
+   "expect": false
+  },
+  {
+   "input": 5,
+   "expect": false
+  },
+  {
+   "input": [
+    "a"
+   ],
+   "expect": false
+  }
+ ],
+ "worldFileRel": [
+  {
+   "input": "index",
+   "expect": {
+    "ok": true,
+    "value": "apps/world/index.js"
+   }
+  },
+  {
+   "input": "a-b_C9",
+   "expect": {
+    "ok": true,
+    "value": "apps/world/a-b_C9.js"
+   }
+  },
+  {
+   "input": "ABC123_-z",
+   "expect": {
+    "ok": true,
+    "value": "apps/world/ABC123_-z.js"
+   }
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": {
+    "ok": true,
+    "value": "apps/world/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.js"
+   }
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
+   }
+  },
+  {
+   "input": "",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"\""
+   }
+  },
+  {
+   "input": "a b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a b\""
+   }
+  },
+  {
+   "input": "a.b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a.b\""
+   }
+  },
+  {
+   "input": "é",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"é\""
+   }
+  },
+  {
+   "input": "x\n",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"x\\n\""
+   }
+  },
+  {
+   "input": "a/b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a/b\""
+   }
+  },
+  {
+   "input": "../x",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"../x\""
+   }
+  },
+  {
+   "input": null,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got null"
+   }
+  },
+  {
+   "input": 5,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got 5"
+   }
+  },
+  {
+   "input": [
+    "a"
+   ],
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got [\"a\"]"
+   }
+  }
+ ],
+ "worldFileCandidates": [
+  {
+   "input": "index",
+   "expect": {
+    "ok": true,
+    "value": [
+     "apps/world/index.js",
+     "apps/world/_fixtures/index.js"
+    ]
+   }
+  },
+  {
+   "input": "a-b_C9",
+   "expect": {
+    "ok": true,
+    "value": [
+     "apps/world/a-b_C9.js",
+     "apps/world/_fixtures/a-b_C9.js"
+    ]
+   }
+  },
+  {
+   "input": "ABC123_-z",
+   "expect": {
+    "ok": true,
+    "value": [
+     "apps/world/ABC123_-z.js",
+     "apps/world/_fixtures/ABC123_-z.js"
+    ]
+   }
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": {
+    "ok": true,
+    "value": [
+     "apps/world/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.js",
+     "apps/world/_fixtures/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.js"
+    ]
+   }
+  },
+  {
+   "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
+   }
+  },
+  {
+   "input": "",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"\""
+   }
+  },
+  {
+   "input": "a b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a b\""
+   }
+  },
+  {
+   "input": "a.b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a.b\""
+   }
+  },
+  {
+   "input": "é",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"é\""
+   }
+  },
+  {
+   "input": "x\n",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"x\\n\""
+   }
+  },
+  {
+   "input": "a/b",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"a/b\""
+   }
+  },
+  {
+   "input": "../x",
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got \"../x\""
+   }
+  },
+  {
+   "input": null,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got null"
+   }
+  },
+  {
+   "input": 5,
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got 5"
+   }
+  },
+  {
+   "input": [
+    "a"
+   ],
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "world name must be a world file stem, got [\"a\"]"
+   }
+  }
+ ],
+ "defaultWorldNameOf": [
+  {
+   "input": null,
+   "expect": {
+    "ok": true,
+    "value": "index"
+   }
+  },
+  {
+   "input": {},
+   "expect": {
+    "ok": true,
+    "value": "index"
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": "town"
+   },
+   "expect": {
+    "ok": true,
+    "value": "town"
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": "bad name"
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "apps/world/index.js defaultWorld must be a world file stem, got \"bad name\""
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": null
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "apps/world/index.js defaultWorld must be a world file stem, got null"
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": 7
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "apps/world/index.js defaultWorld must be a world file stem, got 7"
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": ""
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "apps/world/index.js defaultWorld must be a world file stem, got \"\""
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "expect": {
+    "ok": true,
+    "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   }
+  },
+  {
+   "input": {
+    "defaultWorld": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "apps/world/index.js defaultWorld must be a world file stem, got \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

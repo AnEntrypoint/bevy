@@ -5,10 +5,12 @@ import { pathToFileURL } from 'node:url'
 
 const spoint = process.argv[2] ?? '/workspace/spoint'
 const outPath = join(import.meta.dirname, '..', 'testdata', 'parity', 'spoint-terrain-config.json')
+const bakeOutPath = join(import.meta.dirname, '..', 'testdata', 'parity', 'spoint-terrain-bake.json')
 const git = (args) => execFileSync('git', ['-C', spoint, ...args]).toString()
 const rev = git(['rev-parse', '--short', 'HEAD']).trim()
 const statusBefore = git(['status', '--porcelain'])
 const tc = await import(pathToFileURL(join(spoint, 'src/shared/terrainConfig.js')).href)
+const { canonicalJSON } = await import(pathToFileURL(join(spoint, 'src/shared/canonicalJSON.js')).href)
 
 const outcome = (fn) => {
   try {
@@ -105,9 +107,77 @@ const fixture = {
   parse: parseCases.map((tcfg) => ({ tcfg, expect: parseOut(tcfg) })),
 }
 
+const descriptorOut = (d) => (d === null ? null : { base: d.base, center: d.center, extent: num(d.extent) })
+const bakeParamsOut = (p) => ({
+  radius: num(p.radius),
+  reliefScale: num(p.reliefScale),
+  hashVersion: p.hashVersion,
+  carves: p.carves.map((k) => ({ dir: k.dir, innerM: k.innerM, outerM: k.outerM })),
+  anchorDir: p.anchorDir,
+  extent: num(p.extent),
+  res: num(p.res),
+  center: p.center,
+})
+const descriptorCases = [
+  ['town', { seed: 20260, radius: 6360, center: [10, -5], anchorDir: ANCHOR, carves: [CARVE_A, CARVE_B] }],
+  ['town', { seed: -4.5, radius: 20000 }],
+  ['town', { seed: 7, radius: 6360, hashVersion: 1, carves: [CARVE_A] }],
+  ['town', { seed: 2147483653, radius: 6360, minimapExtent: 300, minimapRes: 64 }],
+  ['town', { seed: 3, radius: 1000, minimapExtent: 300, minimapRes: 64 }],
+  ['town', { seed: 5 }],
+  ['town', { seed: 7, radius: 6360, enabled: false }],
+  ['town', { seed: 7, radius: 6360, enabled: 0 }],
+  ['town', { radius: 6360 }],
+  ['bad name', { seed: 1, radius: 90 }],
+  [null, { seed: 1, radius: 90 }],
+  ['town', null],
+  ['town', { seed: 1, radius: -5 }],
+  ['town', { seed: 9, radius: 6360, hashVersion: 3 }],
+  ['town', { seed: 9, radius: 6360, carves: 'x' }],
+]
+const bakeParamsCases = [
+  { seed: 20260, radius: 6360, reliefScale: 0.5, hashVersion: 2, carves: [CARVE_A], center: [10, -5], anchorDir: ANCHOR },
+  { seed: 1, radius: 90, hashVersion: 1, carves: [CARVE_A] },
+  { seed: 4 },
+  { radius: 6360, anchorDir: ANCHOR, carves: [PARSED_CARVE, CARVE_B] },
+  { seed: 3, radius: 6360, hashVersion: 3 },
+]
+const bakeKeyCases = [
+  { seed: 20260, radius: 6360, reliefScale: 0.5, anchorDir: ANCHOR, center: [10, -5], hashVersion: 2, carves: [CARVE_A] },
+  { seed: 7, radius: 6360 },
+  { seed: 7, radius: 90, hashVersion: 1, carves: [CARVE_A] },
+  {},
+  { seed: -4.5, radius: 6360, carveInputs: [CARVE_B], carves: [CARVE_A] },
+  { seed: 1, radius: 6360, anchorDir: ANCHOR, carves: [PARSED_CARVE] },
+  { seed: 3, radius: 6360, hashVersion: 3 },
+]
+const seedCases = [
+  { worldDef: { name: 'town', entities: [{ app: 'terrain', config: { seed: 7, radius: 6360, carves: [CARVE_A], bakedHeightfield: { big: [1, 2] }, vegetation: { seed: 7, density: 0.4 } } }] }, seed: 20260 },
+  { worldDef: { terrain: { radius: 90 } }, seed: 3 },
+  { worldDef: { entities: [{ app: 'terrain', custom: { seed: 5, radius: 9 } }, { app: 'sky', config: { seed: 9 } }, { app: 'terrain', config: null }] }, seed: 11 },
+  { worldDef: { terrain: { seed: 4, radius: 9 } }, seed: 4 },
+  { worldDef: { entities: [{ app: 'terrain', custom: { seed: 'x' } }] }, seed: 2 },
+  { worldDef: null, seed: 1 },
+  { worldDef: { terrain: { seed: 1, radius: 6360, vegetation: 'none' } }, seed: 2 },
+  { worldDef: { terrain: { seed: 1 } }, seed: 2.5 },
+  { worldDef: { terrain: { seed: 1 } }, seed: '7' },
+  { worldDef: { terrain: { seed: 1 } }, seed: null },
+]
+const bakeFixture = {
+  spoint: rev,
+  source: 'spoint ' + rev + ': src/shared/terrainConfig.js (minimapDescriptor, minimapBakeParams, terrainBakeKey, withTerrainSeed); canonicalJSON.js for the withTerrainSeed text',
+  minimapDescriptor: descriptorCases.map(([worldId, tcfg]) => ({ worldId, tcfg, expect: outcome(() => descriptorOut(tc.minimapDescriptor(worldId, tcfg))) })),
+  minimapBakeParams: bakeParamsCases.map((tcfg) => ({ tcfg, expect: outcome(() => bakeParamsOut(tc.minimapBakeParams(tcfg))) })),
+  terrainBakeKey: bakeKeyCases.map((tcfg) => ({ tcfg, expect: outcome(() => tc.terrainBakeKey(tcfg)) })),
+  withTerrainSeed: seedCases.map(({ worldDef, seed }) => ({ worldDef, seed, expect: outcome(() => canonicalJSON(tc.withTerrainSeed(worldDef, seed))) })),
+}
+
 const statusAfter = git(['status', '--porcelain'])
 if (statusAfter !== statusBefore) throw new Error('spoint working tree changed')
 fixture.spointStatusBefore = statusBefore
 fixture.spointStatusAfter = statusAfter
+bakeFixture.spointStatusBefore = statusBefore
+bakeFixture.spointStatusAfter = statusAfter
 writeFileSync(outPath, JSON.stringify(fixture, null, 1) + '\n')
-console.log(JSON.stringify({ rev, hashVersionOf: hashVersionCases.length, assertHashVersion: assertCases.length, hashOverride: overrideCases.length, carvesOf: carvesCases.length, resolve: resolveCases.length, parse: parseCases.length }))
+writeFileSync(bakeOutPath, JSON.stringify(bakeFixture, null, 1) + '\n')
+console.log(JSON.stringify({ rev, hashVersionOf: hashVersionCases.length, assertHashVersion: assertCases.length, hashOverride: overrideCases.length, carvesOf: carvesCases.length, resolve: resolveCases.length, parse: parseCases.length, minimapDescriptor: descriptorCases.length, minimapBakeParams: bakeParamsCases.length, terrainBakeKey: bakeKeyCases.length, withTerrainSeed: seedCases.length }))
