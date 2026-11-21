@@ -2,12 +2,11 @@ mode: 3d
 gravity: { x: 0, y: 0, z: 0 }
 globe:
   name: test-globe
-  radius: 64
-  amplitude: 3
-  seed: 24301
-  chunkSpan: 0.35
-  streamRadius: 40
-  subdivisions: 16
+  radius: 63600
+  seed: 1337
+  anchorDir: [-0.641, 0.2558, 0.7237]
+  reliefScale: 0.001
+  maxLevel: 13
   bodyAltitude: 0.5
   dropHeight: 6
   bodies:

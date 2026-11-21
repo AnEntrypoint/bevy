@@ -1,3 +1,4 @@
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Leaf {
     pub ox: f64,
@@ -6,9 +7,11 @@ pub struct Leaf {
 }
 
 pub const NEAR_FIELD_DEFAULT_GRID_STEPS: i64 = 9;
+#[cfg(test)]
 pub const NEAR_FIELD_DEFAULT_TILE_BUDGET: i64 = 64;
 pub const NEAR_FIELD_FLOOR_TILES: f64 = 1.0;
 pub const MIN_GROUND_PER_FACE_METRE: f64 = 0.6;
+#[cfg(test)]
 const OVERLAP_EPSILON: f64 = 1e-6;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -16,7 +19,9 @@ pub struct NearFieldOptions {
     pub spacing_m: Option<f64>,
     pub extent_m: Option<f64>,
     pub grid_steps: Option<i64>,
+    #[cfg(test)]
     pub tile_budget: Option<i64>,
+    #[cfg(test)]
     pub face_half_span_m: Option<f64>,
 }
 
@@ -29,6 +34,7 @@ pub struct FloorReach {
     pub inner_span_leaves: f64,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Tile {
     pub ox: f64,
@@ -37,6 +43,7 @@ pub struct Tile {
     pub level: u8,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Plan {
     pub tiles: Vec<Tile>,
@@ -59,13 +66,17 @@ pub struct Plan {
 
 #[derive(Clone, Copy, Debug)]
 pub struct NearField {
+    #[cfg(test)]
     pub spacing_m: f64,
+    #[cfg(test)]
     pub grid_steps: i64,
+    #[cfg(test)]
     pub tile_budget: i64,
     pub tile_m: f64,
     pub max_leaf_m: f64,
     pub requested_half_extent_m: f64,
     pub floor_span_leaves: f64,
+    #[cfg(test)]
     face_half_span_m: Option<f64>,
     coverage_cap: f64,
 }
@@ -83,17 +94,20 @@ impl NearField {
         let spacing_m = positive_finite(options.spacing_m).ok_or("near-field lattice: spacing_m must be a positive finite number of metres")?;
         let extent_m = positive_finite(options.extent_m).ok_or("near-field lattice: extent_m must be a positive finite number of metres")?;
         let grid_steps = steps_or(options.grid_steps, 2, NEAR_FIELD_DEFAULT_GRID_STEPS);
-        let tile_budget = steps_or(options.tile_budget, 1, NEAR_FIELD_DEFAULT_TILE_BUDGET);
         let tile_m = grid_steps as f64 * spacing_m;
         let requested_half_extent_m = extent_m / 2.0;
         let mut lattice = NearField {
+            #[cfg(test)]
             spacing_m,
+            #[cfg(test)]
             grid_steps,
-            tile_budget,
+            #[cfg(test)]
+            tile_budget: steps_or(options.tile_budget, 1, NEAR_FIELD_DEFAULT_TILE_BUDGET),
             tile_m,
             max_leaf_m: tile_m * NEAR_FIELD_FLOOR_TILES,
             requested_half_extent_m,
             floor_span_leaves: 0.0,
+            #[cfg(test)]
             face_half_span_m: positive_finite(options.face_half_span_m),
             coverage_cap: (requested_half_extent_m / tile_m).floor().max(1.0),
         };
@@ -114,6 +128,7 @@ impl NearField {
         }
     }
 
+    #[cfg(test)]
     pub fn plan(&self, leaves: &[Leaf], camera: Option<[f64; 2]>, grid_steps_override: Option<i64>, instance_budget: Option<i64>, ground_per_face_metre: Option<f64>) -> Plan {
         let gs = steps_or(grid_steps_override, 2, self.grid_steps);
         let gpf = positive_finite(ground_per_face_metre).unwrap_or(1.0);

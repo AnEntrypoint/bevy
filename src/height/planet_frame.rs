@@ -357,12 +357,12 @@ pub enum GroundSourceError {
 #[cfg(test)]
 const CPU_SOLVE_SOURCE: &str = "cpu-solve";
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub struct ChartFrame {
     basis: Basis,
     radius: f64,
     anchor_height: f64,
     offset_y: f64,
+    #[cfg(test)]
     relief_scale: f64,
     chart_epoch: u32,
     memo: Vec<GroundMemoSlot>,
@@ -382,8 +382,11 @@ impl ChartFrame {
     pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, relief_scale: Option<f64>, height: impl Fn(V3) -> f64) -> Self {
         let basis = anchor_basis(anchor_dir);
         let anchor_height = height(basis.up);
+        #[cfg(test)]
         let relief_scale = relief_scale.unwrap_or(0.01);
-        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], #[cfg(test)] ground_sources: Vec::new(), #[cfg(test)] active_source: CPU_SOLVE_SOURCE.to_string(), #[cfg(test)] anonymous_installs: 0, #[cfg(test)] cpu_height_divergent: false, #[cfg(test)] divergence_reported: false }
+        #[cfg(not(test))]
+        let _ = relief_scale;
+        Self { basis, radius, anchor_height, offset_y, #[cfg(test)] relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], #[cfg(test)] ground_sources: Vec::new(), #[cfg(test)] active_source: CPU_SOLVE_SOURCE.to_string(), #[cfg(test)] anonymous_installs: 0, #[cfg(test)] cpu_height_divergent: false, #[cfg(test)] divergence_reported: false }
     }
 
     #[cfg(test)]

@@ -1,3 +1,4 @@
+use super::near_field::NearField;
 use crate::height::anchor::FACE_FRAME;
 use crate::vec3::{dot, normalise};
 use bevy::math::DVec3;
@@ -47,11 +48,21 @@ pub struct QuadtreeConfig {
     pub fov_y_rad: f64,
     pub near_floor: Option<NearFloor>,
     pub aim: Option<DVec3>,
+    pub near_field: Option<NearField>,
 }
 
 impl QuadtreeConfig {
     pub fn reference(radius: f64, viewport_height: f64, fov_y_rad: f64) -> Self {
-        Self { radius, max_level: DEFAULT_MAX_LEVEL, split_factor: DEFAULT_SPLIT_FACTOR, viewport_height, fov_y_rad, near_floor: None, aim: None }
+        Self { radius, max_level: DEFAULT_MAX_LEVEL, split_factor: DEFAULT_SPLIT_FACTOR, viewport_height, fov_y_rad, near_floor: None, aim: None, near_field: None }
+    }
+
+    pub fn with_near_field(self, field: NearField, camera: DVec3, ground_m: f64) -> Self {
+        Self { near_field: Some(field), ..self }.at(camera, ground_m)
+    }
+
+    pub fn at(&self, camera: DVec3, ground_m: f64) -> Self {
+        let near_floor = self.near_field.and_then(|field| near_floor_at(&field, camera, self.radius, ground_m)).or(self.near_floor);
+        Self { near_floor, ..self.clone() }
     }
 
     fn split_dist(&self) -> f64 {
@@ -91,11 +102,13 @@ impl NodeKey {
         2.0 * radius / (1u64 << self.level) as f64
     }
 
+    #[cfg(test)]
     pub fn children(&self) -> [NodeKey; 4] {
         let child = |dx: u32, dy: u32| NodeKey { face: self.face, level: self.level + 1, x: 2 * self.x + dx, y: 2 * self.y + dy };
         [child(0, 0), child(1, 0), child(0, 1), child(1, 1)]
     }
 
+    #[cfg(test)]
     pub fn parent(&self) -> Option<NodeKey> {
         (self.level > 0).then(|| NodeKey { face: self.face, level: self.level - 1, x: self.x >> 1, y: self.y >> 1 })
     }
@@ -127,6 +140,7 @@ fn pick_face(camera: DVec3) -> usize {
     best.0
 }
 
+#[cfg(test)]
 pub fn aim_ground_point(camera: DVec3, forward: DVec3, radius: f64) -> Option<DVec3> {
     let fl = forward.length();
     let f = forward / if fl == 0.0 { 1.0 } else { fl };
@@ -138,6 +152,33 @@ pub fn aim_ground_point(camera: DVec3, forward: DVec3, radius: f64) -> Option<DV
     }
     let t = -b - disc.sqrt();
     (t > 0.0).then(|| camera + f * t)
+}
+
+fn ground_per_face_metre(cam: [f64; 2], radius: f64, half_span_m: f64) -> f64 {
+    let step = (radius * 1e-4).max(1e-6);
+    let deformed = |x: f64, y: f64| {
+        let (wx, wy) = (radius * (x / radius * PI / 4.0).tan(), radius * (y / radius * PI / 4.0).tan());
+        let scale = radius / (wx * wx + wy * wy + radius * radius).sqrt();
+        DVec3::new(wx * scale, wy * scale, radius * scale)
+    };
+    let spread = if half_span_m.is_finite() && half_span_m > 0.0 { half_span_m } else { 0.0 };
+    let worst = [-1.0, 0.0, 1.0]
+        .into_iter()
+        .flat_map(|su| [-1.0, 0.0, 1.0].into_iter().map(move |sv| (su, sv)))
+        .flat_map(|(su, sv)| {
+            let (u, v) = (cam[0] + su * spread, cam[1] + sv * spread);
+            let origin = deformed(u, v);
+            [(step, 0.0), (0.0, step)].into_iter().map(move |(du, dv)| (deformed(u + du, v + dv) - origin).length() / step)
+        })
+        .fold(0.0, f64::max);
+    if worst > 0.0 { worst } else { 1.0 }
+}
+
+fn near_floor_at(field: &NearField, camera: DVec3, radius: f64, ground_m: f64) -> Option<NearFloor> {
+    let cam = face_local(pick_face(camera), camera, radius);
+    let reach = field.floor_reach_leaves(Some(ground_per_face_metre(cam, radius, field.requested_half_extent_m)));
+    let clearance = (camera.length() - radius - ground_m).max(0.0);
+    NearFloor::new(field.max_leaf_m, reach.outer_span_leaves, Some(clearance), reach.inner_span_leaves)
 }
 
 struct FaceWalk<'a> {
@@ -262,6 +303,55 @@ mod tests {
                 key(f, l, x, y)
             })
             .collect()
+    }
+
+    const COLLIDER_SPACING_M: f64 = 256.0 / 127.0;
+    const COLLIDER_EXTENT_M: f64 = 256.0;
+    const SMALL_RADIUS_M: f64 = 63_600.0;
+
+    fn collider_field() -> NearField {
+        NearField::new(crate::planet_lod::near_field::NearFieldOptions { spacing_m: Some(COLLIDER_SPACING_M), extent_m: Some(COLLIDER_EXTENT_M), ..Default::default() }).unwrap()
+    }
+
+    fn ground_camera(radius: f64, clearance: f64) -> DVec3 {
+        DVec3::new(0.3, 0.8, 0.5).normalize() * (radius + 30.0 + clearance)
+    }
+
+    #[test]
+    fn the_near_floor_is_the_collider_tile_with_the_reference_reach() {
+        let tile_m = 9.0 * COLLIDER_SPACING_M;
+        let covered_tiles = (COLLIDER_EXTENT_M / 2.0 / tile_m).floor();
+        let camera = ground_camera(SMALL_RADIUS_M, 2.0);
+        let floor = near_floor_at(&collider_field(), camera, SMALL_RADIUS_M, 30.0).unwrap();
+        let cam = face_local(pick_face(camera), camera, SMALL_RADIUS_M);
+        let gpf = ground_per_face_metre(cam, SMALL_RADIUS_M, COLLIDER_EXTENT_M / 2.0);
+        let outer_span = (covered_tiles * tile_m / 2.0 + tile_m) / 0.6 / tile_m;
+        let inner_span = ((covered_tiles * tile_m / (2.0 * gpf) - tile_m) / tile_m).max(0.0);
+        let want = NearFloor::new(tile_m, outer_span, Some(2.0), inner_span).unwrap();
+        assert_eq!(floor.leaf_m, want.leaf_m);
+        close(floor.span_leaves, want.span_leaves, 1e-12, "outer span");
+        close(floor.inner_span_leaves, want.inner_span_leaves, 1e-12, "inner span");
+        close(floor.ground_clearance_m.unwrap(), 2.0, 1e-6, "ground clearance");
+    }
+
+    #[test]
+    fn ground_per_face_metre_is_a_quarter_turn_per_face_at_the_face_centre_and_spreads_over_the_footprint() {
+        close(ground_per_face_metre([0.0, 0.0], SMALL_RADIUS_M, 0.0), PI / 4.0, 1e-6, "face centre");
+        let (radius, half_span) = (100.0, 50.0);
+        let cam = [20.0, -10.0];
+        let spread = ground_per_face_metre(cam, radius, half_span);
+        let samples = [-1.0, 0.0, 1.0].into_iter().flat_map(|su| [-1.0, 0.0, 1.0].into_iter().map(move |sv| ground_per_face_metre([cam[0] + su * half_span, cam[1] + sv * half_span], radius, 0.0)));
+        close(spread, samples.fold(0.0, f64::max), 1e-12, "spread is the worst of the nine samples");
+    }
+
+    #[test]
+    fn the_floor_follows_the_camera_clearance_and_keeps_the_config_floor_without_a_field() {
+        let config = QuadtreeConfig::reference(SMALL_RADIUS_M, 720.0, 1.0).with_near_field(collider_field(), ground_camera(SMALL_RADIUS_M, 0.5), 30.0);
+        let higher = config.at(ground_camera(SMALL_RADIUS_M, 40.0), 30.0);
+        close(config.near_floor.unwrap().ground_clearance_m.unwrap(), 0.5, 1e-6, "clearance at construction");
+        close(higher.near_floor.unwrap().ground_clearance_m.unwrap(), 40.0, 1e-6, "clearance follows the camera");
+        let fixed = QuadtreeConfig { near_floor: NearFloor::new(10.0, 3.0, None, 0.0), ..QuadtreeConfig::reference(SMALL_RADIUS_M, 720.0, 1.0) };
+        assert_eq!(fixed.at(ground_camera(SMALL_RADIUS_M, 40.0), 30.0).near_floor, fixed.near_floor);
     }
 
     #[test]

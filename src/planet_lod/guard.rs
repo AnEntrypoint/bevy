@@ -15,6 +15,7 @@ pub fn note_build() {
     }
 }
 
+#[cfg(test)]
 pub fn builds_on_main_thread() -> usize {
     BUILDS.get()
 }

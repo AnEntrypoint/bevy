@@ -76,6 +76,12 @@ fn insert_material(mut commands: Commands, mut materials: ResMut<Assets<Standard
     commands.insert_resource(PatchMaterial(materials.add(material)));
 }
 
+fn leaves_at(source: &Source, position: DVec3) -> Vec<NodeKey> {
+    let radius = source.config.radius;
+    let ground = source.planet.height(position.normalize().to_array(), radius);
+    select_leaves(&source.config.at(position, ground), position, position.length() - radius)
+}
+
 fn plan_leaves(
     source: Res<Source>,
     origin: Res<FloatingOrigin>,
@@ -87,10 +93,9 @@ fn plan_leaves(
     if streamer.camera == Some(position) {
         return;
     }
-    let altitude = position.length() - source.config.radius;
     let streamer = &mut *streamer;
     streamer.camera = Some(position);
-    streamer.wanted = select_leaves(&source.config, position, altitude).into_iter().collect();
+    streamer.wanted = leaves_at(&source, position).into_iter().collect();
     streamer.pending.retain(|key, _| streamer.wanted.contains(key));
 }
 
@@ -218,6 +223,10 @@ mod tests {
     fn app_at(radius: f64, max_level: u8, camera: DVec3) -> App {
         let planet = Planet::new(&PlanetConfig { seed: 7, hpf_res: 128, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius, carves: Vec::new() });
         let config = QuadtreeConfig { max_level, ..QuadtreeConfig::reference(radius, VIEWPORT_HEIGHT, FOV_Y_RAD) };
+        app_with(Arc::new(planet), config, camera)
+    }
+
+    fn app_with(planet: Arc<Planet>, config: QuadtreeConfig, camera: DVec3) -> App {
         let mut app = App::new();
         app.edit_schedule(Update, |schedule| {
             schedule.set_executor(SingleThreadedExecutor::new());
@@ -226,7 +235,7 @@ mod tests {
             .init_asset::<Mesh>()
             .init_asset::<StandardMaterial>()
             .insert_resource(FloatingOrigin { position: camera })
-            .add_plugins(PlanetLodPlugin { planet: Arc::new(planet), config, centre: DVec3::ZERO });
+            .add_plugins(PlanetLodPlugin { planet, config, centre: DVec3::ZERO });
         app.world_mut().spawn((Camera3d::default(), Transform::IDENTITY, OriginRelative));
         app
     }
@@ -236,11 +245,9 @@ mod tests {
     }
 
     fn expected_leaves(app: &mut App) -> HashSet<NodeKey> {
-        let source = app.world().resource::<Source>();
         let origin = *app.world().resource::<FloatingOrigin>();
-        let (config, centre) = (source.config.clone(), source.centre);
-        let position = origin.to_world(camera_local(app)) - centre;
-        select_leaves(&config, position, position.length() - config.radius).into_iter().collect()
+        let position = origin.to_world(camera_local(app)) - app.world().resource::<Source>().centre;
+        leaves_at(app.world().resource::<Source>(), position).into_iter().collect()
     }
 
     fn live_keys(app: &mut App) -> Vec<NodeKey> {
@@ -328,6 +335,27 @@ mod tests {
             assert_patch_shapes(&mut app);
             assert_eq!(builds_on_main_thread(), 0, "{name}");
         }
+    }
+
+    #[test]
+    fn the_game_near_floor_streams_leaves_finer_than_the_plain_max_level_with_the_camera_on_the_ground() {
+        let plain_max_level = 11;
+        let globe = crate::globe::GlobeWorld { max_level: plain_max_level, ..Default::default() };
+        let config = globe.quadtree_config();
+        assert!(config.near_floor.is_some() && config.near_field.is_some());
+        let camera = globe.surface_position(0.0, 0.0, GROUND_ALTITUDE_M as f32).as_dvec3();
+        let altitude = camera.length() - config.radius;
+        let plain = QuadtreeConfig { near_floor: None, near_field: None, ..config.clone() };
+        let plain_finest = select_leaves(&plain, camera, altitude).iter().map(|key| key.level).max().unwrap();
+        assert_eq!(plain_finest, plain_max_level);
+        let per_frame_only = Source { planet: globe.planet.clone(), config: QuadtreeConfig { near_floor: None, ..config.clone() }, centre: DVec3::ZERO };
+        let per_frame_finest = leaves_at(&per_frame_only, camera).iter().map(|key| key.level).max().unwrap();
+        assert!(per_frame_finest > plain_max_level, "the floor refreshed at the camera streams level {per_frame_finest}");
+        let mut app = app_with(globe.planet.clone(), config, camera);
+        settle(&mut app, &HashSet::new());
+        let finest = live_keys(&mut app).iter().map(|key| key.level).max().unwrap();
+        assert!(finest > plain_max_level, "the floor streams level {finest} where the plain tree stops at {plain_max_level}");
+        assert_eq!(app.world().resource::<PlanetLodStats>().highest_level, finest);
     }
 
     #[test]

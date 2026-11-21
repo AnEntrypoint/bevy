@@ -1,6 +1,7 @@
 use crate::height::planet_frame::{ChartFrame, anchor_basis};
 use crate::height::{CarveConfig, HashVersion, MAX_TERRAIN_CARVES, Planet, PlanetConfig};
-use crate::planet_lod::collider::{Chart, ColliderGround, ColliderStreamPlugin, NearBody};
+use crate::planet_lod::collider::{Chart, ColliderGround, ColliderStreamPlugin, Lattice, NearBody};
+use crate::planet_lod::near_field::{NearField, NearFieldOptions};
 use crate::planet_lod::quadtree::QuadtreeConfig;
 use crate::planet_lod::stream::{PlanetLodPlugin, PlanetLodStats};
 use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
@@ -238,8 +239,17 @@ impl GlobeWorld {
     }
 
     fn lod_plugin(&self) -> PlanetLodPlugin {
-        let reference = QuadtreeConfig::reference(f64::from(self.radius), CAMERA_VIEWPORT_HEIGHT_PX, CAMERA_FOV_Y_RAD);
-        PlanetLodPlugin { planet: self.planet.clone(), config: QuadtreeConfig { max_level: self.max_level, ..reference }, centre: self.center.as_dvec3() }
+        PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3() }
+    }
+
+    pub(crate) fn quadtree_config(&self) -> QuadtreeConfig {
+        let radius = f64::from(self.radius);
+        let reference = QuadtreeConfig::reference(radius, CAMERA_VIEWPORT_HEIGHT_PX, CAMERA_FOV_Y_RAD);
+        let collider = Lattice::default();
+        let field = NearField::new(NearFieldOptions { spacing_m: Some(collider.spacing), extent_m: Some(collider.extent), ..Default::default() }).expect("the collider lattice names a positive spacing and extent");
+        let spawn = self.lat_lon_to_unit(0.0, 0.0).as_dvec3();
+        let ground = f64::from(self.elevation(0.0, 0.0));
+        QuadtreeConfig { max_level: self.max_level, ..reference }.with_near_field(field, spawn * (radius + ground + f64::from(self.body_altitude)), ground)
     }
 
     pub fn report(&self, summary: &GlobeSummary) -> Value {
