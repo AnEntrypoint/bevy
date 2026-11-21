@@ -1,0 +1,1146 @@
+{
+ "spoint": "5f43c86c",
+ "hitbox": {
+  "centerHeight": 0.9,
+  "radiusSq": 0.36,
+  "height": 1.8
+ },
+ "respawnLiftM": 2,
+ "players": [
+  {
+   "id": 1,
+   "position": [
+    0.5,
+    10,
+    0
+   ]
+  },
+  {
+   "id": 2,
+   "position": [
+    0,
+    13,
+    0
+   ]
+  },
+  {
+   "id": 3,
+   "position": null
+  },
+  {
+   "id": 4,
+   "position": [
+    -100,
+    10,
+    100
+   ]
+  }
+ ],
+ "scene": [
+  {
+   "name": "open-a",
+   "sp": [
+    0,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": []
+  },
+  {
+   "name": "open-b",
+   "sp": [
+    40,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": []
+  },
+  {
+   "name": "open-c",
+   "sp": [
+    -40,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": []
+  },
+  {
+   "name": "open-d",
+   "sp": [
+    10,
+    10,
+    10
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": []
+  },
+  {
+   "name": "intruding-a",
+   "sp": [
+    5,
+    10,
+    5
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": [
+    "intruding"
+   ]
+  },
+  {
+   "name": "void-a",
+   "sp": [
+    -5,
+    10,
+    5
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": [
+    "void"
+   ]
+  },
+  {
+   "name": "two-blockers",
+   "sp": [
+    -70,
+    10,
+    -70
+   ],
+   "terrainY": 10,
+   "feetY": 10,
+   "footprint": [
+    "intruding",
+    "void"
+   ]
+  },
+  {
+   "name": "no-surface",
+   "sp": [
+    60,
+    10,
+    60
+   ],
+   "terrainY": 10,
+   "feetY": null,
+   "footprint": []
+  },
+  {
+   "name": "mismatch-high",
+   "sp": [
+    70,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 13,
+   "footprint": []
+  },
+  {
+   "name": "mismatch-low",
+   "sp": [
+    80,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 6,
+   "footprint": []
+  },
+  {
+   "name": "lifted-ok",
+   "sp": [
+    90,
+    10,
+    0
+   ],
+   "terrainY": 10,
+   "feetY": 9.5,
+   "footprint": []
+  }
+ ],
+ "evaluations": [
+  {
+   "name": "open-a",
+   "sp": [
+    0,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    0,
+    12,
+    0
+   ],
+   "blockers": [
+    {
+     "kind": "player",
+     "playerId": 1
+    }
+   ]
+  },
+  {
+   "name": "open-a-exclude-near",
+   "sp": [
+    0,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    0,
+    12,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-b",
+   "sp": [
+    40,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    40,
+    12,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-b-exclude-near",
+   "sp": [
+    40,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    40,
+    12,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-c",
+   "sp": [
+    -40,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    -40,
+    12,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-c-exclude-near",
+   "sp": [
+    -40,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    -40,
+    12,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-d",
+   "sp": [
+    10,
+    10,
+    10
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    10,
+    12,
+    10
+   ],
+   "blockers": []
+  },
+  {
+   "name": "open-d-exclude-near",
+   "sp": [
+    10,
+    10,
+    10
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    10,
+    12,
+    10
+   ],
+   "blockers": []
+  },
+  {
+   "name": "intruding-a",
+   "sp": [
+    5,
+    10,
+    5
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    5,
+    12,
+    5
+   ],
+   "blockers": [
+    {
+     "kind": "intruding"
+    }
+   ]
+  },
+  {
+   "name": "intruding-a-exclude-near",
+   "sp": [
+    5,
+    10,
+    5
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    5,
+    12,
+    5
+   ],
+   "blockers": [
+    {
+     "kind": "intruding"
+    }
+   ]
+  },
+  {
+   "name": "void-a",
+   "sp": [
+    -5,
+    10,
+    5
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    -5,
+    12,
+    5
+   ],
+   "blockers": [
+    {
+     "kind": "void"
+    }
+   ]
+  },
+  {
+   "name": "void-a-exclude-near",
+   "sp": [
+    -5,
+    10,
+    5
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    -5,
+    12,
+    5
+   ],
+   "blockers": [
+    {
+     "kind": "void"
+    }
+   ]
+  },
+  {
+   "name": "two-blockers",
+   "sp": [
+    -70,
+    10,
+    -70
+   ],
+   "excludeIds": [],
+   "feetY": 10,
+   "pose": [
+    -70,
+    12,
+    -70
+   ],
+   "blockers": [
+    {
+     "kind": "intruding"
+    },
+    {
+     "kind": "void"
+    }
+   ]
+  },
+  {
+   "name": "two-blockers-exclude-near",
+   "sp": [
+    -70,
+    10,
+    -70
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 10,
+   "pose": [
+    -70,
+    12,
+    -70
+   ],
+   "blockers": [
+    {
+     "kind": "intruding"
+    },
+    {
+     "kind": "void"
+    }
+   ]
+  },
+  {
+   "name": "no-surface",
+   "sp": [
+    60,
+    10,
+    60
+   ],
+   "excludeIds": [],
+   "feetY": null,
+   "pose": [
+    60,
+    10,
+    60
+   ],
+   "blockers": [
+    {
+     "kind": "no-surface"
+    }
+   ]
+  },
+  {
+   "name": "no-surface-exclude-near",
+   "sp": [
+    60,
+    10,
+    60
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": null,
+   "pose": [
+    60,
+    10,
+    60
+   ],
+   "blockers": [
+    {
+     "kind": "no-surface"
+    }
+   ]
+  },
+  {
+   "name": "mismatch-high",
+   "sp": [
+    70,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 13,
+   "pose": [
+    70,
+    15,
+    0
+   ],
+   "blockers": [
+    {
+     "kind": "surface-mismatch"
+    }
+   ]
+  },
+  {
+   "name": "mismatch-high-exclude-near",
+   "sp": [
+    70,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 13,
+   "pose": [
+    70,
+    15,
+    0
+   ],
+   "blockers": [
+    {
+     "kind": "surface-mismatch"
+    }
+   ]
+  },
+  {
+   "name": "mismatch-low",
+   "sp": [
+    80,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 6,
+   "pose": [
+    80,
+    8,
+    0
+   ],
+   "blockers": [
+    {
+     "kind": "surface-mismatch"
+    }
+   ]
+  },
+  {
+   "name": "mismatch-low-exclude-near",
+   "sp": [
+    80,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 6,
+   "pose": [
+    80,
+    8,
+    0
+   ],
+   "blockers": [
+    {
+     "kind": "surface-mismatch"
+    }
+   ]
+  },
+  {
+   "name": "lifted-ok",
+   "sp": [
+    90,
+    10,
+    0
+   ],
+   "excludeIds": [],
+   "feetY": 9.5,
+   "pose": [
+    90,
+    11.5,
+    0
+   ],
+   "blockers": []
+  },
+  {
+   "name": "lifted-ok-exclude-near",
+   "sp": [
+    90,
+    10,
+    0
+   ],
+   "excludeIds": [
+    1
+   ],
+   "feetY": 9.5,
+   "pose": [
+    90,
+    11.5,
+    0
+   ],
+   "blockers": []
+  }
+ ],
+ "picks": [
+  {
+   "name": "first-clear-no-players",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     40,
+     10,
+     0
+    ],
+    [
+     -40,
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     0,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "intruding-skipped",
+   "spawn": [
+    [
+     5,
+     10,
+     5
+    ],
+    [
+     40,
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     40,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "void-skipped",
+   "spawn": [
+    [
+     -5,
+     10,
+     5
+    ],
+    [
+     -40,
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     -40,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "least-blocked-strict-minimum",
+   "spawn": [
+    [
+     -70,
+     10,
+     -70
+    ],
+    [
+     -5,
+     10,
+     5
+    ],
+    [
+     60,
+     10,
+     60
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     -5,
+     12,
+     5
+    ],
+    "allBlocked": true
+   }
+  },
+  {
+   "name": "no-surface-pose-unlifted",
+   "spawn": [
+    [
+     60,
+     10,
+     60
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     60,
+     10,
+     60
+    ],
+    "allBlocked": true
+   }
+  },
+  {
+   "name": "surface-mismatch-first-of-tie",
+   "spawn": [
+    [
+     70,
+     10,
+     0
+    ],
+    [
+     80,
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     70,
+     15,
+     0
+    ],
+    "allBlocked": true
+   }
+  },
+  {
+   "name": "lifted-surface-clear",
+   "spawn": [
+    [
+     90,
+     10,
+     0
+    ],
+    [
+     80,
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     90,
+     11.5,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "safe-pool-skips-near-spawn",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     40,
+     10,
+     0
+    ],
+    [
+     -40,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    },
+    {
+     "id": 4,
+     "position": [
+      -100,
+      10,
+      100
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     40,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "unsafe-pool-sorted-by-nearest",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     5,
+     10,
+     5
+    ],
+    [
+     -5,
+     10,
+     5
+    ],
+    [
+     10,
+     10,
+     10
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     10,
+     12,
+     10
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "unsafe-pool-all-blocked",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     5,
+     10,
+     5
+    ],
+    [
+     -5,
+     10,
+     5
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     -5,
+     12,
+     5
+    ],
+    "allBlocked": true
+   }
+  },
+  {
+   "name": "min-safe-distance-keeps-input-order",
+   "spawn": [
+    [
+     5,
+     10,
+     5
+    ],
+    [
+     -5,
+     10,
+     5
+    ],
+    [
+     0,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 5,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     5,
+     12,
+     5
+    ],
+    "allBlocked": true
+   }
+  },
+  {
+   "name": "player-overlap-skips-spawn",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     -40,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 0,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     -40,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "exclude-drops-player-from-ordering",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     40,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 1,
+     "position": [
+      0.5,
+      10,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [
+    1
+   ],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     0,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "stateless-player-ignored",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     40,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 3,
+     "position": null
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     0,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "player-above-height-does-not-block",
+   "spawn": [
+    [
+     0,
+     10,
+     0
+    ]
+   ],
+   "players": [
+    {
+     "id": 2,
+     "position": [
+      0,
+      13,
+      0
+     ]
+    }
+   ],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "pose",
+    "pose": [
+     0,
+     12,
+     0
+    ],
+    "allBlocked": false
+   }
+  },
+  {
+   "name": "refusal-no-spawn-points",
+   "spawn": [],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "refusal",
+    "errorName": "Error",
+    "error": "[tps-game] respawn clearance: 0 spawn point(s) supplied, 0 usable"
+   }
+  },
+  {
+   "name": "refusal-no-finite-spawn-point",
+   "spawn": [
+    [
+     "NaN",
+     10,
+     0
+    ]
+   ],
+   "players": [],
+   "excludeIds": [],
+   "minSafeDistanceM": 25,
+   "result": {
+    "kind": "refusal",
+    "errorName": "Error",
+    "error": "[tps-game] respawn clearance: 1 spawn point(s) supplied, 0 usable"
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
