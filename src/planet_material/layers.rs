@@ -10,7 +10,7 @@ use bevy::render::render_resource::{
 };
 
 use crate::js_math::round_half_up;
-use crate::terrain_config::Refusal;
+use crate::refusal::Refusal;
 
 pub const SIZE: usize = 1024;
 pub const LAYER_COUNT: usize = 4;

@@ -1,6 +1,6 @@
 use super::layers::{build_images, decode_layers};
 use crate::planet_lod::origin::FloatingOrigin;
-use crate::terrain_config::Refusal;
+use crate::refusal::Refusal;
 use bevy::asset::{RenderAssetUsages, uuid_handle};
 use bevy::math::DVec3;
 use bevy::mesh::MeshVertexBufferLayoutRef;

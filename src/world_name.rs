@@ -1,5 +1,5 @@
 use serde_json::Value;
-use crate::terrain_config::Refusal;
+use crate::refusal::Refusal;
 use crate::canonical_json::canonical_json;
 
 pub const WORLD_DIR: &str = "apps/world";

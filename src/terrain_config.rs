@@ -14,11 +14,7 @@ const MINIMAP_EXTENT_RADIUS_FRACTION: f64 = 0.25;
 const MINIMAP_MAX_EXTENT_M: f64 = 16384.0;
 const DEFAULT_MINIMAP_RES: f64 = 256.0;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Refusal {
-    pub name: &'static str,
-    pub message: String,
-}
+pub use crate::refusal::Refusal;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParseRefusal {
