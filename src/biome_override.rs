@@ -77,7 +77,7 @@ pub struct WrappedClimate<'a> {
     base: &'a dyn ClimateField,
 }
 
-fn cell_key(cx: i64, cz: i64) -> i64 {
+pub(crate) fn cell_key(cx: i64, cz: i64) -> i64 {
     const KEY_AXIS_SPAN: i64 = 1 << 23;
     const KEY_AXIS_OFFSET: i64 = KEY_AXIS_SPAN >> 1;
     (cx + KEY_AXIS_OFFSET) * KEY_AXIS_SPAN + (cz + KEY_AXIS_OFFSET)
