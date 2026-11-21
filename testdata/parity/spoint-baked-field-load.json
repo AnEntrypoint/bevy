@@ -1,0 +1,800 @@
+{
+ "spoint": "5f43c86c",
+ "module": "src/terrain/TerrainPhysics.js",
+ "spointStatusBefore": "",
+ "spointStatusAfter": "",
+ "terrain": {
+  "hashVersion": 2,
+  "bakeKey": "501ff428",
+  "bakeSliceText": "{\"anchorDir\":[0,1,0],\"carves\":[],\"hashVersion\":2,\"radius\":64,\"reliefScale\":0.001,\"seed\":7}",
+  "radius": 64,
+  "reliefScale": 0.001,
+  "anchorDir": [
+   0,
+   1,
+   0
+  ]
+ },
+ "cases": [
+  {
+   "name": "an empty url reads nothing",
+   "url": "",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "absent",
+   "warnings": []
+  },
+  {
+   "name": "a source without readBytes is refused",
+   "url": "case.hf",
+   "supplied": [],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "missing",
+   "message": "[baked-heightfield] case.hf: no baked artifact source supplies readBytes(), so this loader refuses to guess which platform reads the bytes -- pass nodeBakedSource() or browserBakedSource() from src/terrain/BakedSourceAdapter.js",
+   "errorName": "BakedSourceMissingError",
+   "errorCode": "baked-source-missing",
+   "missing": "readBytes",
+   "warnings": []
+  },
+  {
+   "name": "a source without heightfieldCodec is refused",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "missing",
+   "message": "[baked-heightfield] case.hf: no baked artifact source supplies heightfieldCodec(), so this loader refuses to guess which platform reads the bytes -- pass nodeBakedSource() or browserBakedSource() from src/terrain/BakedSourceAdapter.js",
+   "errorName": "BakedSourceMissingError",
+   "errorCode": "baked-source-missing",
+   "missing": "heightfieldCodec",
+   "warnings": []
+  },
+  {
+   "name": "a source without bakeCodeVersion is refused",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "missing",
+   "message": "[baked-heightfield] case.hf: no baked artifact source supplies bakeCodeVersion(), so this loader refuses to guess which platform reads the bytes -- pass nodeBakedSource() or browserBakedSource() from src/terrain/BakedSourceAdapter.js",
+   "errorName": "BakedSourceMissingError",
+   "errorCode": "baked-source-missing",
+   "missing": "bakeCodeVersion",
+   "warnings": []
+  },
+  {
+   "name": "a null source is refused",
+   "url": "case.hf",
+   "supplied": [],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "missing",
+   "message": "[baked-heightfield] case.hf: no baked artifact source supplies readBytes(), so this loader refuses to guess which platform reads the bytes -- pass nodeBakedSource() or browserBakedSource() from src/terrain/BakedSourceAdapter.js",
+   "errorName": "BakedSourceMissingError",
+   "errorCode": "baked-source-missing",
+   "missing": "readBytes",
+   "warnings": []
+  },
+  {
+   "name": "an absent file reads as absent",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": null,
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "absent",
+   "warnings": []
+  },
+  {
+   "name": "a matching bake loads with its code version verified",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "loaded",
+   "N": 5,
+   "extent": 4,
+   "chartEpoch": 0,
+   "codeVersionVerified": true,
+   "probes": [
+    {
+     "x": 0,
+     "z": -0.8666666666666668,
+     "covers": true,
+     "height": -1.39032674630483
+    },
+    {
+     "x": -1.3,
+     "z": 0.8666666666666665,
+     "covers": true,
+     "height": 0.7683006568749748
+    },
+    {
+     "x": 1.3,
+     "z": -2.022222222222222,
+     "covers": false,
+     "height": -0.3820588380098345
+    },
+    {
+     "x": -1.9500000000000002,
+     "z": -0.28888888888888903,
+     "covers": true,
+     "height": 0.5374444369475044
+    },
+    {
+     "x": 0.65,
+     "z": 1.444444444444444,
+     "covers": true,
+     "height": 2.806677518288293
+    },
+    {
+     "x": -0.65,
+     "z": -1.4444444444444446,
+     "covers": true,
+     "height": -1.5856753448645278
+    },
+    {
+     "x": 1.9500000000000002,
+     "z": 0.28888888888888903,
+     "covers": true,
+     "height": 1.7949836903148233
+    },
+    {
+     "x": -2.275,
+     "z": 2.022222222222222,
+     "covers": false,
+     "height": 4.7617645263671875
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "name": "a bake loads unverified when the runtime has no bake code",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": null,
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "loaded",
+   "N": 5,
+   "extent": 4,
+   "chartEpoch": 0,
+   "codeVersionVerified": false,
+   "probes": [
+    {
+     "x": 0,
+     "z": -0.8666666666666668,
+     "covers": true,
+     "height": -1.39032674630483
+    },
+    {
+     "x": -1.3,
+     "z": 0.8666666666666665,
+     "covers": true,
+     "height": 0.7683006568749748
+    },
+    {
+     "x": 1.3,
+     "z": -2.022222222222222,
+     "covers": false,
+     "height": -0.3820588380098345
+    },
+    {
+     "x": -1.9500000000000002,
+     "z": -0.28888888888888903,
+     "covers": true,
+     "height": 0.5374444369475044
+    },
+    {
+     "x": 0.65,
+     "z": 1.444444444444444,
+     "covers": true,
+     "height": 2.806677518288293
+    },
+    {
+     "x": -0.65,
+     "z": -1.4444444444444446,
+     "covers": true,
+     "height": -1.5856753448645278
+    },
+    {
+     "x": 1.9500000000000002,
+     "z": 0.28888888888888903,
+     "covers": true,
+     "height": 1.7949836903148233
+    },
+    {
+     "x": -2.275,
+     "z": 2.022222222222222,
+     "covers": false,
+     "height": 4.7617645263671875
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "name": "an upper-case extension is read as a heightfield",
+   "url": "CASE.HF",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "loaded",
+   "N": 5,
+   "extent": 4,
+   "chartEpoch": 0,
+   "codeVersionVerified": true,
+   "probes": [
+    {
+     "x": 0,
+     "z": -0.8666666666666668,
+     "covers": true,
+     "height": -1.39032674630483
+    },
+    {
+     "x": -1.3,
+     "z": 0.8666666666666665,
+     "covers": true,
+     "height": 0.7683006568749748
+    },
+    {
+     "x": 1.3,
+     "z": -2.022222222222222,
+     "covers": false,
+     "height": -0.3820588380098345
+    },
+    {
+     "x": -1.9500000000000002,
+     "z": -0.28888888888888903,
+     "covers": true,
+     "height": 0.5374444369475044
+    },
+    {
+     "x": 0.65,
+     "z": 1.444444444444444,
+     "covers": true,
+     "height": 2.806677518288293
+    },
+    {
+     "x": -0.65,
+     "z": -1.4444444444444446,
+     "covers": true,
+     "height": -1.5856753448645278
+    },
+    {
+     "x": 1.9500000000000002,
+     "z": 0.28888888888888903,
+     "covers": true,
+     "height": 1.7949836903148233
+    },
+    {
+     "x": -2.275,
+     "z": 2.022222222222222,
+     "covers": false,
+     "height": 4.7617645263671875
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "name": "a stale bake is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "ffffffffffff",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: stale bake: stamped with height code version \"0123456789ab\", this tree bakes ffffffffffff: the height-generating code changed under the artifact, re-bake it",
+   "warnings": []
+  },
+  {
+   "name": "a hashVersion mismatch is ignored with a warning",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 1,
+   "frameEpoch": 0,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.hf: baked with terrain hashVersion 2, world uses 1 -> exact CPU height"
+   ]
+  },
+  {
+   "name": "a bake without a code version is ignored when the runtime has no bake code",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648b40000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d20000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": null,
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.hf: it carries no height code version and this runtime has no filesystem to rehash the bake sources into one -> exact CPU height"
+   ]
+  },
+  {
+   "name": "a radius mismatch is ignored",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36352c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.hf: radius 65 != world 64 -> exact CPU height"
+   ]
+  },
+  {
+   "name": "a frame at another chart epoch is ignored",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 4,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.hf: baked at chartEpoch 0, world frame is at chartEpoch 4: the chart was reanchored, so its chart-local heights name different ground -> exact CPU height"
+   ]
+  },
+  {
+   "name": "a terrainKey from another world is ignored",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648e80000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c227465727261696e4b6579223a226665656466616365222c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.hf: terrain key feedface != world 501ff428 (slice {\"anchorDir\":[0,1,0],\"carves\":[],\"hashVersion\":2,\"radius\":64,\"reliefScale\":0.001,\"seed\":7}) -> exact CPU height"
+   ]
+  },
+  {
+   "name": "a buffer shorter than the header prefix is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "01020304",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: truncated: 4 bytes, a heightfield header alone is 8 bytes",
+   "warnings": []
+  },
+  {
+   "name": "a bad magic is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "004d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: not a heightfield: bytes 0..3 are 0x48464d00, expected magic 0x48464d31",
+   "warnings": []
+  },
+  {
+   "name": "a header length past the file is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d46480f2700007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed: the header-length field says 9999 bytes, the file is 313 bytes",
+   "warnings": []
+  },
+  {
+   "name": "an unreadable header is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648030000007b7b7b",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: unreadable header: ",
+   "warnings": [],
+   "messageIsPrefix": true
+  },
+  {
+   "name": "a header N below 2 is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a312c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed header: N is 1, expected an integer >= 2",
+   "warnings": []
+  },
+  {
+   "name": "a string N is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d40000007b224e223a2235222c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d2020000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed header: N is \"5\", expected an integer >= 2",
+   "warnings": []
+  },
+  {
+   "name": "a header without sectors is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648a00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162227d2020000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed header: sectors is null, expected integer gridS >= 1 and nodesPerSector",
+   "warnings": []
+  },
+  {
+   "name": "a sectors object without gridS is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648c80000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b2262697473223a382c226e6f646573506572536563746f72223a327d7d2020000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed header: sectors is {\"bits\":8,\"nodesPerSector\":2}, expected integer gridS >= 1 and nodesPerSector",
+   "warnings": []
+  },
+  {
+   "name": "sectors.bits other than 8 or 16 is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d40000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b2262697473223a31322c226772696453223a332c226e6f646573506572536563746f72223a327d7d202020000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: malformed header: sectors.bits is 12, expected 8 or 16",
+   "warnings": []
+  },
+  {
+   "name": "a file shorter than its header describes is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e53",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: truncated: the file is 312 bytes, but N=5 with sectors.gridS=3 at 8-bit samples is exactly 313 bytes",
+   "warnings": []
+  },
+  {
+   "name": "a file longer than its header describes is an error",
+   "url": "case.hf",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "314d4648d00000007b224e223a352c22657874656e74223a342c2263656e746572223a5b302c305d2c22616e63686f72446972223a5b302c312c305d2c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72486569676874223a312e352c2273656564223a372c226861736856657273696f6e223a322c22636f646556657273696f6e223a22303132333435363738396162222c22736563746f7273223a7b226772696453223a332c226e6f646573506572536563746f72223a322c2262697473223a387d7d000060c0000000c00000a0bf000000000000003f0000803f000030400000404000008040000000000000803f0000c03f0000204000004040000088400000a0400000d0400000004100254a6f94b9de03284d7297bce1062b50759abfe4092e5378000000",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.hf: longer than declared: the file is 316 bytes, but N=5 with sectors.gridS=3 at 8-bit samples is exactly 313 bytes",
+   "warnings": []
+  },
+  {
+   "name": "a heights json bake loads with its code version verified",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a332c22657874656e74223a322c2263656e746572223a5b302c305d2c2268656967687473223a5b302c312c322c332c342c352c362c372c385d2c22636f646556657273696f6e223a22303132333435363738396162222c226861736856657273696f6e223a322c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72446972223a5b302c312c305d2c22636861727445706f6368223a307d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "loaded",
+   "N": 3,
+   "extent": 2,
+   "chartEpoch": 0,
+   "codeVersionVerified": true,
+   "probes": [
+    {
+     "x": 0,
+     "z": -0.4333333333333334,
+     "covers": true,
+     "height": 2.7
+    },
+    {
+     "x": -0.65,
+     "z": 0.43333333333333324,
+     "covers": true,
+     "height": 4.6499999999999995
+    },
+    {
+     "x": 0.65,
+     "z": -1.011111111111111,
+     "covers": false,
+     "height": 1.65
+    },
+    {
+     "x": -0.9750000000000001,
+     "z": -0.14444444444444451,
+     "covers": true,
+     "height": 2.591666666666667
+    },
+    {
+     "x": 0.325,
+     "z": 0.722222222222222,
+     "covers": true,
+     "height": 6.491666666666665
+    },
+    {
+     "x": -0.325,
+     "z": -0.7222222222222223,
+     "covers": true,
+     "height": 1.5083333333333329
+    },
+    {
+     "x": 0.9750000000000001,
+     "z": 0.14444444444444451,
+     "covers": true,
+     "height": 5.408333333333333
+    },
+    {
+     "x": -1.1375,
+     "z": 1.011111111111111,
+     "covers": false,
+     "height": 6
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "name": "a json bake that is not valid JSON is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: not valid JSON: ",
+   "warnings": [],
+   "messageIsPrefix": true
+  },
+  {
+   "name": "a json null is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "6e756c6c",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: malformed: expected a JSON object, got null",
+   "warnings": []
+  },
+  {
+   "name": "a json array has no N and is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "5b5d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: malformed: N is null, expected a positive sample count",
+   "warnings": []
+  },
+  {
+   "name": "a json N of zero is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a302c22657874656e74223a322c2263656e746572223a5b302c305d2c2268656967687473223a5b302c312c322c332c342c352c362c372c385d2c22636f646556657273696f6e223a22303132333435363738396162222c226861736856657273696f6e223a322c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72446972223a5b302c312c305d2c22636861727445706f6368223a307d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: malformed: N is 0, expected a positive sample count",
+   "warnings": []
+  },
+  {
+   "name": "a json without heights is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a332c22657874656e74223a322c2263656e746572223a5b302c305d2c22636f646556657273696f6e223a22303132333435363738396162222c226861736856657273696f6e223a322c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72446972223a5b302c312c305d2c22636861727445706f6368223a307d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: malformed: no height samples, expected an array at heights",
+   "warnings": []
+  },
+  {
+   "name": "a json with sectors and no heights or sectors.q names both",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a332c22736563746f7273223a7b2262697473223a382c226772696453223a312c226e6f646573506572536563746f72223a337d7d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: malformed: no height samples, expected an array at heights or at sectors.q",
+   "warnings": []
+  },
+  {
+   "name": "a json heights array of the wrong length is an error",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a332c22657874656e74223a322c2263656e746572223a5b302c305d2c2268656967687473223a5b312c322c332c342c352c362c372c385d2c22636f646556657273696f6e223a22303132333435363738396162222c226861736856657273696f6e223a322c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72446972223a5b302c312c305d2c22636861727445706f6368223a307d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 2,
+   "frameEpoch": 0,
+   "kind": "error",
+   "message": "[baked-heightfield] case.json: sample count mismatch: N=3 declares 9 heights, the array holds 8",
+   "warnings": []
+  },
+  {
+   "name": "a json bake with a hashVersion mismatch is ignored",
+   "url": "case.json",
+   "supplied": [
+    "readBytes",
+    "heightfieldCodec",
+    "bakeCodeVersion"
+   ],
+   "bytesHex": "7b224e223a332c22657874656e74223a322c2263656e746572223a5b302c305d2c2268656967687473223a5b302c312c322c332c342c352c362c372c385d2c22636f646556657273696f6e223a22303132333435363738396162222c226861736856657273696f6e223a322c22726164697573223a36342c2272656c6965665363616c65223a302e3030312c22616e63686f72446972223a5b302c312c305d2c22636861727445706f6368223a307d",
+   "bakeCode": "0123456789ab",
+   "hashVersion": 1,
+   "frameEpoch": 0,
+   "kind": "ignored",
+   "warnings": [
+    "[terrain] ignoring baked heightfield case.json: baked with terrain hashVersion 2, world uses 1 -> exact CPU height"
+   ]
+  }
+ ]
+}
