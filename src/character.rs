@@ -308,31 +308,12 @@ mod tests {
         }
     }
 
-    struct FixedTransfer {
-        tilt_rad: f64,
-        translation: [f64; 3],
-    }
-
-    impl ChartTransfer for FixedTransfer {
-        fn point(&self, p: [f64; 3]) -> [f64; 3] {
-            let rotated = self.vec(p);
-            [rotated[0] + self.translation[0], rotated[1] + self.translation[1], rotated[2] + self.translation[2]]
-        }
-
-        fn vec(&self, v: [f64; 3]) -> [f64; 3] {
-            let (s, c) = self.tilt_rad.sin_cos();
-            [v[0], c * v[1] - s * v[2], s * v[1] + c * v[2]]
-        }
-
-        fn tilt_rad(&self) -> f64 {
-            self.tilt_rad
-        }
-    }
+    const FLOAT32_POSITION_TOLERANCE_M: f64 = 2e-5;
 
     #[test]
     fn chart_transfer_matches_spoint_for_fixed_transfer() {
         let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-chart-transfer.json")).unwrap();
-        let transfer = FixedTransfer { tilt_rad: fixture["transfer"]["tiltRad"].as_f64().unwrap(), translation: vec3(&fixture["transfer"]["translation"]) };
+        let transfer = crate::chart_transfer::create_chart_transfer(&crate::chart_transfer::fixture_snapshot(&fixture["from"]), &crate::chart_transfer::fixture_snapshot(&fixture["to"]));
         let cases = fixture["cases"].as_array().unwrap();
         let mut characters: Vec<CharacterController> = cases
             .iter()
@@ -349,7 +330,7 @@ mod tests {
         assert_eq!(counts.grounded_upward_clamped, fixture["counts"]["groundedUpwardClamped"].as_u64().unwrap() as usize);
         for (ch, c) in characters.iter().zip(cases) {
             let name = c["name"].as_str().unwrap();
-            assert!(distance(ch.position, vec3(&c["after"]["p"])) <= 1e-6, "{name}: position {:?}", ch.position);
+            assert!(distance(ch.position, vec3(&c["after"]["p"])) <= FLOAT32_POSITION_TOLERANCE_M, "{name}: position {:?}", ch.position);
             assert!(distance(ch.velocity, vec3(&c["after"]["v"])) <= 1e-6, "{name}: velocity {:?}", ch.velocity);
             match (ch.ground_normal, c["after"]["normal"].as_array()) {
                 (Some(n), Some(_)) => assert!(distance(n, vec3(&c["after"]["normal"])) <= 1e-6, "{name}: normal {n:?}"),

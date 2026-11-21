@@ -4,6 +4,7 @@ mod glb;
 mod height;
 mod hitscan;
 mod character;
+mod chart_transfer;
 mod player_bodies;
 mod hud;
 mod terrain_physics;

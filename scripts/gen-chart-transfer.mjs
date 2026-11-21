@@ -9,34 +9,34 @@ const rev = execFileSync('git', ['-C', spoint, 'rev-parse', '--short', 'HEAD']).
 const statusBefore = execFileSync('git', ['-C', spoint, 'status', '--porcelain']).toString()
 const { PhysicsWorld } = await import(pathToFileURL(join(spoint, 'src/physics/World.js')).href)
 const { verticalVelocity } = await import(pathToFileURL(join(spoint, 'src/shared/characterStep.js')).href)
+const { createPlanetFrame } = await import(pathToFileURL(join(spoint, 'src/terrain/PlanetFrame.js')).href)
+const { createChartAnchorLattice, reanchorChartFor } = await import(pathToFileURL(join(spoint, 'src/shared/chartAnchor.js')).href)
 
 const GRAVITY = -9.81
 const DT = 1 / 60
 const RADIUS = 0.4
 const HALF_HEIGHT = 0.9
 const IDENTITY = [0, 0, 0, 1]
-const TILT_RAD = 0.02
-const TRANSLATION = [0.5, 0, -0.25]
+const PLANET_RADIUS = 60
+const ANCHOR_DIR = [0, 1, 0]
+const REANCHOR_DIR = [0.9, 0.3, 0.2]
+const POINTS = [[0, 0, 0], [1, 2, 3], [-4, 0.5, 6]]
+const VECTORS = [[1, 0, 0], [0, 1, 0], [0.3, -0.7, 2]]
 const round = (v) => v.map((c) => Number(c.toFixed(9)))
-const { sin, cos } = Math
-const transfer = {
-  tiltRad: TILT_RAD,
-  point(a, out) {
-    const x = a[0], y = a[1], z = a[2]
-    const ry = cos(TILT_RAD) * y - sin(TILT_RAD) * z
-    const rz = sin(TILT_RAD) * y + cos(TILT_RAD) * z
-    out[0] = x + TRANSLATION[0]
-    out[1] = ry + TRANSLATION[1]
-    out[2] = rz + TRANSLATION[2]
-    return out
-  },
-  vec(a, out) {
-    const x = a[0], y = a[1], z = a[2]
-    out[0] = x
-    out[1] = cos(TILT_RAD) * y - sin(TILT_RAD) * z
-    out[2] = sin(TILT_RAD) * y + cos(TILT_RAD) * z
-    return out
-  },
+const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return v.map((c) => c / l) }
+
+const sampler = { radius: PLANET_RADIUS, hashVersion: 1, heightAt: (d) => 0.5 + 0.25 * d[0] - 0.1 * d[2] }
+const frame = createPlanetFrame({ sampler, anchorDir: ANCHOR_DIR, offsetY: 0, reliefScale: 1 })
+const lattice = createChartAnchorLattice(PLANET_RADIUS)
+const reanchor = reanchorChartFor({ frame, lattice, dir: unit(REANCHOR_DIR) })
+if (!reanchor) throw new Error('chart re-anchor did not trigger')
+const { from, to, transfer } = reanchor
+const TILT_RAD = transfer.tiltRad
+const probes = {
+  points: POINTS,
+  pointResults: POINTS.map((p) => round(transfer.point(p))),
+  vectors: VECTORS,
+  vectorResults: VECTORS.map((v) => round(transfer.vec(v))),
 }
 
 const w = new PhysicsWorld({ gravity: [0, GRAVITY, 0] })
@@ -45,9 +45,22 @@ w.addStaticBox([50, 0.5, 50], [0, -0.5, 0], IDENTITY)
 w.addStaticBox([0.5, 2, 20], [5, 2, 0], IDENTITY)
 w.addStaticBox([1.5, 0.15, 6], [-3, 0.15, 0], IDENTITY)
 
+const FLOOR_VELOCITY = transfer.m.slice(3, 6).map((c) => 0.0005 * c)
+const TILT_BOUND_MARGIN = 1.1
+const bounds = (v) => {
+  const h = Math.hypot(v[0], v[2])
+  return [TILT_RAD * h + 1e-3, TILT_RAD * h * TILT_BOUND_MARGIN + 1e-3]
+}
+const horizontalAt = (t) => [Math.cos(t), 0, Math.sin(t)]
+const gap = (t) => { const v = transfer.vec(horizontalAt(t)); const [lo, hi] = bounds(v); return v[1] - (lo + hi) / 2 }
+let thetaLo = null, thetaHi = null
+for (let k = 0; k < 720 && thetaLo === null; k++) { const t0 = (k / 720) * 2 * Math.PI, t1 = ((k + 1) / 720) * 2 * Math.PI; if (Math.sign(gap(t0)) !== Math.sign(gap(t1))) { thetaLo = t0; thetaHi = t1 } }
+if (thetaLo === null) throw new Error('no tilt-bound velocity between the margins')
+for (let i = 0; i < 200; i++) { const mid = (thetaLo + thetaHi) / 2; if (Math.sign(gap(mid)) === Math.sign(gap(thetaLo))) thetaLo = mid; else thetaHi = mid }
+const TILT_BOUND_VELOCITY = horizontalAt((thetaLo + thetaHi) / 2)
 const cast = [
-  { name: 'grounded-floor', start: [0, 2.3, 0], settle: 40, velocity: [0, 0.0005, 0] },
-  { name: 'grounded-tilt-bound', start: [-10, 2.3, 0], settle: 40, velocity: [1, 0.017, 0] },
+  { name: 'grounded-floor', start: [0, 2.3, 0], settle: 40, velocity: FLOOR_VELOCITY },
+  { name: 'grounded-tilt-bound', start: [-10, 2.3, 0], settle: 40, velocity: TILT_BOUND_VELOCITY },
   { name: 'airborne', start: [1, 3, 0], settle: 5, velocity: [1, 2, 0.5] },
 ]
 const states = new Map()
@@ -83,5 +96,5 @@ const after = [...states.keys()].map(snapshot)
 const statusAfter = execFileSync('git', ['-C', spoint, 'status', '--porcelain']).toString()
 if (statusAfter !== statusBefore) throw new Error('spoint working tree changed')
 const cases = before.map((b, i) => ({ name: b.name, before: { p: b.p, v: b.v, onGround: b.onGround, normal: b.normal, walls: b.walls }, after: { p: after[i].p, v: after[i].v, onGround: after[i].onGround, normal: after[i].normal, walls: after[i].walls } }))
-writeFileSync(outPath, JSON.stringify({ spoint: rev, transfer: { tiltRad: TILT_RAD, translation: TRANSLATION }, counts: { characters: counts.characters, groundedUpwardClamped: counts.groundedUpwardClamped }, cases, spointStatusBefore: statusBefore, spointStatusAfter: statusAfter }, null, 2) + String.fromCharCode(10))
-console.log(JSON.stringify({ counts, cases }, null, 1))
+writeFileSync(outPath, JSON.stringify({ spoint: rev, planetRadius: PLANET_RADIUS, from, to, tiltRad: TILT_RAD, probes, counts: { characters: counts.characters, groundedUpwardClamped: counts.groundedUpwardClamped }, cases, spointStatusBefore: statusBefore, spointStatusAfter: statusAfter }, null, 1) + '\n')
+console.log(JSON.stringify({ tiltRad: TILT_RAD, counts, probes: probes.pointResults, cases }, null, 1))
