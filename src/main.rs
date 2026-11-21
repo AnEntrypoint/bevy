@@ -5,6 +5,7 @@ mod height;
 mod hitscan;
 mod character;
 mod chart_transfer;
+mod brush_result;
 mod climate_cache;
 mod player_bodies;
 mod hud;

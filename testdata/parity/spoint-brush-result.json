@@ -1,0 +1,227 @@
+{
+ "spoint": "5f43c86c",
+ "strengthRequires": [
+  "strength clamps above zero"
+ ],
+ "preconditions": [
+  {
+   "name": "all clauses hold",
+   "input": {
+    "requires": [
+     "x is finite",
+     "z is finite",
+     "radius is finite and positive"
+    ],
+    "holds": [
+     true,
+     true,
+     true
+    ]
+   },
+   "result": {
+    "threw": false,
+    "value": null
+   }
+  },
+  {
+   "name": "middle clause false",
+   "input": {
+    "requires": [
+     "x is finite",
+     "z is finite",
+     "radius is finite and positive"
+    ],
+    "holds": [
+     true,
+     false,
+     true
+    ]
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": true,
+     "requires": [
+      "x is finite",
+      "z is finite",
+      "radius is finite and positive"
+     ],
+     "violates": "z is finite",
+     "touched": 0
+    }
+   }
+  },
+  {
+   "name": "first clause false",
+   "input": {
+    "requires": [
+     "x is finite",
+     "z is finite",
+     "radius is finite and positive"
+    ],
+    "holds": [
+     false,
+     true,
+     true
+    ]
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": true,
+     "requires": [
+      "x is finite",
+      "z is finite",
+      "radius is finite and positive"
+     ],
+     "violates": "x is finite",
+     "touched": 0
+    }
+   }
+  },
+  {
+   "name": "strength clause false",
+   "input": {
+    "requires": [
+     "strength clamps above zero"
+    ],
+    "holds": [
+     false
+    ]
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": true,
+     "requires": [
+      "strength clamps above zero"
+     ],
+     "violates": "strength clamps above zero",
+     "touched": 0
+    }
+   }
+  },
+  {
+   "name": "length mismatch throws",
+   "input": {
+    "requires": [
+     "x is finite",
+     "z is finite",
+     "radius is finite and positive"
+    ],
+    "holds": [
+     true,
+     true
+    ]
+   },
+   "result": {
+    "threw": true,
+    "message": "[terrain] brush contract: 2 checks for 3 clauses"
+   }
+  }
+ ],
+ "applied": [
+  {
+   "name": "zero touched without stroke",
+   "input": {
+    "strokes": [
+     "s0"
+    ],
+    "touched": 0,
+    "stroke": null
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": false,
+     "requires": null,
+     "violates": null,
+     "touched": 0
+    }
+   },
+   "strokesAfter": [
+    "s0"
+   ]
+  },
+  {
+   "name": "zero touched ignores stroke",
+   "input": {
+    "strokes": [],
+    "touched": 0,
+    "stroke": "s1"
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": false,
+     "requires": null,
+     "violates": null,
+     "touched": 0
+    }
+   },
+   "strokesAfter": []
+  },
+  {
+   "name": "positive touched with stroke",
+   "input": {
+    "strokes": [
+     "s0"
+    ],
+    "touched": 3,
+    "stroke": "s1"
+   },
+   "result": {
+    "threw": false,
+    "value": {
+     "rejected": false,
+     "requires": null,
+     "violates": null,
+     "touched": 3
+    }
+   },
+   "strokesAfter": [
+    "s0",
+    "s1"
+   ]
+  },
+  {
+   "name": "positive touched without stroke throws",
+   "input": {
+    "strokes": [],
+    "touched": 2,
+    "stroke": null
+   },
+   "result": {
+    "threw": true,
+    "message": "[terrain] brush postcondition: 2 cells touched with no stroke to record"
+   },
+   "strokesAfter": []
+  },
+  {
+   "name": "fractional touched throws",
+   "input": {
+    "strokes": [],
+    "touched": 1.5,
+    "stroke": "s1"
+   },
+   "result": {
+    "threw": true,
+    "message": "[terrain] brush postcondition: touched 1.5 is not a whole non-negative cell count"
+   },
+   "strokesAfter": []
+  },
+  {
+   "name": "negative touched throws",
+   "input": {
+    "strokes": [],
+    "touched": -1,
+    "stroke": "s1"
+   },
+   "result": {
+    "threw": true,
+    "message": "[terrain] brush postcondition: touched -1 is not a whole non-negative cell count"
+   },
+   "strokesAfter": []
+  }
+ ]
+}
