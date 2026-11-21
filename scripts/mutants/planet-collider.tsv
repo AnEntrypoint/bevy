@@ -1,0 +1,4 @@
+collider-wrong-spacing	src/planet_lod/collider.rs	spacing: extent / (n - 1.0), extent	spacing: extent / n, extent	cargo test --bin bevy-jayzee planet_lod::collider
+collider-wrong-n	src/planet_lod/collider.rs	round_half_up(extent / resolution).max(2.0)	round_half_up(extent / resolution).max(2.0) + 2.0	cargo test --bin bevy-jayzee planet_lod::collider
+collider-build-called-synchronously-in-the-system	src/planet_lod/collider.rs	let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, body, ground.0.as_ref()) });	let built = build_collider(&lattice, body, ground.0.as_ref()); let task = AsyncComputeTaskPool::get().spawn(async move { built });	cargo test --bin bevy-jayzee planet_lod::collider
+collider-keep-radius-ignored	src/planet_lod/collider.rs	chebyshev(body, f.centre) > lattice.0.keep_radius()	chebyshev(body, f.centre) >= 0.0	cargo test --bin bevy-jayzee planet_lod::collider
