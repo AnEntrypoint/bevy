@@ -1,9 +1,10 @@
 use super::collider::ColliderStreamPlugin;
-use super::guard::mark_main_thread;
+use super::guard::{mark_main_thread, note_build};
 use super::origin::{FloatingOrigin, OriginRelative, rebase_system};
 use super::patch::{PatchMesh, build_patch};
 use super::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
 use crate::height::Planet;
+use crate::height::climate::HpfFaces;
 use bevy::asset::RenderAssetUsages;
 use bevy::math::DVec3;
 use bevy::mesh::{Indices, PrimitiveTopology};
@@ -14,6 +15,8 @@ use std::sync::Arc;
 
 pub const PATCH_SPAWNS_PER_FRAME: usize = 8;
 pub const MAX_TASKS_IN_FLIGHT: usize = 64;
+const CLIMATE_BAKE_RES: usize = 128;
+const CLIMATE_BAKE_MAX_LEVEL: u32 = 7;
 const LAND_GREEN: Color = Color::srgb(0.25, 0.55, 0.22);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -25,6 +28,7 @@ pub struct PlanetLodStats {
     pub vertices: usize,
     pub triangles: usize,
     pub tasks_in_flight: usize,
+    pub waiting_on_climate: usize,
     pub spawned_this_frame: usize,
     pub max_spawned_in_frame: usize,
     pub highest_level: u8,
@@ -37,6 +41,23 @@ struct Source {
     planet: Arc<Planet>,
     config: QuadtreeConfig,
     centre: DVec3,
+}
+
+#[derive(Resource, Default)]
+pub struct ClimateBake {
+    baking: Option<Task<Arc<HpfFaces>>>,
+    ready: Option<Arc<HpfFaces>>,
+}
+
+impl ClimateBake {
+    pub fn ready(&self) -> Option<&Arc<HpfFaces>> {
+        self.ready.as_ref()
+    }
+}
+
+fn bake_climate(seed: i32) -> Arc<HpfFaces> {
+    note_build();
+    Arc::new(HpfFaces::bake(i64::from(seed), CLIMATE_BAKE_RES, CLIMATE_BAKE_MAX_LEVEL))
 }
 
 #[derive(Resource)]
@@ -65,9 +86,12 @@ fn overlaps(a: NodeKey, b: NodeKey) -> bool {
 }
 
 fn patch_mesh(patch: PatchMesh) -> Mesh {
+    let heights: Vec<[f32; 2]> = patch.height.iter().map(|&height| [height, 0.0]).collect();
     Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, patch.positions)
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, patch.normals)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, patch.climate)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, heights)
         .with_inserted_indices(Indices::U32(patch.indices))
 }
 
@@ -99,7 +123,15 @@ fn plan_leaves(
     streamer.pending.retain(|key, _| streamer.wanted.contains(key));
 }
 
-fn start_tasks(source: Res<Source>, mut streamer: ResMut<Streamer>) {
+fn poll_climate(mut bake: ResMut<ClimateBake>) {
+    let Some(task) = bake.baking.as_mut() else { return };
+    if let Some(baked) = check_ready(task) {
+        bake.baking = None;
+        bake.ready = Some(baked);
+    }
+}
+
+fn start_tasks(source: Res<Source>, climate: Res<ClimateBake>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
     let room = MAX_TASKS_IN_FLIGHT.saturating_sub(streamer.pending.len());
     let camera = streamer.camera.unwrap_or_default();
     let mut missing: Vec<(f64, NodeKey)> = streamer
@@ -109,9 +141,14 @@ fn start_tasks(source: Res<Source>, mut streamer: ResMut<Streamer>) {
         .map(|key| ((key.centre_dir() * source.config.radius - camera).length_squared(), *key))
         .collect();
     missing.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let Some(baked) = climate.ready().cloned() else {
+        stats.waiting_on_climate = missing.len();
+        return;
+    };
+    stats.waiting_on_climate = 0;
     for (_, key) in missing.into_iter().take(room) {
-        let (planet, config) = (source.planet.clone(), source.config.clone());
-        let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &config, key) });
+        let (planet, config, baked) = (source.planet.clone(), source.config.clone(), baked.clone());
+        let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &baked, &config, key) });
         streamer.pending.insert(key, task);
     }
 }
@@ -177,18 +214,22 @@ pub struct PlanetLodPlugin {
     pub planet: Arc<Planet>,
     pub config: QuadtreeConfig,
     pub centre: DVec3,
+    pub seed: i32,
 }
 
 impl Plugin for PlanetLodPlugin {
     fn build(&self, app: &mut App) {
         mark_main_thread();
+        let seed = self.seed;
+        let baking = AsyncComputeTaskPool::get().spawn(async move { bake_climate(seed) });
         app.insert_resource(Source { planet: self.planet.clone(), config: self.config.clone(), centre: self.centre })
             .init_resource::<FloatingOrigin>()
+            .insert_resource(ClimateBake { baking: Some(baking), ready: None })
             .init_resource::<Streamer>()
             .init_resource::<PlanetLodStats>()
             .add_plugins(ColliderStreamPlugin)
             .add_systems(Startup, insert_material)
-            .add_systems(Update, (rebase_system, plan_leaves, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
+            .add_systems(Update, (rebase_system, plan_leaves, poll_climate, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
     }
 }
 
@@ -202,10 +243,12 @@ mod tests {
     use bevy::ecs::schedule::SingleThreadedExecutor;
     use std::time::Duration;
 
+    const TEST_SEED: i32 = 7;
     const PATCH_VERTICES: usize = 144;
     const PATCH_TRIANGLES: usize = 242;
     const FRAME_PAUSE: Duration = Duration::from_millis(5);
     const SETTLE_FRAME_LIMIT: usize = 4000;
+    const FRAMES_BEFORE_READY: usize = 30;
     const MOVE_M: f64 = 5000.0;
     const VIEWPORT_HEIGHT: f64 = 1080.0;
     const FOV_Y_RAD: f64 = 1.0;
@@ -221,7 +264,7 @@ mod tests {
     }
 
     fn app_at(radius: f64, max_level: u8, camera: DVec3) -> App {
-        let planet = Planet::new(&PlanetConfig { seed: 7, hpf_res: 128, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius, carves: Vec::new() });
+        let planet = Planet::new(&PlanetConfig { seed: TEST_SEED, hpf_res: 128, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius, carves: Vec::new() });
         let config = QuadtreeConfig { max_level, ..QuadtreeConfig::reference(radius, VIEWPORT_HEIGHT, FOV_Y_RAD) };
         app_with(Arc::new(planet), config, camera)
     }
@@ -235,7 +278,7 @@ mod tests {
             .init_asset::<Mesh>()
             .init_asset::<StandardMaterial>()
             .insert_resource(FloatingOrigin { position: camera })
-            .add_plugins(PlanetLodPlugin { planet, config, centre: DVec3::ZERO });
+            .add_plugins(PlanetLodPlugin { planet, config, centre: DVec3::ZERO, seed: TEST_SEED });
         app.world_mut().spawn((Camera3d::default(), Transform::IDENTITY, OriginRelative));
         app
     }
@@ -265,9 +308,16 @@ mod tests {
         live == expected && app.world().resource::<Streamer>().pending.is_empty()
     }
 
+    fn wait_for_started_patches(app: &App) {
+        while app.world().resource::<Streamer>().pending.values().any(|task| !task.is_finished()) {
+            std::thread::sleep(FRAME_PAUSE);
+        }
+    }
+
     fn settle(app: &mut App, old: &HashSet<NodeKey>) {
         for _ in 0..SETTLE_FRAME_LIMIT {
             std::thread::sleep(FRAME_PAUSE);
+            wait_for_started_patches(app);
             app.update();
             assert!(covers_every(app, old), "a leaf of the previous set lost its cover while streaming");
             if settled(app) {
@@ -292,6 +342,9 @@ mod tests {
         for handle in handles {
             let mesh = meshes.get(&handle).unwrap();
             assert_eq!(mesh.count_vertices(), PATCH_VERTICES);
+            for attribute in [Mesh::ATTRIBUTE_UV_0, Mesh::ATTRIBUTE_UV_1] {
+                assert_eq!(mesh.attribute(attribute).unwrap().len(), PATCH_VERTICES);
+            }
             assert_eq!(mesh.indices().unwrap().len() / 3, PATCH_TRIANGLES);
         }
     }
@@ -356,6 +409,41 @@ mod tests {
         let finest = live_keys(&mut app).iter().map(|key| key.level).max().unwrap();
         assert!(finest > plain_max_level, "the floor streams level {finest} where the plain tree stops at {plain_max_level}");
         assert_eq!(app.world().resource::<PlanetLodStats>().highest_level, finest);
+    }
+
+    #[test]
+    fn no_patch_starts_before_the_climate_bake_is_ready() {
+        let radius = 63_600.0;
+        let mut app = app_at(radius, 13, surface_direction() * radius * 2.0);
+        let never_ready = AsyncComputeTaskPool::get().spawn(std::future::pending());
+        app.insert_resource(ClimateBake { baking: Some(never_ready), ready: None });
+        for _ in 0..FRAMES_BEFORE_READY {
+            app.update();
+        }
+        let wanted = expected_leaves(&mut app).len();
+        assert!(wanted > 0);
+        assert_eq!(app.world().resource::<PlanetLodStats>().waiting_on_climate, wanted);
+        assert_eq!(app.world().resource::<PlanetLodStats>().tasks_in_flight, 0);
+        assert!(live_keys(&mut app).is_empty());
+        let baked = bake_climate(TEST_SEED);
+        app.insert_resource(ClimateBake { baking: None, ready: Some(baked) });
+        settle(&mut app, &HashSet::new());
+        assert_eq!(app.world().resource::<PlanetLodStats>().waiting_on_climate, 0);
+        assert_eq!(live_keys(&mut app).len(), wanted);
+    }
+
+    #[test]
+    fn the_climate_bake_finishes_off_the_main_thread_and_is_shared() {
+        let radius = 63_600.0;
+        let mut app = app_at(radius, 13, surface_direction() * radius * 2.0);
+        settle(&mut app, &HashSet::new());
+        assert_eq!(builds_on_main_thread(), 0);
+        let shared = app.world().resource::<ClimateBake>().ready().unwrap().clone();
+        assert!(Arc::strong_count(&shared) >= 2);
+        let reference = HpfFaces::bake(i64::from(TEST_SEED), 128, 7);
+        for dir in [surface_direction(), -surface_direction(), DVec3::new(-0.7, 0.1, 0.2).normalize()] {
+            assert_eq!(shared.at_dir(dir.to_array()), reference.at_dir(dir.to_array()));
+        }
     }
 
     #[test]

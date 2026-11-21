@@ -1,6 +1,7 @@
 use super::guard::note_build;
 use super::quadtree::{NodeKey, QuadtreeConfig};
 use crate::height::Planet;
+use crate::height::climate::HpfFaces;
 use bevy::math::DVec3;
 
 pub const GRID_CELLS: usize = 9;
@@ -17,6 +18,8 @@ pub struct PatchMesh {
     pub positions: Vec<[f32; 3]>,
     pub normals: Vec<[f32; 3]>,
     pub indices: Vec<u32>,
+    pub climate: Vec<[f32; 2]>,
+    pub height: Vec<f32>,
     pub min_elevation: f32,
     pub max_elevation: f32,
 }
@@ -25,6 +28,7 @@ struct Corner {
     dir: DVec3,
     height: f64,
     normal: DVec3,
+    climate: [f32; 2],
 }
 
 fn skirt_drop(size_m: f64, relief: f64) -> f64 {
@@ -65,7 +69,12 @@ fn height_at(planet: &Planet, radius: f64, dir: DVec3) -> f64 {
     planet.height(dir.to_array(), radius)
 }
 
-fn corner(planet: &Planet, radius: f64, key: NodeKey, u: f64, v: f64) -> Corner {
+fn climate_at(source: &HpfFaces, dir: DVec3) -> [f32; 2] {
+    let [_, _, temperature, humidity] = source.at_dir(dir.to_array());
+    [temperature as f32, humidity as f32]
+}
+
+fn corner(planet: &Planet, source: &HpfFaces, radius: f64, key: NodeKey, u: f64, v: f64) -> Corner {
     let step = 1.0 / GRID_CELLS as f64;
     let at = |u: f64, v: f64| {
         let dir = key.dir(u, v);
@@ -77,29 +86,33 @@ fn corner(planet: &Planet, radius: f64, key: NodeKey, u: f64, v: f64) -> Corner 
     let (_, _, along_v) = at(u, v + step);
     let facing = (along_u - here).cross(along_v - here).normalize();
     let normal = if facing.dot(dir) < 0.0 { -facing } else { facing };
-    Corner { dir, height, normal }
+    Corner { dir, height, normal, climate: climate_at(source, dir) }
 }
 
 fn to_f32(v: DVec3) -> [f32; 3] {
     [v.x as f32, v.y as f32, v.z as f32]
 }
 
-pub fn build_patch(planet: &Planet, config: &QuadtreeConfig, key: NodeKey) -> PatchMesh {
+pub fn build_patch(planet: &Planet, source: &HpfFaces, config: &QuadtreeConfig, key: NodeKey) -> PatchMesh {
     note_build();
     let radius = config.radius;
     let origin = key.centre_dir() * radius;
     let drop = skirt_drop(key.size_m(radius), planet.relief(radius));
     let corners: Vec<Corner> = (0..CORNERS * CORNERS)
-        .map(|n| corner(planet, radius, key, grid_coordinate(n % CORNERS + 1), grid_coordinate(n / CORNERS + 1)))
+        .map(|n| corner(planet, source, radius, key, grid_coordinate(n % CORNERS + 1), grid_coordinate(n / CORNERS + 1)))
         .collect();
     let mut positions = Vec::with_capacity(SIDE * SIDE);
     let mut normals = Vec::with_capacity(SIDE * SIDE);
+    let mut climate = Vec::with_capacity(SIDE * SIDE);
+    let mut height = Vec::with_capacity(SIDE * SIDE);
     for y in 0..SIDE {
         for x in 0..SIDE {
             let c = &corners[y.saturating_sub(1).min(GRID_CELLS) * CORNERS + x.saturating_sub(1).min(GRID_CELLS)];
             let skirt = if is_ring(x) || is_ring(y) { drop } else { 0.0 };
             positions.push(to_f32(c.dir * (radius + c.height - skirt) - origin));
             normals.push(to_f32(c.normal));
+            climate.push(c.climate);
+            height.push(c.height as f32);
         }
     }
     let heights = corners.iter().map(|c| c.height);
@@ -108,6 +121,8 @@ pub fn build_patch(planet: &Planet, config: &QuadtreeConfig, key: NodeKey) -> Pa
         positions,
         normals,
         indices: patch_indices(),
+        climate,
+        height,
         min_elevation: heights.clone().fold(f64::INFINITY, f64::min) as f32,
         max_elevation: heights.fold(f64::NEG_INFINITY, f64::max) as f32,
     }
@@ -120,10 +135,12 @@ mod tests {
     use crate::testkit::{cases, close, parse};
     use serde_json::Value;
     use std::f64::consts::FRAC_PI_3;
+    use std::sync::OnceLock;
 
     const FIXTURE: &str = include_str!("../../testdata/parity/spoint-planet-patch.json");
     const SEED: i32 = 0x5eed1234;
     const HPF_RES: usize = 128;
+    const HPF_MAX_LEVEL: u32 = 7;
     const F32_HALF_ULP: f64 = 1.2e-7;
     const LAYOUT_F32_ERROR: f64 = 6e-8;
     const POSITION_FLOOR_M: f64 = 2e-3;
@@ -139,6 +156,11 @@ mod tests {
         Planet::new(&PlanetConfig { seed: SEED, hpf_res: HPF_RES, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius, carves: Vec::new() })
     }
 
+    fn baked() -> &'static HpfFaces {
+        static BAKED: OnceLock<HpfFaces> = OnceLock::new();
+        BAKED.get_or_init(|| HpfFaces::bake(i64::from(SEED), HPF_RES, HPF_MAX_LEVEL))
+    }
+
     fn key_of(case: &Value) -> NodeKey {
         let field = |name: &str| case[name].as_u64().unwrap();
         NodeKey { face: field("face") as u8, level: field("level") as u8, x: field("x") as u32, y: field("y") as u32 }
@@ -146,7 +168,7 @@ mod tests {
 
     fn built(case: &Value) -> PatchMesh {
         let radius = case["radius"].as_f64().unwrap();
-        build_patch(&planet_of(radius), &QuadtreeConfig::reference(radius, 1080.0, FRAC_PI_3), key_of(case))
+        build_patch(&planet_of(radius), baked(), &QuadtreeConfig::reference(radius, 1080.0, FRAC_PI_3), key_of(case))
     }
 
     #[test]
@@ -156,6 +178,8 @@ mod tests {
         let mesh = built(case);
         assert_eq!(mesh.positions.len(), 144);
         assert_eq!(mesh.normals.len(), 144);
+        assert_eq!(mesh.climate.len(), 144);
+        assert_eq!(mesh.height.len(), 144);
         assert_eq!(mesh.indices.len() / 3, 242);
         assert!(mesh.indices.iter().all(|&i| (i as usize) < mesh.positions.len()));
     }
@@ -222,6 +246,79 @@ mod tests {
                     close(dropped, expected, tolerance, &format!("{name} vertex ({x},{y}) skirt drop"));
                     assert_eq!(mesh.normals[y * SIDE + x], mesh.normals[gy * SIDE + gx], "{name} ring normal ({x},{y})");
                 }
+            }
+        }
+    }
+
+    fn interior_vertex_source(x: usize, y: usize) -> (usize, usize) {
+        (x.saturating_sub(1).min(GRID_CELLS), y.saturating_sub(1).min(GRID_CELLS))
+    }
+
+    #[test]
+    fn climate_per_vertex_is_the_baked_temperature_and_humidity_at_the_undropped_direction() {
+        let fixture = parse(FIXTURE);
+        for case in cases(&fixture, "cases") {
+            let mesh = built(case);
+            let key = key_of(case);
+            let name = format!("{:?} radius {}", key, case["radius"]);
+            for y in 0..SIDE {
+                for x in 0..SIDE {
+                    let (cx, cy) = interior_vertex_source(x, y);
+                    let dir = key.dir(grid_coordinate(cx + 1), grid_coordinate(cy + 1));
+                    let [_, _, temperature, humidity] = baked().at_dir(dir.to_array());
+                    assert_eq!(mesh.climate[y * SIDE + x], [temperature as f32, humidity as f32], "{name} vertex ({x},{y}) climate");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn climate_is_not_constant_across_a_patch() {
+        let fixture = parse(FIXTURE);
+        let mesh = built(&cases(&fixture, "cases")[0]);
+        assert!(mesh.climate.iter().any(|c| c != &mesh.climate[0]));
+    }
+
+    #[test]
+    fn skirt_vertices_carry_their_interior_neighbours_climate_and_height() {
+        let fixture = parse(FIXTURE);
+        for case in cases(&fixture, "cases") {
+            let mesh = built(case);
+            let name = format!("{:?} radius {}", key_of(case), case["radius"]);
+            for y in 0..SIDE {
+                for x in 0..SIDE {
+                    let (cx, cy) = interior_vertex_source(x, y);
+                    let neighbour = (cy + 1) * SIDE + cx + 1;
+                    assert_eq!(mesh.climate[y * SIDE + x], mesh.climate[neighbour], "{name} climate ({x},{y})");
+                    assert_eq!(mesh.height[y * SIDE + x], mesh.height[neighbour], "{name} height ({x},{y})");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn height_is_the_planet_height_above_the_sphere_and_spans_the_reference_elevations() {
+        let fixture = parse(FIXTURE);
+        for case in cases(&fixture, "cases") {
+            let mesh = built(case);
+            let key = key_of(case);
+            let radius = case["radius"].as_f64().unwrap();
+            let planet = planet_of(radius);
+            let name = format!("{:?} radius {}", key, case["radius"]);
+            for y in 0..SIDE {
+                for x in 0..SIDE {
+                    let (cx, cy) = interior_vertex_source(x, y);
+                    let dir = key.dir(grid_coordinate(cx + 1), grid_coordinate(cy + 1));
+                    let want = height_at(&planet, radius, dir);
+                    close(f64::from(mesh.height[y * SIDE + x]), want, F32_HALF_ULP * want.abs(), &format!("{name} vertex ({x},{y}) height"));
+                }
+            }
+            let size = case["size"].as_f64().unwrap();
+            let lowest = mesh.height.iter().copied().fold(f32::INFINITY, f32::min);
+            let highest = mesh.height.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+            for (got, field) in [(lowest, "minElevation"), (highest, "maxElevation")] {
+                let want = case[field].as_f64().unwrap();
+                close(f64::from(got), want, ELEVATION_FLOOR_M + F32_HALF_ULP * want.abs() + SLOPE_BOUND * LAYOUT_F32_ERROR * size, &format!("{name} {field} of heights"));
             }
         }
     }

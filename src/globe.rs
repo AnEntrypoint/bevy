@@ -239,7 +239,7 @@ impl GlobeWorld {
     }
 
     fn lod_plugin(&self) -> PlanetLodPlugin {
-        PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3() }
+        PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3(), seed: self.seed as i32 }
     }
 
     pub(crate) fn quadtree_config(&self) -> QuadtreeConfig {
