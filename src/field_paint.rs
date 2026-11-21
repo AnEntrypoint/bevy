@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), allow(dead_code))]
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 
 use crate::field_layers::{chunk_key, FieldError, FieldLayers};
 

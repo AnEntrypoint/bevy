@@ -3,7 +3,6 @@
 use std::cmp::Ordering;
 
 use crate::chart_anchor::{chart_anchor_angle_deg, chart_anchor_for_dir, ChartAnchorFrame};
-use crate::chart_reanchor_service::WALKABLE_CHART_LIMIT_DEG;
 use crate::height::ops_jsgen::V3;
 use crate::height::placement::PlacementLattice;
 
@@ -113,6 +112,7 @@ pub fn chart_anchor_decision(lattice: &PlacementLattice, frame: &ChartAnchorFram
 
 #[cfg(test)]
 mod tests {
+    use crate::chart_reanchor_service::WALKABLE_CHART_LIMIT_DEG;
     use super::*;
     use crate::chart_anchor::{create_chart_anchor_lattice, CHART_ANCHORS_PER_FACE};
     use serde_json::Value;
