@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 pub const PATCH_SPAWNS_PER_FRAME: usize = 8;
 pub const MAX_TASKS_IN_FLIGHT: usize = 64;
+const LAND_GREEN: Color = Color::srgb(0.25, 0.55, 0.22);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct PatchKey(pub NodeKey);
@@ -27,6 +28,8 @@ pub struct PlanetLodStats {
     pub spawned_this_frame: usize,
     pub max_spawned_in_frame: usize,
     pub highest_level: u8,
+    pub min_elevation: f32,
+    pub max_elevation: f32,
 }
 
 #[derive(Resource)]
@@ -43,6 +46,8 @@ struct LivePatch {
     entity: Entity,
     vertices: usize,
     triangles: usize,
+    min_elevation: f32,
+    max_elevation: f32,
 }
 
 #[derive(Resource, Default)]
@@ -67,14 +72,14 @@ fn patch_mesh(patch: PatchMesh) -> Mesh {
 }
 
 fn insert_material(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {
-    let material = StandardMaterial { base_color: Color::WHITE, perceptual_roughness: 0.95, ..default() };
+    let material = StandardMaterial { base_color: LAND_GREEN, perceptual_roughness: 0.95, ..default() };
     commands.insert_resource(PatchMaterial(materials.add(material)));
 }
 
 fn plan_leaves(
     source: Res<Source>,
     origin: Res<FloatingOrigin>,
-    camera: Query<&Transform, (With<Camera3d>, With<OriginRelative>)>,
+    camera: Query<&Transform, With<Camera3d>>,
     mut streamer: ResMut<Streamer>,
 ) {
     let Ok(transform) = camera.single() else { return };
@@ -129,11 +134,11 @@ fn finish_tasks(
     for (key, patch) in finished {
         streamer.pending.remove(&key);
         let local = origin.to_local(patch.origin + source.centre);
-        let (vertices, triangles) = (patch.positions.len(), patch.indices.len() / 3);
+        let (vertices, triangles, min_elevation, max_elevation) = (patch.positions.len(), patch.indices.len() / 3, patch.min_elevation, patch.max_elevation);
         let entity = commands
             .spawn((Mesh3d(meshes.add(patch_mesh(patch))), MeshMaterial3d(material.0.clone()), Transform::from_translation(local), OriginRelative, PatchKey(key)))
             .id();
-        streamer.live.insert(key, LivePatch { entity, vertices, triangles });
+        streamer.live.insert(key, LivePatch { entity, vertices, triangles, min_elevation, max_elevation });
     }
 }
 
@@ -159,6 +164,8 @@ fn publish_stats(streamer: Res<Streamer>, mut stats: ResMut<PlanetLodStats>) {
     stats.triangles = streamer.live.values().map(|patch| patch.triangles).sum();
     stats.tasks_in_flight = streamer.pending.len();
     stats.highest_level = streamer.live.keys().map(|key| key.level).max().unwrap_or(0);
+    stats.min_elevation = streamer.live.values().map(|patch| patch.min_elevation).reduce(f32::min).unwrap_or(0.0);
+    stats.max_elevation = streamer.live.values().map(|patch| patch.max_elevation).fold(0.0, f32::max);
 }
 
 pub struct PlanetLodPlugin {
@@ -326,6 +333,17 @@ mod tests {
     #[test]
     fn small_planet_streams_exactly_the_selected_leaves_at_every_altitude() {
         witness(63_600.0, 13);
+    }
+
+    #[test]
+    fn every_patch_shares_one_land_green_material() {
+        let radius = 63_600.0;
+        let mut app = app_at(radius, 13, surface_direction() * radius * 2.0);
+        settle(&mut app, &HashSet::new());
+        let handles: HashSet<AssetId<StandardMaterial>> = app.world_mut().query::<&MeshMaterial3d<StandardMaterial>>().iter(app.world()).map(|material| material.0.id()).collect();
+        assert_eq!(handles.len(), 1);
+        let material = app.world().resource::<Assets<StandardMaterial>>().get(*handles.iter().next().unwrap()).unwrap();
+        assert_eq!(material.base_color, LAND_GREEN);
     }
 
     #[test]

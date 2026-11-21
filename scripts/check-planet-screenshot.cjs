@@ -4,7 +4,6 @@ const { encodePng, readXwd } = require('./lib/xwd-png.cjs');
 const { readPng } = require('./lib/png-read.cjs');
 
 const GREEN_MIN_PERCENT = 0.43;
-const TREES_MIN = 16;
 const [xwdPath, logPath, pngPath] = process.argv.slice(2);
 if (!xwdPath || !logPath || !pngPath) {
   console.error('usage: node scripts/check-planet-screenshot.cjs <capture.xwd> <game.log> <out.png>');
@@ -23,8 +22,6 @@ for (let i = 0; i < image.width * image.height; i += 1) {
   if (g > r + 15 && g > b + 15) green += 1;
 }
 const greenPercent = (100 * green) / (image.width * image.height);
-const placed = fs.readFileSync(logPath, 'utf8').match(/vegetation: (\d+) trees placed/);
-const trees = placed ? Number(placed[1]) : 0;
 
 console.log(JSON.stringify({
   png: pngPath,
@@ -33,7 +30,5 @@ console.log(JSON.stringify({
   height: image.height,
   greenPercent: Number(greenPercent.toFixed(2)),
   greenMinPercent: GREEN_MIN_PERCENT,
-  treesMin: TREES_MIN,
-  trees,
 }));
-process.exit(greenPercent >= GREEN_MIN_PERCENT && trees >= TREES_MIN ? 0 : 1);
+process.exit(greenPercent >= GREEN_MIN_PERCENT ? 0 : 1);

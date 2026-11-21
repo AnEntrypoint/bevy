@@ -73,7 +73,6 @@ impl Frame {
     }
 }
 
-#[cfg(test)]
 fn sphere_drop_below_tangent(r2: f64, sphere_radius: f64) -> f64 {
     let q = sphere_radius * sphere_radius - r2;
     if q > 0.0 { r2 / (sphere_radius + q.sqrt()) } else { sphere_radius }
@@ -170,7 +169,6 @@ pub fn raycast_ground_local(ground: impl Fn(f64, f64) -> Option<f64>, origin: V3
     None
 }
 
-#[cfg(test)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum SurfaceSolve {
     Tolerance,
@@ -237,12 +235,9 @@ fn bump_memo(f: impl FnOnce(&mut MemoStats)) {
     })
 }
 
-#[cfg(test)]
 const SURFACE_SOLVE_MAX_EVALS: usize = 64;
-#[cfg(test)]
 const BRACKET_HALVING_WINDOW: usize = 6;
 
-#[cfg(test)]
 pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>, tolerance_m: f64, guess: Option<f64>) -> Result<f64, SurfaceSolve> {
     if !tolerance_m.is_finite() || tolerance_m <= 0.0 {
         return Err(SurfaceSolve::Tolerance);
@@ -251,6 +246,7 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     if radius.is_finite() && r2 >= radius * radius {
         return Err(SurfaceSolve::ChartRange);
     }
+    #[cfg(test)]
     bump_solve(|s| s.solves += 1);
     let mut y = match guess {
         Some(g) if g.is_finite() => g,
@@ -262,6 +258,7 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     let mut checkpoint: Option<(usize, f64)> = None;
     let mut last_g = f64::INFINITY;
     for k in 0..SURFACE_SOLVE_MAX_EVALS {
+        #[cfg(test)]
         bump_solve(|s| s.evaluations += 1);
         let dir = tangent_local_to_dir(basis, radius + anchor_height + y, x, z);
         let h = match height(dir) {
@@ -310,21 +307,15 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     Err(SurfaceSolve::NoConvergence { residual: last_g })
 }
 
-#[cfg(test)]
 const SURFACE_SOLVE_TOLERANCE_M: f64 = 1e-4;
 
-#[cfg(test)]
 fn render_y_on_sphere(r2: f64, elevation: f64, anchor_height: f64, radius: f64) -> f64 {
     (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation)
 }
 
-#[cfg(test)]
 const GROUND_MEMO_SLOTS: usize = 4096;
-#[cfg(test)]
 const GROUND_MEMO_CELLS_PER_M: f64 = 4.0;
-#[cfg(test)]
 const GROUND_MEMO_HASH_X: i32 = 73_856_093;
-#[cfg(test)]
 const GROUND_MEMO_HASH_Z: i32 = 19_349_663;
 
 #[cfg(test)]
@@ -337,7 +328,6 @@ pub struct MemoStats {
     pub cell_collisions: u64,
 }
 
-#[cfg(test)]
 #[derive(Clone)]
 struct GroundMemoSlot {
     x: f64,
@@ -347,9 +337,7 @@ struct GroundMemoSlot {
     failure: Option<SurfaceSolve>,
 }
 
-#[cfg(test)]
 impl GroundMemoSlot {
-    #[cfg(test)]
     fn empty() -> Self {
         Self { x: f64::NAN, z: 0.0, height: 0.0, epoch: -1, failure: None }
     }
@@ -369,7 +357,7 @@ pub enum GroundSourceError {
 #[cfg(test)]
 const CPU_SOLVE_SOURCE: &str = "cpu-solve";
 
-#[cfg(test)]
+#[cfg_attr(not(test), allow(dead_code))]
 pub struct ChartFrame {
     basis: Basis,
     radius: f64,
@@ -378,21 +366,24 @@ pub struct ChartFrame {
     relief_scale: f64,
     chart_epoch: u32,
     memo: Vec<GroundMemoSlot>,
+    #[cfg(test)]
     ground_sources: Vec<(String, GroundFn)>,
+    #[cfg(test)]
     active_source: String,
+    #[cfg(test)]
     anonymous_installs: u32,
+    #[cfg(test)]
     cpu_height_divergent: bool,
+    #[cfg(test)]
     divergence_reported: bool,
 }
 
-#[cfg(test)]
 impl ChartFrame {
-    #[cfg(test)]
     pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, relief_scale: Option<f64>, height: impl Fn(V3) -> f64) -> Self {
         let basis = anchor_basis(anchor_dir);
         let anchor_height = height(basis.up);
         let relief_scale = relief_scale.unwrap_or(0.01);
-        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], ground_sources: Vec::new(), active_source: CPU_SOLVE_SOURCE.to_string(), anonymous_installs: 0, cpu_height_divergent: false, divergence_reported: false }
+        Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], #[cfg(test)] ground_sources: Vec::new(), #[cfg(test)] active_source: CPU_SOLVE_SOURCE.to_string(), #[cfg(test)] anonymous_installs: 0, #[cfg(test)] cpu_height_divergent: false, #[cfg(test)] divergence_reported: false }
     }
 
     #[cfg(test)]
@@ -504,7 +495,6 @@ impl ChartFrame {
         (height(normalise(d)), warning)
     }
 
-    #[cfg(test)]
     pub fn ground_height_local(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
         if !x.is_finite() || !z.is_finite() {
             return Err(SurfaceSolve::Argument);
@@ -515,20 +505,24 @@ impl ChartFrame {
         let epoch = i64::from(self.chart_epoch);
         let entry = &self.memo[slot];
         if entry.x == x && entry.z == z && entry.epoch == epoch {
+            #[cfg(test)]
             bump_memo(|s| s.hits += 1);
             return match &entry.failure {
                 Some(err) => Err(err.clone()),
                 None => Ok(entry.height),
             };
         }
-        bump_memo(|s| s.misses += 1);
-        let previous = &self.memo[slot];
-        if previous.epoch != -1 {
-            bump_memo(|s| s.evictions += 1);
-            if previous.x == x && previous.z == z {
-                bump_memo(|s| s.epoch_stale += 1);
-            } else if (previous.x * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_x && (previous.z * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_z {
-                bump_memo(|s| s.cell_collisions += 1);
+        #[cfg(test)]
+        {
+            bump_memo(|s| s.misses += 1);
+            let previous = &self.memo[slot];
+            if previous.epoch != -1 {
+                bump_memo(|s| s.evictions += 1);
+                if previous.x == x && previous.z == z {
+                    bump_memo(|s| s.epoch_stale += 1);
+                } else if (previous.x * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_x && (previous.z * GROUND_MEMO_CELLS_PER_M).floor() as i64 == cell_z {
+                    bump_memo(|s| s.cell_collisions += 1);
+                }
             }
         }
         self.memo[slot] = GroundMemoSlot { x, z, height: 0.0, epoch, failure: None };

@@ -106,12 +106,10 @@ mod spec;
 mod texture_quality;
 mod tree;
 mod ui_html;
-mod vegetation;
 mod viewer;
 mod viewer_world;
 mod planet_lod;
 mod world;
-#[cfg(test)]
 mod js_math;
 mod vec3;
 #[cfg(test)]

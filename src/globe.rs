@@ -1,16 +1,20 @@
-use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
-use bevy::asset::RenderAssetUsages;
-use bevy::mesh::{Indices, PrimitiveTopology};
-use bevy::prelude::*;
-use serde_json::{Map, Value, json};
+use crate::height::planet_frame::{ChartFrame, anchor_basis};
 use crate::height::{CarveConfig, HashVersion, MAX_TERRAIN_CARVES, Planet, PlanetConfig};
+use crate::planet_lod::collider::{Chart, ColliderGround, ColliderStreamPlugin, NearBody};
+use crate::planet_lod::quadtree::QuadtreeConfig;
+use crate::planet_lod::stream::{PlanetLodPlugin, PlanetLodStats};
+use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
 use bevy::app::App;
-use bevy::time::{Time, TimeUpdateStrategy, Virtual};
+use bevy::math::DVec3;
+use bevy::prelude::*;
 use bevy::render::view::window::screenshot::{Screenshot, save_to_disk};
-use std::path::PathBuf;
-use std::time::Duration;
+use bevy::time::{Time, TimeUpdateStrategy, Virtual};
+use serde_json::{Map, Value, json};
+use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Resource, Clone, Debug)]
 pub struct GlobeWorld {
@@ -20,10 +24,8 @@ pub struct GlobeWorld {
     pub sea_level: f32,
     pub amplitude: f32,
     pub seed: u64,
-    pub chunk_span: f32,
+    pub max_level: u8,
     pub gravity: f32,
-    pub stream_radius: f32,
-    pub subdivisions: u32,
     pub body_altitude: f32,
     pub drop_height: f32,
     pub bodies: Vec<(f32, f32)>,
@@ -35,9 +37,15 @@ pub struct GlobeWorld {
     pub planet: Arc<Planet>,
 }
 
-const DEFAULT_SEED: u64 = 0x5eed_1234;
-const DEFAULT_RADIUS: f32 = 6360.0;
+const DEFAULT_SEED: u64 = 1337;
+const DEFAULT_RADIUS: f32 = 63_600.0;
 const DEFAULT_HPF_TEX_RES: usize = 128;
+const DEFAULT_MAX_LEVEL: u8 = 13;
+const MAX_LEVEL_LIMIT: u64 = 24;
+const DEFAULT_ANCHOR_DIR: [f64; 3] = [-0.641, 0.2558, 0.7237];
+const CAMERA_VIEWPORT_HEIGHT_PX: f64 = 720.0;
+const CAMERA_FOV_Y_RAD: f64 = std::f64::consts::FRAC_PI_4;
+const CAMERA_FAR_RADII: f32 = 4.0;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
@@ -48,17 +56,15 @@ impl Default for GlobeWorld {
             sea_level: 0.0,
             amplitude: DEFAULT_RADIUS * 3.0 / 64.0,
             seed: DEFAULT_SEED,
-            chunk_span: 0.35,
+            max_level: DEFAULT_MAX_LEVEL,
             gravity: 9.81,
-            stream_radius: 40.0,
-            subdivisions: 8,
             body_altitude: 0.5,
             drop_height: 0.0,
             bodies: vec![(0.0, 0.0)],
             hpf_tex_res: DEFAULT_HPF_TEX_RES,
             hash_version: HashVersion::Integer,
             relief_scale: None,
-            anchor_dir: [0.0, 1.0, 0.0],
+            anchor_dir: DEFAULT_ANCHOR_DIR,
             carves: Vec::new(),
             planet: Arc::new(Planet::new(&default_planet_config())),
         }
@@ -66,7 +72,7 @@ impl Default for GlobeWorld {
 }
 
 fn default_planet_config() -> PlanetConfig {
-    PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: None, anchor_dir: [0.0, 1.0, 0.0], radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
+    PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: None, anchor_dir: DEFAULT_ANCHOR_DIR, radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
 }
 
 fn vec3_of(value: &Value) -> Option<[f64; 3]> {
@@ -88,12 +94,6 @@ fn carve_of(value: &Value) -> Option<CarveConfig> {
     (x.is_finite() && z.is_finite() && radius_m >= 0.0 && falloff_m > 0.0).then_some(CarveConfig::Centre { x, z, radius_m, falloff_m })
 }
 
-#[derive(Component, Clone, Debug)]
-pub struct GlobeChunk {
-    pub vertices: usize,
-    pub max_elevation: f32,
-}
-
 #[derive(Component, Clone, Debug, Default)]
 pub struct GlobeOrientation {
     pub up: Vec3,
@@ -109,12 +109,6 @@ pub struct GlobeBody {
 }
 
 #[derive(Resource, Clone, Debug, Default)]
-pub struct GlobeRegistry {
-    pub chunks: BTreeMap<(i32, i32), Entity>,
-    pub bodies: Vec<Entity>,
-}
-
-#[derive(Resource, Clone, Debug, Default)]
 pub struct GlobeFocus(pub Vec3);
 
 #[derive(Resource, Clone, Debug, Default)]
@@ -122,6 +116,7 @@ pub struct GlobeSummary {
     pub chunks: usize,
     pub bodies: usize,
     pub vertices: usize,
+    pub min_elevation: f32,
     pub max_elevation: f32,
     pub seed: u64,
     pub radius: f32,
@@ -129,13 +124,6 @@ pub struct GlobeSummary {
     pub body_radius: f32,
     pub gravity_at_body: Vec3,
     pub focus: Vec3,
-}
-
-struct ChunkGeometry {
-    positions: Vec<Vec3>,
-    colors: Vec<[f32; 4]>,
-    indices: Vec<[u32; 3]>,
-    max_elevation: f32,
 }
 
 impl GlobeWorld {
@@ -156,19 +144,17 @@ impl GlobeWorld {
         let before = self.planet_config();
         if let Some(name) = object.get("name").and_then(Value::as_str) { self.name = name.into(); }
         if object.contains_key("center") { self.center = crate::spec::vec3(object.get("center")); }
-        for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("chunkSpan", &mut self.chunk_span), ("gravity", &mut self.gravity), ("streamRadius", &mut self.stream_radius), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
+        for (field, target) in [("radius", &mut self.radius), ("seaLevel", &mut self.sea_level), ("amplitude", &mut self.amplitude), ("gravity", &mut self.gravity), ("bodyAltitude", &mut self.body_altitude), ("dropHeight", &mut self.drop_height)] {
             if let Some(value) = object.get(field).and_then(Value::as_f64) { *target = value as f32; }
         }
         if let Some(value) = object.get("seed").and_then(Value::as_u64) { self.seed = value; }
-        if let Some(value) = object.get("subdivisions").and_then(Value::as_u64) { self.subdivisions = value.clamp(1, 64) as u32; }
+        if let Some(value) = object.get("maxLevel").and_then(Value::as_u64) { self.max_level = value.clamp(1, MAX_LEVEL_LIMIT) as u8; }
         if let Some(bodies) = object.get("bodies").and_then(Value::as_array) {
             self.bodies = bodies.iter().map(|body| {
                 (number(body.get("latitude"), 0.0), self.wrap_lon(number(body.get("longitude"), 0.0)))
             }).collect();
         }
         self.radius = self.radius.max(1.0);
-        self.stream_radius = self.stream_radius.max(self.radius * self.chunk_span);
-        self.chunk_span = self.chunk_span.clamp(0.02, std::f32::consts::PI);
         if let Some(res) = object.get("hpfTexRes").and_then(Value::as_f64) {
             self.hpf_tex_res = (res as usize).max(2);
         }
@@ -223,14 +209,6 @@ impl GlobeWorld {
         ((longitude + 180.0) % 360.0 + 360.0) % 360.0 - 180.0
     }
 
-    pub fn hash(&self, x: i64, y: i64, z: i64) -> f32 {
-        let mut state = self.seed ^ (x as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ (y as u64).wrapping_mul(0xbf58_476d_1ce4_e5b9) ^ (z as u64).wrapping_mul(0x94d0_49bb_1331_11eb);
-        state ^= state >> 30;
-        state = state.wrapping_mul(0xbf58_476d_1ce4_e5b9);
-        state ^= state >> 27;
-        (state >> 11) as f32 / (1u64 << 53) as f32
-    }
-
     pub fn elevation(&self, latitude: f32, longitude: f32) -> f32 {
         let (lat, lon) = (f64::from(latitude).to_radians(), f64::from(longitude).to_radians());
         let unit = [lat.cos() * lon.sin(), lat.sin(), lat.cos() * lon.cos()];
@@ -259,95 +237,22 @@ impl GlobeWorld {
         Quat::from_mat3(&Mat3::from_cols(right, up, back)).normalize()
     }
 
-    pub(crate) fn grid(&self) -> (i32, i32) {
-        let span = self.chunk_span.to_degrees();
-        ((180.0 / span).ceil() as i32, (360.0 / span).ceil() as i32)
-    }
-
-    pub(crate) fn cell_bounds(&self, row: i32, column: i32) -> (f32, f32, f32, f32) {
-        let span = self.chunk_span.to_degrees();
-        let lat0 = -90.0 + row as f32 * span;
-        let lon0 = -180.0 + column as f32 * span;
-        (lat0, (lat0 + span).min(90.0), lon0, (lon0 + span).min(180.0))
-    }
-
-    fn chunk_geometry(&self, bounds: (f32, f32, f32, f32)) -> ChunkGeometry {
-        let (lat0, lat1, lon0, lon1) = bounds;
-        let n = self.subdivisions as usize;
-        let mut positions = Vec::with_capacity((n + 1) * (n + 1));
-        let mut colors = Vec::with_capacity((n + 1) * (n + 1));
-        let mut max_elevation = 0.0_f32;
-        for i in 0..=n {
-            for j in 0..=n {
-                let lat = lat0 + (lat1 - lat0) * i as f32 / n as f32;
-                let lon = lon0 + (lon1 - lon0) * j as f32 / n as f32;
-                let elevation = self.elevation(lat, lon);
-                max_elevation = max_elevation.max(elevation);
-                positions.push(self.center + self.lat_lon_to_unit(lat, lon) * (self.radius + elevation));
-                colors.push(biome_color(elevation / self.amplitude.max(1e-3), elevation <= self.sea_level));
-            }
-        }
-        let mut indices = Vec::with_capacity(n * n * 2);
-        for i in 0..n {
-            for j in 0..n {
-                let a = (i * (n + 1) + j) as u32;
-                let b = a + (n + 1) as u32;
-                let c = a + 1;
-                let d = b + 1;
-                for mut triangle in [[a, b, d], [a, d, c]] {
-                    let p0 = positions[triangle[0] as usize];
-                    let edge = positions[triangle[1] as usize] - p0;
-                    let other = positions[triangle[2] as usize] - p0;
-                    if edge.cross(other).dot(p0 - self.center) < 0.0 { triangle.swap(1, 2); }
-                    indices.push(triangle);
-                }
-            }
-        }
-        ChunkGeometry { positions, colors, indices, max_elevation }
-    }
-
-    pub fn chunk(&self, lat: i32, lon: i32) -> Map<String, Value> {
-        let span = self.chunk_span.to_degrees();
-        let latitude = (lat as f32 * span).clamp(-90.0, 90.0);
-        let longitude = self.wrap_lon(lon as f32 * span);
-        let elevation = self.elevation(latitude, longitude);
-        let center = self.surface_position(latitude, longitude, 0.0);
-        json!({
-            "lat": lat, "lon": lon, "latitude": latitude, "longitude": longitude,
-            "latitudeRange": [latitude - span * 0.5, latitude + span * 0.5],
-            "longitudeRange": [longitude - span * 0.5, longitude + span * 0.5],
-            "center": vec_json(center), "up": vec_json((center - self.center).normalize_or_zero()),
-            "elevation": elevation, "radius": self.radius + elevation,
-            "vertices": (self.subdivisions as usize + 1).pow(2), "wrap": lon.abs() as f32 * span > 180.0
-        }).as_object().cloned().unwrap_or_default()
+    fn lod_plugin(&self) -> PlanetLodPlugin {
+        let reference = QuadtreeConfig::reference(f64::from(self.radius), CAMERA_VIEWPORT_HEIGHT_PX, CAMERA_FOV_Y_RAD);
+        PlanetLodPlugin { planet: self.planet.clone(), config: QuadtreeConfig { max_level: self.max_level, ..reference }, centre: self.center.as_dvec3() }
     }
 
     pub fn report(&self, summary: &GlobeSummary) -> Value {
         json!({
             "name": self.name, "center": vec_json(self.center), "radius": self.radius,
             "seaLevel": self.sea_level, "amplitude": self.amplitude, "seed": self.seed,
-            "chunkSpan": self.chunk_span.to_degrees(), "gravity": self.gravity, "streamRadius": self.stream_radius,
-            "subdivisions": self.subdivisions, "bodyAltitude": self.body_altitude, "dropHeight": self.drop_height,
+            "maxLevel": self.max_level, "gravity": self.gravity,
+            "bodyAltitude": self.body_altitude, "dropHeight": self.drop_height,
             "chunks": summary.chunks, "bodies": summary.bodies, "vertices": summary.vertices,
-            "maxElevation": summary.max_elevation, "altitude": summary.altitude, "bodyRadius": summary.body_radius, "gravityAtBody": vec_json(summary.gravity_at_body), "focus": vec_json(summary.focus),
-            "native": ["Mesh", "StandardMaterial", "Collider::trimesh", "RigidBody", "Transform", "GlobalTransform", "Time", "Component", "Resource", "FixedUpdate"]
+            "minElevation": summary.min_elevation, "maxElevation": summary.max_elevation, "altitude": summary.altitude, "bodyRadius": summary.body_radius, "gravityAtBody": vec_json(summary.gravity_at_body), "focus": vec_json(summary.focus),
+            "native": ["Mesh", "StandardMaterial", "Collider::heightfield", "RigidBody", "Transform", "GlobalTransform", "Time", "Component", "Resource", "FixedUpdate"]
         })
     }
-}
-
-fn biome_color(relative: f32, water: bool) -> [f32; 4] {
-    let color = if water {
-        Vec3::new(0.10, 0.25, 0.55)
-    } else if relative < 0.25 {
-        Vec3::new(0.80, 0.74, 0.50)
-    } else if relative < 0.6 {
-        Vec3::new(0.25, 0.55, 0.22)
-    } else if relative < 0.85 {
-        Vec3::new(0.45, 0.40, 0.35)
-    } else {
-        Vec3::new(0.95, 0.95, 0.97)
-    };
-    [color.x, color.y, color.z, 1.0]
 }
 
 pub fn vec_json(value: Vec3) -> Value { json!({ "x": value.x, "y": value.y, "z": value.z }) }
@@ -355,29 +260,59 @@ pub fn quat_json(value: Quat) -> Value { json!({ "x": value.x, "y": value.y, "z"
 pub fn json_vec3(value: Option<&Value>) -> Vec3 { crate::spec::vec3(value) }
 pub fn number(value: Option<&Value>, fallback: f32) -> f32 { value.and_then(Value::as_f64).map(|v| v as f32).unwrap_or(fallback) }
 
+fn to_vec3(components: [f64; 3]) -> Vec3 {
+    Vec3::from_array(components.map(|component| component as f32))
+}
+
+fn chart_at(planet: &Arc<Planet>, centre: Vec3, radius: f64, relief_scale: Option<f64>, body: Vec3) -> Chart {
+    let basis = anchor_basis((body - centre).as_dvec3().normalize_or(DVec3::Y).to_array());
+    let height_at = {
+        let planet = planet.clone();
+        move |direction: [f64; 3]| planet.height(direction, radius)
+    };
+    let anchor_height = height_at(basis.up);
+    let frame = RefCell::new(ChartFrame::new(basis.up, radius, 0.0, relief_scale, &height_at));
+    let rotation = Quat::from_mat3(&Mat3::from_cols(to_vec3(basis.east), to_vec3(basis.up), to_vec3(basis.north)));
+    let translation = centre + to_vec3(basis.up) * (radius + anchor_height) as f32;
+    Chart {
+        pose: Transform { translation, rotation, scale: Vec3::ONE },
+        body: [0.0, 0.0],
+        height: Box::new(move |x, z| frame.borrow_mut().ground_height_local(x, z, |direction| Some(height_at(direction))).unwrap_or(f64::NAN)),
+    }
+}
+
+fn insert_collider_ground(mut commands: Commands, globe: Res<GlobeWorld>) {
+    let (planet, centre, radius, relief_scale) = (globe.planet.clone(), globe.center, f64::from(globe.radius), globe.relief_scale);
+    commands.insert_resource(ColliderGround(Arc::new(move |body| chart_at(&planet, centre, radius, relief_scale, body))));
+}
+
 pub fn register(app: &mut App) {
     let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
     let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
+    if app.world().contains_resource::<Assets<Mesh>>() {
+        app.add_plugins(globe.lod_plugin());
+    } else {
+        app.add_plugins(ColliderStreamPlugin);
+    }
     app.init_resource::<GlobeWorld>()
-        .init_resource::<GlobeRegistry>()
         .init_resource::<GlobeSummary>()
         .insert_resource(focus)
-        .add_systems(Startup, spawn_bodies)
-        .add_systems(FixedUpdate, update_focus.before(sync_chunks).before(crate::script::run_scripts))
-        .add_systems(FixedUpdate, sync_chunks.before(crate::script::run_scripts))
+        .add_systems(Startup, (spawn_bodies, insert_collider_ground))
+        .add_systems(FixedUpdate, update_focus.before(crate::script::run_scripts))
         .add_systems(FixedUpdate, apply_spherical_gravity.before(crate::script::run_scripts))
-        .add_systems(FixedUpdate, read_summary.after(sync_chunks).before(crate::script::run_scripts))
+        .add_systems(FixedUpdate, read_summary.after(update_focus).before(crate::script::run_scripts))
         .add_systems(FixedPostUpdate, settle_bodies.after(PhysicsSystems::StepSimulation).before(PhysicsSystems::Writeback));
 }
 
-fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>, mut registry: ResMut<GlobeRegistry>) {
+fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>) {
     for &(latitude, longitude) in &globe.bodies {
         let spawn_altitude = globe.body_altitude + globe.drop_height;
         let surface = globe.surface_position(latitude, longitude, spawn_altitude);
         let rotation = globe.orientation(latitude, longitude, 0.0);
-        let entity = commands.spawn((
+        commands.spawn((
             GlobeBody { latitude, longitude, altitude: spawn_altitude, speed: 0.0 },
             GlobeOrientation::default(),
+            NearBody,
             RigidBody::Dynamic,
             Collider::sphere(0.5),
             GravityScale(0.0),
@@ -385,19 +320,21 @@ fn spawn_bodies(mut commands: Commands, globe: Res<GlobeWorld>, mut registry: Re
             Position(surface),
             Rotation(rotation),
             Transform::from_translation(surface).with_rotation(rotation),
-        )).id();
-        registry.bodies.push(entity);
+        ));
     }
 }
 
 const FRAMING_HEIGHT_M: f32 = 10.0;
 const FRAMING_BACK_M: f32 = 14.0;
 
-pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut cameras: Query<&mut Transform, With<Camera3d>>) {
+pub fn frame_globe_camera(globe: Res<GlobeWorld>, focus: Res<GlobeFocus>, mut cameras: Query<(&mut Transform, &mut Projection), With<Camera3d>>) {
     let up = (focus.0 - globe.center).normalize_or_zero();
     let eye = focus.0 + up * FRAMING_HEIGHT_M + up.any_orthogonal_vector() * FRAMING_BACK_M;
-    for mut transform in &mut cameras {
+    for (mut transform, mut projection) in &mut cameras {
         *transform = Transform::from_translation(eye).looking_at(focus.0, up);
+        if let Projection::Perspective(perspective) = &mut *projection {
+            perspective.far = globe.radius * CAMERA_FAR_RADII;
+        }
     }
 }
 
@@ -437,11 +374,13 @@ fn census_freeze(time: Res<Time<Virtual>>, bodies: Query<&Position, With<GlobeBo
     }
 }
 
-fn census_capture(mut commands: Commands, census: Res<CensusMode>, mut frames: Local<u32>) {
+fn census_capture(mut commands: Commands, census: Res<CensusMode>, lod: Option<Res<PlanetLodStats>>, mut frames: Local<u32>, mut captured: Local<bool>) {
     *frames += 1;
-    if *frames == CENSUS_CAPTURE_FRAME {
+    let streaming = lod.is_some_and(|stats| stats.tasks_in_flight > 0);
+    if *frames >= CENSUS_CAPTURE_FRAME && !streaming && !*captured {
+        *captured = true;
         commands.spawn(Screenshot::primary_window()).observe(save_to_disk(census.out.clone()));
-        eprintln!("census: captured frame {} to {}", CENSUS_CAPTURE_FRAME, census.out.display());
+        eprintln!("census: captured frame {} to {}", *frames, census.out.display());
     }
 }
 
@@ -454,70 +393,6 @@ fn update_focus(bodies: Query<&Position, With<GlobeBody>>, mut focus: ResMut<Glo
         *latched = census.is_some();
         if *latched {
             eprintln!("census: camera latched at {:?}", focus.0);
-        }
-    }
-}
-
-fn sync_chunks(
-    mut commands: Commands,
-    globe: Res<GlobeWorld>,
-    focus: Res<GlobeFocus>,
-    mut registry: ResMut<GlobeRegistry>,
-    mut last_focus: Local<Option<Vec3>>,
-    mut meshes: Option<ResMut<Assets<Mesh>>>,
-    mut materials: Option<ResMut<Assets<StandardMaterial>>>,
-    mut material: Local<Option<Handle<StandardMaterial>>>,
-    vegetation: Option<Res<crate::vegetation::VegetationAssets>>,
-) {
-    let step = globe.radius * globe.chunk_span;
-    if !registry.chunks.is_empty() && last_focus.is_some_and(|previous| previous.distance(focus.0) < step * 0.5) {
-        return;
-    }
-    *last_focus = Some(focus.0);
-    let (rows, columns) = globe.grid();
-    for row in 0..rows {
-        for column in 0..columns {
-            let key = (row, column);
-            let bounds = globe.cell_bounds(row, column);
-            let center = globe.surface_position((bounds.0 + bounds.1) * 0.5, (bounds.2 + bounds.3) * 0.5, 0.0);
-            let inside = center.distance(focus.0) <= globe.stream_radius;
-            match (inside, registry.chunks.get(&key).copied()) {
-                (true, None) => {
-                    let geometry = globe.chunk_geometry(bounds);
-                    let vertices = geometry.positions.len();
-                    let normals: Vec<[f32; 3]> = geometry.positions.iter().map(|p| (*p - globe.center).normalize_or_zero().to_array()).collect();
-                    let positions: Vec<[f32; 3]> = geometry.positions.iter().map(|p| p.to_array()).collect();
-                    let mut entity = commands.spawn((
-                        GlobeChunk { vertices, max_elevation: geometry.max_elevation },
-                        RigidBody::Static,
-                        Collider::trimesh(geometry.positions.clone(), geometry.indices.clone()),
-                        Transform::default(),
-                        GlobalTransform::default(),
-                    ));
-                    if let Some(meshes) = meshes.as_mut() {
-                        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
-                        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-                        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-                        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, geometry.colors.clone());
-                        mesh.insert_indices(Indices::U32(geometry.indices.iter().flatten().copied().collect()));
-                        entity.insert(Mesh3d(meshes.add(mesh)));
-                    }
-                    if let Some(materials) = materials.as_mut() {
-                        let handle = material.get_or_insert_with(|| materials.add(StandardMaterial { base_color: Color::WHITE, perceptual_roughness: 0.95, ..default() })).clone();
-                        entity.insert(MeshMaterial3d(handle));
-                    }
-                    let chunk = entity.id();
-                    registry.chunks.insert(key, chunk);
-                    if let Some(assets) = vegetation.as_deref() {
-                        crate::vegetation::spawn_chunk_trees(&mut commands, &globe, assets, chunk, key, bounds);
-                    }
-                }
-                (false, Some(entity)) => {
-                    commands.entity(entity).despawn();
-                    registry.chunks.remove(&key);
-                }
-                _ => {}
-            }
         }
     }
 }
@@ -563,17 +438,18 @@ fn settle_bodies(
 
 fn read_summary(
     globe: Res<GlobeWorld>,
-    registry: Res<GlobeRegistry>,
     focus: Res<GlobeFocus>,
-    chunks: Query<&GlobeChunk>,
+    lod: Option<Res<PlanetLodStats>>,
     bodies: Query<&GlobeBody>,
     positions: Query<&Position, With<GlobeBody>>,
     mut summary: ResMut<GlobeSummary>,
 ) {
-    summary.chunks = registry.chunks.len();
+    let lod = lod.as_deref();
+    summary.chunks = lod.map_or(0, |stats| stats.live_patches);
     summary.bodies = bodies.iter().count();
-    summary.vertices = chunks.iter().map(|chunk| chunk.vertices).sum();
-    summary.max_elevation = chunks.iter().map(|chunk| chunk.max_elevation).fold(0.0_f32, f32::max);
+    summary.vertices = lod.map_or(0, |stats| stats.vertices);
+    summary.min_elevation = lod.map_or(0.0, |stats| stats.min_elevation);
+    summary.max_elevation = lod.map_or(0.0, |stats| stats.max_elevation);
     summary.altitude = bodies.iter().next().map(|body| body.altitude).unwrap_or(0.0);
     summary.body_radius = positions.iter().next().map(|p| p.0.distance(globe.center)).unwrap_or(0.0);
     summary.gravity_at_body = positions.iter().next().map(|p| globe.gravity_vector(p.0)).unwrap_or(Vec3::ZERO);
@@ -582,7 +458,7 @@ fn read_summary(
     summary.radius = globe.radius;
 }
 
-pub fn dispatch(globe: &mut GlobeWorld, registry: &GlobeRegistry, op: &str, payload: &Map<String, Value>) -> Value {
+pub fn dispatch(globe: &mut GlobeWorld, summary: &GlobeSummary, op: &str, payload: &Map<String, Value>) -> Value {
     match op {
         "configure" => {
             globe.from_json(&Value::Object(payload.clone()));
@@ -608,16 +484,7 @@ pub fn dispatch(globe: &mut GlobeWorld, registry: &GlobeRegistry, op: &str, payl
             let lon = number(payload.get("longitude").or_else(|| payload.get("lon")).or_else(|| payload.get("x")), 0.0);
             json!({ "height": globe.elevation(lat, lon), "latitude": lat, "longitude": globe.wrap_lon(lon) })
         }
-        "chunk" => {
-            let lat = payload.get("lat").and_then(Value::as_i64).unwrap_or(0) as i32;
-            let lon = payload.get("lon").and_then(Value::as_i64).unwrap_or(0) as i32;
-            Value::Object(globe.chunk(lat, lon))
-        }
-        "chunks" => {
-            let limit = payload.get("limit").and_then(Value::as_u64).unwrap_or(16).min(256) as i32;
-            let values: Vec<Value> = (-limit / 2..limit / 2).map(|i| Value::Object(globe.chunk(0, i))).collect();
-            json!({ "count": registry.chunks.len(), "sample": values })
-        }
+        "chunks" => json!({ "count": summary.chunks, "vertices": summary.vertices, "minElevation": summary.min_elevation, "maxElevation": summary.max_elevation }),
         "gravity" => {
             let position = json_vec3(payload.get("position"));
             vec_json(globe.gravity_vector(position))
@@ -654,8 +521,7 @@ pub fn provenance() -> BTreeMap<&'static str, &'static str> {
         ("globeToCartesian", "Bevy math Vec3/Quat spherical conversion"),
         ("globeToSpherical", "Bevy math Vec3 spherical conversion"),
         ("globeElevation", "Bevy ECS planet height from the spoint height spec"),
-        ("globeChunk", "Bevy ECS procedural GlobeChunk entities with Bevy Mesh and Avian trimesh"),
-        ("globeChunks", "Bevy ECS procedural GlobeChunk entities"),
+        ("globeChunks", "Bevy ECS PlanetLodStats from the async quadtree patch streamer"),
         ("globeGravity", "Bevy ECS radial gravity system"),
         ("globeOrientation", "Bevy math Quat/Transform"),
         ("globeNavigation", "Bevy math Vec3 great-circle wraparound"),
@@ -672,6 +538,15 @@ mod tests {
         GlobeWorld::default()
     }
 
+    fn spoint_globe(config: Option<&Value>) -> GlobeWorld {
+        let mut globe = GlobeWorld { radius: 6360.0, seed: 0x5eed_1234, anchor_dir: [0.0, 1.0, 0.0], ..GlobeWorld::default() };
+        if let Some(config) = config {
+            globe.from_json(config);
+        }
+        globe.planet = Arc::new(Planet::new(&globe.planet_config()));
+        globe
+    }
+
     #[test]
     fn elevation_is_deterministic_and_bounded() {
         let g = globe();
@@ -684,8 +559,17 @@ mod tests {
     }
 
     #[test]
-    fn default_radius_is_the_spoint_design_radius() {
-        assert_eq!(globe().radius, 6360.0);
+    fn default_radius_is_the_preset_radius() {
+        assert_eq!(globe().radius, 63_600.0);
+    }
+
+    #[test]
+    fn default_planet_is_the_preset() {
+        let globe = globe();
+        assert_eq!(globe.seed, 1337);
+        assert_eq!(globe.max_level, 13);
+        assert_eq!(globe.anchor_dir, [-0.641, 0.2558, 0.7237]);
+        assert!((globe.planet.relief(f64::from(globe.radius)) - 0.001).abs() < 1e-12);
     }
 
     #[test]
@@ -699,7 +583,7 @@ mod tests {
     #[test]
     fn surface_along_direction_matches_the_spoint_solve() {
         let fixture: serde_json::Value = serde_json::from_str(include_str!("../testdata/parity/spoint-surface.json")).unwrap();
-        let globe = globe();
+        let globe = spoint_globe(None);
         assert_eq!(fixture["seed"].as_u64(), Some(globe.seed));
         assert_eq!(fixture["radius"].as_str().unwrap().parse::<f32>().unwrap(), globe.radius);
         let worst = fixture["points"]
@@ -754,7 +638,7 @@ mod tests {
     fn default_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "default");
-        let globe = GlobeWorld::default();
+        let globe = spoint_globe(None);
         assert_eq!(globe.seed, fixture["seed"].as_u64().unwrap());
         assert_eq!(f64::from(globe.radius), case["config"]["radius"].as_f64().unwrap());
         let worst = worst_elevation_difference(&globe, &fixture, case);
@@ -766,7 +650,7 @@ mod tests {
     fn carved_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "carves");
-        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let globe = spoint_globe(Some(&case["config"]));
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
         assert!(worst <= f64::from(ulp), "carved elevation differs from spoint by up to {worst} m, one f32 ulp at the radius is {ulp} m");
@@ -776,7 +660,7 @@ mod tests {
     fn hpf_tex_res_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "hpfTexRes");
-        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let globe = spoint_globe(Some(&case["config"]));
         assert_eq!(globe.hpf_tex_res as f64, case["config"]["hpfTexRes"].as_f64().unwrap());
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
@@ -807,7 +691,7 @@ mod tests {
     fn hash_version_one_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "hashVersion1");
-        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let globe = spoint_globe(Some(&case["config"]));
         assert_eq!(globe.hash_version, HashVersion::Float);
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
@@ -818,7 +702,7 @@ mod tests {
     fn relief_scale_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "reliefScale");
-        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let globe = spoint_globe(Some(&case["config"]));
         assert_eq!(globe.relief_scale, case["config"]["reliefScale"].as_f64());
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
@@ -898,7 +782,7 @@ mod tests {
     fn carve_centre_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "carveCentre");
-        let globe = GlobeWorld::from_value(Some(&case["config"]));
+        let globe = spoint_globe(Some(&case["config"]));
         assert_eq!(globe.carves.len(), 2);
         let worst = worst_elevation_difference(&globe, &fixture, case);
         let ulp = f32::from_bits(globe.radius.to_bits() + 1) - globe.radius;
@@ -924,17 +808,69 @@ mod tests {
         assert!((q * Vec3::NEG_Z).dot(up).abs() < 1e-4);
     }
 
+    const BODY_SPOTS: [(f32, f32); 2] = [(55.0, 20.0), (-35.0, 140.0)];
+    const DROP_HEIGHT_M: f32 = 3.0;
+    const LATTICE_TOLERANCE_M: f64 = 0.25;
+    const CHART_TOLERANCE_M: f64 = 0.05;
+    const SETTLE_FRAMES: usize = 240;
+    const COLLIDER_WAIT: std::time::Duration = std::time::Duration::from_secs(120);
+    const FRAME_PAUSE: std::time::Duration = std::time::Duration::from_millis(5);
+
+    fn physics_app(globe: GlobeWorld) -> App {
+        let mut app = App::new();
+        app.add_plugins((bevy::MinimalPlugins, bevy::transform::TransformPlugin, avian3d::prelude::PhysicsPlugins::default()));
+        app.insert_resource(Time::<Fixed>::from_hz(60.0)).insert_resource(TimeUpdateStrategy::ManualDuration(census_frame()));
+        app.insert_resource(globe);
+        register(&mut app);
+        app.finish();
+        app.cleanup();
+        app
+    }
+
     #[test]
-    fn chunk_grid_covers_sphere_and_geometry_faces_outward() {
-        let g = globe();
-        let (rows, columns) = g.grid();
-        assert!(rows >= 2 && columns >= 2);
-        let geometry = g.chunk_geometry(g.cell_bounds(rows / 2, columns / 2));
-        assert_eq!(geometry.positions.len(), (g.subdivisions as usize + 1).pow(2));
-        for triangle in &geometry.indices {
-            let p0 = geometry.positions[triangle[0] as usize];
-            let normal = (geometry.positions[triangle[1] as usize] - p0).cross(geometry.positions[triangle[2] as usize] - p0);
-            assert!(normal.dot(p0 - g.center) >= 0.0);
+    fn chart_points_lie_on_the_planet_surface_wherever_the_chart_is_anchored() {
+        let globe = globe();
+        let radius = f64::from(globe.radius);
+        for (latitude, longitude) in BODY_SPOTS {
+            let body = globe.surface_position(latitude, longitude, 0.0);
+            let chart = chart_at(&globe.planet, globe.center, radius, globe.relief_scale, body);
+            let pose = chart.pose;
+            assert!((pose.rotation * Vec3::Y).dot(globe.lat_lon_to_unit(latitude, longitude)) > 0.9999);
+            for (x, z) in [(0.0, 0.0), (40.0, -25.0), (-90.0, 60.0)] {
+                let local = Vec3::new(x as f32, (chart.height)(x, z) as f32, z as f32);
+                let world = pose.transform_point(local) - globe.center;
+                let direction = world.as_dvec3().normalize().to_array();
+                let surface = globe.planet.height(direction, radius);
+                let error = f64::from(world.length()) - radius - surface;
+                assert!(error.abs() < CHART_TOLERANCE_M, "chart point ({x}, {z}) at {latitude}, {longitude} is {error} m off the surface");
+            }
         }
+    }
+
+    #[test]
+    fn bodies_dropped_at_two_latitudes_settle_on_the_planet_surface() {
+        let mut app = physics_app(GlobeWorld { bodies: BODY_SPOTS.to_vec(), drop_height: DROP_HEIGHT_M, ..GlobeWorld::default() });
+        let started = std::time::Instant::now();
+        while app.world_mut().query::<&crate::planet_lod::collider::GroundField>().iter(app.world()).count() < BODY_SPOTS.len() {
+            assert!(started.elapsed() < COLLIDER_WAIT, "no heightfield collider appeared within {COLLIDER_WAIT:?}");
+            app.update();
+            std::thread::sleep(FRAME_PAUSE);
+        }
+        for _ in 0..SETTLE_FRAMES {
+            app.update();
+        }
+        let globe = app.world().resource::<GlobeWorld>().clone();
+        let radius = f64::from(globe.radius);
+        let mut settled = app.world_mut().query::<(&Position, &crate::planet_lod::collider::GroundField, &GlobeBody)>();
+        for (position, field, body) in settled.iter(app.world()) {
+            let (latitude, longitude) = (body.latitude, body.longitude);
+            let offset = position.0 - globe.center;
+            let surface = globe.planet.height(offset.as_dvec3().normalize().to_array(), radius);
+            let resting_height = f64::from(offset.length() - globe.body_altitude) - radius;
+            assert!((resting_height - surface).abs() < LATTICE_TOLERANCE_M, "body at {latitude}, {longitude} rests {resting_height} m above the radius, the planet surface is {surface} m");
+            assert!((field.pose.rotation * Vec3::Y).dot(offset.normalize()) > 0.9999, "the heightfield at {latitude}, {longitude} is not oriented along the local up");
+        }
+        let colliders = app.world_mut().query_filtered::<(), (With<Collider>, Without<GlobeBody>)>().iter(app.world()).count();
+        assert_eq!(colliders, BODY_SPOTS.len());
     }
 }

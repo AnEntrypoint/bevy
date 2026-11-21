@@ -221,7 +221,6 @@ pub fn run(directory: &str, place: Option<&str>) -> Result<(), String> {
     if let Some(globe) = place_def.config.extra.get("globe") {
         app.insert_resource(crate::globe::GlobeWorld::from_value(Some(globe)));
         crate::globe::register(&mut app);
-        crate::vegetation::register(&mut app);
         app.add_systems(Update, crate::globe::frame_globe_camera);
         crate::globe::add_census_systems(&mut app);
     app.add_systems(Update, hide_live_text.run_if(bevy::prelude::resource_exists::<crate::globe::CensusMode>));

@@ -14,6 +14,7 @@ const MAIN_THREAD_NAME: &str = "main";
 
 static MAIN_THREAD_BUILDS: AtomicUsize = AtomicUsize::new(0);
 
+#[cfg(test)]
 pub fn main_thread_collider_builds() -> usize {
     MAIN_THREAD_BUILDS.load(Ordering::SeqCst)
 }
@@ -74,26 +75,33 @@ pub fn sample_field(lattice: &Lattice, body: [f64; 2], height: &dyn Fn(f64, f64)
     Field { n: lattice.n, spacing: lattice.spacing, origin, heights }
 }
 
+pub struct Chart {
+    pub pose: Transform,
+    pub body: [f64; 2],
+    pub height: Box<dyn Fn(f64, f64) -> f64>,
+}
+
 pub struct BuiltField {
     pub collider: Collider,
     pub centre: [f64; 2],
+    pub pose: Transform,
 }
 
-pub fn build_collider(lattice: &Lattice, body: [f64; 2], height: &dyn Fn(f64, f64) -> f64) -> BuiltField {
+pub fn build_collider(lattice: &Lattice, chart: Chart) -> BuiltField {
     if std::thread::current().name() == Some(MAIN_THREAD_NAME) {
         MAIN_THREAD_BUILDS.fetch_add(1, Ordering::SeqCst);
     }
-    let field = sample_field(lattice, body, height);
+    let field = sample_field(lattice, chart.body, chart.height.as_ref());
     let columns_along_x: Vec<Vec<f32>> = (0..field.n).map(|x| (0..field.n).map(|z| field.heights[z * field.n + x]).collect()).collect();
     let collider = Collider::heightfield(columns_along_x, Vec3::new(lattice.extent as f32, 1.0, lattice.extent as f32));
-    BuiltField { collider, centre: field.centre(lattice) }
+    BuiltField { collider, centre: field.centre(lattice), pose: chart.pose }
 }
 
 #[derive(Component)]
 pub struct NearBody;
 
 #[derive(Resource, Clone)]
-pub struct ColliderGround(pub Arc<dyn Fn(f64, f64) -> f64 + Send + Sync>);
+pub struct ColliderGround(pub Arc<dyn Fn(Vec3) -> Chart + Send + Sync>);
 
 #[derive(Resource, Default)]
 pub struct ColliderStats {
@@ -109,14 +117,16 @@ struct PendingBuild(Task<BuiltField>);
 #[derive(Component)]
 pub struct GroundField {
     pub centre: [f64; 2],
+    pub pose: Transform,
     pub collider_entity: Entity,
 }
 
 #[derive(Component)]
 pub struct GroundFieldOf(pub Entity);
 
-fn body_xz(transform: &Transform) -> [f64; 2] {
-    [transform.translation.x as f64, transform.translation.z as f64]
+fn chart_xz(pose: &Transform, world: Vec3) -> [f64; 2] {
+    let local = pose.compute_affine().inverse().transform_point3(world);
+    [local.x as f64, local.z as f64]
 }
 
 fn chebyshev(a: [f64; 2], b: [f64; 2]) -> f64 {
@@ -131,13 +141,13 @@ fn start_builds(
     bodies: Query<(Entity, &Transform, Option<&GroundField>), (With<NearBody>, Without<PendingBuild>)>,
 ) {
     for (entity, transform, field) in &bodies {
-        let body = body_xz(transform);
-        let outside_keep_radius = field.is_none_or(|f| chebyshev(body, f.centre) > lattice.0.keep_radius());
+        let body = transform.translation;
+        let outside_keep_radius = field.is_none_or(|f| chebyshev(chart_xz(&f.pose, body), f.centre) > lattice.0.keep_radius());
         if !outside_keep_radius {
             continue;
         }
         let (lattice, ground) = (lattice.0, ground.clone());
-        let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, body, ground.0.as_ref()) });
+        let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, (ground.0)(body)) });
         commands.entity(entity).insert(PendingBuild(task));
         stats.builds_started += 1;
     }
@@ -148,7 +158,7 @@ fn finish_builds(mut commands: Commands, mut pending: Query<(Entity, &mut Pendin
         let Some(built) = check_ready(&mut build.0) else {
             continue;
         };
-        let transform = Transform::from_xyz(built.centre[0] as f32, 0.0, built.centre[1] as f32);
+        let transform = built.pose * Transform::from_xyz(built.centre[0] as f32, 0.0, built.centre[1] as f32);
         let collider_entity = match field {
             Some(f) => {
                 commands.entity(f.collider_entity).insert((built.collider, transform));
@@ -156,7 +166,7 @@ fn finish_builds(mut commands: Commands, mut pending: Query<(Entity, &mut Pendin
             }
             None => commands.spawn((RigidBody::Static, built.collider, transform, GroundFieldOf(entity))).id(),
         };
-        commands.entity(entity).remove::<PendingBuild>().insert(GroundField { centre: built.centre, collider_entity });
+        commands.entity(entity).remove::<PendingBuild>().insert(GroundField { centre: built.centre, pose: built.pose, collider_entity });
     }
 }
 
@@ -249,12 +259,20 @@ mod tests {
         }
     }
 
+    fn flat_ground(ground: impl Fn(f64, f64) -> f64 + Send + Sync + 'static) -> ColliderGround {
+        let ground = Arc::new(ground);
+        ColliderGround(Arc::new(move |body: Vec3| {
+            let ground = ground.clone();
+            Chart { pose: Transform::IDENTITY, body: [body.x as f64, body.z as f64], height: Box::new(move |x, z| ground(x, z)) }
+        }))
+    }
+
     fn app_with_body(ground: impl Fn(f64, f64) -> f64 + Send + Sync + 'static, body: Vec3) -> (App, Entity) {
         let mut app = App::new();
         app.edit_schedule(Update, |schedule| {
             schedule.set_executor(SingleThreadedExecutor::new());
         });
-        app.add_plugins((MinimalPlugins, ColliderStreamPlugin)).insert_resource(ColliderGround(Arc::new(ground)));
+        app.add_plugins((MinimalPlugins, ColliderStreamPlugin)).insert_resource(flat_ground(ground));
         let entity = app.world_mut().spawn((NearBody, Transform::from_translation(body))).id();
         (app, entity)
     }

@@ -1436,7 +1436,7 @@ impl Host {
             "nativeNoise" => self.native_noise(&payload),
             "nativeFeatureCounts" => self.native_feature_counts(),
             "vibeSnapshot" => self.native_vibe_snapshot(&payload),
-            "globeConfigure" | "globeInfo" | "globeToCartesian" | "globeToSpherical" | "globeElevation" | "globeChunk" | "globeChunks" | "globeGravity" | "globeOrientation" | "globeNavigation" => self.native_globe(op, &payload),
+            "globeConfigure" | "globeInfo" | "globeToCartesian" | "globeToSpherical" | "globeElevation" | "globeChunks" | "globeGravity" | "globeOrientation" | "globeNavigation" => self.native_globe(op, &payload),
             _ => String::new(),
         }
     }
@@ -1444,10 +1444,10 @@ impl Host {
     fn native_globe(&mut self, op: &str, payload: &Json) -> String {
         let command = op.strip_prefix("globe").unwrap_or("info");
         let data = payload.as_object().cloned().unwrap_or_default();
-        let registry = self.world().resource::<crate::globe::GlobeRegistry>().clone();
+        let summary = self.world().resource::<crate::globe::GlobeSummary>().clone();
         let value = {
             let mut globe = self.world_mut().resource_mut::<crate::globe::GlobeWorld>();
-            crate::globe::dispatch(&mut globe, &registry, command, &data)
+            crate::globe::dispatch(&mut globe, &summary, command, &data)
         };
         json_string(&value)
     }
@@ -2347,7 +2347,7 @@ fn host_provenance(op: &str) -> &'static str {
         "raycast" | "raycastAll" | "overlapPoint" | "overlapSegment" | "traverseCheck" | "jumpCheck" | "inputRay" | "setJoint" | "setRagdoll" | "setAnim" | "getAnim" | "setAudio" | "getAudio" | "enterPlace" | "cross" | "readField" | "terrainHeight" | "waterLevel" | "terrainNormal" | "fieldsJson" | "worldToScreen" | "cameraJson" | "placesJson" | "placeConfigJson" | "splineLength" | "sampleSpline" | "projectToSpline" | "setInput" | "placeObjects" | "spawnPlayer" | "vibeSnapshot" => "Bevy ECS world query/state",
         "physicsWorldCreate" | "physicsWorldAdd" | "physicsWorldStep" | "physicsWorldSave" | "physicsWorldRestore" | "voxelPart" | "voxelSet" | "voxelJson" | "fxCreate" | "fxState" | "tradeReceipt" | "dmNotify" | "jobRecord" | "timing" | "viewConstant" | "featureProbe" | "featureRandom" => "native FeatureState",
         "nativeRandom" | "nativeMath" | "nativeVector" | "nativeNoise" | "nativeFeatureCounts" => "typed Bevy ECS resource",
-        "globeConfigure" | "globeInfo" | "globeToCartesian" | "globeToSpherical" | "globeElevation" | "globeChunk" | "globeChunks" | "globeGravity" | "globeOrientation" | "globeNavigation" | "globeNavigate" | "globeWrap" | "globeTerrainHeight" => "Bevy ECS spherical procedural world",
+        "globeConfigure" | "globeInfo" | "globeToCartesian" | "globeToSpherical" | "globeElevation" | "globeChunks" | "globeGravity" | "globeOrientation" | "globeNavigation" | "globeNavigate" | "globeWrap" | "globeTerrainHeight" => "Bevy ECS spherical procedural world",
         "fileRead" | "fileWrite" | "fileDelete" | "fileList" => "local filesystem shim",
         "commit" | "now" => "deterministic local shim",
         _ => "prelude local shim",
@@ -3912,7 +3912,7 @@ fn builtin_exports(key: &str) -> &'static [&'static str] {
         "tsl" => &["float", "vec2", "vec3", "vec4", "color", "int", "mix", "exp2", "cameraViewMatrix", "smoothstep", "step", "clamp", "min", "max", "abs", "floor", "ceil", "fract", "sign", "mod", "negate", "pow", "sqrt", "exp", "log", "sin", "cos", "tan", "atan", "atan2", "length", "distance", "dot", "cross", "normalize", "reflect", "refract", "oneMinus", "saturate", "remap", "remapClamp", "mx_noise_float", "mx_fractal_noise_float", "mx_worley_noise_float", "mx_noise_vec3", "hash", "rand", "oscSine", "oscTriangle", "oscSquare", "oscSawtooth", "uv", "positionLocal", "positionMorphed", "positionWorld", "positionView", "normalLocal", "normalWorld", "cameraPosition", "screenUV", "screenSize", "time", "vertexColor", "attribute", "instanceIndex", "vertexIndex", "frontFacing", "sceneDepth", "sceneDepthAt", "depthFade", "viewportSharedTexture", "materialColor", "materialOpacity", "materialEmissive", "audioLevel", "audioSpectrum", "billboarding", "Fn", "select", "If", "Loop", "texture", "textureSize", "textureLoad", "textureLevel", "texture3D", "convertToTexture", "PI", "PI2", "EPSILON", "wgslFn", "instancedArray", "deltaTime", "textureStore", "minFilter", "workgroupArray", "workgroupBarrier", "invocationLocalIndex", "workgroupId", "localId", "atomicAdd", "atomicSub", "atomicMax", "atomicMin", "atomicAnd", "atomicOr", "atomicXor", "atomicStore", "atomicLoad", "objectWorldMatrix", "objectPosition", "objectScale", "objectDirection"],
         "block-shape" => &["block", "shape"],
         "authoring" => &["define", "tool"],
-        "globe" | "planet" | "spherical" => &["configure", "info", "toCartesian", "toSpherical", "elevation", "terrainHeight", "chunk", "chunks", "gravity", "orientation", "navigation", "navigate", "wrap"],
+        "globe" | "planet" | "spherical" => &["configure", "info", "toCartesian", "toSpherical", "elevation", "terrainHeight", "chunks", "gravity", "orientation", "navigation", "navigate", "wrap"],
         _ => &[],
     }
 }
