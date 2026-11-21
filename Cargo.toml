@@ -10,7 +10,7 @@ exclude = ["wasm-viewer"]
 resolver = "3"
 
 [dependencies]
-bevy = { version = "0.20", default-features = false, features = ["multi_threaded", "bevy_log", "bevy_state", "bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_pbr", "bevy_ui", "bevy_ui_render", "bevy_window", "bevy_winit", "bevy_gizmos_render", "tonemapping_luts", "zstd_rust", "x11", "png", "std", "async_executor", "bevy_gltf", "bevy_world_serialization", "reflect_auto_register", "ktx2", "basis-universal", "default_font"] }
+bevy = { version = "0.20", default-features = false, features = ["multi_threaded", "bevy_log", "bevy_state", "bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_pbr", "bevy_ui", "bevy_ui_render", "bevy_window", "bevy_winit", "bevy_gizmos_render", "tonemapping_luts", "zstd_rust", "x11", "png", "jpeg", "std", "async_executor", "bevy_gltf", "bevy_world_serialization", "reflect_auto_register", "ktx2", "basis-universal", "default_font"] }
 avian3d = { version = "0.8", default-features = false, features = ["3d", "parry-f32", "enhanced-determinism", "parallel", "serialize", "bevy_diagnostic"] }
 lightyear = { version = "0.31", default-features = false, features = ["std", "client", "server", "replication", "prediction", "interpolation", "leafwing", "avian3d", "raw_connection", "udp"] }
 leafwing-input-manager = { version = "0.22", default-features = false }
