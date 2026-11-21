@@ -1,0 +1,786 @@
+{
+  "spoint": "5f43c86c",
+  "combat": {
+    "spawnInvulnMs": 1500
+  },
+  "elements": [
+    {
+      "key": "tps-cross",
+      "parent": "tps-juice",
+      "left": "50%",
+      "top": "50%",
+      "width": "18px",
+      "height": "18px",
+      "transform": {
+        "translate": [
+          "-50%",
+          "-50%"
+        ],
+        "rotate": 0,
+        "scale": 1
+      },
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-cross/bar",
+      "parent": "tps-cross",
+      "left": "8px",
+      "top": "0px",
+      "width": "2px",
+      "height": "18px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": [
+        255,
+        255,
+        255,
+        0.65
+      ],
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-cross/bar",
+      "parent": "tps-cross",
+      "left": "0px",
+      "top": "8px",
+      "width": "18px",
+      "height": "2px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": [
+        255,
+        255,
+        255,
+        0.65
+      ],
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-hit",
+      "parent": "tps-juice",
+      "left": "50%",
+      "top": "50%",
+      "width": "0px",
+      "height": "0px",
+      "transform": {
+        "translate": [
+          "-50%",
+          "-50%"
+        ],
+        "rotate": 45,
+        "scale": null
+      },
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "hm",
+      "parent": "tps-hit",
+      "left": "-1px",
+      "top": "-13px",
+      "width": "2px",
+      "height": "8px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "hm",
+      "parent": "tps-hit",
+      "left": "-1px",
+      "top": "5px",
+      "width": "2px",
+      "height": "8px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "hm",
+      "parent": "tps-hit",
+      "left": "-13px",
+      "top": "-1px",
+      "width": "8px",
+      "height": "2px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "hm",
+      "parent": "tps-hit",
+      "left": "5px",
+      "top": "-1px",
+      "width": "8px",
+      "height": "2px",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-kill",
+      "parent": "tps-juice",
+      "left": "50%",
+      "top": "36%",
+      "width": "auto",
+      "height": "auto",
+      "transform": {
+        "translate": [
+          "-50%",
+          "-50%"
+        ],
+        "rotate": 0,
+        "scale": null
+      },
+      "fontSize": 34,
+      "color": [
+        255,
+        204,
+        51,
+        1
+      ],
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-dmg-dealt",
+      "parent": "tps-juice",
+      "left": "52%",
+      "top": "47%",
+      "width": "auto",
+      "height": "auto",
+      "transform": null,
+      "fontSize": 17,
+      "color": [
+        255,
+        226,
+        122,
+        1
+      ],
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-dmg-taken",
+      "parent": "tps-juice",
+      "left": "50%",
+      "top": "41%",
+      "width": "auto",
+      "height": "auto",
+      "transform": {
+        "translate": [
+          "-50%",
+          "-50%"
+        ],
+        "rotate": 0,
+        "scale": null
+      },
+      "fontSize": 24,
+      "color": [
+        255,
+        122,
+        122,
+        1
+      ],
+      "background": null,
+      "gradient": null,
+      "boxShadow": null,
+      "boxShadowColor": null
+    },
+    {
+      "key": "tps-shield",
+      "parent": "tps-juice",
+      "left": "0px",
+      "top": "0px",
+      "width": "100%",
+      "height": "100%",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": null,
+      "boxShadow": "inset 0 0 90px 18px rgba(80,180,255,0.45)",
+      "boxShadowColor": [
+        80,
+        180,
+        255,
+        0.45
+      ]
+    },
+    {
+      "key": "tps-vignette",
+      "parent": "tps-juice",
+      "left": "0px",
+      "top": "0px",
+      "width": "100%",
+      "height": "100%",
+      "transform": null,
+      "fontSize": null,
+      "color": null,
+      "background": null,
+      "gradient": {
+        "shape": "ellipse",
+        "stops": [
+          {
+            "color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "at": "55%"
+          },
+          {
+            "color": [
+              160,
+              0,
+              0,
+              0.35
+            ],
+            "at": "100%"
+          }
+        ]
+      },
+      "boxShadow": "inset 0 0 140px 40px rgba(200,0,0,0.9)",
+      "boxShadowColor": [
+        200,
+        0,
+        0,
+        0.9
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "name": "idle",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "hit-marker-rtt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 40,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 99900,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "hit-marker-rtt-pad",
+      "inputs": {
+        "now": 100000,
+        "rtt": 40,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 99830,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "headshot-marker",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 99800,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "1",
+        "hitMarkBackgrounds": [
+          "#ffcc33",
+          "#ffcc33",
+          "#ffcc33",
+          "#ffcc33"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "kill-multi-rtt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 300,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 99000,
+          "streak": 4,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "MULTI KILL",
+        "killOpacity": "1",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "kill-triple-expired",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 98400,
+          "streak": 3,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "kill-confirm-cap",
+      "inputs": {
+        "now": 100000,
+        "rtt": 2000,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 97700,
+          "streak": 1,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "recoil-on",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 99900,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1.6)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "dmg-dealt",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 99800,
+          "lastDamageDealt": 25,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "+25",
+        "dmgDealtOpacity": "1",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "dmg-taken-low-hp",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 25,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 99700,
+          "lastDamageTaken": 12,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "-12",
+        "dmgTakenOpacity": "1",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.1490990010630236"
+      }
+    },
+    {
+      "name": "dmg-flash",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 99900,
+          "lastDamageTaken": 12,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "-12",
+        "dmgTakenOpacity": "1",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.32"
+      }
+    },
+    {
+      "name": "shield-on",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 100,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 101000
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0.39999999999999997",
+        "vignetteOpacity": "0"
+      }
+    },
+    {
+      "name": "low-hp-vignette",
+      "inputs": {
+        "now": 100000,
+        "rtt": 0,
+        "hp": 10,
+        "tps": {
+          "lastShootTime": 0,
+          "hitMarkerTime": 0,
+          "headshotMarkerTime": 0,
+          "killTime": 0,
+          "streak": 0,
+          "dmgDealtTime": 0,
+          "lastDamageDealt": 0,
+          "lastHitTime": 0,
+          "lastDamageTaken": 0,
+          "spawnShieldUntil": 0
+        }
+      },
+      "outputs": {
+        "crosshairTransform": "translate(-50%,-50%) scale(1)",
+        "hitOpacity": "0",
+        "hitMarkBackgrounds": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ],
+        "killText": "",
+        "killOpacity": "0",
+        "dmgDealtText": "",
+        "dmgDealtOpacity": "0",
+        "dmgTakenText": "",
+        "dmgTakenOpacity": "0",
+        "shieldOpacity": "0",
+        "vignetteOpacity": "0.1490990010630236"
+      }
+    }
+  ],
+  "spointStatusBefore": "",
+  "spointStatusAfter": ""
+}

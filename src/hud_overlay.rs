@@ -376,25 +376,218 @@ mod tests {
         }
     }
 
-    #[test]
-    fn hud_overlay_positions_match_spoint_css() {
-        let parts = render(HudFrame::default());
-        let at = |kind: HudElement| only(&parts, kind).clone();
-        let placed = [
-            (HudElement::Crosshair, 50.0, 50.0, true),
-            (HudElement::HitMarker, 50.0, 50.0, true),
-            (HudElement::Kill, 50.0, 36.0, true),
-            (HudElement::DmgDealt, 52.0, 47.0, false),
-            (HudElement::DmgTaken, 50.0, 41.0, true),
-        ];
-        for (kind, left, top, centered_on_point) in placed {
-            let part = at(kind);
-            assert_eq!(part.1, Val::Percent(left), "{kind:?}: left");
-            assert_eq!(part.2, Val::Percent(top), "{kind:?}: top");
-            let translation = part.3.map(|t| t.translation);
-            let want = if centered_on_point { Val2::percent(-50.0, -50.0) } else { Val2::default() };
-            assert_eq!(translation, Some(want), "{kind:?}: translate");
+    struct Snap {
+        kind: Option<HudElement>,
+        node: Node,
+        transform: Option<UiTransform>,
+        visibility: Option<Visibility>,
+        text: Option<String>,
+        font: Option<f32>,
+        text_color: Option<Color>,
+        background: Option<Color>,
+        gradient: Option<BackgroundGradient>,
+    }
+
+    fn snapshot(frame: HudFrame) -> Vec<Snap> {
+        let mut world = World::new();
+        world.run_system_once(spawn_overlay).unwrap();
+        world.insert_resource(frame);
+        world.run_system_once(update_hud).unwrap();
+        let mut query = world.query::<(
+            Option<&HudElement>,
+            &Node,
+            Option<&UiTransform>,
+            Option<&Visibility>,
+            Option<&Text>,
+            Option<&TextFont>,
+            Option<&TextColor>,
+            Option<&BackgroundColor>,
+            Option<&BackgroundGradient>,
+        )>();
+        query
+            .iter(&world)
+            .map(|(kind, node, transform, visibility, text, font, text_color, background, gradient)| Snap {
+                kind: kind.copied(),
+                node: node.clone(),
+                transform: transform.copied(),
+                visibility: visibility.copied(),
+                text: text.map(|t| t.0.clone()),
+                font: font.map(|f| match f.font_size {
+                    FontSize::Px(px) => px,
+                    _ => f32::NAN,
+                }),
+                text_color: text_color.map(|c| c.0),
+                background: background.map(|b| b.0),
+                gradient: gradient.cloned(),
+            })
+            .collect()
+    }
+
+    fn find_kind(snaps: &[Snap], kind: HudElement) -> &Snap {
+        snaps.iter().find(|s| s.kind == Some(kind)).unwrap()
+    }
+
+    fn kind_of(key: &str) -> HudElement {
+        match key {
+            "tps-cross" => HudElement::Crosshair,
+            "tps-hit" => HudElement::HitMarker,
+            "tps-kill" => HudElement::Kill,
+            "tps-dmg-dealt" => HudElement::DmgDealt,
+            "tps-dmg-taken" => HudElement::DmgTaken,
+            "tps-shield" => HudElement::Shield,
+            "tps-vignette" => HudElement::Vignette,
+            other => panic!("unknown overlay element {other}"),
         }
-        assert_eq!(at(HudElement::Kill).5.as_deref(), Some(""));
+    }
+
+    fn near(a: f64, b: f64) -> bool {
+        (a - b).abs() <= 1e-6
+    }
+
+    fn css_len(v: Val) -> String {
+        match v {
+            Val::Px(x) => format!("{x}px"),
+            Val::Percent(x) => format!("{x}%"),
+            Val::Auto => "auto".to_string(),
+            other => format!("{other:?}"),
+        }
+    }
+
+    fn rgb_matches(color: Color, want: &Value) -> bool {
+        let got = color.to_srgba();
+        let channels = [got.red, got.green, got.blue].map(|c| c as f64 * 255.0);
+        channels.iter().zip(want.as_array().unwrap()).all(|(g, w)| (g - number(w)).abs() < 0.5)
+    }
+
+    fn alpha_matches(color: Color, want: &Value) -> bool {
+        near(color.to_srgba().alpha as f64, number(&want[3]))
+    }
+
+    fn radial(snap: &Snap) -> &RadialGradient {
+        match &snap.gradient.as_ref().unwrap().0[0] {
+            Gradient::Radial(r) => r,
+            _ => panic!("radial gradient expected"),
+        }
+    }
+
+    fn last_stop_alpha(snap: &Snap) -> f64 {
+        radial(snap).stops.last().unwrap().color.to_srgba().alpha as f64
+    }
+
+    fn geometry_matches(snap: &Snap, want: &Value) -> bool {
+        css_len(snap.node.left) == want["left"].as_str().unwrap()
+            && css_len(snap.node.top) == want["top"].as_str().unwrap()
+            && css_len(snap.node.width) == want["width"].as_str().unwrap()
+            && css_len(snap.node.height) == want["height"].as_str().unwrap()
+    }
+
+    fn transform_matches(transform: Option<&UiTransform>, want: &Value) -> bool {
+        match (want["transform"].is_null(), transform) {
+            (true, None) => true,
+            (true, Some(t)) => {
+                css_len(t.translation.x) == "0px"
+                    && css_len(t.translation.y) == "0px"
+                    && t.rotation == Rot2::degrees(0.0)
+                    && t.scale == Vec2::ONE
+            }
+            (false, Some(t)) => {
+                css_len(t.translation.x) == want["transform"]["translate"][0].as_str().unwrap()
+                    && css_len(t.translation.y) == want["transform"]["translate"][1].as_str().unwrap()
+                    && t.rotation == Rot2::degrees(number(&want["transform"]["rotate"]) as f32)
+            }
+            _ => false,
+        }
+    }
+
+    fn bar_matches(snap: &Snap, want: &Value) -> bool {
+        geometry_matches(snap, want)
+            && snap.background.is_some_and(|c| rgb_matches(c, &want["background"]) && alpha_matches(c, &want["background"]))
+    }
+
+    fn check_static(key: &str, snap: &Snap, want: &Value) {
+        assert!(geometry_matches(snap, want), "{key}: geometry differs from spoint");
+        assert!(transform_matches(snap.transform.as_ref(), want), "{key}: transform differs from spoint");
+        if let Some(size) = want["fontSize"].as_f64() {
+            assert_eq!(snap.font, Some(size as f32), "{key}: font size");
+        }
+        if want["color"].is_array() {
+            assert!(rgb_matches(snap.text_color.unwrap(), &want["color"]), "{key}: text color");
+        }
+        if want["background"].is_array() {
+            assert!(snap.background.is_some_and(|c| rgb_matches(c, &want["background"]) && alpha_matches(c, &want["background"])), "{key}: background");
+        }
+        if let Some(stops) = want["gradient"]["stops"].as_array() {
+            let gradient = radial(snap);
+            assert!(matches!(gradient.shape, RadialGradientShape::FarthestCorner), "{key}: gradient shape");
+            assert_eq!(gradient.stops.len(), stops.len(), "{key}: gradient stop count");
+            for (stop, want_stop) in gradient.stops.iter().zip(stops) {
+                assert_eq!(css_len(stop.point), want_stop["at"].as_str().unwrap(), "{key}: gradient stop position");
+                assert!(rgb_matches(stop.color, &want_stop["color"]), "{key}: gradient stop color");
+            }
+        }
+        if want["gradient"].is_null() && want["boxShadowColor"].is_array() {
+            let edge = radial(snap).stops.last().unwrap().color;
+            assert!(rgb_matches(edge, &want["boxShadowColor"]), "{key}: box shadow color");
+        }
+    }
+
+    #[test]
+    fn hud_overlay_geometry_matches_spoint_dom() {
+        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud-overlay.json")).unwrap();
+        let snaps = snapshot(HudFrame::default());
+        for element in fixture["elements"].as_array().unwrap() {
+            let key = element["key"].as_str().unwrap();
+            match key {
+                "hm" => assert!(
+                    snaps.iter().any(|s| s.kind == Some(HudElement::HitBar) && geometry_matches(s, element)),
+                    "hm: no hit bar at spoint geometry"
+                ),
+                "tps-cross/bar" => assert!(
+                    snaps.iter().any(|s| s.kind.is_none() && bar_matches(s, element)),
+                    "tps-cross/bar: no crosshair bar at spoint geometry"
+                ),
+                _ => check_static(key, find_kind(&snaps, kind_of(key)), element),
+            }
+        }
+    }
+
+    #[test]
+    fn hud_overlay_states_match_spoint_dom_at_fixed_inputs() {
+        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud-overlay.json")).unwrap();
+        let invuln = number(&fixture["combat"]["spawnInvulnMs"]);
+        let elements = fixture["elements"].as_array().unwrap();
+        let shield_spec = elements.iter().find(|e| e["key"] == "tps-shield").unwrap();
+        let vignette_spec = elements.iter().find(|e| e["key"] == "tps-vignette").unwrap();
+        let shadow_alpha = number(&shield_spec["boxShadowColor"][3]);
+        let vignette_alpha = number(&vignette_spec["gradient"]["stops"][1]["color"][3]);
+        for case in fixture["cases"].as_array().unwrap() {
+            let name = case["name"].as_str().unwrap();
+            let out = &case["outputs"];
+            let snaps = snapshot(frame_at(&inputs_of(case, invuln)));
+            let scale = find_kind(&snaps, HudElement::Crosshair).transform.unwrap().scale.x;
+            assert_eq!(format!("translate(-50%,-50%) scale({scale})"), out["crosshairTransform"].as_str().unwrap(), "{name}: crosshair");
+            let want_visible = if opacity(&out["hitOpacity"]) == 1.0 { Visibility::Visible } else { Visibility::Hidden };
+            assert_eq!(find_kind(&snaps, HudElement::HitMarker).visibility, Some(want_visible), "{name}: hit visibility");
+            let hit_colors = out["hitMarkBackgrounds"].as_array().unwrap();
+            let bars: Vec<&Snap> = snaps.iter().filter(|s| s.kind == Some(HudElement::HitBar)).collect();
+            assert_eq!(bars.len(), hit_colors.len(), "{name}: hit bar count");
+            for bar in bars {
+                let hex = to_hex(bar.background.unwrap());
+                assert!(hit_colors.iter().any(|w| w.as_str() == Some(hex.as_str())), "{name}: hit bar color {hex}");
+            }
+            for (kind, text, opacity_key) in [
+                (HudElement::Kill, "killText", "killOpacity"),
+                (HudElement::DmgDealt, "dmgDealtText", "dmgDealtOpacity"),
+                (HudElement::DmgTaken, "dmgTakenText", "dmgTakenOpacity"),
+            ] {
+                let snap = find_kind(&snaps, kind);
+                assert_eq!(snap.text.as_deref(), out[text].as_str(), "{name}: {text}");
+                assert!(near(snap.text_color.unwrap().to_srgba().alpha as f64, opacity(&out[opacity_key])), "{name}: {opacity_key}");
+            }
+            let shield = find_kind(&snaps, HudElement::Shield);
+            assert!(near(last_stop_alpha(shield), shadow_alpha * opacity(&out["shieldOpacity"])), "{name}: shield opacity");
+            let vignette = find_kind(&snaps, HudElement::Vignette);
+            assert!(near(last_stop_alpha(vignette), vignette_alpha * opacity(&out["vignetteOpacity"])), "{name}: vignette opacity");
+        }
     }
 }
