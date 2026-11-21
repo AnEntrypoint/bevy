@@ -1,4 +1,3 @@
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) mod baked;
 pub(crate) mod planet_frame;
 pub(crate) mod anchor;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use serde_json::Value;
 
@@ -331,7 +330,6 @@ pub fn wrap_height_with_marks(
     Ok(move |x: f64, z: f64, y_guess: f64| marks.height(x, z, height(x, z, y_guess)))
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

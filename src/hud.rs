@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 const HIT_MARKER_WINDOW_MS: f64 = 150.0;
 const HEADSHOT_MARKER_WINDOW_MS: f64 = 250.0;
@@ -138,35 +137,39 @@ pub fn ammo_text(ammo: u32, magazine: u32) -> String {
     format!("{ammo}/{magazine}")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub(crate) mod fixture_reads {
     use serde_json::Value;
 
-    fn number(v: &Value) -> f64 {
+    pub fn number(v: &Value) -> f64 {
         v.as_f64().unwrap()
     }
 
-    fn opacity(v: &Value) -> f64 {
+    pub fn opacity(v: &Value) -> f64 {
         v.as_str().unwrap().parse::<f64>().unwrap()
     }
 
-    fn field(tps: &Value, key: &str, default: f64) -> f64 {
+    pub fn field(tps: &Value, key: &str, default: f64) -> f64 {
         tps.get(key).and_then(Value::as_f64).unwrap_or(default)
     }
+}
 
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() <= 1e-12
-    }
+mod tests {
+    use super::*;
+    use crate::hud::fixture_reads::{field, number, opacity};
+    use crate::testkit::{cases, close, parse};
+    use serde_json::Value;
+
+    const TOLERANCE: f64 = 1e-12;
 
     #[test]
     fn hud_math_matches_spoint_at_fixed_inputs() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud.json")).unwrap();
+        let fixture: Value = parse(include_str!("../testdata/parity/spoint-hud.json"));
         let magazine = number(&fixture["combat"]["magazineSize"]) as u32;
         let reload_time = number(&fixture["combat"]["reloadTime"]);
         let invuln_ms = number(&fixture["combat"]["spawnInvulnMs"]);
-        for case in fixture["cases"].as_array().unwrap() {
+        for case in cases(&fixture, "cases") {
             let name = case["name"].as_str().unwrap();
+            let check = |got: f64, want: f64, label: &str| close(got, want, TOLERANCE, &format!("{name}: {label}"));
             let inputs = &case["inputs"];
             let out = &case["outputs"];
             let tps = &inputs["tps"];
@@ -196,28 +199,28 @@ mod tests {
             assert_eq!(reloading, out["reloadingStat"].as_bool().unwrap(), "{name}: reloading");
             let scale = crosshair_scale(now, field(tps, "lastShootTime", 0.0));
             assert_eq!(crosshair_transform(scale), out["crosshairTransform"].as_str().unwrap(), "{name}: crosshair");
-            assert!(close(opacity_of(hit_on || head_on), opacity(&out["hitOpacity"])), "{name}: hit opacity");
+            check(opacity_of(hit_on || head_on), opacity(&out["hitOpacity"]), "hit opacity");
             assert_eq!(hit_marker_color(head_on), out["hitColor"].as_str().unwrap(), "{name}: hit color");
             assert_eq!(kill_text(kill_on, streak), out["killText"].as_str().unwrap(), "{name}: kill text");
-            assert!(close(opacity_of(kill_on), opacity(&out["killOpacity"])), "{name}: kill opacity");
+            check(opacity_of(kill_on), opacity(&out["killOpacity"]), "kill opacity");
             assert_eq!(damage_dealt_text(now, field(tps, "dmgDealtTime", 0.0), field(tps, "lastDamageDealt", 0.0)), out["dmgDealtText"].as_str().unwrap(), "{name}: dealt text");
-            assert!(close(opacity_of(dmg_dealt_on), opacity(&out["dmgDealtOpacity"])), "{name}: dealt opacity");
+            check(opacity_of(dmg_dealt_on), opacity(&out["dmgDealtOpacity"]), "dealt opacity");
             assert_eq!(damage_taken_text(now, last_hit, field(tps, "lastDamageTaken", 0.0)), out["dmgTakenText"].as_str().unwrap(), "{name}: taken text");
-            assert!(close(opacity_of(dmg_taken_on), opacity(&out["dmgTakenOpacity"])), "{name}: taken opacity");
-            assert!(close(shield_opacity(now, field(tps, "spawnShieldUntil", 0.0), invuln_ms), opacity(&out["shieldOpacity"])), "{name}: shield opacity");
-            assert!(close(vignette_opacity(now, last_hit, Some(hp)), opacity(&out["vignetteOpacity"])), "{name}: vignette opacity");
+            check(opacity_of(dmg_taken_on), opacity(&out["dmgTakenOpacity"]), "taken opacity");
+            check(shield_opacity(now, field(tps, "spawnShieldUntil", 0.0), invuln_ms), opacity(&out["shieldOpacity"]), "shield opacity");
+            check(vignette_opacity(now, last_hit, Some(hp)), opacity(&out["vignetteOpacity"]), "vignette opacity");
             let want_punch: Vec<f64> = out["punch"].as_array().unwrap().iter().map(number).collect();
             assert_eq!(punch, want_punch, "{name}: punch");
 
             let ui = &out["ui"];
-            assert!(close(hp, number(&ui["hp"])), "{name}: ui hp");
+            check(hp, number(&ui["hp"]), "ui hp");
             assert_eq!(ammo, number(&ui["ammo"]) as u32, "{name}: ui ammo");
             assert_eq!(magazine, number(&ui["magazine"]) as u32, "{name}: ui magazine");
             assert_eq!(reloading, ui["reloading"].as_bool().unwrap(), "{name}: ui reloading");
             let progress = reload_progress(now, reloading, reload_end, reload_time);
-            assert!(close(progress, number(&ui["reloadProgress"])), "{name}: ui reload progress {progress}");
-            assert!(close(boost_seconds(now, boost_expires), number(&ui["boostSec"])), "{name}: ui boost seconds");
-            assert!(close(field(tps, "kills", 0.0), number(&ui["kills"])), "{name}: ui kills");
+            check(progress, number(&ui["reloadProgress"]), &format!("ui reload progress {progress}"));
+            check(boost_seconds(now, boost_expires), number(&ui["boostSec"]), "ui boost seconds");
+            check(field(tps, "kills", 0.0), number(&ui["kills"]), "ui kills");
             assert_eq!(hit_on, ui["hitMarkerActive"].as_bool().unwrap(), "{name}: ui hit marker");
             assert_eq!(head_on, ui["headshot"].as_bool().unwrap(), "{name}: ui headshot");
             assert_eq!(kill_on, ui["killConfirm"].as_bool().unwrap(), "{name}: ui kill confirm");

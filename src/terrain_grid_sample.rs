@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
+use crate::js_math::js_round;
 
 const NON_FINITE_HEIGHT_FALLBACK_M: f64 = -1000.0;
 const HEIGHT_SNAP_PER_METRE: f64 = 1000.0;
@@ -22,15 +22,6 @@ pub struct GridSample {
     pub samples: Vec<f32>,
     pub reused: usize,
     pub solved: usize,
-}
-
-fn js_round(x: f64) -> f64 {
-    let floor = x.floor();
-    if x - floor >= 0.5 {
-        floor + 1.0
-    } else {
-        floor
-    }
 }
 
 fn snap_height(raw: f64) -> f32 {
@@ -70,7 +61,6 @@ pub fn sample_terrain_grid(
     Some(GridSample { samples, reused, solved: total - reused })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use serde_json::Value;
 
@@ -125,7 +124,6 @@ pub fn replay_strokes(strokes: &Value, mut replay_one: impl FnMut(&Value) -> Res
     Ok(replayed)
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;

@@ -1,7 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use std::collections::HashMap;
-
 const TILE_SIZE: i64 = 8;
 const TILE_CELLS: i64 = 64;
 const TEXELS_PER_TILE_ROW: usize = 8;
@@ -248,7 +245,6 @@ pub fn burn_mask_window(kernel: &impl FireKernel, face: i64, i0: i64, j0: i64, w
     lit
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::fnv1a::fnv1a_bytes;
@@ -361,7 +357,7 @@ mod tests {
 
     #[test]
     fn create_fire_stage_map_matches_spoint() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-fire-stage-map.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-fire-stage-map.json"));
         let slots_across = int(&fixture, "slotsAcross");
         let slots_down = int(&fixture, "slotsDown");
         let kernel = StubKernel { generation: Cell::new(0), serials: RefCell::new(HashMap::new()) };

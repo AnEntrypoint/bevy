@@ -1,8 +1,5 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use crate::height::ops_jsgen::V3;
 use serde_json::Value;
-
 pub const ANY_TEAM: &str = "any";
 pub const POWERUP_RESPAWN_MS: f64 = 15000.0;
 pub const PICKUP_RADIUS_M: f64 = 1.7;
@@ -330,7 +327,6 @@ pub fn ignition_source(shooter_id: i64) -> i64 {
     shooter_id & 255
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -340,7 +336,7 @@ mod tests {
     const PU_Y: f64 = 10.0 + 0.6;
 
     fn fixture() -> Value {
-        serde_json::from_str(include_str!("../testdata/parity/spoint-game-rules.json")).unwrap()
+        crate::testkit::parse(include_str!("../testdata/parity/spoint-game-rules.json"))
     }
 
     fn num(v: &Value) -> f64 {

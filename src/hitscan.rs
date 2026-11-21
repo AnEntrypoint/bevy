@@ -1,7 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use crate::height::ops_jsgen::V3;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hitbox {
     pub center_height: f64,
@@ -77,7 +74,6 @@ pub fn predict_hit(origin: V3, direction: V3, range: f64, players: &[HitTarget],
     None
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
@@ -89,7 +85,7 @@ mod tests {
 
     #[test]
     fn ray_vs_capsule_matches_the_spoint_hitscan() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hitscan.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-hitscan.json"));
         let mut worst = 0.0_f64;
         for case in fixture["direct"].as_array().unwrap() {
             let got = ray_vs_capsule(vec3(&case["origin"]), vec3(&case["direction"]), case["range"].as_f64().unwrap(), vec3(&case["tp"]), &DEFAULT_HITBOX);
@@ -110,7 +106,7 @@ mod tests {
 
     #[test]
     fn predict_hit_matches_the_spoint_hitscan() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hitscan.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-hitscan.json"));
         let players: Vec<HitTarget> = fixture["players"]
             .as_array()
             .unwrap()

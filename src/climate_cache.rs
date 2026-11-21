@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::collections::HashMap;
 
@@ -62,7 +61,6 @@ impl<F: ClimateField, P: PlanetFrame> CachedAnchorField<F, P> {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

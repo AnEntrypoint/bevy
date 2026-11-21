@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::f64::consts::PI;
 
@@ -175,7 +174,6 @@ pub fn reanchor_chart_for(frame: &mut ChartAnchorFrame, lattice: &PlacementLatti
     })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::character::ChartTransfer;

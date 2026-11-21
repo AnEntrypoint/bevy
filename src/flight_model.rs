@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
+use crate::vec3::dot;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FlightOpts {
@@ -49,10 +49,6 @@ pub fn rotate_by_quat(q: [f64; 4], v: [f64; 3]) -> [f64; 3] {
     ]
 }
 
-fn dot(a: [f64; 3], b: [f64; 3]) -> f64 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-}
-
 pub fn flight_forces(velocity: [f64; 3], rotation: [f64; 4], p: &FlightOpts) -> FlightForces {
     let speed = dot(velocity, velocity).sqrt();
     let forward = rotate_by_quat(rotation, [0.0, 0.0, 1.0]);
@@ -74,7 +70,6 @@ pub fn flight_forces(velocity: [f64; 3], rotation: [f64; 4], p: &FlightOpts) -> 
     FlightForces { force, speed, aoa, lift_coeff, stalled: speed < p.stall_speed }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
@@ -118,7 +113,7 @@ mod tests {
 
     #[test]
     fn flight_model_matches_spoint() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-flight-model.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-flight-model.json"));
         for case in fixture["rotate"].as_array().unwrap() {
             let got = rotate_by_quat(quad(&case["q"]), triple(&case["v"]));
             assert_close(&got, &triple(&case["expect"]), "rotateByQuat");

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::fmt;
 
@@ -173,7 +172,6 @@ pub fn pick_clear_spawn_pose<W: SpawnWorld>(world: &W, spawn_points: &[V3], excl
         .ok_or(SpawnRefusal { supplied: spawn_points.len(), usable: usable.len() })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

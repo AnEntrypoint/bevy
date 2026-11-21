@@ -3,10 +3,10 @@ use meshopt::ffi;
 use serde_json::{json, Map, Value};
 use std::ffi::c_void;
 
-const GLB_MAGIC: u32 = 0x4654_6C67;
-const GLB_VERSION: u32 = 2;
-const JSON_CHUNK: u32 = 0x4E4F_534A;
-const BIN_CHUNK: u32 = 0x004E_4942;
+pub(crate) const GLB_MAGIC: u32 = 0x4654_6C67;
+pub(crate) const GLB_VERSION: u32 = 2;
+pub(crate) const JSON_CHUNK: u32 = 0x4E4F_534A;
+pub(crate) const BIN_CHUNK: u32 = 0x004E_4942;
 const EXTENSION: &str = "EXT_meshopt_compression";
 const MESH_QUANTIZATION: &str = "KHR_mesh_quantization";
 const MAX_VIEW_BYTES: usize = 1 << 30;
@@ -132,11 +132,7 @@ fn read_container(bytes: &[u8]) -> Result<Container, String> {
 }
 
 fn read_u32(bytes: &[u8], offset: usize) -> Result<u32, String> {
-    bytes
-        .get(offset..offset + 4)
-        .and_then(|slice| <[u8; 4]>::try_from(slice).ok())
-        .map(u32::from_le_bytes)
-        .ok_or_else(|| "GLB is truncated".to_string())
+    basisu::read_u32(bytes, offset).ok_or_else(|| "GLB is truncated".to_string())
 }
 
 fn parse_json(data: &[u8]) -> Result<Value, String> {
@@ -693,6 +689,12 @@ mod tests {
             .collect()
     }
 
+    fn assert_floats_near(values: &[f32], expected: &[f32]) {
+        for (value, want) in values.iter().zip(expected) {
+            assert!((value - want).abs() < 1e-6, "{value} != {want}");
+        }
+    }
+
     #[test]
     fn snorm_tangents_become_float_vec4() {
         let mut bin = shorts(&[[32767, -32767, 16384, -1], [-32768, 0, 0, 1]], SHORT_VEC4_BYTES);
@@ -713,9 +715,7 @@ mod tests {
         assert_eq!(offset, bin_len);
         let values = floats_at(&bin, offset, 8);
         let expected = [1.0, -1.0, 16384.0 / 32767.0, -1.0, -1.0, 0.0, 0.0, 1.0];
-        for (value, want) in values.iter().zip(expected) {
-            assert!((value - want).abs() < 1e-6, "{value} != {want}");
-        }
+        assert_floats_near(&values, &expected);
     }
 
     #[test]
@@ -735,9 +735,7 @@ mod tests {
         let offset = document["bufferViews"][1]["byteOffset"].as_u64().expect("offset") as usize;
         let values = floats_at(&bin, offset, 8);
         let expected = [16384.0 / 32767.0, 0.0, 1.0, 1.0, 0.0, -16384.0 / 32767.0, 0.0, -1.0];
-        for (value, want) in values.iter().zip(expected) {
-            assert!((value - want).abs() < 1e-6, "{value} != {want}");
-        }
+        assert_floats_near(&values, &expected);
     }
 
     #[test]
@@ -765,7 +763,7 @@ mod tests {
 
     #[test]
     fn meshopt_views_decode_to_the_spoint_bytes() {
-        let fixture: serde_json::Value = serde_json::from_str(include_str!("../testdata/parity/meshopt-views.json")).unwrap();
+        let fixture = crate::testkit::parse(include_str!("../testdata/parity/meshopt-views.json"));
         let expected: Vec<Vec<u8>> = serde_json::from_value(fixture["views"].clone()).unwrap();
         let decoded = decode(include_bytes!("../testdata/parity/meshopt-views.glb")).unwrap();
         assert_eq!(decoded.meshopt_views, expected.len());

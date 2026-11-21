@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use crate::height::ops_jsgen::V3;
 
@@ -27,7 +26,6 @@ pub fn reanchored_sea_level_xz(from: &SeaLevelChart, to: &SeaLevelChart, x: f64,
     sea_level_xz_of_dir(to, sea_level_dir_of(from, x, z))
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

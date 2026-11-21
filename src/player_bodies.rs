@@ -1,7 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use std::collections::{BTreeMap, BTreeSet};
-
 pub const DEFAULT_CAPSULE_RADIUS: f64 = 0.4;
 const SPAWN_POINT: [f64; 3] = [0.0, 5.0, 0.0];
 
@@ -92,7 +89,6 @@ impl<W: CharacterWorld> PlayerBodies<W> {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
@@ -164,7 +160,7 @@ mod tests {
 
     #[test]
     fn player_bodies_match_spoint_over_recorded_messages() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-player-bodies.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-player-bodies.json"));
         let mass = fixture["config"]["playerMass"].as_f64().unwrap();
         let messages = fixture["messages"].as_array().unwrap();
         for scenario in fixture["scenarios"].as_array().unwrap() {

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::f64::consts::PI;
 
@@ -98,7 +97,6 @@ pub fn generate_rock_hull_data(num_shapes: usize, base_seed: i32, hull_res: usiz
         .collect()
 }
 
-#[cfg(test)]
 mod tests {
     use serde_json::Value;
 

@@ -1,9 +1,5 @@
 use super::ops_jsgen::V3;
-
-pub fn normalise(v: V3) -> V3 {
-    let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    [v[0] / length, v[1] / length, v[2] / length]
-}
+use crate::vec3::normalise;
 
 fn cross(a: V3, b: V3) -> V3 {
     [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
@@ -27,23 +23,26 @@ pub fn tangent_local_to_dir(basis: &Basis, radius: f64, x: f64, z: f64) -> V3 {
     normalise([0, 1, 2].map(|i| basis.up[i] * radius + basis.east[i] * x + basis.north[i] * z))
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub struct Frame {
     pub offset_y: f64,
     pub anchor_height: f64,
     pub radius: f64,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 impl Frame {
+    #[cfg(test)]
     fn sphere_radius(&self) -> f64 {
         if self.radius.is_finite() && self.radius > 0.0 { self.radius } else { f64::INFINITY }
     }
 
+    #[cfg(test)]
     fn is_finite(&self) -> bool {
         self.offset_y.is_finite() && self.anchor_height.is_finite()
     }
 
+    #[cfg(test)]
     pub fn sphere_surface_local_y(&self, x: f64, z: f64, elevation: f64) -> Option<f64> {
         if !self.is_finite() || !elevation.is_finite() {
             return None;
@@ -53,10 +52,12 @@ impl Frame {
         Some(self.offset_y + (elevation - self.anchor_height) - drop)
     }
 
+    #[cfg(test)]
     pub fn waterline_local_y(&self, x: f64, z: f64) -> Option<f64> {
         self.sphere_surface_local_y(x, z, 0.0)
     }
 
+    #[cfg(test)]
     pub fn elevation_at_local(&self, x: f64, y: f64, z: f64) -> Option<f64> {
         if !self.is_finite() {
             return None;
@@ -72,20 +73,20 @@ impl Frame {
     }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 fn sphere_drop_below_tangent(r2: f64, sphere_radius: f64) -> f64 {
     let q = sphere_radius * sphere_radius - r2;
     if q > 0.0 { r2 / (sphere_radius + q.sqrt()) } else { sphere_radius }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug, PartialEq)]
 pub enum GroundFault {
     Solve,
     Other,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn guarded_ground_height(height: impl Fn(f64, f64) -> Result<Option<f64>, GroundFault>, x: f64, z: f64) -> Result<Option<f64>, GroundFault> {
     match height(x, z) {
         Ok(value) => Ok(value),
@@ -94,7 +95,7 @@ pub fn guarded_ground_height(height: impl Fn(f64, f64) -> Result<Option<f64>, Gr
     }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug)]
 pub struct RayHit {
     pub distance: f64,
@@ -104,9 +105,10 @@ pub struct RayHit {
     pub adjacent: V3,
 }
 
+#[cfg(test)]
 const RAYCAST_BISECT_STEPS: usize = 16;
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn raycast_ground_local(ground: impl Fn(f64, f64) -> Option<f64>, origin: V3, direction: V3, max_distance: f64, step_m: f64, cell_m: f64) -> Option<RayHit> {
     let len = (direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2]).sqrt();
     if !(len > 0.0) || !max_distance.is_finite() || max_distance <= 0.0 {
@@ -168,7 +170,7 @@ pub fn raycast_ground_local(ground: impl Fn(f64, f64) -> Option<f64>, origin: V3
     None
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum SurfaceSolve {
     Tolerance,
@@ -178,7 +180,7 @@ pub enum SurfaceSolve {
     Argument,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SolveStats {
     pub solves: u64,
@@ -186,35 +188,38 @@ pub struct SolveStats {
 }
 
 thread_local! {
+    #[cfg(test)]
     static SOLVE_STATS: std::cell::Cell<SolveStats> = const { std::cell::Cell::new(SolveStats { solves: 0, evaluations: 0 }) };
+    #[cfg(test)]
     static MEMO_STATS: std::cell::Cell<MemoStats> = const { std::cell::Cell::new(MemoStats { hits: 0, misses: 0, evictions: 0, epoch_stale: 0, cell_collisions: 0 }) };
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn surface_solve_stats() -> SolveStats {
     SOLVE_STATS.with(|c| c.get())
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn reset_surface_solve_stats() {
     SOLVE_STATS.with(|c| c.set(SolveStats::default()))
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn ground_memo_stats() -> MemoStats {
     MEMO_STATS.with(|c| c.get())
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn reset_ground_memo_stats() {
     MEMO_STATS.with(|c| c.set(MemoStats::default()))
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn is_surface_root_within(residual_m: f64, tolerance_m: f64) -> bool {
     residual_m.is_finite() && tolerance_m.is_finite() && tolerance_m > 0.0 && residual_m.abs() <= tolerance_m
 }
 
+#[cfg(test)]
 fn bump_solve(f: impl FnOnce(&mut SolveStats)) {
     SOLVE_STATS.with(|c| {
         let mut s = c.get();
@@ -223,6 +228,7 @@ fn bump_solve(f: impl FnOnce(&mut SolveStats)) {
     })
 }
 
+#[cfg(test)]
 fn bump_memo(f: impl FnOnce(&mut MemoStats)) {
     MEMO_STATS.with(|c| {
         let mut s = c.get();
@@ -231,10 +237,12 @@ fn bump_memo(f: impl FnOnce(&mut MemoStats)) {
     })
 }
 
+#[cfg(test)]
 const SURFACE_SOLVE_MAX_EVALS: usize = 64;
+#[cfg(test)]
 const BRACKET_HALVING_WINDOW: usize = 6;
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>, tolerance_m: f64, guess: Option<f64>) -> Result<f64, SurfaceSolve> {
     if !tolerance_m.is_finite() || tolerance_m <= 0.0 {
         return Err(SurfaceSolve::Tolerance);
@@ -302,20 +310,24 @@ pub fn solve_surface_y(basis: &Basis, radius: f64, anchor_height: f64, x: f64, z
     Err(SurfaceSolve::NoConvergence { residual: last_g })
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 const SURFACE_SOLVE_TOLERANCE_M: f64 = 1e-4;
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 fn render_y_on_sphere(r2: f64, elevation: f64, anchor_height: f64, radius: f64) -> f64 {
     (elevation - anchor_height) - sphere_drop_below_tangent(r2, radius + elevation)
 }
 
+#[cfg(test)]
 const GROUND_MEMO_SLOTS: usize = 4096;
+#[cfg(test)]
 const GROUND_MEMO_CELLS_PER_M: f64 = 4.0;
+#[cfg(test)]
 const GROUND_MEMO_HASH_X: i32 = 73_856_093;
+#[cfg(test)]
 const GROUND_MEMO_HASH_Z: i32 = 19_349_663;
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct MemoStats {
     pub hits: u64,
@@ -325,7 +337,7 @@ pub struct MemoStats {
     pub cell_collisions: u64,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Clone)]
 struct GroundMemoSlot {
     x: f64,
@@ -335,16 +347,18 @@ struct GroundMemoSlot {
     failure: Option<SurfaceSolve>,
 }
 
+#[cfg(test)]
 impl GroundMemoSlot {
+    #[cfg(test)]
     fn empty() -> Self {
         Self { x: f64::NAN, z: 0.0, height: 0.0, epoch: -1, failure: None }
     }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub type GroundFn = Box<dyn Fn(f64, f64, Option<f64>) -> Result<f64, SurfaceSolve>>;
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 #[derive(Debug, PartialEq)]
 pub enum GroundSourceError {
     EmptyName,
@@ -352,9 +366,10 @@ pub enum GroundSourceError {
     Probe(SurfaceSolve),
 }
 
+#[cfg(test)]
 const CPU_SOLVE_SOURCE: &str = "cpu-solve";
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub struct ChartFrame {
     basis: Basis,
     radius: f64,
@@ -370,8 +385,9 @@ pub struct ChartFrame {
     divergence_reported: bool,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 impl ChartFrame {
+    #[cfg(test)]
     pub fn new(anchor_dir: V3, radius: f64, offset_y: f64, relief_scale: Option<f64>, height: impl Fn(V3) -> f64) -> Self {
         let basis = anchor_basis(anchor_dir);
         let anchor_height = height(basis.up);
@@ -379,10 +395,12 @@ impl ChartFrame {
         Self { basis, radius, anchor_height, offset_y, relief_scale, chart_epoch: 0, memo: vec![GroundMemoSlot::empty(); GROUND_MEMO_SLOTS], ground_sources: Vec::new(), active_source: CPU_SOLVE_SOURCE.to_string(), anonymous_installs: 0, cpu_height_divergent: false, divergence_reported: false }
     }
 
+    #[cfg(test)]
     pub fn chart_epoch(&self) -> u32 {
         self.chart_epoch
     }
 
+    #[cfg(test)]
     pub fn reanchor(&mut self, dir: V3, height: impl Fn(V3) -> f64) -> V3 {
         self.basis = anchor_basis(dir);
         self.anchor_height = height(self.basis.up);
@@ -390,19 +408,23 @@ impl ChartFrame {
         self.basis.up
     }
 
+    #[cfg(test)]
     pub fn relief_scale(&self) -> f64 {
         self.relief_scale
     }
 
+    #[cfg(test)]
     pub fn anchor_surface_world(&self) -> V3 {
         self.basis.up.map(|c| c * (self.radius + self.anchor_height))
     }
 
+    #[cfg(test)]
     pub fn local_to_world(&self, x: f64, y: f64, z: f64) -> V3 {
         let s = self.radius + self.anchor_height + y;
         [0, 1, 2].map(|i| self.basis.up[i] * s + (self.basis.east[i] * x + self.basis.north[i] * z))
     }
 
+    #[cfg(test)]
     pub fn local_to_dir(&self, x: f64, z: f64, y: Option<f64>) -> V3 {
         let render_y = match y {
             Some(y) => y - self.offset_y,
@@ -411,6 +433,7 @@ impl ChartFrame {
         tangent_local_to_dir(&self.basis, self.radius + self.anchor_height + render_y, x, z)
     }
 
+    #[cfg(test)]
     pub fn register_ground_source(&mut self, name: &str, source: GroundFn) -> Result<(), GroundSourceError> {
         if name.is_empty() {
             return Err(GroundSourceError::EmptyName);
@@ -428,6 +451,7 @@ impl ChartFrame {
         Ok(())
     }
 
+    #[cfg(test)]
     pub fn install_anonymous_ground_source(&mut self, source: GroundFn) -> Result<String, GroundSourceError> {
         self.anonymous_installs += 1;
         let name = if self.anonymous_installs == 1 { "substituted".to_string() } else { format!("substituted#{}", self.anonymous_installs) };
@@ -435,26 +459,32 @@ impl ChartFrame {
         Ok(name)
     }
 
+    #[cfg(test)]
     pub fn use_cpu_solve(&mut self) {
         self.active_source = CPU_SOLVE_SOURCE.to_string();
     }
 
+    #[cfg(test)]
     pub fn ground_source(&self) -> &str {
         &self.active_source
     }
 
+    #[cfg(test)]
     pub fn ground_sources(&self) -> Vec<String> {
         std::iter::once(CPU_SOLVE_SOURCE.to_string()).chain(self.ground_sources.iter().map(|(name, _)| name.clone())).collect()
     }
 
+    #[cfg(test)]
     pub fn has_ground_source(&self, name: &str) -> bool {
         name == CPU_SOLVE_SOURCE || self.ground_sources.iter().any(|(installed, _)| installed == name)
     }
 
+    #[cfg(test)]
     pub fn set_cpu_height_divergent(&mut self, divergent: bool) {
         self.cpu_height_divergent = divergent;
     }
 
+    #[cfg(test)]
     pub fn ground_height_active(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
         if self.active_source == CPU_SOLVE_SOURCE {
             return self.ground_height_local(x, z, height);
@@ -463,6 +493,7 @@ impl ChartFrame {
         source(x, z, None)
     }
 
+    #[cfg(test)]
     pub fn elevation_at_dir(&mut self, d: V3, height: impl Fn(V3) -> f64, hash_version: u32) -> (f64, Option<String>) {
         let warning = if self.cpu_height_divergent && self.active_source != CPU_SOLVE_SOURCE && !self.divergence_reported {
             self.divergence_reported = true;
@@ -473,6 +504,7 @@ impl ChartFrame {
         (height(normalise(d)), warning)
     }
 
+    #[cfg(test)]
     pub fn ground_height_local(&mut self, x: f64, z: f64, height: impl Fn(V3) -> Option<f64>) -> Result<f64, SurfaceSolve> {
         if !x.is_finite() || !z.is_finite() {
             return Err(SurfaceSolve::Argument);

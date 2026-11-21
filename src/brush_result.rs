@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 pub const STRENGTH_REQUIRES: [&str; 1] = ["strength clamps above zero"];
 
@@ -45,7 +44,6 @@ pub fn brush_applied<T>(strokes: &mut Vec<T>, touched: f64, stroke: Option<T>) -
     })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::{json, Value};

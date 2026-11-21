@@ -1,4 +1,3 @@
-#[cfg_attr(not(test), allow(dead_code))]
 pub const TRI_TABLE: [&[i8]; 256] = [
     &[-1],
     &[0, 8, 3, -1],
@@ -258,7 +257,6 @@ pub const TRI_TABLE: [&[i8]; 256] = [
     &[-1],
 ];
 
-#[cfg(test)]
 mod tests {
     use super::TRI_TABLE;
     use serde_json::Value;

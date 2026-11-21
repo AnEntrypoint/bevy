@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use serde_json::{json, Map, Value};
 
@@ -391,7 +390,6 @@ fn patch_entity(e: &Value, patch: &dyn Fn(&Map<String, Value>) -> Value) -> Valu
     Value::Object(next)
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -1,50 +1,94 @@
+#[cfg(test)]
 mod camera_rig;
 mod features;
 mod features_ecs;
+#[cfg(test)]
 mod fire_stage_map;
+#[cfg(test)]
 mod fire_terrain;
+#[cfg(test)]
 mod flight_model;
+#[cfg(test)]
 mod fx_program;
 mod glb;
 mod height;
+#[cfg(test)]
 mod hitscan;
+#[cfg(test)]
 mod character;
+#[cfg(test)]
 mod chart_transfer;
+#[cfg(test)]
 mod field_lattice;
+#[cfg(test)]
 mod field_layers;
+#[cfg(test)]
 mod field_paint;
+#[cfg(test)]
 mod height_delta;
+#[cfg(test)]
 mod press_router;
+#[cfg(test)]
 mod terrain_grid_sample;
+#[cfg(test)]
 mod lattice_surface;
+#[cfg(test)]
 mod rock_shapes;
+#[cfg(test)]
 mod spline_carve;
+#[cfg(test)]
 mod terrain_marks;
+#[cfg(test)]
 mod chart_reexpress;
+#[cfg(test)]
 mod terrain_config;
+#[cfg(test)]
 mod spawn_clearance;
+#[cfg(test)]
 mod field_names;
+#[cfg(test)]
 mod rock_tri_table;
+#[cfg(test)]
 mod canonical_json;
+#[cfg(test)]
 mod fnv1a;
+#[cfg(test)]
 mod terrain_mesh_surface;
+#[cfg(test)]
 mod tps_game;
+#[cfg(test)]
 mod world_name;
+#[cfg(test)]
 mod baked_field_load;
+#[cfg(test)]
 mod game_rules;
+#[cfg(test)]
 mod chart_anchor;
+#[cfg(test)]
 mod chart_reanchor_policy;
+#[cfg(test)]
 mod hud_overlay;
+#[cfg(test)]
 mod chart_reanchor_service;
+#[cfg(test)]
 mod chart_local_point;
+#[cfg(test)]
 mod cave_sdf;
+#[cfg(test)]
 mod biome_override;
+#[cfg(test)]
 mod brush_stroke;
+#[cfg(test)]
 mod brush_result;
+#[cfg(test)]
 mod climate_cache;
+#[cfg(test)]
 mod player_bodies;
+#[cfg(test)]
 mod hud;
+#[cfg(test)]
 mod terrain_physics;
+#[cfg(test)]
 mod terrain_stream;
 mod globe;
 mod gltf_check;
@@ -66,12 +110,11 @@ mod vegetation;
 mod viewer;
 mod viewer_world;
 mod world;
-#[allow(dead_code)]
+#[cfg(test)]
 mod js_math;
-#[allow(dead_code)]
 mod vec3;
 #[cfg(test)]
-#[allow(dead_code)]
+#[cfg(test)]
 mod testkit;
 
 fn exit_when_no_gpu_adapter() {

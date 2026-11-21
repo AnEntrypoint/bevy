@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::cmp::Ordering;
 
@@ -110,7 +109,6 @@ pub fn chart_anchor_decision(lattice: &PlacementLattice, frame: &ChartAnchorFram
     ChartAnchorDecision::Reanchor { anchor_dir, centroid_dir, gain_deg, worst_player_angle_deg }
 }
 
-#[cfg(test)]
 mod tests {
     use crate::chart_reanchor_service::WALKABLE_CHART_LIMIT_DEG;
     use super::*;

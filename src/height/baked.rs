@@ -1,7 +1,10 @@
+#[cfg(test)]
 use serde_json::Value;
 
+#[cfg(test)]
 const HF_MAGIC: u32 = 0x48464d31;
 
+#[cfg(test)]
 pub struct BakedHeightField {
     n: usize,
     extent: f64,
@@ -9,6 +12,7 @@ pub struct BakedHeightField {
     heights: Vec<f64>,
 }
 
+#[cfg(test)]
 pub struct HfParts {
     pub header: Vec<u8>,
     pub bits: u32,
@@ -17,7 +21,9 @@ pub struct HfParts {
     pub q: Vec<u32>,
 }
 
+#[cfg(test)]
 impl BakedHeightField {
+    #[cfg(test)]
     pub fn from_json(value: &Value) -> Result<Self, String> {
         let n = value["N"].as_u64().filter(|&n| n >= 2).ok_or_else(|| format!("malformed: N is {}, expected an integer >= 2", value["N"]))? as usize;
         let extent = value["extent"].as_f64().ok_or_else(|| format!("malformed: extent is {}, expected a number", value["extent"]))?;
@@ -30,6 +36,7 @@ impl BakedHeightField {
         Ok(Self { n, extent, center, heights })
     }
 
+    #[cfg(test)]
     pub fn from_hf(bytes: &[u8]) -> Result<Self, String> {
         let (header, parts) = split_hf(bytes)?;
         let n = header["N"].as_u64().filter(|&n| n >= 2).ok_or_else(|| "heightfield-header: N is not an integer >= 2".to_string())? as usize;
@@ -54,6 +61,7 @@ impl BakedHeightField {
         Ok(Self { n, extent, center, heights })
     }
 
+    #[cfg(test)]
     pub fn height_at_local(&self, x: f64, z: f64) -> f64 {
         let step = self.extent / (self.n - 1) as f64;
         let half = self.extent / 2.0;
@@ -69,6 +77,7 @@ impl BakedHeightField {
         (h00 * (1.0 - tx) + h10 * tx) * (1.0 - tz) + (h01 * (1.0 - tx) + h11 * tx) * tz
     }
 
+    #[cfg(test)]
     fn at(&self, ix: i64, iz: i64) -> f64 {
         let last = (self.n - 1) as i64;
         let ix = ix.clamp(0, last) as usize;
@@ -77,6 +86,7 @@ impl BakedHeightField {
     }
 }
 
+#[cfg(test)]
 pub fn split_hf(bytes: &[u8]) -> Result<(Value, HfParts), String> {
     if bytes.len() < 8 {
         return Err(format!("heightfield-short: {} byte(s) is shorter than the 8-byte prefix", bytes.len()));
@@ -121,6 +131,7 @@ pub fn split_hf(bytes: &[u8]) -> Result<(Value, HfParts), String> {
     Ok((header, HfParts { header: header_text, bits: bits as u32, sector_min, sector_max, q }))
 }
 
+#[cfg(test)]
 pub fn encode_hf(header: &[u8], bits: u32, sector_min: &[f32], sector_max: &[f32], q: &[u32]) -> Vec<u8> {
     let pad = (4 - ((8 + header.len()) & 3)) & 3;
     let hlen = header.len() + pad;
@@ -143,11 +154,13 @@ pub fn encode_hf(header: &[u8], bits: u32, sector_min: &[f32], sector_max: &[f32
     out
 }
 
+#[cfg(test)]
 fn trim_pad(bytes: &[u8]) -> &[u8] {
     let end = bytes.iter().rposition(|&b| b != b' ').map_or(0, |i| i + 1);
     &bytes[..end]
 }
 
+#[cfg(test)]
 fn centre_of(value: &Value) -> [f64; 2] {
     match value["center"].as_array() {
         Some(c) => [c.first().and_then(Value::as_f64).unwrap_or(0.0), c.get(1).and_then(Value::as_f64).unwrap_or(0.0)],

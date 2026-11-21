@@ -1,13 +1,11 @@
-use crate::basisu::TextureTarget;
+use crate::basisu::{
+    read_u32, read_u64, TextureTarget, KTX2_HEADER_LEN, KTX2_HEIGHT_OFFSET, KTX2_LEVEL_COUNT_OFFSET,
+    KTX2_LEVEL_ENTRY_LEN, KTX2_SUPERCOMPRESSION_OFFSET, KTX2_VK_FORMAT_OFFSET, KTX2_WIDTH_OFFSET,
+    SUPERCOMPRESSION_ZSTD, VK_FORMAT_BC7_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
+};
 use crate::glb;
 use serde_json::{Value, json};
 use std::path::Path;
-
-const KTX2_SUPERCOMPRESSION_OFFSET: usize = 44;
-const KTX2_LEVEL_INDEX_OFFSET: usize = 80;
-const SUPERCOMPRESSION_ZSTD: u32 = 2;
-const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
-const VK_FORMAT_BC7_UNORM: u32 = 145;
 const MIN_IMAGE_PSNR: f64 = 35.0;
 const MIN_MEDIAN_PSNR: f64 = 40.0;
 
@@ -41,21 +39,13 @@ impl ErrorSum {
     }
 }
 
-fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
-    bytes.get(offset..offset + 4).map(|slice| u32::from_le_bytes(slice.try_into().unwrap()))
-}
-
-fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
-    bytes.get(offset..offset + 8).map(|slice| u64::from_le_bytes(slice.try_into().unwrap()))
-}
-
 fn levels(ktx2: &[u8]) -> Option<Vec<Level<'_>>> {
-    let width = read_u32(ktx2, 20)? as usize;
-    let height = read_u32(ktx2, 24)? as usize;
-    let count = read_u32(ktx2, 40)?.max(1) as usize;
+    let width = read_u32(ktx2, KTX2_WIDTH_OFFSET)? as usize;
+    let height = read_u32(ktx2, KTX2_HEIGHT_OFFSET)? as usize;
+    let count = read_u32(ktx2, KTX2_LEVEL_COUNT_OFFSET)?.max(1) as usize;
     (0..count)
         .map(|level| {
-            let entry = KTX2_LEVEL_INDEX_OFFSET + level * 24;
+            let entry = KTX2_HEADER_LEN + level * KTX2_LEVEL_ENTRY_LEN;
             let offset = read_u64(ktx2, entry)? as usize;
             let length = read_u64(ktx2, entry + 8)? as usize;
             Some(Level {
@@ -110,7 +100,7 @@ fn measure_model(name: &str, bytes: &[u8]) -> Result<Vec<Value>, String> {
     }
     let mut rows = Vec::new();
     for (index, (a, b)) in rgba.iter().zip(&bc7).enumerate() {
-        if read_u32(a, 12) != Some(VK_FORMAT_R8G8B8A8_UNORM) || read_u32(b, 12) != Some(VK_FORMAT_BC7_UNORM) {
+        if read_u32(a, KTX2_VK_FORMAT_OFFSET) != Some(VK_FORMAT_R8G8B8A8_UNORM) || read_u32(b, KTX2_VK_FORMAT_OFFSET) != Some(VK_FORMAT_BC7_UNORM) {
             continue;
         }
         let a_levels = levels(a).ok_or_else(|| format!("{name} image {index}: bad RGBA8 KTX2"))?;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::collections::{HashMap, HashSet};
 use std::f64::consts::PI;
@@ -293,7 +292,6 @@ impl SplineCarveLayer {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

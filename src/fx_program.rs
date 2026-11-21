@@ -1,9 +1,5 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use std::collections::HashSet;
-
 use serde_json::{Map, Value};
-
 const SINKS: [&str; 2] = ["sprite", "mesh"];
 const BLENDS: [&str; 5] = ["alpha", "add", "multiply", "subtract", "screen"];
 const MAX_POPULATIONS: usize = 16;
@@ -362,7 +358,6 @@ impl FxSimulation {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::canonical_json::canonical_json;
@@ -413,8 +408,8 @@ mod tests {
 
     #[test]
     fn fx_program_matches_spoint() {
-        let f: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-fx-program.json")).unwrap();
-        for case in f["parse"].as_array().unwrap() {
+        let f: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-fx-program.json"));
+        for case in crate::testkit::cases(&f, "parse") {
             let text = case["text"].as_str().unwrap();
             let want = &case["expect"];
             match (parse_fx_program(text), want["ok"].as_bool()) {
@@ -432,7 +427,7 @@ mod tests {
                 (got, _) => panic!("parseFxProgram {text}: spoint returns {want}, bevy returns {got:?}"),
             }
         }
-        for case in f["simulate"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "simulate") {
             let text = case["text"].as_str().unwrap();
             let program = parse_fx_program(text).unwrap();
             let mut sim = FxSimulation::new(&program);

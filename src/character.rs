@@ -1,5 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 pub const WALKABLE_MIN_NORMAL_Y: f64 = 0.707_106_781_186_547_6;
 pub const WALL_MAX_NORMAL_Y: f64 = 0.3;
 pub const WALL_ABOVE_STEP_M: f64 = 0.05;
@@ -169,7 +167,6 @@ pub fn apply_chart_transfer<T: ChartTransfer>(characters: &mut [CharacterControl
     ChartTransferCounts { characters: characters.len(), grounded_upward_clamped }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use avian3d::collision::collider::contact_query::contact;
@@ -312,7 +309,7 @@ mod tests {
 
     #[test]
     fn chart_transfer_matches_spoint_for_fixed_transfer() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-chart-transfer.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-chart-transfer.json"));
         let transfer = crate::chart_transfer::create_chart_transfer(&crate::chart_transfer::fixture_snapshot(&fixture["from"]), &crate::chart_transfer::fixture_snapshot(&fixture["to"]));
         let cases = fixture["cases"].as_array().unwrap();
         let mut characters: Vec<CharacterController> = cases
@@ -385,7 +382,7 @@ mod tests {
     }
 
     fn assert_scenario(name: &str) {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-character.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-character.json"));
         let scenario = fixture["scenarios"].as_array().unwrap().iter().find(|s| s["name"] == name).unwrap();
         let worst = replay(&fixture, scenario);
         assert!(worst.position <= POSITION_TOLERANCE_M, "{name}: position error {}", worst.position);

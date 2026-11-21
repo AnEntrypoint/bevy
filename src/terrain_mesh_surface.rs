@@ -1,7 +1,7 @@
-#![cfg_attr(not(test), allow(dead_code))]
 use crate::height::anchor::FACE_FRAME;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
+use crate::js_math::round_half_up;
 
 pub type V3 = [f64; 3];
 
@@ -229,10 +229,6 @@ fn cell_flip(x: i64, y: i64) -> bool {
     h = (h ^ (((h as u32) >> 16) as i32)).wrapping_mul(0x045d_9f3b);
     h ^= ((h as u32) >> 16) as i32;
     (((h as u32) >> 17) & 1) == 1
-}
-
-fn js_round(v: f64) -> i64 {
-    (v + 0.5).floor() as i64
 }
 
 fn grid_key(i: i64, j: i64) -> i64 {
@@ -530,8 +526,8 @@ where
     fn materialize(&mut self, n: Footprint) -> Option<Rc<Quad>> {
         let key = QuadKey {
             face: n.face,
-            ox: js_round(n.ox * 1000.0),
-            oy: js_round(n.oy * 1000.0),
+            ox: round_half_up(n.ox * 1000.0) as i64,
+            oy: round_half_up(n.oy * 1000.0) as i64,
             level: n.level.to_bits(),
             epoch: self.frame.chart_epoch.map(f64::to_bits),
         };
@@ -659,7 +655,6 @@ where
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

@@ -1,8 +1,7 @@
-#![cfg_attr(not(test), allow(dead_code))]
+use crate::vec3::dot;
 
 use crate::height::ops_jsgen::V3;
 use crate::height::planet_frame::Basis;
-
 const WATER_SAMPLERS_MISSING: &str = "[fire] firebreaks.water needs both a height and a sea-level sampler: pass spec.firebreaks.heightAt and spec.firebreaks.seaLevelAt, or expose terrainHeightAt and seaLevelAt on the app ctx, or declare spec.firebreaks.water: false";
 const KIND_SAMPLER_MISSING: &str = "[fire] firebreaks.kinds needs a terrain kind sampler: pass spec.firebreaks.kindAt, or expose terrainKindAt on the app ctx, or declare spec.firebreaks.kinds: []";
 
@@ -30,10 +29,6 @@ pub struct FireFrame {
     pub radius: f64,
     pub anchor_height: f64,
     pub basis: Basis,
-}
-
-fn dot(a: V3, b: V3) -> f64 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
 pub fn create_firebreak_fuel<'a>(
@@ -94,7 +89,6 @@ pub fn create_firebreak_fuel<'a>(
     })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
@@ -175,7 +169,7 @@ mod tests {
 
     #[test]
     fn create_firebreak_fuel_matches_spoint() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-fire-terrain.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-fire-terrain.json"));
         let frame_json = &fixture["frame"];
         let base_class_at = |face: i64, i: i64, j: i64| ((i + 2 * j + face + 8) % 4) as u8;
         let cell_centre_dir = |face: i64, i: i64, j: i64| {

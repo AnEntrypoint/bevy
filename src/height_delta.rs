@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use crate::brush_result::{brush_applied, brush_precondition, BrushOutcome, STRENGTH_REQUIRES};
 use crate::brush_stroke::{height_stroke_replay, replay_strokes, HeightField};
@@ -330,7 +329,6 @@ pub fn load_height_delta(json: &Value, base: Option<&dyn Fn(f64, f64) -> f64>) -
     create_height_delta(json.get("strokes").unwrap_or(&Value::Null), base)
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;

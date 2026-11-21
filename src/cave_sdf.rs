@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::collections::HashMap;
 use std::f64::consts::PI;
@@ -355,7 +354,6 @@ pub fn load_cave_carve_layer(json: &Value) -> CaveCarveLayer {
     layer
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

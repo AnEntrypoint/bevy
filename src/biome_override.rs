@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::collections::HashMap;
 use std::f64::consts::PI;
@@ -248,7 +247,6 @@ pub fn load_biome_override(json: &Value) -> Result<BiomeOverride, String> {
     create_biome_override(json.get("strokes").unwrap_or(&Value::Null))
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;

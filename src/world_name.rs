@@ -1,9 +1,6 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 use serde_json::Value;
-
-use crate::canonical_json::canonical_json;
 use crate::terrain_config::Refusal;
+use crate::canonical_json::canonical_json;
 
 pub const WORLD_DIR: &str = "apps/world";
 pub const WORLD_INDEX: &str = "index";
@@ -45,7 +42,6 @@ pub fn default_world_name_of(index_module: &Value) -> Result<String, Refusal> {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -64,24 +60,24 @@ mod tests {
 
     #[test]
     fn world_name_matches_spoint() {
-        let f: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-world-name.json")).unwrap();
+        let f: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-world-name.json"));
         assert_eq!(WORLD_DIR, f["worldDir"].as_str().unwrap(), "WORLD_DIR");
         assert_eq!(WORLD_INDEX, f["worldIndex"].as_str().unwrap(), "WORLD_INDEX");
         assert_eq!(WORLD_FIXTURES_DIR, f["worldFixturesDir"].as_str().unwrap(), "WORLD_FIXTURES_DIR");
-        for case in f["isWorldName"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "isWorldName") {
             assert_eq!(is_world_name(&case["input"]), case["expect"].as_bool().unwrap(), "isWorldName {}", case["input"]);
         }
-        for case in f["worldFileRel"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "worldFileRel") {
             check("worldFileRel", world_file_rel(&case["input"]), &case["expect"], |v: &String, want: &Value| {
                 assert_eq!(json!(v), *want, "worldFileRel");
             });
         }
-        for case in f["worldFileCandidates"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "worldFileCandidates") {
             check("worldFileCandidates", world_file_candidates(&case["input"]), &case["expect"], |v: &[String; 2], want: &Value| {
                 assert_eq!(json!(v), *want, "worldFileCandidates");
             });
         }
-        for case in f["defaultWorldNameOf"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "defaultWorldNameOf") {
             check("defaultWorldNameOf", default_world_name_of(&case["input"]), &case["expect"], |v: &String, want: &Value| {
                 assert_eq!(json!(v), *want, "defaultWorldNameOf");
             });

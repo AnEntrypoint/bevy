@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 use crate::height::baked;
 use crate::lattice_surface::{baked_hash_version_of, baked_terrain_mismatch, js_integer, js_json, js_json_or_null, js_num, truthy, LatticeSurface, LatticeTerrain};
 use serde_json::Value;
@@ -242,7 +241,6 @@ fn json_field(header: &Value) -> Result<baked::BakedHeightField, Failure> {
     baked::BakedHeightField::from_json(header).map_err(|e| Failure::Unported(format!("height/baked.rs from_json: {e}")))
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::lattice_surface::witness::{assert_close, bytes_of, num, terrain};

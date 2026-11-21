@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use crate::hud::{
     crosshair_scale, damage_dealt_text, damage_taken_text, headshot_marker_on, hit_marker_color, hit_marker_on,
@@ -234,37 +233,16 @@ fn update_hud(
     }
 }
 
-pub struct HudOverlayPlugin;
-
-impl Plugin for HudOverlayPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<HudFrame>().add_systems(Startup, spawn_overlay).add_systems(Update, update_hud);
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hud::fixture_reads::{field, number, opacity};
+    use crate::testkit::{cases, close, parse};
     use bevy::ecs::system::RunSystemOnce;
     use serde_json::Value;
 
     type Part = (HudElement, Val, Val, Option<UiTransform>, Option<Visibility>, Option<String>, Option<Color>, Option<Color>);
 
-    fn number(v: &Value) -> f64 {
-        v.as_f64().unwrap()
-    }
-
-    fn opacity(v: &Value) -> f64 {
-        v.as_str().unwrap().parse::<f64>().unwrap()
-    }
-
-    fn field(tps: &Value, key: &str, default: f64) -> f64 {
-        tps.get(key).and_then(Value::as_f64).unwrap_or(default)
-    }
-
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() <= 1e-12
-    }
+    const TOLERANCE: f64 = 1e-12;
 
     fn inputs_of(case: &Value, invuln_ms: f64) -> HudInputs {
         let i = &case["inputs"];
@@ -338,10 +316,11 @@ mod tests {
 
     #[test]
     fn hud_overlay_nodes_match_spoint_at_fixed_inputs() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud.json")).unwrap();
+        let fixture: Value = parse(include_str!("../testdata/parity/spoint-hud.json"));
         let invuln = number(&fixture["combat"]["spawnInvulnMs"]);
-        for case in fixture["cases"].as_array().unwrap() {
+        for case in cases(&fixture, "cases") {
             let name = case["name"].as_str().unwrap();
+            let check = |got: f64, want: f64, label: &str| close(got, want, TOLERANCE, &format!("{name}: {label}"));
             let out = &case["outputs"];
             let frame = frame_at(&inputs_of(case, invuln));
             let shield = frame.shield;
@@ -371,8 +350,8 @@ mod tests {
             let scale = cross.3.unwrap().scale.x;
             assert_eq!(format!("translate(-50%,-50%) scale({scale})"), out["crosshairTransform"].as_str().unwrap(), "{name}: crosshair");
 
-            assert!(close(shield, opacity(&out["shieldOpacity"])), "{name}: shield opacity");
-            assert!(close(vignette, opacity(&out["vignetteOpacity"])), "{name}: vignette opacity");
+            check(shield, opacity(&out["shieldOpacity"]), "shield opacity");
+            check(vignette, opacity(&out["vignetteOpacity"]), "vignette opacity");
         }
     }
 
@@ -533,9 +512,9 @@ mod tests {
 
     #[test]
     fn hud_overlay_geometry_matches_spoint_dom() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud-overlay.json")).unwrap();
+        let fixture: Value = parse(include_str!("../testdata/parity/spoint-hud-overlay.json"));
         let snaps = snapshot(HudFrame::default());
-        for element in fixture["elements"].as_array().unwrap() {
+        for element in cases(&fixture, "elements") {
             let key = element["key"].as_str().unwrap();
             match key {
                 "hm" => assert!(
@@ -553,14 +532,14 @@ mod tests {
 
     #[test]
     fn hud_overlay_states_match_spoint_dom_at_fixed_inputs() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-hud-overlay.json")).unwrap();
+        let fixture: Value = parse(include_str!("../testdata/parity/spoint-hud-overlay.json"));
         let invuln = number(&fixture["combat"]["spawnInvulnMs"]);
-        let elements = fixture["elements"].as_array().unwrap();
+        let elements = cases(&fixture, "elements");
         let shield_spec = elements.iter().find(|e| e["key"] == "tps-shield").unwrap();
         let vignette_spec = elements.iter().find(|e| e["key"] == "tps-vignette").unwrap();
         let shadow_alpha = number(&shield_spec["boxShadowColor"][3]);
         let vignette_alpha = number(&vignette_spec["gradient"]["stops"][1]["color"][3]);
-        for case in fixture["cases"].as_array().unwrap() {
+        for case in cases(&fixture, "cases") {
             let name = case["name"].as_str().unwrap();
             let out = &case["outputs"];
             let snaps = snapshot(frame_at(&inputs_of(case, invuln)));

@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
+use crate::js_math::round_half_up;
 
 const FIELD_WASM_BUDGET_BYTES: f64 = 32.0 * 1024.0 * 1024.0;
 const FIELD_WASM_BYTES_PER_SAMPLE: f64 = 4.0;
@@ -42,10 +42,6 @@ pub struct TerrainStreamer {
     refusal_count: u64,
     rebuild_count: u64,
     extent: f64,
-}
-
-fn js_round(x: f64) -> f64 {
-    (x + 0.5).floor()
 }
 
 fn chebyshev(a: [f64; 2], b: [f64; 2]) -> f64 {
@@ -101,7 +97,7 @@ impl TerrainStreamer {
         let extent = if options.extent.is_finite() && options.extent > 0.0 { options.extent } else { 510.0 };
         let resolution = if options.resolution.is_finite() && options.resolution > 0.0 { options.resolution } else { 4.0 };
         let rebuild_at = if options.rebuild_at.is_finite() { options.rebuild_at } else { 0.4 };
-        let mut n = js_round(extent / resolution).max(2.0);
+        let mut n = round_half_up(extent / resolution).max(2.0);
         if n % 2.0 != 0.0 {
             n += 1.0;
         }
@@ -125,7 +121,7 @@ impl TerrainStreamer {
     }
 
     fn snap_corner(&self, c: f64) -> f64 {
-        js_round((c - self.half) / self.spacing) * self.spacing
+        round_half_up((c - self.half) / self.spacing) * self.spacing
     }
 
     fn build_field(&self, cx: f64, cz: f64, grid_n: usize, host: &mut dyn HeightfieldHost) -> Option<Field> {
@@ -175,7 +171,7 @@ impl TerrainStreamer {
         let players = finite_centers(raw);
         let seed = players.first().copied().unwrap_or(fallback);
         let coarse_n = if self.n >= 16 {
-            let half_n = js_round(self.n as f64 / 2.0) as usize;
+            let half_n = round_half_up(self.n as f64 / 2.0) as usize;
             half_n + half_n % 2
         } else {
             0
@@ -249,7 +245,6 @@ impl TerrainStreamer {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

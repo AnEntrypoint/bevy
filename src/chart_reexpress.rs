@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::collections::HashSet;
 
@@ -107,7 +106,6 @@ impl<'a, T: ChartTransfer> ReexpressPass<'a, T> {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::chart_transfer::{create_chart_transfer, fixture_snapshot};

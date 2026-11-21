@@ -1,4 +1,4 @@
-use crate::glb::{self, Decoded};
+use crate::glb::{self, Decoded, BIN_CHUNK, GLB_VERSION, JSON_CHUNK};
 use crate::{basisu, png_check};
 use bevy::asset::{AssetPlugin, LoadState};
 use bevy::gltf::{Gltf, GltfPlugin};
@@ -12,10 +12,6 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 const SETTLE_TIMEOUT: Duration = Duration::from_secs(300);
-const GLB_MAGIC: &[u8; 4] = b"glTF";
-const GLB_VERSION: u32 = 2;
-const CHUNK_JSON: u32 = 0x4E4F_534A;
-const CHUNK_BIN: u32 = 0x004E_4942;
 const REFERENCE_DIRS: [&str; 3] = ["pages", "world", "values"];
 
 struct BevyLoad {
@@ -207,7 +203,7 @@ pub fn parse_glb(bytes: &[u8]) -> Result<Value, String> {
     if bytes.len() < 12 {
         return Err(format!("{} bytes is shorter than the 12-byte GLB header", bytes.len()));
     }
-    if &bytes[..4] != GLB_MAGIC {
+    if bytes[..4] != glb::GLB_MAGIC.to_le_bytes() {
         return Err("missing glTF magic".to_string());
     }
     let version = read_u32(bytes, 4);
@@ -236,8 +232,8 @@ pub fn parse_glb(bytes: &[u8]) -> Result<Value, String> {
             return Err(format!("chunk at byte {offset} has length {length}, not a multiple of 4"));
         }
         match kind {
-            CHUNK_JSON if offset == 12 => json_chunk = Some(&bytes[start..end]),
-            CHUNK_BIN if bin_chunk.is_none() && json_chunk.is_some() => bin_chunk = Some(&bytes[start..end]),
+            JSON_CHUNK if offset == 12 => json_chunk = Some(&bytes[start..end]),
+            BIN_CHUNK if bin_chunk.is_none() && json_chunk.is_some() => bin_chunk = Some(&bytes[start..end]),
             _ => {}
         }
         offset = end;

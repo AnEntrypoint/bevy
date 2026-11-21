@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
-
 use serde_json::{Map, Value};
-
 pub fn canonical_json(value: &Value) -> String {
     let mut out = String::new();
     write_value(value, &mut out);
@@ -91,13 +89,12 @@ fn js_number(n: f64) -> String {
     if n < 0.0 { format!("-{body}") } else { body }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn canonical_json_matches_spoint() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-canonical-json.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-canonical-json.json"));
         let cases = fixture["cases"].as_array().unwrap();
         assert!(!cases.is_empty(), "no canonical cases");
         for case in cases {

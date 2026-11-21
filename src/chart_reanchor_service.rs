@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -328,7 +327,6 @@ impl ChartReanchorService {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::character::ChartTransfer;

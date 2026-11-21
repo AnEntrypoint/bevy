@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use serde_json::{Map, Value};
 
@@ -272,7 +271,6 @@ pub fn create_host_field_paint(terrain_cfg: Option<&Value>) -> Result<FieldPaint
     FieldPaint::new(cell_size, chunk_cells)
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;

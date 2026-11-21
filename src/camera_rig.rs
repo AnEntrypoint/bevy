@@ -1,6 +1,4 @@
-#![cfg_attr(not(test), allow(dead_code))]
 use serde_json::Value;
-
 #[derive(Debug, PartialEq)]
 pub struct Camera {
     pub layer: String,
@@ -246,7 +244,6 @@ impl CameraRig {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -266,7 +263,7 @@ mod tests {
 
     #[test]
     fn camera_rig_matches_spoint() {
-        let fixture: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-camera-rig.json")).unwrap();
+        let fixture: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-camera-rig.json"));
         for case in fixture["define"].as_array().unwrap() {
             let name = case["name"].as_str().unwrap();
             assert_eq!(CameraRig::define(&case["spec"]).err(), case["error"].as_str(), "define {name}");

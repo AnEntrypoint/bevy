@@ -1,5 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
-
 pub const FNV1A_32_OFFSET_BASIS: u32 = 0x811c_9dc5;
 pub const FNV1A_32_PRIME: u32 = 0x0100_0193;
 
@@ -31,7 +29,6 @@ pub fn fnv1a_bytes(bytes: &[u8]) -> u32 {
     step_bytes(FNV1A_32_OFFSET_BASIS, bytes)
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
@@ -46,29 +43,29 @@ mod tests {
 
     #[test]
     fn fnv1a_matches_spoint() {
-        let f: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-fnv1a.json")).unwrap();
+        let f: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-fnv1a.json"));
         assert_eq!(u64::from(FNV1A_32_OFFSET_BASIS), f["offsetBasis"].as_u64().unwrap(), "offset basis");
         assert_eq!(u64::from(FNV1A_32_PRIME), f["prime"].as_u64().unwrap(), "prime");
-        for case in f["string"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "string") {
             let input = case["input"].as_str().unwrap();
             assert_eq!(Some(u64::from(fnv1a_string(input))), case["expect"].as_u64(), "fnv1aString {input:?}");
         }
-        for case in f["bytes"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "bytes") {
             assert_eq!(Some(u64::from(fnv1a_bytes(&bytes_of(&case["input"])))), case["expect"].as_u64(), "fnv1aBytes {}", case["input"]);
         }
-        for case in f["stepString"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "stepString") {
             let out = step_string(u32_of(&case["hash"]), case["input"].as_str().unwrap());
             assert_eq!(Some(u64::from(out)), case["expect"].as_u64(), "stepString {}", case["input"]);
         }
-        for case in f["stepBytes"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "stepBytes") {
             let out = step_bytes(u32_of(&case["hash"]), &bytes_of(&case["input"]));
             assert_eq!(Some(u64::from(out)), case["expect"].as_u64(), "stepBytes {}", case["input"]);
         }
-        for case in f["stepFloat32"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "stepFloat32") {
             let out = step_float32(u32_of(&case["hash"]), case["input"].as_f64().unwrap());
             assert_eq!(Some(u64::from(out)), case["expect"].as_u64(), "stepFloat32 {}", case["input"]);
         }
-        for case in f["stepFloat64"].as_array().unwrap() {
+        for case in crate::testkit::cases(&f, "stepFloat64") {
             let out = step_float64(u32_of(&case["hash"]), case["input"].as_f64().unwrap(), u32_of(&case["byteOffset"]));
             assert_eq!(Some(u64::from(out)), case["expect"].as_u64(), "stepFloat64 {}", case["input"]);
         }

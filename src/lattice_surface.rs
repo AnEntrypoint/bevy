@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 use crate::height::baked;
 use serde_json::{json, Value};
 
@@ -202,7 +201,6 @@ impl LatticeSurface {
     }
 }
 
-#[cfg(test)]
 pub(crate) mod witness {
     use super::LatticeTerrain;
     use serde_json::Value;
@@ -240,7 +238,6 @@ pub(crate) mod witness {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::witness::{assert_close, bytes_of, num, terrain};
     use super::*;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use crate::character::ChartTransfer;
 use crate::chart_transfer::{create_chart_transfer, ChartEpochTransfer, ChartSnapshot};
@@ -159,7 +158,6 @@ where
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::chart_transfer::fixture_snapshot;

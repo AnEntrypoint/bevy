@@ -1,13 +1,8 @@
-#[cfg_attr(not(test), allow(dead_code))]
 pub const TERRAIN_FIELD_NAMES: [&str; 3] = ["terrain:height", "terrain:water", "terrain:natural-mask"];
-#[cfg_attr(not(test), allow(dead_code))]
 pub const FIELD_LAYER_NAMES: [&str; 2] = ["PLAYER", "CREATOR"];
-#[cfg_attr(not(test), allow(dead_code))]
 pub const PAINTED_HEIGHT_FIELD: &str = "terrain:height";
-#[cfg_attr(not(test), allow(dead_code))]
 pub const NATURAL_MASK_FIELD: &str = "terrain:natural-mask";
 
-#[cfg(test)]
 mod tests {
     use super::{FIELD_LAYER_NAMES, NATURAL_MASK_FIELD, PAINTED_HEIGHT_FIELD, TERRAIN_FIELD_NAMES};
     use serde_json::Value;

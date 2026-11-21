@@ -86,15 +86,13 @@ fn state_hash(app: &mut App) -> u32 {
     hash
 }
 
-fn simulate(bodies: usize, warmup: usize, ticks: usize) -> (App, Vec<f64>) {
-    simulate_with(bodies, warmup, ticks, false)
-}
+const WARMUP_TICKS: usize = 30;
 
-fn simulate_with(bodies: usize, warmup: usize, ticks: usize, diagnostics: bool) -> (App, Vec<f64>) {
+fn simulate(bodies: usize, ticks: usize, diagnostics: bool) -> (App, Vec<f64>) {
     let mut app = build_app(bodies, diagnostics);
     app.finish();
     app.cleanup();
-    for _ in 0..warmup {
+    for _ in 0..WARMUP_TICKS {
         app.update();
     }
     let mut samples = Vec::with_capacity(ticks);
@@ -106,11 +104,15 @@ fn simulate_with(bodies: usize, warmup: usize, ticks: usize, diagnostics: bool) 
     (app, samples)
 }
 
+fn mean_of(values: &[f64]) -> f64 {
+    values.iter().sum::<f64>() / values.len() as f64
+}
+
 pub fn run(bodies: usize, ticks: usize) {
-    let (mut app, mut samples) = simulate(bodies, 30, ticks);
+    let (mut app, mut samples) = simulate(bodies, ticks, false);
     let hash = state_hash(&mut app);
     samples.sort_by(f64::total_cmp);
-    let mean = samples.iter().sum::<f64>() / samples.len() as f64;
+    let mean = mean_of(&samples);
     let pick = |q: f64| samples[((samples.len() as f64 - 1.0) * q).round() as usize];
     let threads = bevy::tasks::ComputeTaskPool::get().thread_num();
     println!(
@@ -125,16 +127,16 @@ pub fn run(bodies: usize, ticks: usize) {
 }
 
 pub fn phases(bodies: usize, ticks: usize) {
-    let (app, samples) = simulate_with(bodies, 30, ticks, true);
+    let (app, samples) = simulate(bodies, ticks, true);
     let threads = bevy::tasks::ComputeTaskPool::get().thread_num();
-    let mean = samples.iter().sum::<f64>() / samples.len() as f64;
+    let mean = mean_of(&samples);
     let store = app.world().resource::<bevy::diagnostic::DiagnosticsStore>();
     let mut phases: Vec<(String, f64, usize)> = store
         .iter()
         .filter_map(|diagnostic| {
             let values: Vec<f64> = diagnostic.values().copied().collect();
             (!values.is_empty()).then(|| {
-                let average = values.iter().sum::<f64>() / values.len() as f64;
+                let average = mean_of(&values);
                 (diagnostic.path().to_string(), average, values.len())
             })
         })
@@ -154,7 +156,7 @@ pub fn schedules(bodies: usize, ticks: usize) {
     let mut app = build_app(bodies, false);
     app.finish();
     app.cleanup();
-    for _ in 0..30 {
+    for _ in 0..WARMUP_TICKS {
         app.update();
     }
     let labels = app.world().resource::<bevy::app::MainScheduleOrder>().labels.clone();
@@ -183,8 +185,8 @@ pub fn schedules(bodies: usize, ticks: usize) {
 }
 
 pub fn det(bodies: usize, ticks: usize) -> bool {
-    let (mut first, _) = simulate(bodies, 30, ticks);
-    let (mut second, _) = simulate(bodies, 30, ticks);
+    let (mut first, _) = simulate(bodies, ticks, false);
+    let (mut second, _) = simulate(bodies, ticks, false);
     let a = state_hash(&mut first);
     let b = state_hash(&mut second);
     let pass = a == b;

@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), allow(dead_code))]
 
 use crate::character::ChartTransfer;
 
@@ -62,12 +61,10 @@ impl ChartTransfer for ChartEpochTransfer {
     }
 }
 
-#[cfg(test)]
 fn json_vec3(v: &serde_json::Value) -> [f64; 3] {
     [v[0].as_f64().unwrap(), v[1].as_f64().unwrap(), v[2].as_f64().unwrap()]
 }
 
-#[cfg(test)]
 pub fn fixture_snapshot(v: &serde_json::Value) -> ChartSnapshot {
     ChartSnapshot {
         radius: v["radius"].as_f64().unwrap(),
@@ -79,7 +76,6 @@ pub fn fixture_snapshot(v: &serde_json::Value) -> ChartSnapshot {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;

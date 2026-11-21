@@ -123,6 +123,40 @@ struct Host {
     player_ready: bool,
 }
 
+#[derive(Clone, Copy)]
+enum PathTarget<'a> {
+    World,
+    WorldState,
+    State(&'a str),
+    Session(&'a str),
+    Anim(&'a str),
+    View(&'a str),
+    Params(&'a str),
+    Object(&'a str),
+    Place(&'a str),
+    PlaceState(&'a str),
+    Unknown,
+}
+
+impl<'a> PathTarget<'a> {
+    fn parse(path: &'a str) -> Self {
+        let Some((scheme, rest)) = path.split_once(':') else {
+            return if path == "world" { Self::World } else { Self::Unknown };
+        };
+        match (scheme, rest) {
+            ("world", "state") => Self::WorldState,
+            ("state", id) => Self::State(id),
+            ("session", id) => Self::Session(id),
+            ("anim", id) => Self::Anim(id),
+            ("view", id) => Self::View(id),
+            ("params", id) => Self::Params(id),
+            ("obj", id) => Self::Object(id),
+            ("place", place) => place.strip_suffix(":state").map_or(Self::Place(place), Self::PlaceState),
+            _ => Self::Unknown,
+        }
+    }
+}
+
 impl Host {
     fn new(root: &Path) -> Self {
         Self {
@@ -235,206 +269,151 @@ impl Host {
         self.extras.entry(id.to_string()).or_default()
     }
 
+    fn extra_json(&self, id: &str, key: &str) -> Option<String> {
+        self.extras.get(id).and_then(|map| map.get(key)).map(json_string)
+    }
+
     fn place_state_map(&mut self, place: &str) -> &mut Map<String, Json> {
         self.place_states.entry(place.to_string()).or_default()
     }
 
     fn get_json(&mut self, path: &str, key: &str) -> String {
-        if path == "world" {
-            return self.get_world(key);
+        match PathTarget::parse(path) {
+            PathTarget::World => self.get_world(key),
+            PathTarget::WorldState => self.world_state.get(key).map(json_string).unwrap_or_default(),
+            PathTarget::State(id) => self.get_state(id, key),
+            PathTarget::Session(id) => self.session_map(id).get(key).map(json_string).unwrap_or_default(),
+            PathTarget::Anim(id) if key.is_empty() => self.anim_json(id),
+            PathTarget::Anim(id) => self
+                .world()
+                .get::<AnimState>(self.index.get(id).copied().unwrap_or(Entity::PLACEHOLDER))
+                .and_then(|state| state.0.get(key))
+                .map(json_string)
+                .unwrap_or_default(),
+            PathTarget::View(id) => self.get_view(id, key),
+            PathTarget::Params(id) => self.get_params(id, key),
+            PathTarget::Object(id) => self.get_object(id, key),
+            PathTarget::PlaceState(place) => self.place_state_map(place).get(key).map(json_string).unwrap_or_default(),
+            PathTarget::Place(place) => self.get_place(place, key),
+            PathTarget::Unknown => String::new(),
         }
-        if path == "world:state" {
-            return self.world_state.get(key).map(json_string).unwrap_or_default();
-        }
-        if let Some(id) = path.strip_prefix("state:") {
-            return self.get_state(id, key);
-        }
-        if let Some(id) = path.strip_prefix("session:") {
-            return self.session_map(id).get(key).map(json_string).unwrap_or_default();
-        }
-        if let Some(id) = path.strip_prefix("anim:") {
-            return if key.is_empty() {
-                self.anim_json(id)
-            } else {
-                self.world()
-                    .get::<AnimState>(self.index.get(id).copied().unwrap_or(Entity::PLACEHOLDER))
-                    .and_then(|state| state.0.get(key))
-                    .map(json_string)
-                    .unwrap_or_default()
-            };
-        }
-        if let Some(id) = path.strip_prefix("view:") {
-            return self.get_view(id, key);
-        }
-        if let Some(id) = path.strip_prefix("params:") {
-            return self.get_params(id, key);
-        }
-        if let Some(id) = path.strip_prefix("obj:") {
-            return self.get_object(id, key);
-        }
-        if let Some(rest) = path.strip_prefix("place:") {
-            if let Some(place) = rest.strip_suffix(":state") {
-                return self.place_state_map(place).get(key).map(json_string).unwrap_or_default();
-            }
-            return self.get_place(rest, key);
-        }
-        String::new()
     }
 
     fn set_json(&mut self, path: &str, key: &str, text: &str) {
         let value = parse_json(text);
-        if path == "world" {
-            let mut state = self.world_mut().resource_mut::<WorldState>();
-            match key {
-                "state" => state.state = value.as_object().cloned().unwrap_or_default(),
-                "ui" => state.ui = value.as_object().cloned().unwrap_or_default(),
-                "camera" => state.camera = value.as_object().cloned().unwrap_or_default(),
-                "inputs" => state.inputs = value.as_object().cloned().unwrap_or_default(),
-                "mode" => state.mode = value.as_str().unwrap_or("dev").to_string(),
-                "settling" => state.settling = value.as_bool().unwrap_or(false),
-                "defaultPlace" => state.default_place = value.as_str().unwrap_or("").to_string(),
-                _ => {
-                    state.extra.insert(key.to_string(), value);
+        match PathTarget::parse(path) {
+            PathTarget::World => {
+                let mut state = self.world_mut().resource_mut::<WorldState>();
+                match key {
+                    "state" => state.state = value.as_object().cloned().unwrap_or_default(),
+                    "ui" => state.ui = value.as_object().cloned().unwrap_or_default(),
+                    "camera" => state.camera = value.as_object().cloned().unwrap_or_default(),
+                    "inputs" => state.inputs = value.as_object().cloned().unwrap_or_default(),
+                    "mode" => state.mode = value.as_str().unwrap_or("dev").to_string(),
+                    "settling" => state.settling = value.as_bool().unwrap_or(false),
+                    "defaultPlace" => state.default_place = value.as_str().unwrap_or("").to_string(),
+                    _ => {
+                        state.extra.insert(key.to_string(), value);
+                    }
                 }
             }
-            return;
-        }
-        if path == "world:state" {
-            self.world_state.insert(key.to_string(), value);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("state:") {
-            self.set_state(id, key, value);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("session:") {
-            self.session_map(id).insert(key.to_string(), value);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("anim:") {
-            self.set_anim(id, key, value);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("view:") {
-            self.view_map(id).insert(key.to_string(), value);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("obj:") {
-            self.set_object(id, key, value);
-            return;
-        }
-        if let Some(rest) = path.strip_prefix("place:") {
-            if let Some(place) = rest.strip_suffix(":state") {
+            PathTarget::WorldState => {
+                self.world_state.insert(key.to_string(), value);
+            }
+            PathTarget::State(id) => self.set_state(id, key, value),
+            PathTarget::Session(id) => {
+                self.session_map(id).insert(key.to_string(), value);
+            }
+            PathTarget::Anim(id) => self.set_anim(id, key, value),
+            PathTarget::View(id) => {
+                self.view_map(id).insert(key.to_string(), value);
+            }
+            PathTarget::Object(id) => self.set_object(id, key, value),
+            PathTarget::PlaceState(place) => {
                 self.place_state_map(place).insert(key.to_string(), value);
             }
+            PathTarget::Params(_) | PathTarget::Place(_) | PathTarget::Unknown => {}
         }
     }
 
     fn delete_json(&mut self, path: &str, key: &str) {
-        if path == "world" {
-            let mut state = self.world_mut().resource_mut::<WorldState>();
-            match key {
-                "state" => state.state.remove(key),
-                "ui" => state.ui.remove(key),
-                "camera" => state.camera.remove(key),
-                "inputs" => state.inputs.remove(key),
-                _ => state.extra.remove(key),
-            };
-            return;
-        }
-        if path == "world:state" {
-            self.world_state.remove(key);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("state:") {
-            if let Some(entity) = self.index.get(id).copied() {
-                if let Some(mut state) = self.world_mut().get_mut::<ObjectState>(entity) {
-                    state.0.remove(key);
+        match PathTarget::parse(path) {
+            PathTarget::World => {
+                let mut state = self.world_mut().resource_mut::<WorldState>();
+                match key {
+                    "state" => state.state.remove(key),
+                    "ui" => state.ui.remove(key),
+                    "camera" => state.camera.remove(key),
+                    "inputs" => state.inputs.remove(key),
+                    _ => state.extra.remove(key),
+                };
+            }
+            PathTarget::WorldState => {
+                self.world_state.remove(key);
+            }
+            PathTarget::State(id) => {
+                if let Some(entity) = self.index.get(id).copied() {
+                    if let Some(mut state) = self.world_mut().get_mut::<ObjectState>(entity) {
+                        state.0.remove(key);
+                    }
                 }
             }
-            return;
-        }
-        if let Some(id) = path.strip_prefix("session:") {
-            self.session_map(id).remove(key);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("anim:") {
-            self.set_anim(id, key, Json::Null);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("view:") {
-            self.view_map(id).remove(key);
-            return;
-        }
-        if let Some(id) = path.strip_prefix("obj:") {
-            self.extras_map(id).remove(key);
-            return;
-        }
-        if let Some(rest) = path.strip_prefix("place:") {
-            if let Some(place) = rest.strip_suffix(":state") {
+            PathTarget::Session(id) => {
+                self.session_map(id).remove(key);
+            }
+            PathTarget::Anim(id) => self.set_anim(id, key, Json::Null),
+            PathTarget::View(id) => {
+                self.view_map(id).remove(key);
+            }
+            PathTarget::Object(id) => {
+                self.extras_map(id).remove(key);
+            }
+            PathTarget::PlaceState(place) => {
                 self.place_state_map(place).remove(key);
             }
+            PathTarget::Params(_) | PathTarget::Place(_) | PathTarget::Unknown => {}
         }
     }
 
     fn has_json(&mut self, path: &str, key: &str) -> bool {
-        if path == "world" {
-            return !self.get_world(key).is_empty();
-        }
-        if path == "world:state" {
-            return self.world_state.contains_key(key);
-        }
-        if let Some(id) = path.strip_prefix("state:") {
-            return self
+        match PathTarget::parse(path) {
+            PathTarget::World => !self.get_world(key).is_empty(),
+            PathTarget::WorldState => self.world_state.contains_key(key),
+            PathTarget::State(id) => self
                 .index
                 .get(id)
                 .and_then(|entity| self.world().get::<ObjectState>(*entity))
-                .is_some_and(|state| state.0.contains_key(key));
-        }
-        if let Some(id) = path.strip_prefix("session:") {
-            return self.session_map(id).contains_key(key);
-        }
-        if let Some(id) = path.strip_prefix("anim:") {
-            return self
+                .is_some_and(|state| state.0.contains_key(key)),
+            PathTarget::Session(id) => self.session_map(id).contains_key(key),
+            PathTarget::Anim(id) => self
                 .index
                 .get(id)
                 .and_then(|entity| self.world().get::<AnimState>(*entity))
-                .is_some_and(|state| state.0.contains_key(key));
+                .is_some_and(|state| state.0.contains_key(key)),
+            PathTarget::Object(id) => !self.get_object(id, key).is_empty(),
+            PathTarget::PlaceState(place) => self.place_state_map(place).contains_key(key),
+            PathTarget::View(_) | PathTarget::Params(_) | PathTarget::Place(_) | PathTarget::Unknown => false,
         }
-        if let Some(id) = path.strip_prefix("obj:") {
-            return !self.get_object(id, key).is_empty();
-        }
-        if let Some(rest) = path.strip_prefix("place:") {
-            if let Some(place) = rest.strip_suffix(":state") {
-                return self.place_state_map(place).contains_key(key);
-            }
-        }
-        false
     }
 
     fn keys_json(&mut self, path: &str) -> String {
-        let keys = if path == "world:state" {
-            self.world_state.keys().cloned().collect::<Vec<_>>()
-        } else if let Some(id) = path.strip_prefix("state:") {
-            self.index
+        let keys = match PathTarget::parse(path) {
+            PathTarget::WorldState => self.world_state.keys().cloned().collect::<Vec<_>>(),
+            PathTarget::State(id) => self
+                .index
                 .get(id)
                 .and_then(|entity| self.world().get::<ObjectState>(*entity))
                 .map(|state| state.0.keys().cloned().collect::<Vec<_>>())
-                .unwrap_or_default()
-        } else if let Some(id) = path.strip_prefix("session:") {
-            self.session_map(id).keys().cloned().collect::<Vec<_>>()
-        } else if let Some(id) = path.strip_prefix("anim:") {
-            self.index
+                .unwrap_or_default(),
+            PathTarget::Session(id) => self.session_map(id).keys().cloned().collect::<Vec<_>>(),
+            PathTarget::Anim(id) => self
+                .index
                 .get(id)
                 .and_then(|entity| self.world().get::<AnimState>(*entity))
                 .map(|state| state.0.keys().cloned().collect::<Vec<_>>())
-                .unwrap_or_default()
-        } else if let Some(rest) = path.strip_prefix("place:") {
-            rest.strip_suffix(":state")
-                .map(|place| self.place_state_map(place).keys().cloned().collect::<Vec<_>>())
-                .unwrap_or_default()
-        } else {
-            Vec::new()
+                .unwrap_or_default(),
+            PathTarget::PlaceState(place) => self.place_state_map(place).keys().cloned().collect::<Vec<_>>(),
+            _ => Vec::new(),
         };
         json_string(&Json::Array(keys.into_iter().map(Json::String).collect()))
     }
@@ -641,12 +620,7 @@ impl Host {
             "isLocal" => "true".to_string(),
             "isGodMode" | "isEditor" => "false".to_string(),
             "arrival" => json_string(&json!({"kind": "join"})),
-            "pocket" => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get("pocket"))
-                .map(json_string)
-                .unwrap_or_else(|| "{}".to_string()),
+            "pocket" => self.extra_json(id, "pocket").unwrap_or_else(|| "{}".to_string()),
             "tags" => world
                 .get::<Tags>(entity)
                 .map(|tags| json_string(&Json::Array(tags.0.iter().cloned().map(Json::String).collect())))
@@ -720,24 +694,9 @@ impl Host {
                 .get::<crate::runtime::AudioState>(entity)
                 .map(|audio| json_string(&audio.0))
                 .unwrap_or_else(|| "null".to_string()),
-            "joints" => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get("joints"))
-                .map(json_string)
-                .unwrap_or_else(|| "{}".to_string()),
-            "ragdoll" => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get("ragdoll"))
-                .map(json_string)
-                .unwrap_or_else(|| "null".to_string()),
-            "spline" => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get("spline"))
-                .map(json_string)
-                .unwrap_or_else(|| "null".to_string()),
+            "joints" => self.extra_json(id, "joints").unwrap_or_else(|| "{}".to_string()),
+            "ragdoll" => self.extra_json(id, "ragdoll").unwrap_or_else(|| "null".to_string()),
+            "spline" => self.extra_json(id, "spline").unwrap_or_else(|| "null".to_string()),
             "bounds" => world
                 .get::<PrimitiveInfo>(entity)
                 .and_then(|primitive| primitive.0.as_ref())
@@ -761,7 +720,7 @@ impl Host {
                 .map(|light| json_string(&light.0))
                 .unwrap_or_else(|| "null".to_string()),
             "visible" | "render" | "visibleInFirstPerson" | "castShadow" | "receiveShadow" => {
-                self.extras.get(id).and_then(|map| map.get(key)).map(json_string).unwrap_or_else(|| "true".to_string())
+                self.extra_json(id, key).unwrap_or_else(|| "true".to_string())
             }
             "sleeping" => world
                 .get::<Sleeping>(entity)
@@ -771,12 +730,7 @@ impl Host {
                 .get::<Sleeping>(entity)
                 .map(|_| "false".to_string())
                 .unwrap_or_else(|| "true".to_string()),
-            "controller" | "controlling" | "destination" | "measure" | "morph" => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get(key))
-                .map(json_string)
-                .unwrap_or_else(|| "null".to_string()),
+            "controller" | "controlling" | "destination" | "measure" | "morph" => self.extra_json(id, key).unwrap_or_else(|| "null".to_string()),
             "triangles" => "null".to_string(),
             "skeleton" => "[]".to_string(),
             "env" | "gains" => "{}".to_string(),
@@ -788,12 +742,7 @@ impl Host {
             "simulatedBy" => "\"server\"".to_string(),
             "audience" => "\"all\"".to_string(),
             "visibility" => "null".to_string(),
-            _ => self
-                .extras
-                .get(id)
-                .and_then(|map| map.get(key))
-                .map(json_string)
-                .unwrap_or_default(),
+            _ => self.extra_json(id, key).unwrap_or_default(),
         }
     }
 
@@ -4131,22 +4080,20 @@ mod tests {
         serde_json::from_str(&text).unwrap()
     }
 
-    #[test]
-    fn ballistics_and_quat_rotate_match_the_spoint_fixture() {
-        let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../testdata/parity/spoint-ballistics-quat.json")).unwrap();
-        let runner = r#"(c) => { if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const q = Array.isArray(c.q) ? { x: c.q[0], y: c.q[1], z: c.q[2], w: c.q[3] } : c.q; const r = __builtins.vec3.rotate(q, c.v); return [r.x, r.y, r.z]; }"#;
+    fn assert_fixture_matches(fixture_text: &str, runner: &str) {
+        let fixture = crate::testkit::parse(fixture_text);
         let actual = evaluate_cases(&fixture["cases"], runner);
         assert!(close(&actual, &fixture["expected"]), "bevy {actual} differs from spoint {}", fixture["expected"]);
     }
 
     #[test]
+    fn ballistics_and_quat_rotate_match_the_spoint_fixture() {
+        assert_fixture_matches(include_str!("../../testdata/parity/spoint-ballistics-quat.json"), r#"(c) => { if (c.kind === 'solve') return __builtins.ballistics.solveShot(c.from, c.to, c.speed, c.g, c.lead); if (c.kind === 'elevation') return __builtins.ballistics.elevation(c.speed, c.g, c.distance, c.rise); const q = Array.isArray(c.q) ? { x: c.q[0], y: c.q[1], z: c.q[2], w: c.q[3] } : c.q; const r = __builtins.vec3.rotate(q, c.v); return [r.x, r.y, r.z]; }"#);
+    }
+
+    #[test]
     fn noise_matches_the_spoint_fixture() {
-        let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../testdata/parity/spoint-noise.json")).unwrap();
-        let runner = r#"(c) => { if (c.kind === 'noise2d') return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: 1 }); return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: c.octaves, gain: c.persistence, lacunarity: c.lacunarity }); }"#;
-        let actual = evaluate_cases(&fixture["cases"], runner);
-        assert!(close(&actual, &fixture["expected"]), "bevy {actual} differs from spoint {}", fixture["expected"]);
+        assert_fixture_matches(include_str!("../../testdata/parity/spoint-noise.json"), r#"(c) => { if (c.kind === 'noise2d') return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: 1 }); return __builtins.noise.fbm2({ x: c.x, z: c.z, seed: c.seed, octaves: c.octaves, gain: c.persistence, lacunarity: c.lacunarity }); }"#);
     }
 
     #[test]

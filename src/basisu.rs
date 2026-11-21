@@ -67,16 +67,18 @@ fn retire_extension_name(json: &mut Value, list: &str) {
 }
 
 const KTX2_IDENTIFIER: [u8; 12] = [0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n'];
-const KTX2_HEADER_LEN: usize = 80;
-const KTX2_LEVEL_ENTRY_LEN: usize = 24;
-const KTX2_VK_FORMAT_OFFSET: usize = 12;
-const KTX2_LEVEL_COUNT_OFFSET: usize = 40;
-const KTX2_SUPERCOMPRESSION_OFFSET: usize = 44;
+pub(crate) const KTX2_HEADER_LEN: usize = 80;
+pub(crate) const KTX2_LEVEL_ENTRY_LEN: usize = 24;
+pub(crate) const KTX2_WIDTH_OFFSET: usize = 20;
+pub(crate) const KTX2_HEIGHT_OFFSET: usize = 24;
+pub(crate) const KTX2_VK_FORMAT_OFFSET: usize = 12;
+pub(crate) const KTX2_LEVEL_COUNT_OFFSET: usize = 40;
+pub(crate) const KTX2_SUPERCOMPRESSION_OFFSET: usize = 44;
 const KTX2_SGD_LENGTH_OFFSET: usize = 72;
 const VK_FORMAT_UNDEFINED: u32 = 0;
-const SUPERCOMPRESSION_ZSTD: u32 = 2;
-const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
-const VK_FORMAT_BC7_UNORM: u32 = 145;
+pub(crate) const SUPERCOMPRESSION_ZSTD: u32 = 2;
+pub(crate) const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
+pub(crate) const VK_FORMAT_BC7_UNORM: u32 = 145;
 const KHR_DF_MODEL_BC7: u8 = 134;
 const VK_FORMAT_ETC2_R8G8B8A8_UNORM: u32 = 151;
 const VK_FORMAT_ASTC_4X4_UNORM: u32 = 157;
@@ -239,11 +241,16 @@ pub fn is_basis_ktx2(bytes: &[u8]) -> bool {
     bytes.starts_with(&KTX2_IDENTIFIER) && read_u32(bytes, KTX2_VK_FORMAT_OFFSET) == Some(VK_FORMAT_UNDEFINED)
 }
 
-fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
-    bytes
-        .get(offset..offset + 4)
-        .and_then(|slice| <[u8; 4]>::try_from(slice).ok())
-        .map(u32::from_le_bytes)
+pub(crate) fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
+    read_array(bytes, offset).map(u32::from_le_bytes)
+}
+
+pub(crate) fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
+    read_array(bytes, offset).map(u64::from_le_bytes)
+}
+
+fn read_array<const N: usize>(bytes: &[u8], offset: usize) -> Option<[u8; N]> {
+    bytes.get(offset..offset + N)?.try_into().ok()
 }
 
 pub fn transcode_basis(input: &[u8], target: TextureTarget) -> Result<Vec<u8>, String> {
@@ -319,9 +326,7 @@ fn inflate_zstd_levels(bytes: &[u8]) -> Result<Option<Vec<u8>>, String> {
     let mut out = bytes[..KTX2_HEADER_LEN].to_vec();
     out[KTX2_SUPERCOMPRESSION_OFFSET..KTX2_SUPERCOMPRESSION_OFFSET + 4].copy_from_slice(&0u32.to_le_bytes());
     for (offset, data) in offsets.iter().zip(&plain) {
-        out.extend_from_slice(&(*offset as u64).to_le_bytes());
-        out.extend_from_slice(&(data.len() as u64).to_le_bytes());
-        out.extend_from_slice(&(data.len() as u64).to_le_bytes());
+        push_level_index(&mut out, *offset, data.len(), data.len());
     }
     out.extend_from_slice(middle);
     for (offset, data) in offsets.iter().zip(&plain) {
@@ -331,11 +336,10 @@ fn inflate_zstd_levels(bytes: &[u8]) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(out))
 }
 
-fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
-    bytes
-        .get(offset..offset + 8)
-        .and_then(|slice| <[u8; 8]>::try_from(slice).ok())
-        .map(u64::from_le_bytes)
+fn push_level_index(out: &mut Vec<u8>, offset: usize, length: usize, uncompressed_length: usize) {
+    out.extend_from_slice(&(offset as u64).to_le_bytes());
+    out.extend_from_slice(&(length as u64).to_le_bytes());
+    out.extend_from_slice(&(uncompressed_length as u64).to_le_bytes());
 }
 
 pub fn ktx2_bytes(target: TextureTarget, width: u32, height: u32, levels: &[Vec<u8>]) -> Vec<u8> {
@@ -358,9 +362,7 @@ pub fn ktx2_bytes(target: TextureTarget, width: u32, height: u32, levels: &[Vec<
     out.extend_from_slice(&0u64.to_le_bytes());
     out.extend_from_slice(&0u64.to_le_bytes());
     for (level, bytes) in levels.iter().enumerate() {
-        out.extend_from_slice(&(offsets[level] as u64).to_le_bytes());
-        out.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
-        out.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
+        push_level_index(&mut out, offsets[level], bytes.len(), bytes.len());
     }
     out.extend_from_slice(&dfd);
     for level in (0..levels.len()).rev() {
@@ -409,13 +411,21 @@ fn wrap_dfd(block: Vec<u8>) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_basis_ktx2, ktx2_bytes, promote, transcode_basis, transcode_basis_images, TextureTarget};
+    use super::{is_basis_ktx2, ktx2_bytes, promote, push_level_index, read_u32, read_u64, transcode_basis, transcode_basis_images, TextureTarget, KTX2_IDENTIFIER};
     use bevy::image::CompressedImageFormats;
     use serde_json::json;
 
+    fn u32_at(bytes: &[u8], at: usize) -> u32 {
+        read_u32(bytes, at).expect("four bytes")
+    }
+
+    fn u64_at(bytes: &[u8], at: usize) -> u64 {
+        read_u64(bytes, at).expect("eight bytes")
+    }
+
     #[test]
     fn basis_detection_reads_the_vk_format() {
-        let mut header = vec![0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n'];
+        let mut header = KTX2_IDENTIFIER.to_vec();
         header.resize(44, 0);
         header.extend_from_slice(&1u32.to_le_bytes());
         assert!(is_basis_ktx2(&header));
@@ -429,17 +439,17 @@ mod tests {
     #[test]
     fn rgba8_ktx2_lists_levels_smallest_first_and_writes_a_dfd() {
         let bytes = ktx2_bytes(TextureTarget::Rgba8, 4, 2, &[vec![7u8; 32], vec![9u8; 8]]);
-        assert_eq!(&bytes[..12], &[0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n']);
-        assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), 37);
-        assert_eq!(u32::from_le_bytes(bytes[20..24].try_into().unwrap()), 4);
-        assert_eq!(u32::from_le_bytes(bytes[24..28].try_into().unwrap()), 2);
-        assert_eq!(u32::from_le_bytes(bytes[40..44].try_into().unwrap()), 2);
-        assert_eq!(u32::from_le_bytes(bytes[44..48].try_into().unwrap()), 0);
-        let dfd_offset = u32::from_le_bytes(bytes[48..52].try_into().unwrap()) as usize;
+        assert_eq!(&bytes[..12], &KTX2_IDENTIFIER);
+        assert_eq!(u32_at(&bytes, 12), 37);
+        assert_eq!(u32_at(&bytes, 20), 4);
+        assert_eq!(u32_at(&bytes, 24), 2);
+        assert_eq!(u32_at(&bytes, 40), 2);
+        assert_eq!(u32_at(&bytes, 44), 0);
+        let dfd_offset = u32_at(&bytes, 48) as usize;
         assert_eq!(dfd_offset, 128);
-        assert_eq!(u32::from_le_bytes(bytes[dfd_offset..dfd_offset + 4].try_into().unwrap()), 92);
-        let level0 = u64::from_le_bytes(bytes[80..88].try_into().unwrap()) as usize;
-        let level1 = u64::from_le_bytes(bytes[104..112].try_into().unwrap()) as usize;
+        assert_eq!(u32_at(&bytes, dfd_offset), 92);
+        let level0 = u64_at(&bytes, 80) as usize;
+        let level1 = u64_at(&bytes, 104) as usize;
         assert_eq!(&bytes[level0..level0 + 32], &[7u8; 32]);
         assert_eq!(&bytes[level1..level1 + 8], &[9u8; 8]);
         assert!(level1 < level0);
@@ -472,9 +482,9 @@ mod tests {
         assert_eq!(TextureTarget::Astc4x4.level_bytes(5, 3), 2 * 16);
         for (target, vk_format, model) in [(TextureTarget::Etc2, 151u32, 161u8), (TextureTarget::Astc4x4, 157u32, 162u8)] {
             let bytes = ktx2_bytes(target, 8, 4, &[vec![3u8; 32], vec![5u8; 16]]);
-            assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), vk_format);
-            assert_eq!(u32::from_le_bytes(bytes[40..44].try_into().unwrap()), 2);
-            let dfd = u32::from_le_bytes(bytes[48..52].try_into().unwrap()) as usize;
+            assert_eq!(u32_at(&bytes, 12), vk_format);
+            assert_eq!(u32_at(&bytes, 40), 2);
+            let dfd = u32_at(&bytes, 48) as usize;
             assert_eq!(bytes[dfd + 12], model);
         }
         assert_eq!(TextureTarget::Etc2.transcoder_format(), 2);
@@ -486,9 +496,9 @@ mod tests {
         assert_eq!(TextureTarget::Bc7.level_bytes(5, 3), 2 * 1 * 16);
         assert_eq!(TextureTarget::Rgba8.level_bytes(5, 3), 60);
         let bytes = ktx2_bytes(TextureTarget::Bc7, 8, 4, &[vec![3u8; 32], vec![5u8; 16]]);
-        assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), 145);
-        assert_eq!(u32::from_le_bytes(bytes[40..44].try_into().unwrap()), 2);
-        let dfd = u32::from_le_bytes(bytes[48..52].try_into().unwrap()) as usize;
+        assert_eq!(u32_at(&bytes, 12), 145);
+        assert_eq!(u32_at(&bytes, 40), 2);
+        let dfd = u32_at(&bytes, 48) as usize;
         assert_eq!(bytes[dfd + 12], 134);
     }
 
@@ -503,7 +513,7 @@ mod tests {
     fn zstd_levels_are_inflated_and_the_scheme_is_cleared() {
         let levels: [Vec<u8>; 2] = [(0u8..64).collect(), vec![7u8; 16]];
         let mut file = vec![0u8; 80];
-        file[..12].copy_from_slice(&[0xAB, b'K', b'T', b'X', b' ', b'2', b'0', 0xBB, b'\r', b'\n', 0x1A, b'\n']);
+        file[..12].copy_from_slice(&KTX2_IDENTIFIER);
         file[40..44].copy_from_slice(&2u32.to_le_bytes());
         file[44..48].copy_from_slice(&2u32.to_le_bytes());
         let mut cursor = 80 + 24 * levels.len();
@@ -513,9 +523,7 @@ mod tests {
             let frame = zstd_raw_frame(level);
             let frame_len = frame.len();
             cursor = cursor.next_multiple_of(8);
-            index.extend_from_slice(&(cursor as u64).to_le_bytes());
-            index.extend_from_slice(&(frame_len as u64).to_le_bytes());
-            index.extend_from_slice(&(level.len() as u64).to_le_bytes());
+            push_level_index(&mut index, cursor, frame_len, level.len());
             data.push((cursor, frame));
             cursor += frame_len;
         }

@@ -1,11 +1,8 @@
-#![cfg_attr(not(test), allow(dead_code))]
+use crate::vec3::{dot, length, normalise_checked, sub};
 
 use std::f64::consts::PI;
-
 use serde_json::Value;
-
 use crate::height::ops_jsgen::V3;
-
 pub const DEFAULT_MAX_DISTANCE: f64 = 3.0;
 pub const DEFAULT_MAX_ANGLE_RAD: f64 = PI / 6.0;
 pub const DEFAULT_LABEL: &str = "Press E";
@@ -42,25 +39,8 @@ fn read_vec3(value: Option<&Value>, name: &str) -> Result<V3, PressRefusal> {
     parsed.ok_or_else(|| refusal("vec3", "vec3-invalid", &format!("{name} must be an array of three finite numbers")))
 }
 
-fn dot(a: V3, b: V3) -> f64 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-}
-
-fn sub(a: V3, b: V3) -> V3 {
-    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-}
-
-fn length(a: V3) -> f64 {
-    dot(a, a).sqrt()
-}
-
 fn normalize(a: V3) -> Result<V3, PressRefusal> {
-    let len = length(a);
-    if len == 0.0 {
-        return Err(refusal("vec3", "vec3-zero-length", "cannot normalize a zero vector"));
-    }
-    let k = 1.0 / len;
-    Ok([a[0] * k, a[1] * k, a[2] * k])
+    normalise_checked(a).ok_or_else(|| refusal("vec3", "vec3-zero-length", "cannot normalize a zero vector"))
 }
 
 pub fn route_press(args: &Value) -> Result<PressRoute, PressRefusal> {
@@ -109,7 +89,6 @@ pub fn route_press(args: &Value) -> Result<PressRoute, PressRefusal> {
     Ok(PressRoute { label, target: best })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -121,8 +100,8 @@ mod tests {
 
     #[test]
     fn press_router_matches_spoint() {
-        let f: Value = serde_json::from_str(include_str!("../testdata/parity/spoint-press-router.json")).unwrap();
-        for case in f["cases"].as_array().unwrap() {
+        let f: Value = crate::testkit::parse(include_str!("../testdata/parity/spoint-press-router.json"));
+        for case in crate::testkit::cases(&f, "cases") {
             let name = case["name"].as_str().unwrap();
             let want = &case["expect"];
             match (route_press(&case["input"]), want["ok"].as_bool()) {

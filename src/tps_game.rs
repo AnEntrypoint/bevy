@@ -1,7 +1,5 @@
-#![cfg_attr(not(test), allow(dead_code))]
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
-
 pub const EMOTE_RATE_LIMIT_MS: f64 = 800.0;
 
 pub const EMOTE_CLIPS: [(&str, &str); 8] = [
@@ -142,13 +140,12 @@ impl Scoreboard {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
 
     fn fixture() -> Value {
-        serde_json::from_str(include_str!("../testdata/parity/spoint-tps-game-server.json")).unwrap()
+        crate::testkit::parse(include_str!("../testdata/parity/spoint-tps-game-server.json"))
     }
 
     fn norm(v: &Value) -> Value {
@@ -178,13 +175,13 @@ mod tests {
     #[test]
     fn tps_game_server_matches_spoint() {
         let f = fixture();
-        let emotes = f["emotes"].as_array().unwrap();
+        let emotes = crate::testkit::cases(&f, "emotes");
         assert_eq!(EMOTE_CLIPS.len(), emotes.len(), "emote table size against spoint");
         for e in emotes {
             assert_eq!(emote_clip(&json!(e["code"])), e["clip"].as_str(), "clip for {}", e["code"]);
         }
         assert_eq!(emote_clip(&json!("Wave")), None);
-        for scenario in f["scenarios"].as_array().unwrap() {
+        for scenario in crate::testkit::cases(&f, "scenarios") {
             let name = scenario["name"].as_str().unwrap();
             let mut gate = EmoteGate::default();
             for step in scenario["steps"].as_array().unwrap() {
