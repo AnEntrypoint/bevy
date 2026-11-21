@@ -1,0 +1,6 @@
+build-patch-on-the-main-thread	src/planet_lod/stream.rs	let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &config, key) });	let built = build_patch(&planet, &config, key); let task = AsyncComputeTaskPool::get().spawn(async move { built });	cargo test --bin bevy-jayzee planet_lod::stream
+spawn-budget-ignored	src/planet_lod/stream.rs	if finished.len() == PATCH_SPAWNS_PER_FRAME {	if false {	cargo test --bin bevy-jayzee planet_lod::stream
+despawn-before-replacement	src/planet_lod/stream.rs	.all(|leaf| streamer.live.contains_key(leaf))	.all(|_| true)	cargo test --bin bevy-jayzee planet_lod::stream
+diff-by-count-instead-of-key	src/planet_lod/stream.rs	.filter(|key| !streamer.live.contains_key(key) && !streamer.pending.contains_key(key))	.filter(|_| streamer.live.len() + streamer.pending.len() < streamer.wanted.len())	cargo test --bin bevy-jayzee planet_lod::stream
+rebase-not-registered	src/planet_lod/stream.rs	(rebase_system, plan_leaves,	(plan_leaves,	cargo test --bin bevy-jayzee planet_lod::stream
+stale-patches-never-retired	src/planet_lod/stream.rs	.filter(|key| !streamer.wanted.contains(key))	.filter(|_| false)	cargo test --bin bevy-jayzee planet_lod::stream
