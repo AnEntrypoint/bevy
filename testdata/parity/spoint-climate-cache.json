@@ -1,0 +1,159 @@
+{
+ "spoint": "5f43c86c",
+ "sectorM": 8,
+ "radius": 6360,
+ "queries": [
+  {
+   "x": 0,
+   "z": 0,
+   "dir": null,
+   "climate": {
+    "temp": 35,
+    "humidity": 0.5,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 1,
+   "calls": 1
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "dir": null,
+   "climate": {
+    "temp": 35,
+    "humidity": 0.5,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 1,
+   "calls": 1
+  },
+  {
+   "x": 0.5,
+   "z": 0.25,
+   "dir": null,
+   "climate": {
+    "temp": 35,
+    "humidity": 0.5,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 1,
+   "calls": 1
+  },
+  {
+   "x": 3,
+   "z": -2,
+   "dir": null,
+   "climate": {
+    "temp": 35,
+    "humidity": 0.5,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 1,
+   "calls": 1
+  },
+  {
+   "x": 100,
+   "z": -40,
+   "dir": null,
+   "climate": {
+    "temp": 34.9969317866244,
+    "humidity": 0.4981137997786285,
+    "erosion": 0.20163483097904067,
+    "seaBias": 0.016345801785268125
+   },
+   "size": 2,
+   "calls": 2
+  },
+  {
+   "x": 100,
+   "z": -40,
+   "dir": null,
+   "climate": {
+    "temp": 34.9969317866244,
+    "humidity": 0.4981137997786285,
+    "erosion": 0.20163483097904067,
+    "seaBias": 0.016345801785268125
+   },
+   "size": 2,
+   "calls": 2
+  },
+  {
+   "x": -300,
+   "z": 200,
+   "dir": null,
+   "climate": null,
+   "size": 3,
+   "calls": 3
+  },
+  {
+   "x": -300,
+   "z": 200,
+   "dir": null,
+   "climate": null,
+   "size": 3,
+   "calls": 3
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "dir": [
+    0,
+    0,
+    1
+   ],
+   "climate": {
+    "temp": 15,
+    "humidity": 0.8,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 4,
+   "calls": 4
+  },
+  {
+   "x": 0.5,
+   "z": 0.25,
+   "dir": null,
+   "climate": {
+    "temp": 35,
+    "humidity": 0.5,
+    "erosion": 0.2,
+    "seaBias": 0
+   },
+   "size": 4,
+   "calls": 4
+  },
+  {
+   "x": -1200,
+   "z": 900,
+   "dir": null,
+   "climate": null,
+   "size": 5,
+   "calls": 5
+  },
+  {
+   "x": 2000,
+   "z": 1500,
+   "dir": [
+    0.3,
+    0.5,
+    0.8
+   ],
+   "climate": {
+    "temp": 25.09904611651527,
+    "humidity": 0.7424880994772629,
+    "erosion": 0.23027945179236806,
+    "seaBias": 0.15289679001696296
+   },
+   "size": 6,
+   "calls": 6
+  }
+ ],
+ "callsTotal": 6,
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
