@@ -25,4 +25,4 @@ anisotropy	src/planet_material/layers.rs	pub const ANISOTROPY: u16 = 8;	pub cons
 address_mode	src/planet_material/layers.rs	address_mode_u: ImageAddressMode::Repeat,	address_mode_u: ImageAddressMode::ClampToEdge,	cargo test --bin bevy-jayzee planet_material::layers
 mipmap_filter	src/planet_material/layers.rs	mipmap_filter: ImageFilterMode::Linear,	mipmap_filter: ImageFilterMode::Nearest,	cargo test --bin bevy-jayzee planet_material::layers
 view_dimension	src/planet_material/layers.rs	dimension: Some(TextureViewDimension::D2Array),	dimension: Some(TextureViewDimension::D2),	cargo test --bin bevy-jayzee planet_material::layers
-note_build_removed	src/planet_material/layers.rs	crate::planet_lod::guard::note_build();		cargo test --bin bevy-jayzee planet_material::layers
+note_build_removed	src/planet_material/layers.rs	crate::planet_lod::guard::note_build();	();	cargo test --bin bevy-jayzee planet_material::layers

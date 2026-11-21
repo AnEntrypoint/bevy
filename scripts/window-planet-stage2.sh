@@ -20,6 +20,7 @@ case "$part" in
   water) tables water ;;
   sky) tables sky ;;
   light) tables light ;;
+  layers) tables layers ;;
   *) echo "unknown part $part"; exit 2 ;;
 esac
 finish

@@ -10,6 +10,7 @@ for (const name of readdirSync(dir).filter((f) => f.endsWith('.tsv'))) {
     const cells = line.split('\t')
     total++
     const [mutant, file, old] = cells
+    if (cells.some((cell) => cell === '')) { problems.push(name + ':' + (index + 1) + ' has an empty field'); continue }
     if (cells.length !== 5) { problems.push(name + ':' + (index + 1) + ' has ' + cells.length + ' columns'); continue }
     const count = readFileSync(file, 'utf8').split(old).length - 1
     if (count !== 1) problems.push(name + ' ' + mutant + ': old text occurs ' + count + ' times in ' + file)

@@ -947,6 +947,8 @@ mod tests {
         app.insert_resource(globe);
         register(&mut app);
         app.add_systems(Update, frame_globe_camera);
+        app.finish();
+        app.cleanup();
         app
     }
 
@@ -962,8 +964,7 @@ mod tests {
 
     #[test]
     fn the_default_planet_frame_uses_the_radius_proportional_relief() {
-        let mut app = viewer_app(globe());
-        app.finish();
+        let app = viewer_app(globe());
         let frame = *app.world().resource::<TerrainFrame>();
         assert_eq!((frame.radius, frame.relief_scale, frame.centre), (63_600.0, 0.001, DVec3::ZERO));
     }
