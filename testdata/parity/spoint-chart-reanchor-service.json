@@ -1,0 +1,362 @@
+{
+ "spoint": "5f43c86c",
+ "radius": 60,
+ "anchorDir": [
+  0,
+  1,
+  0
+ ],
+ "offsetY": 0,
+ "anchorsPerFace": 32,
+ "hysteresisDeg": 0.75,
+ "walkableLimitDeg": 45.00010522957485,
+ "gainGateDeg": 100,
+ "heightProbe": [
+  0.5,
+  0.7114413554830527,
+  0.2721898333006928
+ ],
+ "initial": {
+  "radius": 60,
+  "offsetY": 0,
+  "anchorHeight": 0.5,
+  "chartEpoch": 0,
+  "east": [
+   0,
+   0,
+   1
+  ],
+  "up": [
+   0,
+   1,
+   0
+  ],
+  "north": [
+   -1,
+   0,
+   0
+  ]
+ },
+ "steps": [
+  {
+   "name": "stay-near-anchor",
+   "dirs": [
+    [
+     0,
+     1,
+     0.01
+    ]
+   ],
+   "result": null,
+   "lastRefusal": null,
+   "reanchorCount": 0,
+   "refusalCount": 0,
+   "migratorCount": 1,
+   "migrated": 0,
+   "terrainMigrated": 0,
+   "refusalsByReason": {}
+  },
+  {
+   "name": "refuse-party-spread",
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     -0.1736481776669303,
+     0.984807753012208,
+     0
+    ]
+   ],
+   "result": null,
+   "lastRefusal": {
+    "reason": "party-spread-exceeds-walkable-chart",
+    "epoch": 0,
+    "worstPlayerAngleDeg": 50.789326022172254
+   },
+   "reanchorCount": 0,
+   "refusalCount": 1,
+   "migratorCount": 1,
+   "migrated": 0,
+   "terrainMigrated": 0,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1
+   }
+  },
+  {
+   "name": "refuse-players-straddle",
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     0
+    ]
+   ],
+   "result": null,
+   "lastRefusal": {
+    "reason": "players-straddle-the-planet",
+    "epoch": 0,
+    "worstPlayerAngleDeg": null
+   },
+   "reanchorCount": 0,
+   "refusalCount": 2,
+   "migratorCount": 1,
+   "migrated": 0,
+   "terrainMigrated": 0,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1
+   }
+  },
+  {
+   "name": "refuse-no-length",
+   "dirs": [
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "result": null,
+   "lastRefusal": {
+    "reason": "player-direction-has-no-length",
+    "epoch": 0,
+    "worstPlayerAngleDeg": null
+   },
+   "reanchorCount": 0,
+   "refusalCount": 3,
+   "migratorCount": 1,
+   "migrated": 0,
+   "terrainMigrated": 0,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1,
+    "player-direction-has-no-length": 1
+   }
+  },
+  {
+   "name": "reanchor-far",
+   "dirs": [
+    [
+     0.9282791216329142,
+     0.30942637387763805,
+     0.2062842492517587
+    ]
+   ],
+   "result": {
+    "kind": "reanchor",
+    "epoch": 1,
+    "anchorDir": [
+     0.9286525309453053,
+     0.30678535728220707,
+     0.20853589937012615
+    ],
+    "angleBeforeDeg": 71.97533547318967,
+    "angleAfterDeg": 0.19999710296316497,
+    "tiltRad": 1.2589826518676834,
+    "decisionKind": "reanchor",
+    "centroidDir": [
+     0.9282791216329142,
+     0.30942637387763805,
+     0.2062842492517587
+    ],
+    "gainDeg": 71.7753383702265,
+    "from": {
+     "radius": 60,
+     "offsetY": 0,
+     "anchorHeight": 0.5,
+     "chartEpoch": 0,
+     "east": [
+      0,
+      0,
+      1
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "north": [
+      -1,
+      0,
+      0
+     ]
+    },
+    "to": {
+     "radius": 60,
+     "offsetY": 0,
+     "anchorHeight": 0.7113095427993137,
+     "chartEpoch": 1,
+     "east": [
+      0.21910124015686983,
+      0,
+      -0.9757021300385286
+     ],
+     "up": [
+      0.9286525309453053,
+      0.30678535728220707,
+      0.20853589937012615
+     ],
+     "north": [
+      0.2993311265648805,
+      -0.9517787266782278,
+      0.06721705224249996
+     ]
+    }
+   },
+   "lastRefusal": null,
+   "reanchorCount": 1,
+   "refusalCount": 3,
+   "migratorCount": 1,
+   "migrated": 1,
+   "terrainMigrated": 1,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1,
+    "player-direction-has-no-length": 1
+   }
+  },
+  {
+   "name": "stay-after-reanchor",
+   "dirs": [
+    [
+     0.9282791216329142,
+     0.30942637387763805,
+     0.2062842492517587
+    ]
+   ],
+   "result": null,
+   "lastRefusal": null,
+   "reanchorCount": 1,
+   "refusalCount": 3,
+   "migratorCount": 1,
+   "migrated": 1,
+   "terrainMigrated": 1,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1,
+    "player-direction-has-no-length": 1
+   }
+  },
+  {
+   "name": "refuse-terrain-gate",
+   "dirs": [
+    [
+     -0.6021414097779044,
+     0.2007138032593015,
+     0.7727481425483107
+    ]
+   ],
+   "result": null,
+   "lastRefusal": {
+    "reason": "terrain-stream-busy",
+    "epoch": 1,
+    "worstPlayerAngleDeg": 0.7295577609811239
+   },
+   "reanchorCount": 1,
+   "refusalCount": 4,
+   "migratorCount": 1,
+   "migrated": 1,
+   "terrainMigrated": 1,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1,
+    "player-direction-has-no-length": 1,
+    "terrain-stream-busy": 1
+   }
+  },
+  {
+   "name": "reanchor-moderate",
+   "dirs": [
+    [
+     0.502518907629606,
+     0.502518907629606,
+     0.7035264706814485
+    ]
+   ],
+   "result": {
+    "kind": "reanchor",
+    "epoch": 2,
+    "anchorDir": [
+     0.4989973876635309,
+     0.4989973876635309,
+     0.7085218516107629
+    ],
+    "angleBeforeDeg": 39.86637874955003,
+    "angleAfterDeg": 0.4041535715753816,
+    "tiltRad": 0.7009458369050724,
+    "decisionKind": "reanchor",
+    "centroidDir": [
+     0.502518907629606,
+     0.502518907629606,
+     0.7035264706814485
+    ],
+    "gainDeg": 39.46222517797465,
+    "from": {
+     "radius": 60,
+     "offsetY": 0,
+     "anchorHeight": 0.7113095427993137,
+     "chartEpoch": 1,
+     "east": [
+      0.21910124015686983,
+      0,
+      -0.9757021300385286
+     ],
+     "up": [
+      0.9286525309453053,
+      0.30678535728220707,
+      0.20853589937012615
+     ],
+     "north": [
+      0.2993311265648805,
+      -0.9517787266782278,
+      0.06721705224249996
+     ]
+    },
+    "to": {
+     "radius": 60,
+     "offsetY": 0,
+     "anchorHeight": 0.5538971617548064,
+     "chartEpoch": 2,
+     "east": [
+      0.8175848131515838,
+      0,
+      -0.5758081914178453
+     ],
+     "up": [
+      0.4989973876635309,
+      0.4989973876635309,
+      0.7085218516107629
+     ],
+     "north": [
+      0.2873267833127672,
+      -0.8666034889757669,
+      0.4079726859560164
+     ]
+    }
+   },
+   "lastRefusal": null,
+   "reanchorCount": 2,
+   "refusalCount": 4,
+   "migratorCount": 1,
+   "migrated": 2,
+   "terrainMigrated": 2,
+   "refusalsByReason": {
+    "party-spread-exceeds-walkable-chart": 1,
+    "players-straddle-the-planet": 1,
+    "player-direction-has-no-length": 1,
+    "terrain-stream-busy": 1
+   }
+  }
+ ],
+ "bareError": "chart reanchor stepped with no registered state migrator: rotating the frame alone would leave every chart-local position, collider and client on the old chart",
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
