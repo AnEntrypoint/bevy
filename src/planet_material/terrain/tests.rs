@@ -7,8 +7,9 @@ use crate::height::{HashVersion, Planet, PlanetConfig};
 use crate::planet_lod::patch::{PatchMesh, build_patch};
 use crate::planet_lod::quadtree::{QuadtreeConfig, select_leaves};
 use crate::planet_material::splat::{SplatParams, SplatWeights, band_warp, splat_weights};
-use crate::offscreen::{FOV_Y, Frame, HEIGHT, SKY_COLOUR, WIDTH, add_target, capture, headless_app, image_stats, mean_change, render_lock, spawn_view, texel, write_png};
+use crate::offscreen::{FOV_Y, Frame, HEIGHT, SKY_COLOUR, SKY_TEXEL, WIDTH, add_target, capture, headless_app, image_stats, mean_change, render_lock, spawn_view, texel, write_png};
 use bevy::mesh::{Indices, PrimitiveTopology};
+use crate::planet_sky::lut::{AtmosphereLuts, baked};
 use std::sync::{Mutex, OnceLock};
 
 const SEED: i32 = 0x5eed1234;
@@ -23,6 +24,7 @@ const CENSUS_AGREEMENT_MIN: f64 = 0.995;
 const REMOVAL_SHARE_MIN: f64 = 0.05;
 const DECODE_FRAME_LIMIT: usize = 2400;
 const DECODE_POLL_MS: u64 = 50;
+const AERIAL_SHIFT_SHARE_MIN: (f64, f64) = (0.1, 0.3);
 const CHANGE_MIN: f64 = 0.004;
 const COVERED_MIN: f64 = 0.4;
 const LUMA_STD_MIN: f64 = 0.02;
@@ -98,21 +100,26 @@ struct Shot {
     textures: bool,
     tweak: fn(&mut TerrainParams),
     sun_side: f64,
+    atmosphere: bool,
 }
 
 fn untouched(_: &mut TerrainParams) {}
 
 impl Shot {
     fn beauty() -> Self {
-        Self { key: TerrainKey::default(), textures: true, tweak: untouched, sun_side: 1.0 }
+        Self { key: TerrainKey::default(), textures: true, tweak: untouched, sun_side: 1.0, atmosphere: false }
     }
 
     fn census(key: TerrainKey) -> Self {
-        Self { key, textures: false, tweak: untouched, sun_side: 1.0 }
+        Self { key, textures: false, tweak: untouched, sun_side: 1.0, atmosphere: false }
     }
 
     fn tweaked(tweak: fn(&mut TerrainParams)) -> Self {
         Self { tweak, ..Self::beauty() }
+    }
+
+    fn with_atmosphere() -> Self {
+        Self { atmosphere: true, ..Self::beauty() }
     }
 
     fn sun_behind_the_planet() -> Self {
@@ -121,7 +128,7 @@ impl Shot {
 }
 
 fn render(pose: &Pose, patches: &[PatchMesh], shot: Shot) -> Image {
-    let Shot { key, textures: real_textures, tweak, sun_side } = shot;
+    let Shot { key, textures: real_textures, tweak, sun_side, atmosphere } = shot;
     let _serial = render_lock();
     let frame = pose.frame();
     let census = key.census.is_some();
@@ -153,6 +160,14 @@ fn render(pose: &Pose, patches: &[PatchMesh], shot: Shot) -> Image {
             material.extension.params.mean_l = layers.mean_l.into();
         }
         tweak(&mut material.extension.params);
+    }
+    if atmosphere {
+        let (transmittance, scattering) = baked().images();
+        let luts = {
+            let mut images = app.world_mut().resource_mut::<Assets<Image>>();
+            AtmosphereLuts { transmittance: images.add(transmittance), scattering: images.add(scattering) }
+        };
+        app.insert_resource(luts);
     }
     let target = add_target(&mut app, format);
     let meshes: Vec<_> = patches.iter().map(|patch| app.world_mut().resource_mut::<Assets<Mesh>>().add(patch_mesh(patch))).collect();
@@ -559,3 +574,53 @@ fn the_frame_system_writes_the_material_each_frame_from_origin_camera_and_sun() 
     assert_eq!(params.tex_cam_frac, Vec3::new(4810.0, 25.0, 19163.0));
 }
 
+#[test]
+fn the_bind_system_swaps_the_placeholders_for_the_tables_and_sets_the_atmosphere_flag() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+    app.init_asset::<Image>().init_asset::<TerrainMaterial>();
+    app.add_systems(Startup, insert_material);
+    app.add_systems(Update, bind_atmosphere.run_if(resource_exists::<AtmosphereLuts>).run_if(resource_exists::<TerrainMaterialHandle>));
+    app.update();
+    let handle = app.world().resource::<TerrainMaterialHandle>().0.clone();
+    let before = app.world().resource::<Assets<TerrainMaterial>>().get(&handle).unwrap().extension.clone();
+    assert_eq!(before.params.atm_ready, 0.0);
+    let luts = {
+        let mut images = app.world_mut().resource_mut::<Assets<Image>>();
+        AtmosphereLuts { transmittance: images.add(Image::default()), scattering: images.add(Image::default()) }
+    };
+    app.insert_resource(luts.clone());
+    app.update();
+    let after = app.world().resource::<Assets<TerrainMaterial>>().get(&handle).unwrap().extension.clone();
+    assert_eq!(after.params.atm_ready, 1.0);
+    assert_eq!(after.transmittance, luts.transmittance);
+    assert_eq!(after.scattering, luts.scattering);
+    assert_ne!(after.transmittance, before.transmittance);
+}
+
+fn shifted_shares(before: &Image, after: &Image) -> (f64, f64) {
+    let (a, b) = (before.data.as_ref().unwrap(), after.data.as_ref().unwrap());
+    let luma = |t: &[u8]| 0.2126 * f64::from(t[0]) + 0.7152 * f64::from(t[1]) + 0.0722 * f64::from(t[2]);
+    let (mut brighter, mut darker, mut count) = (0usize, 0usize, 0usize);
+    for (x, y) in a.chunks_exact(4).zip(b.chunks_exact(4)).filter(|(x, _)| x[..] != SKY_TEXEL[..]) {
+        count += 1;
+        brighter += usize::from(luma(y) > luma(x) + 1.0);
+        darker += usize::from(luma(y) + 1.0 < luma(x));
+    }
+    (brighter as f64 / count.max(1) as f64, darker as f64 / count.max(1) as f64)
+}
+
+#[test]
+fn binding_the_atmosphere_tables_adds_aerial_perspective_to_the_orbit_and_high_poses() {
+    for pose in [ORBIT, HIGH] {
+        let patches = pose.patches();
+        let plain = render(&pose, &patches, Shot::beauty());
+        let hazy = render(&pose, &patches, Shot::with_atmosphere());
+        let change = mean_change(&plain, &hazy);
+        let (brighter, darker) = shifted_shares(&plain, &hazy);
+        eprintln!("{}: aerial perspective mean difference {change:.4} brighter {brighter:.4} darker {darker:.4}", pose.name);
+        write_png(&hazy, &format!("planet-terrain-{}-atmosphere", pose.name));
+        assert!(change >= CHANGE_MIN, "{} aerial perspective changed the image by only {change}", pose.name);
+        assert!(brighter >= AERIAL_SHIFT_SHARE_MIN.0 && darker >= AERIAL_SHIFT_SHARE_MIN.1, "{} aerial perspective must both add inscatter and attenuate: brighter {brighter} darker {darker}", pose.name);
+    }
+}

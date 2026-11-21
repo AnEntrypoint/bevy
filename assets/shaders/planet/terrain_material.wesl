@@ -23,6 +23,7 @@ struct TerrainParams {
     tex_nrm_k: f32,
     relief_shade: f32,
     flat_normal: f32,
+    atm_ready: f32,
 }
 
 @group(constants::MATERIAL_BIND_GROUP) @binding(100) var<uniform> terrain: TerrainParams;
@@ -386,7 +387,12 @@ struct AerialPerspective {
 }
 
 fn aerial_perspective(rel: vec3<f32>, d_km: f32) -> AerialPerspective {
-    return AerialPerspective(vec3<f32>(1.0), vec3<f32>(0.0));
+    if (terrain.atm_ready < 0.5 || d_km <= AP_GATE_KM.x) {
+        return AerialPerspective(vec3<f32>(1.0), vec3<f32>(0.0));
+    }
+    let camera = (view.world_position - terrain.planet_center) * (ATM_BOTTOM_KM / terrain.def_radius);
+    let marched = atm_march_radiance(camera, rel / max(length(rel), 1e-4), terrain.sun_dir, max(d_km, 1e-3));
+    return AerialPerspective(marched.trans, marched.radiance);
 }
 
 fn grade_output(lit: vec3<f32>, up: vec3<f32>, rel: vec3<f32>) -> vec3<f32> {

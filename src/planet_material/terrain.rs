@@ -1,5 +1,6 @@
 use super::layers::{build_images, decode_layers};
 use crate::planet_lod::origin::FloatingOrigin;
+use crate::planet_sky::lut::{AtmosphereLuts, sampling_source};
 use crate::refusal::Refusal;
 use bevy::asset::{RenderAssetUsages, uuid_handle};
 use bevy::math::DVec3;
@@ -36,6 +37,11 @@ const PLACEHOLDER_NORMAL: [u8; 4] = [128, 128, 255, 255];
 const TERRAIN_SHADER: Handle<Shader> = uuid_handle!("7d1c3a52-5e0b-4c58-9a57-3b6f1f0c2e11");
 const TEXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/planet/textures");
 const TERRAIN_SHADER_PATH: &str = "shaders/planet/terrain_material.wesl";
+const TERRAIN_SHADER_SOURCE: &str = include_str!("../../assets/shaders/planet/terrain_material.wesl");
+const LUT_TRANSMITTANCE_BINDING: u32 = 105;
+const LUT_SCATTERING_BINDING: u32 = 106;
+const LUT_SAMPLER_BINDING: u32 = 107;
+const PLACEHOLDER_LUT: [u8; 4] = [255, 255, 255, 255];
 
 pub type TerrainMaterial = ExtendedMaterial<StandardMaterial, TerrainExtension>;
 
@@ -78,6 +84,7 @@ pub struct TerrainParams {
     pub tex_nrm_k: f32,
     pub relief_shade: f32,
     pub flat_normal: f32,
+    pub atm_ready: f32,
 }
 
 impl Default for TerrainParams {
@@ -100,6 +107,7 @@ impl Default for TerrainParams {
             tex_nrm_k: TEX_NRM_K,
             relief_shade: RELIEF_SHADE,
             flat_normal: FLAT_NORMAL,
+            atm_ready: 0.0,
         }
     }
 }
@@ -115,6 +123,11 @@ pub struct TerrainExtension {
     #[texture(103, dimension = "2d_array")]
     #[sampler(104)]
     pub normals: Handle<Image>,
+    #[texture(105)]
+    #[sampler(107)]
+    pub transmittance: Handle<Image>,
+    #[texture(106, dimension = "2d_array")]
+    pub scattering: Handle<Image>,
     #[reflect(ignore)]
     pub key: TerrainKey,
 }
@@ -156,9 +169,15 @@ pub fn terrain_material(key: TerrainKey, images: &mut Assets<Image>) -> TerrainM
         params: TerrainParams::default(),
         albedo: images.add(placeholder_array(TextureFormat::Rgba8UnormSrgb, PLACEHOLDER_ALBEDO)),
         normals: images.add(placeholder_array(TextureFormat::Rgba8Unorm, PLACEHOLDER_NORMAL)),
+        transmittance: images.add(placeholder_flat(PLACEHOLDER_LUT)),
+        scattering: images.add(placeholder_array(TextureFormat::Rgba8Unorm, PLACEHOLDER_LUT)),
         key,
     };
     ExtendedMaterial { base, extension }
+}
+
+fn placeholder_flat(texel: [u8; 4]) -> Image {
+    Image::new(Extent3d { width: 1, height: 1, depth_or_array_layers: 1 }, TextureDimension::D2, texel.to_vec(), TextureFormat::Rgba8Unorm, RenderAssetUsages::RENDER_WORLD)
 }
 
 fn placeholder_array(format: TextureFormat, texel: [u8; 4]) -> Image {
@@ -218,6 +237,18 @@ fn update_frame(
     }
 }
 
+fn bind_atmosphere(luts: Res<AtmosphereLuts>, handle: Res<TerrainMaterialHandle>, mut materials: ResMut<Assets<TerrainMaterial>>) {
+    let Some(material) = materials.get(&handle.0) else { return };
+    if material.extension.params.atm_ready > 0.5 && material.extension.transmittance == luts.transmittance && material.extension.scattering == luts.scattering {
+        return;
+    }
+    if let Some(mut material) = materials.get_mut(&handle.0) {
+        material.extension.transmittance = luts.transmittance.clone();
+        material.extension.scattering = luts.scattering.clone();
+        material.extension.params.atm_ready = 1.0;
+    }
+}
+
 fn insert_material(mut commands: Commands, mut materials: ResMut<Assets<TerrainMaterial>>, mut images: ResMut<Assets<Image>>) {
     commands.insert_resource(TerrainMaterialHandle(materials.add(terrain_material(TerrainKey::default(), &mut images))));
 }
@@ -226,13 +257,15 @@ pub struct TerrainPipelinePlugin;
 
 impl Plugin for TerrainPipelinePlugin {
     fn build(&self, app: &mut App) {
-        let shader = Shader::from_wesl(include_str!("../../assets/shaders/planet/terrain_material.wesl"), TERRAIN_SHADER_PATH);
+        let source = [TERRAIN_SHADER_SOURCE, "\n", &sampling_source("constants::MATERIAL_BIND_GROUP", LUT_TRANSMITTANCE_BINDING, LUT_SCATTERING_BINDING, LUT_SAMPLER_BINDING)].concat();
+        let shader = Shader::from_wesl(source, TERRAIN_SHADER_PATH);
         if let Some(mut shaders) = app.world_mut().get_resource_mut::<Assets<Shader>>() {
             let _ = shaders.insert(TERRAIN_SHADER.id(), shader);
         }
         app.add_plugins(MaterialPlugin::<TerrainMaterial>::default())
             .add_systems(Startup, insert_material)
-            .add_systems(Update, update_frame.run_if(resource_exists::<TerrainFrame>).run_if(resource_exists::<TerrainMaterialHandle>));
+            .add_systems(Update, update_frame.run_if(resource_exists::<TerrainFrame>).run_if(resource_exists::<TerrainMaterialHandle>))
+            .add_systems(Update, bind_atmosphere.run_if(resource_exists::<AtmosphereLuts>).run_if(resource_exists::<TerrainMaterialHandle>));
     }
 }
 
