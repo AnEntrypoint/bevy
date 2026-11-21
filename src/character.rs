@@ -412,7 +412,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "open: spoint climbs onto the step top with the flat ground normal 0.02 m lower than the corner contact, and its walk-stairs landing advances about 0.015 m further across the step corner, so the drop-off point sits 0.024 m off and later trajectory drifts to 0.175 m against a 0.02 m tolerance"]
+    #[ignore = "open: spoint grounds 0.01 m lower than bevy avian rest (y 1.30 vs 1.31 on the floor, 1.60 vs 1.61 on the step top); bevy walk-stairs leads spoint by 0.0063 m from step 177; at step 274 spoint holds the corner support at y 1.50986 (CharacterManager.js:89 ExtendedUpdate, Jolt internal) while bevy drops to 1.48177, so spoint lands at step 278 and bevy at step 286, 0.175 m apart"]
     fn walk_step_matches_spoint() {
         assert_scenario("walk-step");
     }
