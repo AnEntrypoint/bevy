@@ -1,0 +1,13 @@
+band-weight-elev-amp	src/height/climate.rs	elev_amp: 1.0 + 0.8 * belt	elev_amp: 1.0 + 0.7 * belt	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+bake-max-level	src/height/climate.rs	(i / res) as f64 / denom, Some(max_level));	(i / res) as f64 / denom, None);	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+face-selection-seam	src/height/climate.rs	if ax >= ay && ax >= az {	if ax > ay && ax >= az {	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+humidity-temperature-swapped	src/height/climate.rs	temp, humidity, erosion: 0.3 + 0.4 * belt	temp: humidity, humidity: temp, erosion: 0.3 + 0.4 * belt	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+erosion-term	src/height/climate.rs	erosion: 0.3 + 0.4 * belt	erosion: 0.3 + 0.3 * belt	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+uv-orientation	src/height/climate.rs	(face, dot(dir, frame.1) * scale * 0.5 + 0.5, dot(dir, frame.2) * scale * 0.5 + 0.5)	(face, dot(dir, frame.2) * scale * 0.5 + 0.5, dot(dir, frame.1) * scale * 0.5 + 0.5)	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+lat-term-axis	src/height/climate.rs	let lat = unit[1].clamp(-1.0, 1.0).asin();	let lat = unit[2].clamp(-1.0, 1.0).asin();	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+lat-term-sign	src/height/climate.rs	let lat_deg = lat.abs() * RAD_TO_DEG;	let lat_deg = lat * RAD_TO_DEG;	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+band-filter-boundary	src/height/climate.rs	BANDS[band].level <= max)	BANDS[band].level < max)	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+local-roughness-weight	src/height/climate.rs	roughness: 0.4 + 0.6 * fval	roughness: 0.4 + 0.5 * fval	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+elev-amp-accumulation	src/height/climate.rs	amp *= f64::from(	amp += f64::from(	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+sea-bias-subregional-weight	src/height/anchor.rs	sea_bias: |f| f * 750.0	sea_bias: |f| f * 700.0	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
+lattice-quintic	src/height/climate.rs	let (wx, wy) = (quintic(tx - fx), quintic(ty - fy));	let (wx, wy) = (tx - fx, ty - fy);	cd /workspace/bevy && cargo test --bin bevy-jayzee height::climate
