@@ -1,0 +1,4 @@
+origin-shift-sign	src/planet_lod/origin.rs	transform.translation -= shift;	transform.translation += shift;	cargo test --bin bevy-jayzee planet_lod::origin
+origin-threshold	src/planet_lod/origin.rs	length() >= REBASE_DISTANCE_M	length() > REBASE_DISTANCE_M	cargo test --bin bevy-jayzee planet_lod::origin
+origin-keep-origin	src/planet_lod/origin.rs	self.position += camera_local.as_dvec3();	self.position = self.position;	cargo test --bin bevy-jayzee planet_lod::origin
+guard-count-anywhere	src/planet_lod/guard.rs	if MARKED_MAIN.get() {	if true {	cargo test --bin bevy-jayzee planet_lod::guard
