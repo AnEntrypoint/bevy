@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod camera_rig;
+#[cfg(test)]
+mod offscreen;
 mod features;
 mod features_ecs;
 #[cfg(test)]
