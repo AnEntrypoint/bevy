@@ -1,0 +1,24 @@
+warp_dir_quarter_to_half	src/planet_lod/quadtree.rs	std::f64::consts::FRAC_PI_4 * (-1.0	std::f64::consts::FRAC_PI_2 * (-1.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+warp_camera_atan_k	src/planet_lod/quadtree.rs	let atan_inv_k = 4.0 / PI;	let atan_inv_k = 2.0 / PI;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+split_less_to_less_equal	src/planet_lod/quadtree.rs	dist < l * eff_split && level	dist <= l * eff_split && level	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+lod_step_changed	src/planet_lod/quadtree.rs	const LOD_STEP: f64 = 7.2;	const LOD_STEP: f64 = 7.0;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+max_level_off_by_one	src/planet_lod/quadtree.rs	level < self.config.max_level) || forced	level <= self.config.max_level) || forced	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+altitude_term_missing	src/planet_lod/quadtree.rs	self.altitude_term.max(dx.max(dy))	dx.max(dy)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+pop_altitude_mul_changed	src/planet_lod/quadtree.rs	const LOD_POP_ALTITUDE_MUL: f64 = 8.0;	const LOD_POP_ALTITUDE_MUL: f64 = 4.0;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+tan40_changed	src/planet_lod/quadtree.rs	let tan_40 = (40.0 / 180.0 * PI).tan();	let tan_40 = (45.0 / 180.0 * PI).tan();	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+far_floor_lower_clamp	src/planet_lod/quadtree.rs	.min(0.60).max(0.30)	.min(0.60).max(0.10)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_protect_not_scaled	src/planet_lod/quadtree.rs	NEAR_PROTECT_FLOOR_M * (radius / REFERENCE_RADIUS)	NEAR_PROTECT_FLOOR_M	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+aim_replaces_nadir	src/planet_lod/quadtree.rs	lat = lat.min(self.lateral(aim, ox, oy, l));	lat = self.lateral(aim, ox, oy, l);	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+seam_sign_strict	src/planet_lod/quadtree.rs	if c >= 0.0 { radius }	if c > 0.0 { radius }	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_all_faces	src/planet_lod/quadtree.rs	.filter(|_| face == near_face)	.filter(|_| true)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_ignores_clearance	src/planet_lod/quadtree.rs	Some(clearance) => (clearance / self.config.dist_factor()).max(0.0),	Some(_) => self.altitude_term,	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_outer_strict	src/planet_lod/quadtree.rs	gap <= floor.leaf_m * floor.span_leaves	gap < floor.leaf_m * floor.span_leaves	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_inner_inclusive	src/planet_lod/quadtree.rs	far_gap > floor.leaf_m * floor.inner_span_leaves	far_gap >= floor.leaf_m * floor.inner_span_leaves	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_size_inclusive	src/planet_lod/quadtree.rs	l > floor.leaf_m && level	l >= floor.leaf_m && level	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+near_floor_default_span	src/planet_lod/quadtree.rs	DEFAULT_FLOOR_SPAN: f64 = 2.0;	DEFAULT_FLOOR_SPAN: f64 = 1.0;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+split_dist_floor	src/planet_lod/quadtree.rs	const MIN_SPLIT_DIST: f64 = 1.1;	const MIN_SPLIT_DIST: f64 = 1.0;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+children_order	src/planet_lod/quadtree.rs	[child(0, 0), child(1, 0), child(0, 1), child(1, 1)]	[child(0, 0), child(0, 1), child(1, 0), child(1, 1)]	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+root_size	src/planet_lod/quadtree.rs	.recurse(0, 0, 0, -radius, -radius, 2.0 * radius)	.recurse(0, 0, 0, -radius, -radius, radius)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+parent_shift	src/planet_lod/quadtree.rs	x: self.x >> 1, y: self.y >> 1	x: self.x >> 1, y: self.y	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+default_max_level	src/planet_lod/quadtree.rs	DEFAULT_MAX_LEVEL: u8 = 11;	DEFAULT_MAX_LEVEL: u8 = 12;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
+pick_face_first_wins	src/planet_lod/quadtree.rs	if d > best.1 {	if d >= best.1 {	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_lod::quadtree
