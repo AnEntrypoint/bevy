@@ -109,6 +109,7 @@ mod ui_html;
 mod vegetation;
 mod viewer;
 mod viewer_world;
+mod planet_lod;
 mod world;
 #[cfg(test)]
 mod js_math;
