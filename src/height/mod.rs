@@ -2,7 +2,7 @@ pub mod climate;
 pub(crate) mod baked;
 pub(crate) mod planet_frame;
 pub(crate) mod anchor;
-mod height_spec;
+pub(crate) mod height_spec;
 pub(crate) mod ops_jsgen;
 pub(crate) mod placement;
 mod planet;
