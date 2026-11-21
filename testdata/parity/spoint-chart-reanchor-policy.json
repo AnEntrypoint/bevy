@@ -1,0 +1,299 @@
+{
+ "spoint": "5f43c86c",
+ "planetRadius": 60,
+ "hysteresisDeg": 0.75,
+ "walkableLimitDeg": 45.00010522957485,
+ "playerCentroid": [
+  {
+   "name": "empty",
+   "dirs": [],
+   "kind": "none",
+   "centroidDir": null
+  },
+  {
+   "name": "two-unit-dirs",
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0
+    ]
+   ],
+   "kind": "ok",
+   "centroidDir": [
+    0.7071067811865475,
+    0.7071067811865475,
+    0
+   ]
+  },
+  {
+   "name": "unnormalised-dirs",
+   "dirs": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     0.5,
+     0
+    ]
+   ],
+   "kind": "ok",
+   "centroidDir": [
+    0.7071067811865475,
+    0.7071067811865475,
+    0
+   ]
+  },
+  {
+   "name": "straddle",
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     0
+    ]
+   ],
+   "kind": "error",
+   "errorName": "PlayersStraddlePlanetError",
+   "reason": null
+  },
+  {
+   "name": "no-length",
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "kind": "error",
+   "errorName": "ChartAnchorDecisionError",
+   "reason": "player-direction-has-no-length"
+  }
+ ],
+ "decisions": [
+  {
+   "name": "no-players",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "stay",
+    "reason": "no-players"
+   }
+  },
+  {
+   "name": "players-straddle",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     0
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "refusal",
+    "reason": "players-straddle-the-planet"
+   }
+  },
+  {
+   "name": "no-length-direction",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "refusal",
+    "reason": "player-direction-has-no-length"
+   }
+  },
+  {
+   "name": "party-spread",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     -0.1736481776669303,
+     0.984807753012208,
+     0
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "refusal",
+    "reason": "party-spread-exceeds-walkable-chart",
+    "worstPlayerAngleDeg": 50.789326022172254,
+    "walkableLimitDeg": 45.00010522957485
+   }
+  },
+  {
+   "name": "anchor-unchanged",
+   "up": [
+    0.024533841613307267,
+    0.9993979093591233,
+    0.024533841613307267
+   ],
+   "dirs": [
+    [
+     0,
+     1,
+     0.01
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "stay",
+    "reason": "anchor-unchanged",
+    "gainDeg": 0
+   }
+  },
+  {
+   "name": "gain-below-hysteresis",
+   "up": [
+    0.9282791216329142,
+    0.30942637387763805,
+    0.2062842492517587
+   ],
+   "dirs": [
+    [
+     0,
+     1,
+     0
+    ]
+   ],
+   "hysteresisDeg": 90,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "stay",
+    "reason": "gain-below-hysteresis",
+    "gainDeg": 69.98699679257686
+   }
+  },
+  {
+   "name": "reanchor-single-player",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [
+    [
+     0.9282791216329142,
+     0.30942637387763805,
+     0.2062842492517587
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "reanchor",
+    "anchorDir": [
+     0.9286525309453053,
+     0.30678535728220707,
+     0.20853589937012615
+    ],
+    "centroidDir": [
+     0.9282791216329142,
+     0.30942637387763805,
+     0.2062842492517587
+    ],
+    "gainDeg": 71.7753383702265,
+    "worstPlayerAngleDeg": 0.19999710296316497
+   }
+  },
+  {
+   "name": "reanchor-two-players",
+   "up": [
+    0,
+    1,
+    0
+   ],
+   "dirs": [
+    [
+     0,
+     1,
+     0.2
+    ],
+    [
+     0.2,
+     1,
+     0
+    ]
+   ],
+   "hysteresisDeg": 0.75,
+   "walkableLimitDeg": 45.00010522957485,
+   "result": {
+    "kind": "reanchor",
+    "anchorDir": [
+     0.12150373142168151,
+     0.9851262287144809,
+     0.12150373142168151
+    ],
+    "centroidDir": [
+     0.09901475429766743,
+     0.9901475429766743,
+     0.09901475429766743
+    ],
+    "gainDeg": 6.204568356457095,
+    "worstPlayerAngleDeg": 8.180552586190059
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
