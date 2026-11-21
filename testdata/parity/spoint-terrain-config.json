@@ -1,0 +1,1116 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/shared/terrainConfig.js (terrainHashVersionOf, assertTerrainHashVersion, terrainCarvesOf, resolveTerrainConfig, parseTerrainConfig, parseTerrainHashOverride)",
+ "hashVersionOf": [
+  {
+   "tcfg": {},
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "tcfg": null,
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": 1
+   },
+   "expect": {
+    "ok": true,
+    "value": 1
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": 2
+   },
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": null
+   },
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": 3
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": "2"
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got \"2\""
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": 2.5
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 2.5"
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": 0
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 0"
+   }
+  },
+  {
+   "tcfg": {
+    "hashVersion": true
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got true"
+   }
+  }
+ ],
+ "assertHashVersion": [
+  {
+   "v": 1,
+   "expect": {
+    "ok": true,
+    "value": 1
+   }
+  },
+  {
+   "v": 2,
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "v": 0,
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 0"
+   }
+  },
+  {
+   "v": 3,
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "v": "2",
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got \"2\""
+   }
+  },
+  {
+   "v": null,
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got null"
+   }
+  },
+  {
+   "v": 2.5,
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 2.5"
+   }
+  },
+  {
+   "v": true,
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got true"
+   }
+  }
+ ],
+ "hashOverride": [
+  {
+   "raw": null,
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "raw": "",
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "raw": "1",
+   "expect": {
+    "ok": true,
+    "value": 1
+   }
+  },
+  {
+   "raw": "2",
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "raw": " 2 ",
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "raw": "0x2",
+   "expect": {
+    "ok": true,
+    "value": 2
+   }
+  },
+  {
+   "raw": "3",
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "raw": "abc",
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got null"
+   }
+  },
+  {
+   "raw": "2.5",
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 2.5"
+   }
+  },
+  {
+   "raw": " ",
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 0"
+   }
+  }
+ ],
+ "carvesOf": [
+  {
+   "tcfg": {
+    "radius": 6360
+   },
+   "expect": {
+    "ok": true,
+    "value": []
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": null
+   },
+   "expect": {
+    "ok": true,
+    "value": []
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 1,
+    "carves": "bad"
+   },
+   "expect": {
+    "ok": true,
+    "value": []
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 1,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": []
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": "bad"
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "message": "terrain carves must be an array, got \"bad\""
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": [
+     {
+      "dir": [
+       0.031396129717399114,
+       0.9983969250132918,
+       0.04709419457609867
+      ],
+      "innerM": 500,
+      "outerM": 1500
+     }
+    ]
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     },
+     {
+      "center": [
+       -1200,
+       900
+      ],
+      "falloff": 250,
+      "radius": 0
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": [
+     {
+      "dir": [
+       0.3559966340218292,
+       -0.7883337612687337,
+       0.5017930623364766
+      ],
+      "innerM": 500,
+      "outerM": 1500
+     },
+     {
+      "dir": [
+       0.08021765653403602,
+       -0.8676678734311752,
+       0.4906297881250276
+      ],
+      "innerM": 0,
+      "outerM": 250
+     }
+    ]
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "carves": [
+     {
+      "dir": [
+       0.3,
+       -0.8,
+       0.5
+      ],
+      "innerM": 300,
+      "outerM": 900
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": [
+     {
+      "dir": [
+       0.3,
+       -0.8,
+       0.5
+      ],
+      "innerM": 300,
+      "outerM": 900
+     }
+    ]
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 1,
+      "radius": 0
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": [
+     {
+      "dir": [
+       -0.0003144653893694017,
+       0.9999999381946973,
+       0.00015723269468470084
+      ],
+      "innerM": 0,
+      "outerM": 1
+     }
+    ]
+   }
+  },
+  {
+   "tcfg": {
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 1,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carves need a positive terrain radius, got undefined"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 0,
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 1,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carves need a positive terrain radius, got 0"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       1
+      ],
+      "falloff": 1,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carve needs center [x, z], radius >= 0 and falloff > 0, got {\"center\":[1],\"falloff\":1,\"radius\":1}"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 1,
+      "radius": -1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carve needs center [x, z], radius >= 0 and falloff > 0, got {\"center\":[1,2],\"falloff\":1,\"radius\":-1}"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 0,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carve needs center [x, z], radius >= 0 and falloff > 0, got {\"center\":[1,2],\"falloff\":0,\"radius\":1}"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     null
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain carve needs center [x, z], radius >= 0 and falloff > 0, got null"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 3,
+    "carves": []
+   },
+   "expect": {
+    "ok": false,
+    "name": "RangeError",
+    "message": "terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 1
+   },
+   "expect": {
+    "ok": true,
+    "value": []
+   }
+  }
+ ],
+ "resolve": [
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain",
+      "config": {
+       "seed": 7,
+       "radius": 6360
+      }
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "seed": 7,
+     "radius": 6360
+    }
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "sky",
+      "config": {
+       "seed": 9
+      }
+     }
+    ],
+    "terrain": {
+     "seed": 3,
+     "radius": 100
+    }
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "seed": 3,
+     "radius": 100
+    }
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain",
+      "config": null
+     }
+    ],
+    "terrain": {
+     "seed": 5,
+     "radius": 90
+    }
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "seed": 5,
+     "radius": 90
+    }
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain"
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldDef": {
+    "entities": [
+     {
+      "app": "terrain",
+      "config": {
+       "seed": 1
+      }
+     },
+     {
+      "app": "terrain",
+      "config": {
+       "seed": 2
+      }
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "seed": 1
+    }
+   }
+  },
+  {
+   "worldDef": {},
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  },
+  {
+   "worldDef": null,
+   "expect": {
+    "ok": true,
+    "value": null
+   }
+  }
+ ],
+ "parse": [
+  {
+   "tcfg": null,
+   "expect": {
+    "ok": false,
+    "path": "",
+    "reason": "terrain config must be a plain object"
+   }
+  },
+  {
+   "tcfg": [],
+   "expect": {
+    "ok": false,
+    "path": "",
+    "reason": "terrain config must be a plain object"
+   }
+  },
+  {
+   "tcfg": 5,
+   "expect": {
+    "ok": false,
+    "path": "",
+    "reason": "terrain config must be a plain object"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": "x"
+   },
+   "expect": {
+    "ok": false,
+    "path": "seed",
+    "reason": "must be a finite number"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": null
+   },
+   "expect": {
+    "ok": false,
+    "path": "seed",
+    "reason": "must be a finite number"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": -1
+   },
+   "expect": {
+    "ok": false,
+    "path": "radius",
+    "reason": "must be a positive finite number"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": null
+   },
+   "expect": {
+    "ok": false,
+    "path": "radius",
+    "reason": "must be a positive finite number"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 3
+   },
+   "expect": {
+    "ok": false,
+    "path": "hashVersion",
+    "reason": "terrain hashVersion must be one of 1, 2, got 3"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": "x"
+   },
+   "expect": {
+    "ok": false,
+    "path": "carves",
+    "reason": "terrain carves must be an array, got \"x\""
+   }
+  },
+  {
+   "tcfg": {
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 1,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "path": "carves",
+    "reason": "terrain carves need a positive terrain radius, got undefined"
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "carves": [
+     {
+      "center": [
+       1
+      ],
+      "falloff": 1,
+      "radius": 1
+     }
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "path": "carves",
+    "reason": "terrain carve needs center [x, z], radius >= 0 and falloff > 0, got {\"center\":[1],\"falloff\":1,\"radius\":1}"
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 20260,
+    "radius": 6360,
+    "reliefScale": 0.5,
+    "anchorDir": [
+     0.3,
+     -0.8,
+     0.5
+    ],
+    "center": [
+     10,
+     -5
+    ],
+    "enabled": false,
+    "hashVersion": 2,
+    "carves": [
+     {
+      "center": [
+       300,
+       -200
+      ],
+      "falloff": 1000,
+      "radius": 500
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": 20260,
+     "radius": 6360,
+     "reliefScale": 0.5,
+     "anchorDir": [
+      0.3,
+      -0.8,
+      0.5
+     ],
+     "center": [
+      10,
+      -5
+     ],
+     "enabled": false,
+     "hashVersion": 2,
+     "carves": [
+      {
+       "dir": [
+        0.3559966340218292,
+        -0.7883337612687337,
+        0.5017930623364766
+       ],
+       "innerM": 500,
+       "outerM": 1500
+      }
+     ],
+     "carveInputs": [
+      {
+       "center": [
+        300,
+        -200
+       ],
+       "falloff": 1000,
+       "radius": 500
+      }
+     ],
+     "extent": 1590,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "seed": 1,
+    "radius": 90,
+    "hashVersion": 1,
+    "carves": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 4,
+      "radius": 3
+     }
+    ],
+    "carveInputs": [
+     {
+      "center": [
+       1,
+       2
+      ],
+      "falloff": 4,
+      "radius": 3
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": 1,
+     "radius": 90,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 1,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 22.5,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {},
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": null,
+     "radius": null,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 2,
+     "carves": [],
+     "carveInputs": [],
+     "extent": null,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 1000,
+    "minimapExtent": 300,
+    "minimapRes": 64,
+    "seed": -4.5
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": -4.5,
+     "radius": 1000,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 2,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 300,
+     "res": 64
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 20000,
+    "minimapExtent": "x",
+    "minimapRes": null,
+    "seed": 3
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": 3,
+     "radius": 20000,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 2,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 5000,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 100000
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": null,
+     "radius": 100000,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 2,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 16384,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "hashVersion": 1
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": null,
+     "radius": 6360,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 1,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 1590,
+     "res": 256
+    }
+   }
+  },
+  {
+   "tcfg": {
+    "radius": 6360,
+    "enabled": 0
+   },
+   "expect": {
+    "ok": true,
+    "config": {
+     "seed": null,
+     "radius": 6360,
+     "reliefScale": null,
+     "anchorDir": [
+      0,
+      1,
+      0
+     ],
+     "center": [
+      0,
+      0
+     ],
+     "enabled": true,
+     "hashVersion": 2,
+     "carves": [],
+     "carveInputs": [],
+     "extent": 1590,
+     "res": 256
+    }
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
