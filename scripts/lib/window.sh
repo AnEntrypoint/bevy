@@ -3,8 +3,10 @@ scratch=/workspace/tmp/bevy/window
 mkdir -p target/witness "$scratch"
 overall=0
 note() { echo "$@" | tee -a $log; }
+selected() { [ -z "$ONLY" ] || [[ " $ONLY " == *" $1 "* ]]; }
 run() {
   name=$1; shift
+  selected "$name" || return 0
   timeout 1200 "$@" > target/witness/$name.out 2>&1 &
   pid=$!
   note "PID $name pid=$pid $(date -u +%T)Z"
@@ -15,6 +17,7 @@ run() {
 }
 mutant() {
   name=$1; file=$2; old=$3; new=$4; cmd=$5
+  selected "$name" || return 0
   cp "$file" $scratch/$name.good
   python3 - "$file" "$old" "$new" <<'PY' || { note "MUTANT-APPLY-FAILED $name"; overall=1; cp $scratch/$name.good "$file"; return; }
 import sys
