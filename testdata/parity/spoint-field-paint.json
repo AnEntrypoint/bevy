@@ -1,0 +1,6994 @@
+{
+ "spoint": "5f43c86c",
+ "cellSize": 0.5,
+ "chunkCells": 4,
+ "fieldNames": [
+  "terrain:height",
+  "terrain:water",
+  "terrain:natural-mask"
+ ],
+ "layerNames": [
+  "PLAYER",
+  "CREATOR"
+ ],
+ "paintedHeightField": "terrain:height",
+ "naturalMaskField": "terrain:natural-mask",
+ "layerTrace": [
+  {
+   "op": "span",
+   "result": 2
+  },
+  {
+   "op": "locate",
+   "x": 0,
+   "z": 0,
+   "result": {
+    "key": "0,0",
+    "index": 0
+   }
+  },
+  {
+   "op": "locate",
+   "x": 0.5,
+   "z": 0,
+   "result": {
+    "key": "0,0",
+    "index": 1
+   }
+  },
+  {
+   "op": "locate",
+   "x": -0.25,
+   "z": -0.25,
+   "result": {
+    "key": "-1,-1",
+    "index": 15
+   }
+  },
+  {
+   "op": "locate",
+   "x": 1.5,
+   "z": 1.5,
+   "result": {
+    "key": "0,0",
+    "index": 15
+   }
+  },
+  {
+   "op": "locate",
+   "x": 2,
+   "z": 2,
+   "result": {
+    "key": "1,1",
+    "index": 0
+   }
+  },
+  {
+   "op": "locate",
+   "x": -2.5,
+   "z": -2.5,
+   "result": {
+    "key": "-2,-2",
+    "index": 15
+   }
+  },
+  {
+   "op": "locate",
+   "x": -2,
+   "z": -2,
+   "result": {
+    "key": "-1,-1",
+    "index": 0
+   }
+  },
+  {
+   "op": "locate",
+   "x": -1.5,
+   "z": 4.5,
+   "result": {
+    "key": "-1,2",
+    "index": 5
+   }
+  },
+  {
+   "op": "locate",
+   "x": 6.5,
+   "z": -1.5,
+   "result": {
+    "key": "3,-1",
+    "index": 5
+   }
+  },
+  {
+   "op": "locate",
+   "x": 7.75,
+   "z": -0.25,
+   "result": {
+    "key": "3,-1",
+    "index": 15
+   }
+  },
+  {
+   "op": "setAuthored",
+   "kx": 0,
+   "kz": 0,
+   "cells": [
+    -1,
+    -0.875,
+    -0.75,
+    -0.625,
+    -0.5,
+    -0.375,
+    -0.25,
+    -0.125,
+    0,
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875
+   ],
+   "result": null
+  },
+  {
+   "op": "setAuthored",
+   "kx": -1,
+   "kz": 2,
+   "cells": [
+    -0.625,
+    -0.5,
+    -0.375,
+    -0.25,
+    -0.125,
+    0,
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1,
+    1.125,
+    1.25
+   ],
+   "result": null
+  },
+  {
+   "op": "setAuthored",
+   "kx": 0,
+   "kz": 0,
+   "cells": [
+    1,
+    2
+   ],
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: authored chunk must be a Float32Array of chunkCells^2"
+   }
+  },
+  {
+   "op": "readField",
+   "x": 0,
+   "z": 0,
+   "result": -1
+  },
+  {
+   "op": "readField",
+   "x": 0.5,
+   "z": 0,
+   "result": -0.875
+  },
+  {
+   "op": "readField",
+   "x": -0.25,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 1.5,
+   "z": 1.5,
+   "result": 0.875
+  },
+  {
+   "op": "readField",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2.5,
+   "z": -2.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2,
+   "z": -2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -1.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 6.5,
+   "z": -1.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 7.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "paint",
+   "x": 0.5,
+   "z": 0.5,
+   "delta": 0.25,
+   "result": 0.25
+  },
+  {
+   "op": "paint",
+   "x": 0.5,
+   "z": 0.5,
+   "delta": 0.125,
+   "result": 0.375
+  },
+  {
+   "op": "paint",
+   "x": -0.25,
+   "z": -0.25,
+   "delta": 1,
+   "result": 1
+  },
+  {
+   "op": "paint",
+   "x": 2.5,
+   "z": 2.5,
+   "delta": -0.5,
+   "result": -0.5
+  },
+  {
+   "op": "paint",
+   "x": 1.5,
+   "z": 1.5,
+   "delta": 0.75,
+   "result": 0.75
+  },
+  {
+   "op": "readField",
+   "x": 0,
+   "z": 0,
+   "result": -1
+  },
+  {
+   "op": "readField",
+   "x": 0.5,
+   "z": 0,
+   "result": -0.875
+  },
+  {
+   "op": "readField",
+   "x": -0.25,
+   "z": -0.25,
+   "result": 1
+  },
+  {
+   "op": "readField",
+   "x": 1.5,
+   "z": 1.5,
+   "result": 1.625
+  },
+  {
+   "op": "readField",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2.5,
+   "z": -2.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2,
+   "z": -2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -1.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 6.5,
+   "z": -1.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 7.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "changes",
+   "at": 0,
+   "result": {
+    "chunks": [
+     "-1,-1",
+     "-1,2",
+     "0,0",
+     "1,1"
+    ],
+    "at": 7
+   }
+  },
+  {
+   "op": "changes",
+   "at": 3,
+   "result": {
+    "chunks": [
+     "-1,-1",
+     "0,0",
+     "1,1"
+    ],
+    "at": 7
+   }
+  },
+  {
+   "op": "paintedChunks",
+   "result": [
+    "-1,-1",
+    "0,0",
+    "1,1"
+   ]
+  },
+  {
+   "op": "exportRuntime",
+   "result": [
+    {
+     "key": "-1,-1",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+     ]
+    },
+    {
+     "key": "0,0",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.375,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.75
+     ]
+    },
+    {
+     "key": "1,1",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      -0.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "op": "clearRuntime",
+   "kx": 0,
+   "kz": 0,
+   "result": true
+  },
+  {
+   "op": "clearRuntime",
+   "kx": 0,
+   "kz": 0,
+   "result": false
+  },
+  {
+   "op": "clearRuntime",
+   "kx": 7,
+   "kz": 7,
+   "result": false
+  },
+  {
+   "op": "readField",
+   "x": 0,
+   "z": 0,
+   "result": -1
+  },
+  {
+   "op": "readField",
+   "x": 0.5,
+   "z": 0,
+   "result": -0.875
+  },
+  {
+   "op": "readField",
+   "x": -0.25,
+   "z": -0.25,
+   "result": 1
+  },
+  {
+   "op": "readField",
+   "x": 1.5,
+   "z": 1.5,
+   "result": 0.875
+  },
+  {
+   "op": "readField",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2.5,
+   "z": -2.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2,
+   "z": -2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -1.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 6.5,
+   "z": -1.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 7.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "importRuntime",
+   "list": [
+    {
+     "key": "3,-1",
+     "cells": [
+      -2,
+      -1.5,
+      -1,
+      -0.5,
+      0,
+      0.5,
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5.5
+     ]
+    }
+   ],
+   "result": 1
+  },
+  {
+   "op": "readField",
+   "x": 0,
+   "z": 0,
+   "result": -1
+  },
+  {
+   "op": "readField",
+   "x": 0.5,
+   "z": 0,
+   "result": -0.875
+  },
+  {
+   "op": "readField",
+   "x": -0.25,
+   "z": -0.25,
+   "result": 1
+  },
+  {
+   "op": "readField",
+   "x": 1.5,
+   "z": 1.5,
+   "result": 0.875
+  },
+  {
+   "op": "readField",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2.5,
+   "z": -2.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2,
+   "z": -2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -1.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 6.5,
+   "z": -1.5,
+   "result": 0.5
+  },
+  {
+   "op": "readField",
+   "x": 7.75,
+   "z": -0.25,
+   "result": 5.5
+  },
+  {
+   "op": "exportRuntime",
+   "result": [
+    {
+     "key": "-1,-1",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+     ]
+    },
+    {
+     "key": "1,1",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      -0.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "key": "3,-1",
+     "cells": [
+      -2,
+      -1.5,
+      -1,
+      -0.5,
+      0,
+      0.5,
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5.5
+     ]
+    }
+   ]
+  },
+  {
+   "op": "paintedChunks",
+   "result": [
+    "-1,-1",
+    "1,1",
+    "3,-1"
+   ]
+  },
+  {
+   "op": "clearAllRuntime",
+   "result": 3
+  },
+  {
+   "op": "changes",
+   "at": 0,
+   "result": {
+    "chunks": [
+     "-1,-1",
+     "-1,2",
+     "0,0",
+     "1,1",
+     "3,-1"
+    ],
+    "at": 12
+   }
+  },
+  {
+   "op": "exportRuntime",
+   "result": []
+  },
+  {
+   "op": "readField",
+   "x": 0,
+   "z": 0,
+   "result": -1
+  },
+  {
+   "op": "readField",
+   "x": 0.5,
+   "z": 0,
+   "result": -0.875
+  },
+  {
+   "op": "readField",
+   "x": -0.25,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 1.5,
+   "z": 1.5,
+   "result": 0.875
+  },
+  {
+   "op": "readField",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2.5,
+   "z": -2.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -2,
+   "z": -2,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": -1.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 6.5,
+   "z": -1.5,
+   "result": 0
+  },
+  {
+   "op": "readField",
+   "x": 7.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "importRuntime",
+   "list": "x",
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: importRuntime needs an array of { key, cells }"
+   }
+  },
+  {
+   "op": "importRuntime",
+   "list": [
+    {
+     "key": 7,
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk must carry chunkCells^2 cells"
+   }
+  },
+  {
+   "op": "importRuntime",
+   "list": [
+    {
+     "key": "0,0",
+     "cells": [
+      1,
+      2
+     ]
+    }
+   ],
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk must carry chunkCells^2 cells"
+   }
+  },
+  {
+   "op": "importRuntime",
+   "list": [
+    {
+     "key": "0,0",
+     "cells": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      "NaN"
+     ]
+    }
+   ],
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk cells must be finite numbers"
+   }
+  }
+ ],
+ "layerConstructErrors": [
+  {
+   "cellSize": 0,
+   "chunkCells": 4,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  },
+  {
+   "cellSize": 0.5,
+   "chunkCells": 2.5,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  },
+  {
+   "cellSize": 0.5,
+   "chunkCells": 0,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  },
+  {
+   "cellSize": "NaN",
+   "chunkCells": 4,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  }
+ ],
+ "paintTrace": [
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    0.5,
+    0.5
+   ],
+   "radius": 2,
+   "kind": "add",
+   "amount": 1,
+   "result": 45
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "CREATOR",
+   "center": [
+    1,
+    -1
+   ],
+   "place": [
+    0.5,
+    0
+   ],
+   "radius": 1.5,
+   "kind": "set",
+   "target": 2.5,
+   "result": 25
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    -2.5,
+    3
+   ],
+   "place": [
+    0,
+    -0.5
+   ],
+   "radius": 3,
+   "kind": "slope",
+   "ax": 0.25,
+   "az": -0.5,
+   "result": 109
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:water",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": -0.75,
+   "result": 9
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:natural-mask",
+   "layer": "CREATOR",
+   "center": [
+    4,
+    4
+   ],
+   "radius": 2.5,
+   "kind": "set",
+   "target": 0.6,
+   "result": 69
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:natural-mask",
+   "layer": "PLAYER",
+   "center": [
+    3.5,
+    4.5
+   ],
+   "radius": 2,
+   "kind": "add",
+   "amount": 0.2,
+   "result": 45
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": 0.3,
+   "result": 9
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:rock",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "field-unknown",
+    "message": "[field-paint] field-unknown: field \"terrain:rock\" is not one of terrain:height, terrain:water, terrain:natural-mask"
+   }
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "GHOST",
+   "center": [
+    0,
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "layer-unknown",
+    "message": "[field-paint] layer-unknown: layer \"GHOST\" is not one of PLAYER, CREATOR"
+   }
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    "NaN",
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "center-invalid",
+    "message": "[field-paint] center-invalid: center must be [x, z] of finite numbers"
+   }
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "place": [
+    "Infinity",
+    0
+   ],
+   "radius": 1,
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "place-invalid",
+    "message": "[field-paint] place-invalid: place must be [x, z] of finite numbers"
+   }
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "radius": 0,
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "radius-invalid",
+    "message": "[field-paint] radius-invalid: radius must be a positive number"
+   }
+  },
+  {
+   "op": "stroke",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "center": [
+    0,
+    0
+   ],
+   "radius": "NaN",
+   "kind": "add",
+   "amount": 1,
+   "error": {
+    "reason": "radius-invalid",
+    "message": "[field-paint] radius-invalid: radius must be a positive number"
+   }
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0,
+   "z": 0,
+   "result": 0.9464465975761414
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0,
+   "z": 0,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0.9464465975761414
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.25,
+   "z": 0.25,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 1.0878679752349854
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.5,
+   "z": 0.5,
+   "result": -0.219669908285141
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0.590982973575592
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -0.25,
+   "z": 0.25,
+   "result": -0.375
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 1.9595598578453064
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -2.5,
+   "z": 3,
+   "result": -1.7708333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1,
+   "z": -1,
+   "result": 1.8760972172021866
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -1.5,
+   "z": 2.5,
+   "result": -1.0833333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0.6302943676710129
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 4,
+   "z": 4,
+   "result": 0.7292893528938293
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "kx": 0,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "0,0",
+    "painted": true,
+    "version": 163
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "kx": -1,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "-1,0",
+    "painted": true,
+    "version": 163
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "CREATOR",
+   "kx": 0,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "0,0",
+    "painted": true,
+    "version": 25
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:natural-mask",
+   "layer": "CREATOR",
+   "kx": 1,
+   "kz": 1,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "1,1",
+    "painted": true,
+    "version": 69
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:water",
+   "layer": "CREATOR",
+   "kx": 5,
+   "kz": 5,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "5,5",
+    "painted": false,
+    "version": 0
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:water",
+   "layer": "PLAYER",
+   "kx": -2,
+   "kz": -2,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "-2,-2",
+    "painted": false,
+    "version": 9
+   }
+  },
+  {
+   "op": "wrap",
+   "x": 0,
+   "z": 0,
+   "yGuess": 0,
+   "result": 2.4464465975761414
+  },
+  {
+   "op": "wrap",
+   "x": 0.25,
+   "z": 0.25,
+   "yGuess": 1,
+   "result": 2.6339465975761414
+  },
+  {
+   "op": "wrap",
+   "x": -2.5,
+   "z": 3,
+   "yGuess": 0.5,
+   "result": -2.208333373069763
+  },
+  {
+   "op": "wrap",
+   "x": 1,
+   "z": -1,
+   "yGuess": -2,
+   "result": 3.8760972172021866
+  },
+  {
+   "op": "wrap",
+   "x": 3.5,
+   "z": 4.5,
+   "yGuess": 4,
+   "result": 2.625
+  },
+  {
+   "op": "wrap",
+   "x": -3.75,
+   "z": -0.25,
+   "yGuess": 0,
+   "result": -0.3125
+  },
+  {
+   "op": "wrapNull",
+   "x": 0,
+   "z": 0,
+   "yGuess": 0,
+   "result": 1.5
+  },
+  {
+   "op": "wrapNull",
+   "x": 0.25,
+   "z": 0.25,
+   "yGuess": 1,
+   "result": 1.6875
+  },
+  {
+   "op": "wrapNull",
+   "x": -2.5,
+   "z": 3,
+   "yGuess": 0.5,
+   "result": -0.4375
+  },
+  {
+   "op": "wrapNull",
+   "x": 1,
+   "z": -1,
+   "yGuess": -2,
+   "result": 2
+  },
+  {
+   "op": "wrapNull",
+   "x": 3.5,
+   "z": 4.5,
+   "yGuess": 4,
+   "result": 2.625
+  },
+  {
+   "op": "wrapNull",
+   "x": -3.75,
+   "z": -0.25,
+   "yGuess": 0,
+   "result": -0.3125
+  },
+  {
+   "op": "naturalMask",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0.6302943676710129
+  },
+  {
+   "op": "naturalMask",
+   "x": 4,
+   "z": 4,
+   "result": 0.7292893528938293
+  },
+  {
+   "op": "naturalMask",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "naturalMask",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "naturalMaskNull",
+   "x": 0,
+   "z": 0,
+   "error": {
+    "reason": "paint-invalid",
+    "message": "[field-paint] paint-invalid: paint must be a createFieldPaint instance"
+   }
+  },
+  {
+   "op": "toJSON",
+   "result": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0.09861218184232712,
+        0.38076120615005493
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        -0.0750817060470581,
+        -0.0384272001683712,
+        0.20238691568374634,
+        0.590982973575592,
+        -0.23461179435253143,
+        -0.15915250778198242,
+        0.1666666716337204,
+        0.5664213299751282,
+        -0.472953736782074,
+        -0.34919044375419617,
+        -0.01023932360112667,
+        0.33681634068489075,
+        -0.7841525077819824,
+        -0.5946699380874634,
+        -0.30046260356903076,
+        0.07007972151041031
+       ]
+      },
+      {
+       "key": "-1,1",
+       "cells": [
+        -1.1464465856552124,
+        -0.8625677824020386,
+        -0.5911921262741089,
+        -0.2533055245876312,
+        -1.4583333730697632,
+        -1.0833333730697632,
+        -0.75,
+        -0.4583333432674408,
+        -1.5285954475402832,
+        -1.1762287616729736,
+        -0.8276690244674683,
+        -0.5083255767822266,
+        -1.4114744663238525,
+        -1.1232653856277466,
+        -0.798149585723877,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-1,2",
+       "cells": [
+        -1.1823842525482178,
+        -0.9478026032447815,
+        -0.6590097546577454,
+        -0.3541666567325592,
+        -0.8602432608604431,
+        -0.6684405207633972,
+        -0.4166666567325592,
+        -0.13582852482795715,
+        -0.45049023628234863,
+        -0.29460853338241577,
+        -0.07748038321733475,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-2,0",
+       "cells": [
+        -0.028174683451652527,
+        -0.08966346830129623,
+        -0.11262255907058716,
+        -0.1041666641831398,
+        -0.2083333283662796,
+        -0.2864744961261749,
+        -0.31281572580337524,
+        -0.2916666567325592,
+        -0.439339816570282,
+        -0.548727810382843,
+        -0.5911921262741089,
+        -0.5625,
+        -0.6983808875083923,
+        -0.858967661857605,
+        -0.94098299741745,
+        -0.9166666865348816
+       ]
+      },
+      {
+       "key": "-2,1",
+       "cells": [
+        -0.945907473564148,
+        -1.1762287616729736,
+        -1.3375210762023926,
+        -1.3541666269302368,
+        -1.125,
+        -1.4166666269302368,
+        -1.6666666269302368,
+        -1.875,
+        -1.1823842525482178,
+        -1.4898897409439087,
+        -1.7196699380874634,
+        -1.7708333730697632,
+        -1.097455620765686,
+        -1.3875631093978882,
+        -1.5683050155639648,
+        -1.5833333730697632
+       ]
+      },
+      {
+       "key": "-2,2",
+       "cells": [
+        -0.878679633140564,
+        -1.1473400592803955,
+        -1.3006227016448975,
+        -1.3125,
+        -0.5416666865348816,
+        -0.7957625389099121,
+        -0.9384471774101257,
+        -0.9583333134651184,
+        -0.09861139208078384,
+        -0.3458448052406311,
+        -0.4880310893058777,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-3,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.07863757014274597,
+        0,
+        0,
+        -0.04930569604039192,
+        -0.2708333432674408,
+        0,
+        0,
+        -0.20494505763053894,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-3,1",
+       "cells": [
+        0,
+        0,
+        -0.3378676772117615,
+        -0.6647334098815918,
+        0,
+        0,
+        -0.4166666567325592,
+        -0.7916666865348816,
+        0,
+        0,
+        -0.4129493832588196,
+        -0.8211413025856018,
+        0,
+        0,
+        -0.3074176013469696,
+        -0.7321015000343323
+       ]
+      },
+      {
+       "key": "-3,2",
+       "cells": [
+        0,
+        0,
+        -0.09156772494316101,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        -0.19301947951316833,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        0.590982973575592,
+        0.5878679752349854,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0.9464465975761414,
+        0.8999999761581421,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.8999999761581421,
+        1.0878679752349854,
+        0.75,
+        0.5,
+        0.6323592662811279,
+        0.75,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.36412858963012695,
+        0.5,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,1",
+       "cells": [
+        0.05926717445254326,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        -0.2083333283662796,
+        0,
+        0,
+        0,
+        -0.22524511814117432,
+        0,
+        0,
+        0,
+        -0.17932693660259247,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,2",
+       "cells": [
+        -0.056349366903305054,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.25,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368,
+        0,
+        0.8333333134651184,
+        1.6666666269302368,
+        2.5,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0,
+        1.6666666269302368,
+        0.8333333134651184,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    },
+    "terrain:water": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.219669908285141
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        0,
+        0,
+        0,
+        -0.375,
+        0,
+        0,
+        0,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        -0.75,
+        -0.375,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": []
+    },
+    "terrain:natural-mask": {
+     "PLAYER": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.05000000074505806,
+        0.10000000149011612,
+        0.15000000596046448,
+        0.20000000298023224,
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.15000000596046448,
+        0.10000000149011612,
+        0.05000000074505806,
+        0,
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.11999999731779099,
+        0.23999999463558197,
+        0.36000001430511475,
+        0.47999998927116394,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.6000000238418579,
+        0.47999998927116394,
+        0.36000001430511475,
+        0.23999999463558197,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,2",
+       "cells": [
+        0.11999999731779099,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0,
+   "z": 0,
+   "result": 0.6464465856552124
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0,
+   "z": 0,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0.6464465856552124
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.25,
+   "z": 0.25,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 1
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.5,
+   "z": 0.5,
+   "result": -0.219669908285141
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0.44098296761512756
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -0.25,
+   "z": 0.25,
+   "result": -0.375
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 1.9595598578453064
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -2.5,
+   "z": 3,
+   "result": -1.7708333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1,
+   "z": -1,
+   "result": 1.8760972172021866
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -1.5,
+   "z": 2.5,
+   "result": -1.0833333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0.4302943676710129
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 4,
+   "z": 4,
+   "result": 0.6000000310124842
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": true
+  },
+  {
+   "op": "undo",
+   "result": false
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0,
+   "z": 0,
+   "result": -2.375151453293256e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.25,
+   "z": 0.25,
+   "result": -2.375151453293256e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 5.824948523525109e-9
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -0.25,
+   "z": 0.25,
+   "result": -3.800992587343899e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1.75,
+   "z": -0.5,
+   "result": -2.7634813548615966e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -2.5,
+   "z": 3,
+   "result": -3.973643103449831e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1,
+   "z": -1,
+   "result": -3.4422386274712835e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -1.5,
+   "z": 2.5,
+   "result": -3.973643103449831e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 3.5,
+   "z": 4.5,
+   "result": -4.8442154731986875e-9
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 4,
+   "z": 4,
+   "result": 3.1012484580372757e-8
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "kx": 0,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "0,0",
+    "painted": true,
+    "version": 326
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "PLAYER",
+   "kx": -1,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "-1,0",
+    "painted": true,
+    "version": 326
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:height",
+   "layer": "CREATOR",
+   "kx": 0,
+   "kz": 0,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "0,0",
+    "painted": true,
+    "version": 50
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:natural-mask",
+   "layer": "CREATOR",
+   "kx": 1,
+   "kz": 1,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "1,1",
+    "painted": true,
+    "version": 138
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:water",
+   "layer": "CREATOR",
+   "kx": 5,
+   "kz": 5,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "5,5",
+    "painted": false,
+    "version": 0
+   }
+  },
+  {
+   "op": "chunkObject",
+   "field": "terrain:water",
+   "layer": "PLAYER",
+   "kx": -2,
+   "kz": -2,
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4,
+    "key": "-2,-2",
+    "painted": false,
+    "version": 18
+   }
+  },
+  {
+   "op": "toJSON",
+   "result": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7.083245101568991e-10,
+        0,
+        0,
+        7.083245101568991e-10,
+        1.2101617485882343e-8
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        1.1535430388676104e-9,
+        -6.14277739785507e-10,
+        5.3140447597854745e-9,
+        -3.800992587343899e-8,
+        2.445260882666389e-9,
+        -3.094438483230988e-9,
+        0,
+        -2.9802322387695312e-8,
+        -1.347680367302928e-8,
+        -4.759361349471192e-9,
+        5.3140447597854745e-9,
+        -8.207602597565256e-9,
+        -3.094438483230988e-9,
+        -2.3977374752348624e-8,
+        7.083245101568991e-10,
+        1.2101617485882343e-8
+       ]
+      },
+      {
+       "key": "-1,1",
+       "cells": [
+        2.375151453293256e-8,
+        -2.724573988643897e-8,
+        2.7857478102077948e-8,
+        -1.4192837127779967e-8,
+        -3.973643103449831e-8,
+        -3.973643103449831e-8,
+        0,
+        -9.934107758624577e-9,
+        3.1668683675434295e-8,
+        -4.641657724846482e-9,
+        -8.683246122132005e-9,
+        -1.7053675804845625e-8,
+        4.2113725839953986e-8,
+        7.69131069944251e-9,
+        -1.087853984671483e-8,
+        -9.283315449692964e-9
+       ]
+      },
+      {
+       "key": "-1,2",
+       "cells": [
+        5.5714956204155897e-8,
+        1.6884056819321813e-8,
+        -1.2327477705298406e-8,
+        9.934107758624577e-9,
+        -5.935204328011423e-9,
+        -1.0757131851946156e-9,
+        9.934107758624577e-9,
+        1.4146421811744858e-9,
+        6.9212586772948725e-9,
+        -3.4676992388682493e-9,
+        -1.688097106544717e-9,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-2,0",
+       "cells": [
+        7.407975344264628e-10,
+        -2.675078158986821e-9,
+        1.7303146693237181e-9,
+        2.4835269396561444e-9,
+        4.967053879312289e-9,
+        1.2311404340437093e-8,
+        3.260347991584922e-9,
+        9.934107758624577e-9,
+        1.1649897047050217e-8,
+        2.23233254104116e-8,
+        2.7857478102077948e-8,
+        0,
+        -9.518722698942383e-9,
+        -8.143031138274637e-9,
+        8.207602597565256e-9,
+        -1.9868215517249155e-8
+       ]
+      },
+      {
+       "key": "-2,1",
+       "cells": [
+        -2.695360734605856e-8,
+        -4.641657724846482e-9,
+        -3.189454389485036e-8,
+        3.973643103449831e-8,
+        0,
+        3.973643103449831e-8,
+        3.973643103449831e-8,
+        0,
+        5.5714956204155897e-8,
+        1.7962424436746005e-8,
+        -2.3977374752348624e-8,
+        -3.973643103449831e-8,
+        4.46466508208232e-8,
+        2.3525654313516497e-8,
+        -6.188876966461976e-9,
+        -3.973643103449831e-8
+       ]
+      },
+      {
+       "key": "-2,2",
+       "cells": [
+        2.3299794094100434e-8,
+        -4.5440224027970544e-8,
+        3.744459675658618e-8,
+        0,
+        -1.9868215517249155e-8,
+        -1.547219241615494e-8,
+        9.781043530665556e-9,
+        1.9868215517249155e-8,
+        2.5927913149814685e-9,
+        -9.253789734486872e-9,
+        7.498029752639468e-9,
+        1.9868215517249155e-8,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-3,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -2.318083280883343e-9,
+        0,
+        0,
+        1.2963956574907343e-9,
+        -9.934107758624577e-9,
+        0,
+        0,
+        6.6579595170424e-9,
+        -9.283315449692964e-9
+       ]
+      },
+      {
+       "key": "-3,1",
+       "cells": [
+        0,
+        0,
+        5.190943674904247e-9,
+        1.4378819912508334e-8,
+        0,
+        0,
+        9.934107758624577e-9,
+        -1.9868215517249155e-8,
+        0,
+        0,
+        6.344487157861067e-9,
+        -1.3793328257349913e-8,
+        0,
+        0,
+        -4.914221918284056e-9,
+        2.152836842128636e-8
+       ]
+      },
+      {
+       "key": "-3,2",
+       "cells": [
+        0,
+        0,
+        -1.3176982838203344e-9,
+        1.9868215517249155e-8,
+        0,
+        0,
+        0,
+        5.14736742118771e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.3140447597854745e-9,
+        0,
+        5.3140447597854745e-9,
+        7.083245101568991e-10,
+        -3.800992587343899e-8,
+        0,
+        -8.207602597565256e-9,
+        1.2101617485882343e-8
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        -2.375151453293256e-8,
+        0,
+        -2.375151453293256e-8,
+        -8.207602597565256e-9,
+        0,
+        0,
+        0,
+        0,
+        -2.375151453293256e-8,
+        0,
+        -2.375151453293256e-8,
+        -8.207602597565256e-9,
+        -8.207602597565256e-9,
+        0,
+        -8.207602597565256e-9,
+        1.2101617485882343e-8
+       ]
+      },
+      {
+       "key": "0,1",
+       "cells": [
+        5.3140447597854745e-9,
+        0,
+        5.3140447597854745e-9,
+        7.083245101568991e-10,
+        4.967053879312289e-9,
+        0,
+        0,
+        0,
+        3.4606293386474363e-9,
+        0,
+        0,
+        0,
+        -5.350156317973642e-9,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,2",
+       "cells": [
+        1.4815950688529256e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7.083245101568991e-10,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        5.3140447597854745e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.3140447597854745e-9,
+        0,
+        0,
+        0,
+        7.083245101568991e-10,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        5.569347649725387e-9,
+        1.2377753932923952e-8,
+        -1.9868215517249155e-8,
+        0,
+        1.2377753932923952e-8,
+        4.0037576809481834e-8,
+        -3.973643103449831e-8,
+        0,
+        -1.9868215517249155e-8,
+        -3.973643103449831e-8,
+        0,
+        0,
+        1.2377753932923952e-8,
+        4.0037576809481834e-8,
+        -3.973643103449831e-8
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        5.569347649725387e-9,
+        1.2377753932923952e-8,
+        -1.9868215517249155e-8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        1.2377753932923952e-8,
+        5.569347649725387e-9,
+        0,
+        0,
+        4.0037576809481834e-8,
+        1.2377753932923952e-8,
+        0,
+        0,
+        -3.973643103449831e-8,
+        -1.9868215517249155e-8,
+        0,
+        0,
+        4.0037576809481834e-8,
+        1.2377753932923952e-8,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        1.2377753932923952e-8,
+        5.569347649725387e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    },
+    "terrain:water": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.824948523525109e-9
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.824948523525109e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.824948523525109e-9,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        5.824948523525109e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": []
+    },
+    "terrain:natural-mask": {
+     "PLAYER": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -6.033931687632332e-10,
+        3.1775088116248185e-10,
+        7.450580707946131e-10,
+        -6.033931687632332e-10,
+        1.8514925703705387e-10,
+        -3.1316367277156587e-9,
+        1.4901161415892261e-9
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        3.1775088116248185e-10,
+        -3.1316367277156587e-9,
+        7.170626314945139e-9,
+        5.9604645663569045e-9,
+        7.450580707946131e-10,
+        1.4901161415892261e-9,
+        5.9604645663569045e-9,
+        2.9802322831784522e-9,
+        3.1775088116248185e-10,
+        -3.1316367277156587e-9,
+        7.170626314945139e-9,
+        5.9604645663569045e-9,
+        -6.033931687632332e-10,
+        1.8514925703705387e-10,
+        -3.1316367277156587e-9,
+        1.4901161415892261e-9
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        -6.033931687632332e-10,
+        3.1775088116248185e-10,
+        7.450580707946131e-10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3.1775088116248185e-10,
+        -6.033931687632332e-10,
+        0,
+        0,
+        -3.1316367277156587e-9,
+        1.8514925703705387e-10,
+        -6.033931687632332e-10,
+        0
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        7.170626314945139e-9,
+        -3.1316367277156587e-9,
+        3.1775088116248185e-10,
+        0,
+        5.9604645663569045e-9,
+        1.4901161415892261e-9,
+        7.450580707946131e-10,
+        0,
+        7.170626314945139e-9,
+        -3.1316367277156587e-9,
+        3.1775088116248185e-10,
+        0,
+        -3.1316367277156587e-9,
+        1.8514925703705387e-10,
+        -6.033931687632332e-10,
+        0
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        3.1775088116248185e-10,
+        -6.033931687632332e-10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        3.445584040306926e-9,
+        -3.5395433251039776e-9,
+        0,
+        3.348746391296231e-9,
+        -5.620468535028067e-9,
+        -4.294908040325396e-10,
+        3.445584040306926e-9,
+        -5.620468535028067e-9,
+        -9.688431390486585e-9,
+        -8.70802097097112e-9,
+        -3.5395433251039776e-9,
+        -4.294908040325396e-10,
+        -8.70802097097112e-9,
+        -7.82444775637714e-9
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        -2.6822088994293836e-9,
+        -5.364418242947977e-9,
+        1.4305114426349519e-8,
+        -1.0728836485895954e-8,
+        -3.5395433251039776e-9,
+        -4.294908040325396e-10,
+        -8.70802097097112e-9,
+        -7.82444775637714e-9,
+        3.445584040306926e-9,
+        -5.620468535028067e-9,
+        -9.688431390486585e-9,
+        -8.70802097097112e-9,
+        0,
+        3.348746391296231e-9,
+        -5.620468535028067e-9,
+        -4.294908040325396e-10
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0,
+        3.445584040306926e-9,
+        -3.5395433251039776e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        -2.6822088994293836e-9,
+        -3.5395433251039776e-9,
+        3.445584040306926e-9,
+        0,
+        -5.364418242947977e-9,
+        -4.294908040325396e-10,
+        -5.620468535028067e-9,
+        3.348746391296231e-9,
+        1.4305114426349519e-8,
+        -8.70802097097112e-9,
+        -9.688431390486585e-9,
+        -5.620468535028067e-9,
+        -1.0728836485895954e-8,
+        -7.82444775637714e-9,
+        -8.70802097097112e-9,
+        -4.294908040325396e-10
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        2.3841858265427618e-8,
+        -1.0728836485895954e-8,
+        1.4305114426349519e-8,
+        -5.364418242947977e-9,
+        -1.0728836485895954e-8,
+        -7.82444775637714e-9,
+        -8.70802097097112e-9,
+        -4.294908040325396e-10,
+        1.4305114426349519e-8,
+        -8.70802097097112e-9,
+        -9.688431390486585e-9,
+        -5.620468535028067e-9,
+        -5.364418242947977e-9,
+        -4.294908040325396e-10,
+        -5.620468535028067e-9,
+        3.348746391296231e-9
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        -2.6822088994293836e-9,
+        -3.5395433251039776e-9,
+        3.445584040306926e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3.445584040306926e-9,
+        0,
+        0,
+        0,
+        -3.5395433251039776e-9,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,2",
+       "cells": [
+        -2.6822088994293836e-9,
+        0,
+        0,
+        0,
+        -3.5395433251039776e-9,
+        0,
+        0,
+        0,
+        3.445584040306926e-9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "restoredTrace": [
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0.09861218184232712,
+        0.38076120615005493
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        -0.0750817060470581,
+        -0.0384272001683712,
+        0.20238691568374634,
+        0.590982973575592,
+        -0.23461179435253143,
+        -0.15915250778198242,
+        0.1666666716337204,
+        0.5664213299751282,
+        -0.472953736782074,
+        -0.34919044375419617,
+        -0.01023932360112667,
+        0.33681634068489075,
+        -0.7841525077819824,
+        -0.5946699380874634,
+        -0.30046260356903076,
+        0.07007972151041031
+       ]
+      },
+      {
+       "key": "-1,1",
+       "cells": [
+        -1.1464465856552124,
+        -0.8625677824020386,
+        -0.5911921262741089,
+        -0.2533055245876312,
+        -1.4583333730697632,
+        -1.0833333730697632,
+        -0.75,
+        -0.4583333432674408,
+        -1.5285954475402832,
+        -1.1762287616729736,
+        -0.8276690244674683,
+        -0.5083255767822266,
+        -1.4114744663238525,
+        -1.1232653856277466,
+        -0.798149585723877,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-1,2",
+       "cells": [
+        -1.1823842525482178,
+        -0.9478026032447815,
+        -0.6590097546577454,
+        -0.3541666567325592,
+        -0.8602432608604431,
+        -0.6684405207633972,
+        -0.4166666567325592,
+        -0.13582852482795715,
+        -0.45049023628234863,
+        -0.29460853338241577,
+        -0.07748038321733475,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-2,0",
+       "cells": [
+        -0.028174683451652527,
+        -0.08966346830129623,
+        -0.11262255907058716,
+        -0.1041666641831398,
+        -0.2083333283662796,
+        -0.2864744961261749,
+        -0.31281572580337524,
+        -0.2916666567325592,
+        -0.439339816570282,
+        -0.548727810382843,
+        -0.5911921262741089,
+        -0.5625,
+        -0.6983808875083923,
+        -0.858967661857605,
+        -0.94098299741745,
+        -0.9166666865348816
+       ]
+      },
+      {
+       "key": "-2,1",
+       "cells": [
+        -0.945907473564148,
+        -1.1762287616729736,
+        -1.3375210762023926,
+        -1.3541666269302368,
+        -1.125,
+        -1.4166666269302368,
+        -1.6666666269302368,
+        -1.875,
+        -1.1823842525482178,
+        -1.4898897409439087,
+        -1.7196699380874634,
+        -1.7708333730697632,
+        -1.097455620765686,
+        -1.3875631093978882,
+        -1.5683050155639648,
+        -1.5833333730697632
+       ]
+      },
+      {
+       "key": "-2,2",
+       "cells": [
+        -0.878679633140564,
+        -1.1473400592803955,
+        -1.3006227016448975,
+        -1.3125,
+        -0.5416666865348816,
+        -0.7957625389099121,
+        -0.9384471774101257,
+        -0.9583333134651184,
+        -0.09861139208078384,
+        -0.3458448052406311,
+        -0.4880310893058777,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-3,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.07863757014274597,
+        0,
+        0,
+        -0.04930569604039192,
+        -0.2708333432674408,
+        0,
+        0,
+        -0.20494505763053894,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-3,1",
+       "cells": [
+        0,
+        0,
+        -0.3378676772117615,
+        -0.6647334098815918,
+        0,
+        0,
+        -0.4166666567325592,
+        -0.7916666865348816,
+        0,
+        0,
+        -0.4129493832588196,
+        -0.8211413025856018,
+        0,
+        0,
+        -0.3074176013469696,
+        -0.7321015000343323
+       ]
+      },
+      {
+       "key": "-3,2",
+       "cells": [
+        0,
+        0,
+        -0.09156772494316101,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        -0.19301947951316833,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        0.590982973575592,
+        0.5878679752349854,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0.9464465975761414,
+        0.8999999761581421,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.8999999761581421,
+        1.0878679752349854,
+        0.75,
+        0.5,
+        0.6323592662811279,
+        0.75,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.36412858963012695,
+        0.5,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,1",
+       "cells": [
+        0.05926717445254326,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        -0.2083333283662796,
+        0,
+        0,
+        0,
+        -0.22524511814117432,
+        0,
+        0,
+        0,
+        -0.17932693660259247,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,2",
+       "cells": [
+        -0.056349366903305054,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.25,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368,
+        0,
+        0.8333333134651184,
+        1.6666666269302368,
+        2.5,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0,
+        1.6666666269302368,
+        0.8333333134651184,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    },
+    "terrain:water": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.219669908285141
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        0,
+        0,
+        0,
+        -0.375,
+        0,
+        0,
+        0,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        -0.75,
+        -0.375,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": []
+    },
+    "terrain:natural-mask": {
+     "PLAYER": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.05000000074505806,
+        0.10000000149011612,
+        0.15000000596046448,
+        0.20000000298023224,
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.15000000596046448,
+        0.10000000149011612,
+        0.05000000074505806,
+        0,
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.11999999731779099,
+        0.23999999463558197,
+        0.36000001430511475,
+        0.47999998927116394,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.6000000238418579,
+        0.47999998927116394,
+        0.36000001430511475,
+        0.23999999463558197,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,2",
+       "cells": [
+        0.11999999731779099,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   },
+   "result": null
+  },
+  {
+   "op": "toJSON",
+   "result": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0.09861218184232712,
+        0.38076120615005493
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        -0.0750817060470581,
+        -0.0384272001683712,
+        0.20238691568374634,
+        0.590982973575592,
+        -0.23461179435253143,
+        -0.15915250778198242,
+        0.1666666716337204,
+        0.5664213299751282,
+        -0.472953736782074,
+        -0.34919044375419617,
+        -0.01023932360112667,
+        0.33681634068489075,
+        -0.7841525077819824,
+        -0.5946699380874634,
+        -0.30046260356903076,
+        0.07007972151041031
+       ]
+      },
+      {
+       "key": "-1,1",
+       "cells": [
+        -1.1464465856552124,
+        -0.8625677824020386,
+        -0.5911921262741089,
+        -0.2533055245876312,
+        -1.4583333730697632,
+        -1.0833333730697632,
+        -0.75,
+        -0.4583333432674408,
+        -1.5285954475402832,
+        -1.1762287616729736,
+        -0.8276690244674683,
+        -0.5083255767822266,
+        -1.4114744663238525,
+        -1.1232653856277466,
+        -0.798149585723877,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-1,2",
+       "cells": [
+        -1.1823842525482178,
+        -0.9478026032447815,
+        -0.6590097546577454,
+        -0.3541666567325592,
+        -0.8602432608604431,
+        -0.6684405207633972,
+        -0.4166666567325592,
+        -0.13582852482795715,
+        -0.45049023628234863,
+        -0.29460853338241577,
+        -0.07748038321733475,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-2,0",
+       "cells": [
+        -0.028174683451652527,
+        -0.08966346830129623,
+        -0.11262255907058716,
+        -0.1041666641831398,
+        -0.2083333283662796,
+        -0.2864744961261749,
+        -0.31281572580337524,
+        -0.2916666567325592,
+        -0.439339816570282,
+        -0.548727810382843,
+        -0.5911921262741089,
+        -0.5625,
+        -0.6983808875083923,
+        -0.858967661857605,
+        -0.94098299741745,
+        -0.9166666865348816
+       ]
+      },
+      {
+       "key": "-2,1",
+       "cells": [
+        -0.945907473564148,
+        -1.1762287616729736,
+        -1.3375210762023926,
+        -1.3541666269302368,
+        -1.125,
+        -1.4166666269302368,
+        -1.6666666269302368,
+        -1.875,
+        -1.1823842525482178,
+        -1.4898897409439087,
+        -1.7196699380874634,
+        -1.7708333730697632,
+        -1.097455620765686,
+        -1.3875631093978882,
+        -1.5683050155639648,
+        -1.5833333730697632
+       ]
+      },
+      {
+       "key": "-2,2",
+       "cells": [
+        -0.878679633140564,
+        -1.1473400592803955,
+        -1.3006227016448975,
+        -1.3125,
+        -0.5416666865348816,
+        -0.7957625389099121,
+        -0.9384471774101257,
+        -0.9583333134651184,
+        -0.09861139208078384,
+        -0.3458448052406311,
+        -0.4880310893058777,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-3,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.07863757014274597,
+        0,
+        0,
+        -0.04930569604039192,
+        -0.2708333432674408,
+        0,
+        0,
+        -0.20494505763053894,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-3,1",
+       "cells": [
+        0,
+        0,
+        -0.3378676772117615,
+        -0.6647334098815918,
+        0,
+        0,
+        -0.4166666567325592,
+        -0.7916666865348816,
+        0,
+        0,
+        -0.4129493832588196,
+        -0.8211413025856018,
+        0,
+        0,
+        -0.3074176013469696,
+        -0.7321015000343323
+       ]
+      },
+      {
+       "key": "-3,2",
+       "cells": [
+        0,
+        0,
+        -0.09156772494316101,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        -0.19301947951316833,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        0.590982973575592,
+        0.5878679752349854,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0.9464465975761414,
+        0.8999999761581421,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.8999999761581421,
+        1.0878679752349854,
+        0.75,
+        0.5,
+        0.6323592662811279,
+        0.75,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.36412858963012695,
+        0.5,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,1",
+       "cells": [
+        0.05926717445254326,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        -0.2083333283662796,
+        0,
+        0,
+        0,
+        -0.22524511814117432,
+        0,
+        0,
+        0,
+        -0.17932693660259247,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,2",
+       "cells": [
+        -0.056349366903305054,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.25,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368,
+        0,
+        0.8333333134651184,
+        1.6666666269302368,
+        2.5,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0,
+        1.6666666269302368,
+        0.8333333134651184,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    },
+    "terrain:water": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.219669908285141
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        0,
+        0,
+        0,
+        -0.375,
+        0,
+        0,
+        0,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        -0.75,
+        -0.375,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": []
+    },
+    "terrain:natural-mask": {
+     "PLAYER": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.05000000074505806,
+        0.10000000149011612,
+        0.15000000596046448,
+        0.20000000298023224,
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.15000000596046448,
+        0.10000000149011612,
+        0.05000000074505806,
+        0,
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.11999999731779099,
+        0.23999999463558197,
+        0.36000001430511475,
+        0.47999998927116394,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.6000000238418579,
+        0.47999998927116394,
+        0.36000001430511475,
+        0.23999999463558197,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,2",
+       "cells": [
+        0.11999999731779099,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0,
+   "z": 0,
+   "result": 0.9464465975761414
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0,
+   "z": 0,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0,
+   "z": 0,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0.9464465975761414
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.25,
+   "z": 0.25,
+   "result": -0.75
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 1.0878679752349854
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 0.5,
+   "z": 0.5,
+   "result": -0.219669908285141
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 0.5,
+   "z": 0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0.590982973575592
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -0.25,
+   "z": 0.25,
+   "result": -0.375
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -0.25,
+   "z": 0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 1.9595598578453064
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1.75,
+   "z": -0.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -2.5,
+   "z": 3,
+   "result": -1.7708333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -2.5,
+   "z": 3,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 1,
+   "z": -1,
+   "result": 1.8760972172021866
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 1,
+   "z": -1,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -1.5,
+   "z": 2.5,
+   "result": -1.0833333730697632
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -1.5,
+   "z": 2.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 3.5,
+   "z": 4.5,
+   "result": 0.6302943676710129
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 4,
+   "z": 4,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 4,
+   "z": 4,
+   "result": 0.7292893528938293
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 2,
+   "z": 2,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": -3.75,
+   "z": -0.25,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:height",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:water",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "read",
+   "field": "terrain:natural-mask",
+   "x": 5.25,
+   "z": -4.5,
+   "result": 0
+  },
+  {
+   "op": "undo",
+   "result": false
+  },
+  {
+   "op": "fromJSON",
+   "input": null,
+   "error": {
+    "reason": "paint-doc-invalid",
+    "message": "[field-paint] paint-doc-invalid: paint document must be an object keyed by field name"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": 3,
+   "error": {
+    "reason": "paint-doc-invalid",
+    "message": "[field-paint] paint-doc-invalid: paint document must be an object keyed by field name"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:rock": {}
+   },
+   "error": {
+    "reason": "field-unknown",
+    "message": "[field-paint] field-unknown: saved field \"terrain:rock\" is not one of terrain:height, terrain:water, terrain:natural-mask"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "GHOST": []
+    }
+   },
+   "error": {
+    "reason": "layer-unknown",
+    "message": "[field-paint] layer-unknown: layer \"GHOST\" is not one of PLAYER, CREATOR"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "PLAYER": "x"
+    }
+   },
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: importRuntime needs an array of { key, cells }"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "0,0",
+       "cells": [
+        1,
+        2
+       ]
+      }
+     ]
+    }
+   },
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk must carry chunkCells^2 cells"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        "NaN"
+       ]
+      }
+     ]
+    }
+   },
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk cells must be finite numbers"
+   }
+  },
+  {
+   "op": "fromJSON",
+   "input": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": 7,
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   },
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: runtime chunk must carry chunkCells^2 cells"
+   }
+  },
+  {
+   "op": "toJSON",
+   "result": {
+    "terrain:height": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0.09861218184232712,
+        0.38076120615005493
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        -0.0750817060470581,
+        -0.0384272001683712,
+        0.20238691568374634,
+        0.590982973575592,
+        -0.23461179435253143,
+        -0.15915250778198242,
+        0.1666666716337204,
+        0.5664213299751282,
+        -0.472953736782074,
+        -0.34919044375419617,
+        -0.01023932360112667,
+        0.33681634068489075,
+        -0.7841525077819824,
+        -0.5946699380874634,
+        -0.30046260356903076,
+        0.07007972151041031
+       ]
+      },
+      {
+       "key": "-1,1",
+       "cells": [
+        -1.1464465856552124,
+        -0.8625677824020386,
+        -0.5911921262741089,
+        -0.2533055245876312,
+        -1.4583333730697632,
+        -1.0833333730697632,
+        -0.75,
+        -0.4583333432674408,
+        -1.5285954475402832,
+        -1.1762287616729736,
+        -0.8276690244674683,
+        -0.5083255767822266,
+        -1.4114744663238525,
+        -1.1232653856277466,
+        -0.798149585723877,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-1,2",
+       "cells": [
+        -1.1823842525482178,
+        -0.9478026032447815,
+        -0.6590097546577454,
+        -0.3541666567325592,
+        -0.8602432608604431,
+        -0.6684405207633972,
+        -0.4166666567325592,
+        -0.13582852482795715,
+        -0.45049023628234863,
+        -0.29460853338241577,
+        -0.07748038321733475,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-2,0",
+       "cells": [
+        -0.028174683451652527,
+        -0.08966346830129623,
+        -0.11262255907058716,
+        -0.1041666641831398,
+        -0.2083333283662796,
+        -0.2864744961261749,
+        -0.31281572580337524,
+        -0.2916666567325592,
+        -0.439339816570282,
+        -0.548727810382843,
+        -0.5911921262741089,
+        -0.5625,
+        -0.6983808875083923,
+        -0.858967661857605,
+        -0.94098299741745,
+        -0.9166666865348816
+       ]
+      },
+      {
+       "key": "-2,1",
+       "cells": [
+        -0.945907473564148,
+        -1.1762287616729736,
+        -1.3375210762023926,
+        -1.3541666269302368,
+        -1.125,
+        -1.4166666269302368,
+        -1.6666666269302368,
+        -1.875,
+        -1.1823842525482178,
+        -1.4898897409439087,
+        -1.7196699380874634,
+        -1.7708333730697632,
+        -1.097455620765686,
+        -1.3875631093978882,
+        -1.5683050155639648,
+        -1.5833333730697632
+       ]
+      },
+      {
+       "key": "-2,2",
+       "cells": [
+        -0.878679633140564,
+        -1.1473400592803955,
+        -1.3006227016448975,
+        -1.3125,
+        -0.5416666865348816,
+        -0.7957625389099121,
+        -0.9384471774101257,
+        -0.9583333134651184,
+        -0.09861139208078384,
+        -0.3458448052406311,
+        -0.4880310893058777,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "-3,0",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.07863757014274597,
+        0,
+        0,
+        -0.04930569604039192,
+        -0.2708333432674408,
+        0,
+        0,
+        -0.20494505763053894,
+        -0.47745752334594727
+       ]
+      },
+      {
+       "key": "-3,1",
+       "cells": [
+        0,
+        0,
+        -0.3378676772117615,
+        -0.6647334098815918,
+        0,
+        0,
+        -0.4166666567325592,
+        -0.7916666865348816,
+        0,
+        0,
+        -0.4129493832588196,
+        -0.8211413025856018,
+        0,
+        0,
+        -0.3074176013469696,
+        -0.7321015000343323
+       ]
+      },
+      {
+       "key": "-3,2",
+       "cells": [
+        0,
+        0,
+        -0.09156772494316101,
+        -0.5208333134651184,
+        0,
+        0,
+        0,
+        -0.19301947951316833,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        0.590982973575592,
+        0.5878679752349854,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0.9464465975761414,
+        0.8999999761581421,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.8999999761581421,
+        1.0878679752349854,
+        0.75,
+        0.5,
+        0.6323592662811279,
+        0.75,
+        0.6464465856552124,
+        0.44098299741744995,
+        0.36412858963012695,
+        0.5,
+        0.44098299741744995,
+        0.2928932309150696
+       ]
+      },
+      {
+       "key": "0,1",
+       "cells": [
+        0.05926717445254326,
+        0.25,
+        0.20943059027194977,
+        0.09861218184232712,
+        -0.2083333283662796,
+        0,
+        0,
+        0,
+        -0.22524511814117432,
+        0,
+        0,
+        0,
+        -0.17932693660259247,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,2",
+       "cells": [
+        -0.056349366903305054,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.25,
+        0,
+        0,
+        0,
+        0.20943059027194977,
+        0,
+        0,
+        0,
+        0.09861218184232712,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368,
+        0,
+        0.8333333134651184,
+        1.6666666269302368,
+        2.5,
+        0,
+        0.6366100311279297,
+        1.3214887380599976,
+        1.6666666269302368
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        0,
+        0.14297740161418915,
+        0.6366100311279297,
+        0.8333333134651184,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,-1",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0,
+        1.6666666269302368,
+        0.8333333134651184,
+        0,
+        0,
+        1.3214887380599976,
+        0.6366100311279297,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "1,0",
+       "cells": [
+        0.6366100311279297,
+        0.14297740161418915,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    },
+    "terrain:water": {
+     "PLAYER": [
+      {
+       "key": "-1,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.219669908285141
+       ]
+      },
+      {
+       "key": "-1,0",
+       "cells": [
+        0,
+        0,
+        0,
+        -0.375,
+        0,
+        0,
+        0,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,-1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "0,0",
+       "cells": [
+        -0.75,
+        -0.375,
+        0,
+        0,
+        -0.375,
+        -0.219669908285141,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": []
+    },
+    "terrain:natural-mask": {
+     "PLAYER": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.05000000074505806,
+        0.10000000149011612,
+        0.15000000596046448,
+        0.20000000298023224,
+        0.041886117309331894,
+        0.08819659799337387,
+        0.12928932905197144,
+        0.15000000596046448,
+        0.019722435623407364,
+        0.05857864394783974,
+        0.08819659799337387,
+        0.10000000149011612
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0.019722435623407364,
+        0.041886117309331894,
+        0.05000000074505806,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.15000000596046448,
+        0.10000000149011612,
+        0.05000000074505806,
+        0,
+        0.12928932905197144,
+        0.08819659799337387,
+        0.041886117309331894,
+        0,
+        0.08819659799337387,
+        0.05857864394783974,
+        0.019722435623407364,
+        0
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.041886117309331894,
+        0.019722435623407364,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "CREATOR": [
+      {
+       "key": "1,1",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064
+       ]
+      },
+      {
+       "key": "1,2",
+       "cells": [
+        0.11999999731779099,
+        0.23999999463558197,
+        0.36000001430511475,
+        0.47999998927116394,
+        0.10522732138633728,
+        0.22052668035030365,
+        0.3316718339920044,
+        0.43029436469078064,
+        0.06334368884563446,
+        0.16733384132385254,
+        0.26058873534202576,
+        0.3316718339920044,
+        0,
+        0.09088312089443207,
+        0.16733384132385254,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "1,3",
+       "cells": [
+        0,
+        0,
+        0.06334368884563446,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "2,1",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365
+       ]
+      },
+      {
+       "key": "2,2",
+       "cells": [
+        0.6000000238418579,
+        0.47999998927116394,
+        0.36000001430511475,
+        0.23999999463558197,
+        0.47999998927116394,
+        0.43029436469078064,
+        0.3316718339920044,
+        0.22052668035030365,
+        0.36000001430511475,
+        0.3316718339920044,
+        0.26058873534202576,
+        0.16733384132385254,
+        0.23999999463558197,
+        0.22052668035030365,
+        0.16733384132385254,
+        0.09088312089443207
+       ]
+      },
+      {
+       "key": "2,3",
+       "cells": [
+        0.11999999731779099,
+        0.10522732138633728,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,1",
+       "cells": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "key": "3,2",
+       "cells": [
+        0.11999999731779099,
+        0,
+        0,
+        0,
+        0.10522732138633728,
+        0,
+        0,
+        0,
+        0.06334368884563446,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "paintConstructErrors": [
+  {
+   "cellSize": 0,
+   "chunkCells": 4,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  },
+  {
+   "cellSize": 0.5,
+   "chunkCells": 2.5,
+   "error": {
+    "reason": null,
+    "message": "FieldLayers: cellSize > 0 and integer chunkCells >= 1 required"
+   }
+  }
+ ],
+ "hostCases": [
+  {
+   "name": "absent",
+   "absent": true,
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "null terrain config",
+   "input": null,
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "empty terrain config",
+   "input": {},
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "fieldPaint undefined",
+   "input": {},
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "fieldPaint empty object",
+   "input": {
+    "fieldPaint": {}
+   },
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "fieldPaint array",
+   "input": {
+    "fieldPaint": []
+   },
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "fieldPaint null sizes",
+   "input": {
+    "fieldPaint": {
+     "cellSize": null,
+     "chunkCells": null
+    }
+   },
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 64
+   }
+  },
+  {
+   "name": "custom sizes",
+   "input": {
+    "fieldPaint": {
+     "cellSize": 0.5,
+     "chunkCells": 4
+    }
+   },
+   "result": {
+    "cellSize": 0.5,
+    "chunkCells": 4
+   }
+  },
+  {
+   "name": "chunkCells only",
+   "input": {
+    "fieldPaint": {
+     "chunkCells": 1
+    }
+   },
+   "result": {
+    "cellSize": 1,
+    "chunkCells": 1
+   }
+  },
+  {
+   "name": "fieldPaint null",
+   "input": {
+    "fieldPaint": null
+   },
+   "error": {
+    "reason": "field-paint-config-invalid",
+    "message": "[field-paint] field-paint-config-invalid: terrain.fieldPaint must be an object with cellSize and chunkCells"
+   }
+  },
+  {
+   "name": "fieldPaint number",
+   "input": {
+    "fieldPaint": 3
+   },
+   "error": {
+    "reason": "field-paint-config-invalid",
+    "message": "[field-paint] field-paint-config-invalid: terrain.fieldPaint must be an object with cellSize and chunkCells"
+   }
+  },
+  {
+   "name": "cellSize zero",
+   "input": {
+    "fieldPaint": {
+     "cellSize": 0
+    }
+   },
+   "error": {
+    "reason": "field-paint-cell-size-invalid",
+    "message": "[field-paint] field-paint-cell-size-invalid: terrain.fieldPaint.cellSize must be a positive finite number"
+   }
+  },
+  {
+   "name": "cellSize string",
+   "input": {
+    "fieldPaint": {
+     "cellSize": "1"
+    }
+   },
+   "error": {
+    "reason": "field-paint-cell-size-invalid",
+    "message": "[field-paint] field-paint-cell-size-invalid: terrain.fieldPaint.cellSize must be a positive finite number"
+   }
+  },
+  {
+   "name": "cellSize NaN",
+   "input": {
+    "fieldPaint": {
+     "cellSize": "NaN"
+    }
+   },
+   "error": {
+    "reason": "field-paint-cell-size-invalid",
+    "message": "[field-paint] field-paint-cell-size-invalid: terrain.fieldPaint.cellSize must be a positive finite number"
+   }
+  },
+  {
+   "name": "cellSize Infinity",
+   "input": {
+    "fieldPaint": {
+     "cellSize": "Infinity"
+    }
+   },
+   "error": {
+    "reason": "field-paint-cell-size-invalid",
+    "message": "[field-paint] field-paint-cell-size-invalid: terrain.fieldPaint.cellSize must be a positive finite number"
+   }
+  },
+  {
+   "name": "chunkCells zero",
+   "input": {
+    "fieldPaint": {
+     "chunkCells": 0
+    }
+   },
+   "error": {
+    "reason": "field-paint-chunk-cells-invalid",
+    "message": "[field-paint] field-paint-chunk-cells-invalid: terrain.fieldPaint.chunkCells must be an integer of at least 1"
+   }
+  },
+  {
+   "name": "chunkCells fractional",
+   "input": {
+    "fieldPaint": {
+     "chunkCells": 2.5
+    }
+   },
+   "error": {
+    "reason": "field-paint-chunk-cells-invalid",
+    "message": "[field-paint] field-paint-chunk-cells-invalid: terrain.fieldPaint.chunkCells must be an integer of at least 1"
+   }
+  },
+  {
+   "name": "chunkCells string",
+   "input": {
+    "fieldPaint": {
+     "chunkCells": "4"
+    }
+   },
+   "error": {
+    "reason": "field-paint-chunk-cells-invalid",
+    "message": "[field-paint] field-paint-chunk-cells-invalid: terrain.fieldPaint.chunkCells must be an integer of at least 1"
+   }
+  }
+ ]
+}
