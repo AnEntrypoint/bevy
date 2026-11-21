@@ -1,0 +1,1815 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/terrain/TerrainMeshSurface.js (createTerrainMeshSurface, renderMeshHeightAt, isMeshSurfaceNoGround, MESH_SURFACE_NO_GROUND)",
+ "payloads": [
+  {
+   "count": 13,
+   "gridSize": 4,
+   "offsets": [
+    1797.8839881780182,
+    1518.6621175930677,
+    150,
+    0,
+    1947.8839881780182,
+    1518.6621175930677,
+    150,
+    0,
+    1797.8839881780182,
+    1668.6621175930677,
+    150,
+    0,
+    1947.8839881780182,
+    1668.6621175930677,
+    150,
+    0,
+    1617.8839881780182,
+    1598.6621175930677,
+    80,
+    0,
+    2217.883988178018,
+    1938.6621175930677,
+    400,
+    0,
+    2817.883988178018,
+    2538.6621175930677,
+    150,
+    0,
+    -2182.1160118219823,
+    1618.213700181782,
+    120,
+    0,
+    -2062.1160118219823,
+    1738.213700181782,
+    120,
+    0,
+    2181.786299818218,
+    -2441.3378824069323,
+    140,
+    0,
+    2321.786299818218,
+    -2401.3378824069323,
+    100,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    100,
+    0
+   ],
+   "faces": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    0,
+    0,
+    2,
+    2,
+    4,
+    9
+   ]
+  },
+  {
+   "count": 3,
+   "gridSize": 4,
+   "offsets": [
+    1717.8839881780182,
+    1478.6621175930677,
+    200,
+    1,
+    1917.8839881780182,
+    1638.6621175930677,
+    180,
+    1,
+    1857.8839881780182,
+    1698.6621175930677,
+    90,
+    0
+   ],
+   "faces": [
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "count": 0,
+   "gridSize": 4,
+   "offsets": [],
+   "faces": []
+  },
+  {
+   "count": 13,
+   "gridSize": 2,
+   "offsets": [
+    1797.8839881780182,
+    1518.6621175930677,
+    150,
+    0,
+    1947.8839881780182,
+    1518.6621175930677,
+    150,
+    0,
+    1797.8839881780182,
+    1668.6621175930677,
+    150,
+    0,
+    1947.8839881780182,
+    1668.6621175930677,
+    150,
+    0,
+    1617.8839881780182,
+    1598.6621175930677,
+    80,
+    0,
+    2217.883988178018,
+    1938.6621175930677,
+    400,
+    0,
+    2817.883988178018,
+    2538.6621175930677,
+    150,
+    0,
+    -2182.1160118219823,
+    1618.213700181782,
+    120,
+    0,
+    -2062.1160118219823,
+    1738.213700181782,
+    120,
+    0,
+    2181.786299818218,
+    -2441.3378824069323,
+    140,
+    0,
+    2321.786299818218,
+    -2401.3378824069323,
+    100,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    100,
+    0
+   ],
+   "faces": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    0,
+    0,
+    2,
+    2,
+    4,
+    9
+   ]
+  },
+  null
+ ],
+ "cases": [
+  {
+   "name": "lattice-lazy-query",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    },
+    {
+     "op": "version",
+     "expect": 1
+    }
+   ]
+  },
+  {
+   "name": "explicit-sync-swap",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "setFocus",
+     "x": 0,
+     "z": 0
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 1
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    },
+    {
+     "op": "setQuads",
+     "index": 1
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 2
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.49999999999999994
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3373416315264566
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46163193075351955
+    },
+    {
+     "op": "setQuads",
+     "index": 3
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 3
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.500008615567146
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.5546723115871158
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.337070645435429
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7704308173743101
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8482185816829488
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.4615690397015677
+    },
+    {
+     "op": "setQuads",
+     "index": 2
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 4
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.500008615567146
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.5546723115871158
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.337070645435429
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7704308173743101
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8482185816829488
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.4615690397015677
+    },
+    {
+     "op": "setQuads",
+     "index": 4
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 6
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.500008615567146
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.5546723115871158
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.337070645435429
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7704308173743101
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8482185816829488
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.4615690397015677
+    }
+   ]
+  },
+  {
+   "name": "focus-move-sync",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "setFocus",
+     "x": -150,
+     "z": 120
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 1
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    },
+    {
+     "op": "setFocus",
+     "x": 90,
+     "z": -100
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "version",
+     "expect": 2
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    }
+   ]
+  },
+  {
+   "name": "no-lattice-small-focus",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": 60,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 11.985098435064536
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 11.675433656287574
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 11.259582141312546
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 6.316281749336444
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 11.347033834514564
+    }
+   ]
+  },
+  {
+   "name": "lattice-epoch-mismatch",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 8
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 11.985098435064536
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 11.675433656287574
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 11.259582141312546
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 6.316281749336444
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": -15.14973140127853
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 11.347033834514564
+    }
+   ]
+  },
+  {
+   "name": "frame-epoch-absent",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": null
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 11.985098435064536
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 11.675433656287574
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 11.259582141312546
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 6.316281749336444
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": -15.14973140127853
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 11.347033834514564
+    }
+   ]
+  },
+  {
+   "name": "lattice-without-epoch",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": null
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    }
+   ]
+  },
+  {
+   "name": "eviction-one-quad",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": 1,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.5001423365577016
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.554688232887079
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.3375390231287885
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7709992869526145
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8491071528161422
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.46174151754653825
+    }
+   ]
+  },
+  {
+   "name": "empty-payload",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 2,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": null
+    },
+    {
+     "op": "sync"
+    },
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": null
+    }
+   ]
+  },
+  {
+   "name": "null-payload",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 4,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": null
+    }
+   ]
+  },
+  {
+   "name": "grid-two-payload",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 3,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "steps": [
+    {
+     "op": "query",
+     "x": 0,
+     "z": 0,
+     "expect": 0.500008615567146
+    },
+    {
+     "op": "query",
+     "x": 20,
+     "z": -15,
+     "expect": 0.5546723115871158
+    },
+    {
+     "op": "query",
+     "x": -60,
+     "z": 40,
+     "expect": 0.337070645435429
+    },
+    {
+     "op": "query",
+     "x": 90,
+     "z": -100,
+     "expect": 0.7704308173743101
+    },
+    {
+     "op": "query",
+     "x": -150,
+     "z": 120,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 250,
+     "z": 200,
+     "expect": 0.8482185816829488
+    },
+    {
+     "op": "query",
+     "x": 600,
+     "z": -600,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": 1200,
+     "z": 0,
+     "expect": null
+    },
+    {
+     "op": "query",
+     "x": -40,
+     "z": -40,
+     "expect": 0.4615690397015677
+    }
+   ]
+  }
+ ],
+ "refusals": [
+  {
+   "name": "radius-zero",
+   "frame": {
+    "radius": 0,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "error": "createTerrainMeshSurface: opts.frame.radius must be a finite positive radius"
+  },
+  {
+   "name": "radius-negative",
+   "frame": {
+    "radius": -4,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null,
+   "error": "createTerrainMeshSurface: opts.frame.radius must be a finite positive radius"
+  },
+  {
+   "name": "focus-zero",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": 0,
+   "maxQuads": null,
+   "error": "createTerrainMeshSurface: opts.focusRadiusM must be a finite positive number of metres"
+  },
+  {
+   "name": "focus-negative",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": -3,
+   "maxQuads": null,
+   "error": "createTerrainMeshSurface: opts.focusRadiusM must be a finite positive number of metres"
+  },
+  {
+   "name": "max-quads-fraction",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": 0.5,
+   "error": "createTerrainMeshSurface: opts.maxQuads must be a finite count of at least one"
+  },
+  {
+   "name": "max-quads-zero",
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": null,
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": 0,
+   "error": "createTerrainMeshSurface: opts.maxQuads must be a finite count of at least one"
+  }
+ ],
+ "render": {
+  "case": {
+   "frame": {
+    "radius": 2000,
+    "anchorHeight": 12.5,
+    "offsetY": 3.25,
+    "up": [
+     0.6,
+     0.48,
+     0.64
+    ],
+    "east": [
+     0.7295372041400852,
+     0,
+     -0.6839411288813297
+    ],
+    "north": [
+     -0.3282917418630383,
+     0.8772684879784524,
+     -0.3501778579872409
+    ],
+    "chartEpoch": 7
+   },
+   "lattice": {
+    "chartEpoch": 7
+   },
+   "quads": 0,
+   "focusRadiusM": null,
+   "maxQuads": null
+  },
+  "absentIsNull": true,
+  "probes": [
+   {
+    "x": 0,
+    "z": 0,
+    "expect": 0.5001423365577016
+   },
+   {
+    "x": 20,
+    "z": -15,
+    "expect": 0.554688232887079
+   },
+   {
+    "x": -60,
+    "z": 40,
+    "expect": 0.3375390231287885
+   },
+   {
+    "x": 90,
+    "z": -100,
+    "expect": 0.7709992869526145
+   },
+   {
+    "x": -150,
+    "z": 120,
+    "expect": null
+   },
+   {
+    "x": 250,
+    "z": 200,
+    "expect": 0.8491071528161422
+   },
+   {
+    "x": 600,
+    "z": -600,
+    "expect": null
+   },
+   {
+    "x": 1200,
+    "z": 0,
+    "expect": null
+   },
+   {
+    "x": -40,
+    "z": -40,
+    "expect": 0.46174151754653825
+   }
+  ]
+ },
+ "sentinel": {
+  "constant": null,
+  "cases": [
+   {
+    "value": null,
+    "expect": true
+   },
+   {
+    "value": 0,
+    "expect": false
+   },
+   {
+    "value": 1.5,
+    "expect": false
+   },
+   {
+    "value": -2,
+    "expect": false
+   }
+  ]
+ },
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}

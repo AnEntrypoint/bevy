@@ -1,7 +1,7 @@
 #[cfg_attr(not(test), allow(dead_code))]
 pub(crate) mod baked;
 pub(crate) mod planet_frame;
-mod anchor;
+pub(crate) mod anchor;
 mod height_spec;
 pub(crate) mod ops_jsgen;
 pub(crate) mod placement;
