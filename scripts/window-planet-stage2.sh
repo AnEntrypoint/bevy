@@ -15,7 +15,7 @@ case "$part" in
       run gen-planet-$gen bash -c "node scripts/gen-planet-$gen.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-$gen.json"
     done
     ;;
-  pure) tables climate splat atmosphere layers patch stream patch-climate cleanup ;;
+  pure) tables climate splat atmosphere layers patch stream patch-climate near-floor cleanup ;;
   terrain) tables terrain ;;
   water) tables water ;;
   sky) tables sky ;;
