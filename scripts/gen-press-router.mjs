@@ -1,14 +1,5 @@
-import { execFileSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { writeParity, spointImport } from './lib/spoint.mjs'
 
-const spoint = process.argv[2] ?? '/workspace/spoint'
-const git = (args) => execFileSync('git', ['-C', spoint, ...args]).toString()
-const rev = git(['rev-parse', '--short', 'HEAD']).trim()
-const statusBefore = git(['status', '--porcelain'])
-const outPath = join(import.meta.dirname, '..', 'testdata', 'parity', 'spoint-press-router.json')
-const { routePress } = await import(pathToFileURL(join(spoint, 'src/interaction/pressRouter.js')).href)
 const outcome = (fn) => {
   try {
     return { ok: true, value: fn() }
@@ -59,15 +50,14 @@ const inputs = [
   ['max-angle-negative', { objects: scene, origin, forward, maxAngleRad: -0.1 }],
   ['max-angle-null', { objects: scene, origin, forward, maxAngleRad: null }],
 ]
-const fixture = {
-  spoint: rev,
-  source: 'spoint ' + rev + ': src/interaction/pressRouter.js (routePress)',
-  cases: inputs.map(([name, input]) => ({ name, input, expect: outcome(() => ({ ok: true, value: routePress(input) }).value) })),
-}
 
-const statusAfter = git(['status', '--porcelain'])
-if (statusAfter !== statusBefore) throw new Error('spoint working tree changed')
-fixture.spointStatusBefore = statusBefore
-fixture.spointStatusAfter = statusAfter
-writeFileSync(outPath, JSON.stringify(fixture, null, 1) + '\n')
-console.log(JSON.stringify({ rev, out: outPath, cases: fixture.cases.length, status: 'unchanged' }))
+await writeParity(async ({ spoint, rev }) => {
+  const { routePress } = await spointImport(spoint, 'src/interaction/pressRouter.js')
+  return {
+    'spoint-press-router.json': {
+      spoint: rev,
+      source: 'spoint ' + rev + ': src/interaction/pressRouter.js (routePress)',
+      cases: inputs.map(([name, input]) => ({ name, input, expect: outcome(() => ({ ok: true, value: routePress(input) }).value) })),
+    },
+  }
+})

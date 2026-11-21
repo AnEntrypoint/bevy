@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+cd /workspace/bevy || exit 2
+mkdir -p target/witness
+log=target/witness/window-job-r143.log
+overall=0
+note() { echo "$@" | tee -a $log; }
+run() {
+  name=$1; shift
+  timeout 1200 "$@" > target/witness/$name.out 2>&1 &
+  pid=$!
+  note "PID $name pid=$pid $(date -u +%T)Z"
+  wait $pid; rc=$?
+  [ "$rc" -ne 0 ] && overall=1
+  note "WITNESS $name rc=$rc"
+  grep -a 'test result\|FAIL\|panicked\|differs\|differ from\|greenPercent\|sha256\|frozen\|ok   ' target/witness/$name.out | tail -n 14 | tee -a $log
+}
+mutant() {
+  name=$1; file=$2; old=$3; new=$4; cmd=$5
+  cp "$file" /tmp/bt/r136/$name.good
+  python3 - "$file" "$old" "$new" <<'PY' || { note "MUTANT-APPLY-FAILED $name"; overall=1; cp /tmp/bt/r136/$name.good "$file"; return; }
+import sys
+p, o, n = sys.argv[1], sys.argv[2], sys.argv[3]
+t = open(p, encoding='utf-8').read()
+assert t.count(o) == 1, t.count(o)
+open(p, 'w', encoding='utf-8').write(t.replace(o, n))
+PY
+  cmp -s "$file" /tmp/bt/r136/$name.good; note "MUTANT $name file-differs-rc=$?"
+  timeout 1200 bash -c "$cmd" > target/witness/$name.out 2>&1 &
+  pid=$!
+  note "PID mutant-$name pid=$pid $(date -u +%T)Z"
+  wait $pid; rc=$?
+  cp /tmp/bt/r136/$name.good "$file"
+  cmp "$file" /tmp/bt/r136/$name.good && note "RESTORED $name identical"
+  if [ "$rc" -ne 0 ]; then note "DETECTED $name rc=$rc $(grep -a -o 'FAILED\|FAIL \|differs from spoint\|centre carve elevation differs\|hashVersion 1 elevation differs\|reliefScale elevation differs\|carved elevation differs\|hpf elevation differs\|elevation differs\|census froze\|census kept\|60 census frames' target/witness/$name.out | sort | uniq -c | tr '\n' ' ')"; else note "NOT-DETECTED $name rc=$rc"; overall=1; fi
+}
+run build-debug cargo build --bin bevy-jayzee
+run bin-witness cargo test --bin bevy-jayzee
+run heavy-witness node scripts/check-heavy-jobs.cjs
+run docs-witness bash scripts/docs-check.sh 717 87 5 29
+run docs-red-check bash -c 'bash scripts/docs-check.sh 718 87 5 29; test $? -ne 0'
+run tps-gen-witness bash -c 'node scripts/gen-tps-game-hf.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/tps-game.hf testdata/parity/tps-game-hf-points.json'
+run planet-gen-witness bash -c 'node scripts/gen-planet-frame.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-frame.json'
+run rank-witness bash -c 'node scripts/rank-missing.mjs /workspace/spoint > /dev/null && git diff --exit-code -- docs/RANKED_MISSING.tsv'
+run hf-encode-gen-witness bash -c 'node scripts/gen-hf-encode.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-hf-encode.json'
+run planet-ground-gen-witness bash -c 'node scripts/gen-planet-ground.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-ground.json'
+run planet-surface-gen-witness bash -c 'node scripts/gen-planet-surface.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-surface.json'
+run planet-chart-gen-witness bash -c 'node scripts/gen-planet-chart.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-chart.json'
+run baked-gen-witness bash -c 'node scripts/gen-baked-heightfield.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/baked-heightfield.json testdata/parity/baked-heightfield-short.json testdata/parity/baked-heightfield-points.json'
+run solve-paths-gen-witness bash -c 'node scripts/gen-solve-paths.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-solve-paths.json'
+run planet-frame-parts-gen-witness bash -c 'node scripts/gen-planet-frame-parts.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-frame-parts.json'
+run hitscan-gen-witness bash -c 'node scripts/gen-hitscan.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-hitscan.json'
+mutant rh1-heavy-hot scripts/lib/heavy-jobs.cjs '        let kind = null;' '        let kind = sustained(row.pid) ? "hot" : null;' 'node scripts/check-heavy-jobs.cjs'
+mutant rc1-census-step src/globe.rs 'Duration::from_secs_f64(1.0 / 60.0)' 'Duration::from_secs_f64(1.0 / 50.0)' 'cargo test --bin bevy-jayzee census_clock'
+mutant r1-anchor src/height/anchor.rs '* 2600.0' '* 2600.5' 'cargo test --bin bevy-jayzee height::'
+mutant r2-relief src/height/planet.rs '63_600_000.0' '63_600_001.0' 'cargo test --bin bevy-jayzee height::'
+mutant r3-radius src/globe.rs 'const DEFAULT_RADIUS: f32 = 6360.0;' 'const DEFAULT_RADIUS: f32 = 64.0;' 'cargo test --bin bevy-jayzee default_radius'
+mutant r4-surface src/globe.rs 'f64::from(self.radius)) as f32' 'f64::from(self.radius)) as f32 * 1.001' 'cargo test --bin bevy-jayzee surface_along'
+mutant r5-278a-seed src/globe.rs 'const DEFAULT_SEED: u64 = 0x5eed_1234;' 'const DEFAULT_SEED: u64 = 0x5eed_1235;' 'cargo test --bin bevy-jayzee default_elevation_matches'
+mutant r6-278b-carve src/height/planet.rs 'target_h: natural.compose(dir) }' 'target_h: natural.compose(dir) * 1.001 }' 'cargo test --bin bevy-jayzee carved_elevation'
+mutant r7-278c-level src/height/anchor.rs 'let max_level = (res as f64).log2().round() as u32;' 'let max_level = 7;' 'cargo test --bin bevy-jayzee hpf_tex_res_elevation'
+mutant r8-1075-hash src/globe.rs 'self.hash_version = HashVersion::Float;' 'self.hash_version = HashVersion::Integer;' 'cargo test --bin bevy-jayzee hash_version_one'
+mutant r9-1076-relief src/height/planet.rs 'let relief = self.relief_scale.unwrap_or(radius / RELIEF_DESIGN_RADIUS_M);' 'let relief = radius / RELIEF_DESIGN_RADIUS_M;' 'cargo test --bin bevy-jayzee relief_scale_elevation'
+mutant r10-1074-centre src/height/planet_frame.rs 'basis.up[i] * radius + basis.east[i] * x + basis.north[i] * z' 'basis.up[i] * radius + basis.north[i] * x + basis.east[i] * z' 'cargo test --bin bevy-jayzee -- carve_centre_elevation tangent_local_to_dir'
+mutant r13-198-tangent src/height/planet_frame.rs 'basis.up[i] * radius + basis.east[i] * x' 'basis.up[i] * radius * 1.0001 + basis.east[i] * x' 'cargo test --bin bevy-jayzee -- tangent_local_to_dir'
+mutant r14-199-waterline src/height/planet_frame.rs 'let drop = if radius == f64::INFINITY { 0.0 } else { sphere_drop_below_tangent(x * x + z * z, radius + elevation) };' 'let drop = if radius == f64::INFINITY { 0.0 } else { -sphere_drop_below_tangent(x * x + z * z, radius + elevation) };' 'cargo test --bin bevy-jayzee -- frame_geometry'
+mutant r15-203-elevation src/height/planet_frame.rs 'Some((t - radius) + r2 / (l + t))' 'Some(t + r2 / (l + t))' 'cargo test --bin bevy-jayzee -- frame_geometry'
+mutant r16-707-dequantise src/height/baked.rs 'lo + (qv / qmax) * (hi - lo) } else { lo }' 'lo + (qv / qmax) * (hi - lo) * 1.001 } else { lo }' 'cargo test --bin bevy-jayzee -- tps_game_hf'
+mutant r12-1077-step src/height/baked.rs 'let step = self.extent / (self.n - 1) as f64;' 'let step = self.extent / self.n as f64;' 'cargo test --bin bevy-jayzee baked_height'
+mutant r11-census-hud src/viewer.rs '.run_if(bevy::prelude::resource_exists::<crate::globe::CensusMode>)' '.run_if(|| false)' 'cargo build --bin bevy-jayzee >/dev/null 2>&1 && bash scripts/census-run.sh r136-red-hud-a >/dev/null 2>&1 && bash scripts/census-run.sh r136-red-hud-b >/dev/null 2>&1 && test "$(sha256sum < target/witness/r136-red-hud-a.png)" = "$(sha256sum < target/witness/r136-red-hud-b.png)"'
+mutant r17-raycast-bisect src/height/planet_frame.rs 'let mid = 0.5 * (lo + hi);' 'let mid = 0.5 * (lo + hi) + 1e-3;' 'cargo test --bin bevy-jayzee -- raycast_ground_local'
+mutant r18-guarded-solve src/height/planet_frame.rs 'Err(GroundFault::Solve) => Ok(None),' 'Err(GroundFault::Solve) => Err(GroundFault::Other),' 'cargo test --bin bevy-jayzee -- guarded_ground_height'
+mutant r19-hf-sector-order src/height/baked.rs 'for value in sector_min.iter().chain(sector_max) {' 'for value in sector_max.iter().chain(sector_min) {' 'cargo test --bin bevy-jayzee -- hf_encode tps_game_hf_reencodes'
+mutant r20-hf-pad src/height/baked.rs "std::iter::repeat_n(b' ', pad)" "std::iter::repeat_n(0u8, pad)" 'cargo test --bin bevy-jayzee -- hf_encode'
+mutant r25-solve-converge src/height/planet_frame.rs 'if g.is_finite() && g.abs() <= tolerance_m {' 'if g.is_finite() && g.abs() <= 0.0 * tolerance_m {' 'cargo test --bin bevy-jayzee -- solve_surface_y'
+mutant r29-chart-offset src/height/planet_frame.rs 'Some(y) => y - self.offset_y,' 'Some(y) => y + self.offset_y,' 'cargo test --bin bevy-jayzee -- chart_frame'
+mutant r30-closure-formula src/height/planet_frame.rs 'return Ok(0.5 * ((below + g_below) + (above + g_above)));' 'return Ok(0.5 * (below + above));' 'cargo test --bin bevy-jayzee -- solve_surface_y_reaches'
+mutant r31-cap-mapping src/height/planet_frame.rs 'Err(SurfaceSolve::NoConvergence { residual: last_g })' 'Err(SurfaceSolve::NoGround)' 'cargo test --bin bevy-jayzee -- solve_surface_y_reaches'
+mutant r32-relief-default src/height/planet_frame.rs 'let relief_scale = relief_scale.unwrap_or(0.01);' 'let relief_scale = relief_scale.unwrap_or(0.02);' 'cargo test --bin bevy-jayzee -- chart_frame_relief'
+mutant r33-epoch-increment src/height/planet_frame.rs '        self.chart_epoch += 1;' '' 'cargo test --bin bevy-jayzee -- chart_frame_reanchor'
+mutant r34-memo-epoch src/height/planet_frame.rs 'if entry.x == x && entry.z == z && entry.epoch == epoch {' 'if entry.x == x && entry.z == z {' 'cargo test --bin bevy-jayzee -- ground_memo'
+mutant r35-source-dispatch src/height/planet_frame.rs 'if self.active_source == CPU_SOLVE_SOURCE {' 'if true {' 'cargo test --bin bevy-jayzee -- ground_sources_match'
+mutant r36-warning-latch src/height/planet_frame.rs 'self.divergence_reported = true;' '' 'cargo test --bin bevy-jayzee -- elevation_at_dir_warns'
+mutant r37-hit-radius src/hitscan.rs 'if d2 > hitbox.radius_sq {' 'if d2 > hitbox.radius_sq * 4.0 {' 'cargo test --bin bevy-jayzee -- hitscan'
+mutant r38-headshot-divisor src/hitscan.rs '    (proj[1] - tp[1]) / hitbox.height' '    (proj[1] - tp[1]) / hitbox.center_height' 'cargo test --bin bevy-jayzee -- hitscan'
+mutant r39-argument-guard src/height/planet_frame.rs '        if !x.is_finite() || !z.is_finite() {' '        if false {' 'cargo test --bin bevy-jayzee -- ground_memo'
+run build-restored cargo build --bin bevy-jayzee
+run census-d1 bash scripts/census-run.sh r136-census-d1
+run census-d2 bash scripts/census-run.sh r136-census-d2
+run census-d1-check node scripts/check-planet-screenshot.cjs target/witness/r136-census-d1.png target/witness/r136-census-d1.log target/witness/r136-census-d1-checked.png
+run census-d2-check node scripts/check-planet-screenshot.cjs target/witness/r136-census-d2.png target/witness/r136-census-d2.log target/witness/r136-census-d2-checked.png
+run census-png-sha bash -c 'a=$(sha256sum target/witness/r136-census-d1.png | cut -c1-64); b=$(sha256sum target/witness/r136-census-d2.png | cut -c1-64); echo d1=$a d2=$b; test "$a" = "$b"'
+run gen-airborne-reuse bash -c 'node scripts/gen-airborne-reuse.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-airborne-reuse.json'
+run gen-surface-root bash -c 'node scripts/gen-surface-root.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-surface-root.json'
+run gen-placement-lattice bash -c 'node scripts/gen-placement-lattice.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-placement-lattice.json'
+run gen-terrain-stream bash -c 'node scripts/gen-terrain-stream.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-terrain-stream.json'
+run gen-character bash -c 'node scripts/gen-character.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-character.json'
+run gen-chart-transfer bash -c 'node scripts/gen-chart-transfer.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-transfer.json'
+run gen-player-bodies bash -c 'node scripts/gen-player-bodies.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-player-bodies.json'
+run gen-hud bash -c 'node scripts/gen-hud.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-hud.json'
+mutant r145-tolerance src/character.rs 'const POSITION_TOLERANCE_M: f64 = 0.02;' 'const POSITION_TOLERANCE_M: f64 = 0.005;' 'cargo test --bin bevy-jayzee -- character'
+mutant r145-gravity src/character.rs '        vy + gravity_y * dt' '        vy' 'cargo test --bin bevy-jayzee -- character'
+mutant r157-margin src/character.rs 'const TILT_BOUND_MARGIN: f64 = 1.1;' 'const TILT_BOUND_MARGIN: f64 = 0.5;' 'cargo test --bin bevy-jayzee -- chart_transfer'
+mutant r157-floor src/character.rs 'const TILT_BOUND_FLOOR_MPS: f64 = 1e-3;' 'const TILT_BOUND_FLOOR_MPS: f64 = 0.0;' 'cargo test --bin bevy-jayzee -- chart_transfer'
+mutant r157-normal src/character.rs '        ch.ground_normal = ch.ground_normal.map(|n| transfer.vec(n));' '        ch.ground_normal = ch.ground_normal;' 'cargo test --bin bevy-jayzee -- chart_transfer'
+mutant r144-radius src/player_bodies.rs 'let radius = if radius.is_finite() && radius > 0.0 { radius } else { DEFAULT_CAPSULE_RADIUS };' 'let radius = radius;' 'cargo test --bin bevy-jayzee -- player_bodies'
+mutant r144-replace src/player_bodies.rs '        if self.bodies.contains_key(&player) {' '        if false && self.bodies.contains_key(&player) {' 'cargo test --bin bevy-jayzee -- player_bodies'
+mutant r144-character-removal src/player_bodies.rs '                world.remove_character(id);' '                let _ = id;' 'cargo test --bin bevy-jayzee -- player_bodies'
+mutant r144-crouch src/player_bodies.rs '        self.crouch.remove(&player);' '' 'cargo test --bin bevy-jayzee -- player_bodies'
+mutant r729-rtt-pad src/hud.rs '    rtt_ms.min(MARKER_RTT_PAD_MAX_MS)' '    rtt_ms.min(0.0)' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-kill-cap src/hud.rs '    (KILL_CONFIRM_WINDOW_MS + rtt_ms).min(KILL_CONFIRM_WINDOW_MAX_MS)' '    KILL_CONFIRM_WINDOW_MS + rtt_ms' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-triple src/hud.rs '        (true, 3) => "TRIPLE KILL",' '        (true, 3) => "DOUBLE KILL",' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-reload-round src/hud.rs '        Some(end) if reloading => ((1.0 - (end - now) / reload_duration) * 100.0 + 0.5).floor().min(100.0),' '        Some(end) if reloading => ((1.0 - (end - now) / reload_duration) * 100.0).floor().min(100.0),' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-fall-punch src/hud.rs 'const FALL_PUNCH_MIN_VELOCITY: f64 = -9.0;' 'const FALL_PUNCH_MIN_VELOCITY: f64 = -11.0;' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-dmg-taken src/hud.rs 'const DMG_TAKEN_WINDOW_MS: f64 = 450.0;' 'const DMG_TAKEN_WINDOW_MS: f64 = 300.0;' 'cargo test --bin bevy-jayzee -- hud'
+mutant r729-shield src/hud.rs 'const SHIELD_MAX_OPACITY: f64 = 0.6;' 'const SHIELD_MAX_OPACITY: f64 = 0.5;' 'cargo test --bin bevy-jayzee -- hud'
+run gen-character-witness bash -c 'node scripts/gen-character.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-character.json'
+run gen-chart-transfer-witness bash -c 'node scripts/gen-chart-transfer.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-transfer.json'
+run gen-climate-cache-witness bash -c 'node scripts/gen-climate-cache.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-climate-cache.json'
+run gen-brush-result-witness bash -c 'node scripts/gen-brush-result.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-brush-result.json'
+run gen-brush-stroke-witness bash -c 'node scripts/gen-brush-stroke.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-brush-stroke.json'
+run gen-biome-override-witness bash -c 'node scripts/gen-biome-override.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-biome-override.json'
+run gen-cave-sdf-witness bash -c 'node scripts/gen-cave-sdf.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-cave-sdf.json'
+run gen-chart-local-point-witness bash -c 'node scripts/gen-chart-local-point.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-local-point.json'
+run gen-chart-reanchor-service-witness bash -c 'node scripts/gen-chart-reanchor-service.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-reanchor-service.json'
+mutant r137-crouch src/character.rs 'const CROUCH_SHIFT_M: f64 = 0.225;' 'const CROUCH_SHIFT_M: f64 = 0.2;' 'cargo test --bin bevy-jayzee crouch_airborne'
+mutant r137-lift src/chart_transfer.rs 'm[3] * a + m[4] * b + m[5] * c - self.to_lift,' 'm[3] * a + m[4] * b + m[5] * c - 0.0,' 'cargo test --bin bevy-jayzee chart_epoch'
+mutant r137-margin src/character.rs 'const TILT_BOUND_MARGIN: f64 = 1.1;' 'const TILT_BOUND_MARGIN: f64 = 1.0;' 'cargo test --bin bevy-jayzee chart_transfer_matches'
+mutant r137-floor src/character.rs 'const TILT_BOUND_FLOOR_MPS: f64 = 1e-3;' 'const TILT_BOUND_FLOOR_MPS: f64 = 0.0;' 'cargo test --bin bevy-jayzee chart_transfer_matches'
+mutant r137-climate src/climate_cache.rs 'self.values.get(&(key as u64))' 'self.values.get(&(key as u64 + 1))' 'cargo test --bin bevy-jayzee climate_cache'
+mutant r137-brush-result src/brush_result.rs 'violates: Some(*clause),' 'violates: requires.last().copied(),' 'cargo test --bin bevy-jayzee brush_result'
+mutant r137-brush-base src/brush_stroke.rs '&STROKE_BASE_FIELDS' '&STROKE_BASE_FIELDS[..2]' 'cargo test --bin bevy-jayzee brush_stroke_loadability'
+mutant r137-brush-dispatch src/brush_stroke.rs 'Some("smooth") => hd.apply_smooth(' 'Some("smooth") => hd.apply_raise(' 'cargo test --bin bevy-jayzee brush_stroke_replay'
+mutant r137-biome-clamp src/biome_override.rs 'strength.clamp(0.0, 1.0)' 'strength.clamp(0.0, 2.0)' 'cargo test --bin bevy-jayzee biome_override_paint'
+mutant r137-biome-key src/biome_override.rs 'json.get("strokes")' 'json.get("stroke")' 'cargo test --bin bevy-jayzee biome_override_load'
+mutant r137-cave-cyl src/cave_sdf.rs 'let d_along = along.abs() - half_height;' 'let d_along = along.abs() * 1.5 - half_height;' 'cargo test --bin bevy-jayzee cave_sdf'
+mutant r137-chart-local src/chart_local_point.rs 'chart.radius * along(chart.north)]' 'chart.radius * along(chart.up)]' 'cargo test --bin bevy-jayzee chart_local_point'
+mutant r137-reanchor-gate src/chart_reanchor_service.rs 'if worst_player_angle_deg >= walkable_limit_deg {' 'if worst_player_angle_deg >= walkable_limit_deg * 10.0 {' 'cargo test --bin bevy-jayzee chart_reanchor_service'
+mutant r137-hud-kill src/hud_overlay.rs 'absolute(Val::Percent(50.0), Val::Percent(36.0)' 'absolute(Val::Percent(50.0), Val::Percent(37.0)' 'cargo test --bin bevy-jayzee hud_overlay_geometry'
+run gen-terrain-grid-sample-witness bash -c 'node scripts/gen-terrain-grid-sample.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-terrain-grid-sample.json'
+run gen-height-delta-witness bash -c 'node scripts/gen-height-delta.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-height-delta.json'
+run gen-field-paint-witness bash -c 'node scripts/gen-field-paint.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-field-paint.json'
+run gen-field-lattice-witness bash -c 'node scripts/gen-field-lattice.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-field-lattice.json'
+run gate-ticket-witness bash -c 'cd /workspace/hyperagent && node scripts/gate-ticket.witness.cjs'
+mutant r138-grid-fallback src/terrain_grid_sample.rs 'NON_FINITE_HEIGHT_FALLBACK_M: f64 = -1000.0' 'NON_FINITE_HEIGHT_FALLBACK_M: f64 = -999.0' 'cargo test --bin bevy-jayzee terrain_grid_sample'
+mutant r138-flatten-feather src/height_delta.rs 'const FLATTEN_FEATHER_FRACTION: f64 = 0.3;' 'const FLATTEN_FEATHER_FRACTION: f64 = 0.31;' 'cargo test --bin bevy-jayzee height_delta'
+mutant r138-lattice-bound src/field_lattice.rs 'const RESET_SURFACE_STEP_BOUND_M: f64 = 0.02;' 'const RESET_SURFACE_STEP_BOUND_M: f64 = 0.03;' 'cargo test --bin bevy-jayzee field_lattice'
+mutant r138-paint-chunk src/field_paint.rs 'const DEFAULT_CHUNK_CELLS: f64 = 64.0;' 'const DEFAULT_CHUNK_CELLS: f64 = 63.0;' 'cargo test --bin bevy-jayzee field_paint'
+run gen-rock-shapes-witness bash -c 'node scripts/gen-rock-shapes.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-rock-shapes.json'
+run gen-terrain-marks-witness bash -c 'node scripts/gen-terrain-marks.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-terrain-marks.json'
+run gen-lattice-surface-witness bash -c 'node scripts/gen-lattice-surface.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-lattice-surface.json'
+run gen-spline-carve-witness bash -c 'node scripts/gen-spline-carve.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-spline-carve.json'
+run gen-chart-anchor-witness bash -c 'node scripts/gen-chart-anchor.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-anchor.json'
+run gen-chart-reanchor-policy-witness bash -c 'node scripts/gen-chart-reanchor-policy.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-reanchor-policy.json'
+run gen-hud-overlay-witness bash -c 'node scripts/gen-hud-overlay.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-hud-overlay.json'
+mutant r139-rock-seed src/rock_shapes.rs '12345.0' '12346.0' 'cargo test --bin bevy-jayzee rock_shapes'
+mutant r139-lattice-nan src/lattice_surface.rs 'return f64::NAN;' 'return 0.0;' 'cargo test --bin bevy-jayzee lattice_surface'
+mutant r139-spline-open src/spline_carve.rs 'points[(i + len - 1) % len]' 'points[i]' 'cargo test --bin bevy-jayzee spline_carve'
+mutant r139-marks-zero src/terrain_marks.rs '    if v > 0.0 {' '    if v >= 0.0 {' 'cargo test --bin bevy-jayzee terrain_marks'
+mutant r139-anchor-angle src/chart_anchor.rs 'CHART_REANCHOR_ANGLE_DEG: f64 = 28.0;' 'CHART_REANCHOR_ANGLE_DEG: f64 = 29.0;' 'cargo test --bin bevy-jayzee chart_anchor'
+mutant r139-policy-sign src/chart_reanchor_policy.rs '- chart_anchor_angle_deg(anchor_dir, centroid_dir)' '+ chart_anchor_angle_deg(anchor_dir, centroid_dir)' 'cargo test --bin bevy-jayzee chart_reanchor_policy'
+mutant r139-hud-geometry src/hud_overlay.rs 'Val::Percent(36.0)' 'Val::Percent(35.0)' 'cargo test --bin bevy-jayzee hud_overlay'
+mutant r139-hud-vignette src/hud_overlay.rs 'const VIGNETTE_EDGE_ALPHA: f32 = 0.35;' 'const VIGNETTE_EDGE_ALPHA: f32 = 0.30;' 'cargo test --bin bevy-jayzee hud_overlay'
+mutant r139-character-vy src/character.rs 'vy.max(0.0)' 'vy' 'cargo test --bin bevy-jayzee jump_matches_spoint'
+run gen-chart-reexpress-witness bash -c 'node scripts/gen-chart-reexpress.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-chart-reexpress.json'
+run gen-terrain-config-witness bash -c 'node scripts/gen-terrain-config.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-terrain-config.json'
+run gen-spawn-clearance-witness bash -c 'node scripts/gen-spawn-clearance.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-spawn-clearance.json'
+run gen-field-names-witness bash -c 'node scripts/gen-field-names.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-field-names.json'
+run gen-planet-ground-local-witness bash -c 'node scripts/gen-planet-ground-local.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-planet-ground-local.json'
+run gen-rock-tri-table-witness bash -c 'node scripts/gen-rock-tri-table.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-rock-tri-table.json'
+mutant r140-reexpress-half src/chart_reexpress.rs 'let half = yaw / 2.0;' 'let half = yaw;' 'cargo test --bin bevy-jayzee chart_reexpress'
+mutant r140-handoff-offset src/chart_transfer.rs 'to.radius + to.anchor_height - to.offset_y,' 'to.radius + to.anchor_height + to.offset_y,' 'cargo test --bin bevy-jayzee server_handoff_transfer'
+mutant r140-config-carve src/terrain_config.rs 'outer_m: inner_m + falloff,' 'outer_m: inner_m + falloff * 2.0,' 'cargo test --bin bevy-jayzee terrain_config'
+mutant r140-spawn-least src/spawn_clearance.rs 'blockers.len() < l.blockers.len()' 'blockers.len() <= l.blockers.len()' 'cargo test --bin bevy-jayzee spawn_clearance'
+mutant r140-planet-offset src/height/planet_frame.rs 'y + self.offset_y' y 'cargo test --bin bevy-jayzee ground_height_local'
+mutant r140-field-creator src/field_names.rs '"CREATOR"' '"CREATOR2"' 'cargo test --bin bevy-jayzee field_names'
+mutant r140-tri-entry src/rock_tri_table.rs '[0, 8, 3, -1]' '[0, 8, 4, -1]' 'cargo test --bin bevy-jayzee rock_tri_table'
+run gen-canonical-json-witness bash -c 'node scripts/gen-canonical-json.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-canonical-json.json'
+run gen-fnv1a-witness bash -c 'node scripts/gen-fnv1a.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-fnv1a.json'
+run gen-world-name-witness bash -c 'node scripts/gen-world-name.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-world-name.json'
+run gen-game-rules-witness bash -c 'node scripts/gen-game-rules.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-game-rules.json'
+run gen-baked-field-load-witness bash -c 'node scripts/gen-baked-field-load.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-baked-field-load.json'
+run gen-fx-program-witness bash -c 'node scripts/gen-fx-program.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-fx-program.json'
+run gen-flight-model-witness bash -c 'node scripts/gen-flight-model.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-flight-model.json'
+run gen-press-router-witness bash -c 'node scripts/gen-press-router.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-press-router.json'
+run gen-terrain-mesh-surface-witness bash -c 'node scripts/gen-terrain-mesh-surface.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-terrain-mesh-surface.json'
+run gen-fire-terrain-witness bash -c 'node scripts/gen-fire-terrain.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-fire-terrain.json'
+run gen-fire-stage-map-witness bash -c 'node scripts/gen-fire-stage-map.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-fire-stage-map.json'
+run gen-camera-rig-witness bash -c 'node scripts/gen-camera-rig.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-camera-rig.json'
+run gen-tps-game-server-witness bash -c 'node scripts/gen-tps-game-server.mjs /workspace/spoint && git diff --exit-code -- testdata/parity/spoint-tps-game-server.json'
+mutant r141-canonical-cmp src/canonical_json.rs '(None, None) => a.encode_utf16().cmp(b.encode_utf16()),' '(None, None) => a.cmp(b),' 'cargo test --bin bevy-jayzee canonical_json'
+mutant r141-fnv-prime src/fnv1a.rs 0x0100_0193 0x0100_0195 'cargo test --bin bevy-jayzee fnv1a'
+mutant r141-world-max src/world_name.rs '(1..=128).contains' '(1..=127).contains' 'cargo test --bin bevy-jayzee world_name'
+mutant r141-bake-default src/terrain_config.rs 'if c.hash_version == DEFAULT_HASH_VERSION {' 'if c.hash_version != DEFAULT_HASH_VERSION {' 'cargo test --bin bevy-jayzee terrain_bake'
+mutant r141-lattice-epoch src/lattice_surface.rs 'different ground' 'other ground' 'cargo test --bin bevy-jayzee baked_terrain_mismatch'
+mutant r141-baked-magic src/baked_field_load.rs 'bytes 0..3 are' 'bytes 0..4 are' 'cargo test --bin bevy-jayzee baked_field_load'
+mutant r141-game-shot-gate src/game_rules.rs 'pub const SHOT_GATE_MS: f64 = 100.0;' 'pub const SHOT_GATE_MS: f64 = 101.0;' 'cargo test --bin bevy-jayzee client_shooting'
+mutant r141-game-pickup src/game_rules.rs 'pub const PICKUP_RADIUS_M: f64 = 1.7;' 'pub const PICKUP_RADIUS_M: f64 = 1.8;' 'cargo test --bin bevy-jayzee powerup'
+mutant r141-game-team-any src/game_rules.rs 'requested.filter(|r| !r.is_empty() && *r != ANY_TEAM)' 'requested.filter(|r| !r.is_empty())' 'cargo test --bin bevy-jayzee collect_spawn_points'
+mutant r142-fx-hash src/fx_program.rs '0x27d4_eb2f_u32 as i32' '0x27d4_eb2e_u32 as i32' 'cargo test --bin bevy-jayzee fx_program_matches_spoint'
+mutant r142-flight-cross src/flight_model.rs 'let tz = 2.0 * (qx * vy - qy * vx);' 'let tz = 2.0 * (qy * vx - qx * vy);' 'cargo test --bin bevy-jayzee flight_model_matches_spoint'
+mutant r142-press-tie src/press_router.rs 'if best.as_ref().is_none_or(|b| distance < b.distance) {' 'if best.as_ref().is_none_or(|b| distance <= b.distance) {' 'cargo test --bin bevy-jayzee press_router_matches_spoint'
+mutant r142-terrain-sign src/terrain_mesh_surface.rs 'let s = r + h;' 'let s = r - h;' 'cargo test --bin bevy-jayzee terrain_mesh_surface_matches_spoint'
+mutant r142-firebreak-sea src/fire_terrain.rs 'if h.is_finite() && sea.is_finite() && h < sea {' 'if h.is_finite() && sea.is_finite() && h > sea {' 'cargo test --bin bevy-jayzee create_firebreak_fuel_matches_spoint'
+mutant r142-stage-map-255 src/fire_stage_map.rs '2 => 255,' '2 => 254,' 'cargo test --bin bevy-jayzee create_fire_stage_map_matches_spoint'
+mutant r142-camera-cos src/camera_rig.rs 'target[0] + *distance * cp * look.yaw.sin(),' 'target[0] + *distance * cp * look.yaw.cos(),' 'cargo test --bin bevy-jayzee camera_rig_matches_spoint'
+mutant r142-emote-gate src/tps_game.rs 'if now_ms - last < EMOTE_RATE_LIMIT_MS {' 'if now_ms - last <= EMOTE_RATE_LIMIT_MS {' 'cargo test --bin bevy-jayzee tps_game_server_matches_spoint'
+mutant r142-scoreboard-add src/tps_game.rs 'self.add(target, 0.0, 1.0, 0.0);' 'self.add(target, 0.0, 0.0, 0.0);' 'cargo test --bin bevy-jayzee scoreboard_matches_spoint'
+note "WITNESS-SET overall=$overall $(date -u +%T)Z"
+exit $overall
