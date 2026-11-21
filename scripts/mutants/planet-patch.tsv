@@ -1,0 +1,13 @@
+skirt_fraction	src/planet_lod/patch.rs	const SKIRT_PATCH_FRAC: f64 = 0.06;	const SKIRT_PATCH_FRAC: f64 = 0.07;	cargo test --bin bevy-jayzee planet_lod::patch
+skirt_minimum	src/planet_lod/patch.rs	const SKIRT_MIN_M: f64 = 30.0;	const SKIRT_MIN_M: f64 = 31.0;	cargo test --bin bevy-jayzee planet_lod::patch
+skirt_on_interior	src/planet_lod/patch.rs	let skirt = if is_ring(x) || is_ring(y) { drop } else { 0.0 };	let skirt = drop;	cargo test --bin bevy-jayzee planet_lod::patch
+diagonal_hash_multiplier	src/planet_lod/patch.rs	const HASH_MULTIPLIER: u32 = 0x45d9f3b;	const HASH_MULTIPLIER: u32 = 0x45d9f3c;	cargo test --bin bevy-jayzee planet_lod::patch
+diagonal_hash_bit	src/planet_lod/patch.rs	const FLIP_BIT: u32 = 17;	const FLIP_BIT: u32 = 16;	cargo test --bin bevy-jayzee planet_lod::patch
+normal_tap_step	src/planet_lod/patch.rs	let step = 1.0 / GRID_CELLS as f64;	let step = 2.0 / GRID_CELLS as f64;	cargo test --bin bevy-jayzee planet_lod::patch
+winding_order	src/planet_lod/patch.rs	[a, c, b, b, c, d]	[a, b, c, b, d, c]	cargo test --bin bevy-jayzee planet_lod::patch
+index_range	src/planet_lod/patch.rs	let cells = SIDE - 1;	let cells = SIDE - 2;	cargo test --bin bevy-jayzee planet_lod::patch
+radial_normals	src/planet_lod/patch.rs	let normal = if facing.dot(dir) < 0.0 { -facing } else { facing };	let normal = dir;	cargo test --bin bevy-jayzee planet_lod::patch
+normal_outward_flip	src/planet_lod/patch.rs	if facing.dot(dir) < 0.0 { -facing }	if facing.dot(dir) > 0.0 { -facing }	cargo test --bin bevy-jayzee planet_lod::patch
+origin_not_subtracted	src/planet_lod/patch.rs	positions.push(to_f32(c.dir * (radius + c.height - skirt) - origin));	positions.push(to_f32(c.dir * (radius + c.height - skirt)));	cargo test --bin bevy-jayzee planet_lod::patch
+min_elevation_uses_max	src/planet_lod/patch.rs	heights.clone().fold(f64::INFINITY, f64::min)	heights.clone().fold(f64::INFINITY, f64::max)	cargo test --bin bevy-jayzee planet_lod::patch
+build_not_noted	src/planet_lod/patch.rs	    note_build();	    let _unnoted = 0;	cargo test --bin bevy-jayzee planet_lod::patch

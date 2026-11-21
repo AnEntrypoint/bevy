@@ -81,6 +81,10 @@ impl Planet {
         Self { hpf, hpf_res: config.hpf_res, hash: config.hash, relief_scale: config.relief_scale, carves: resolved }
     }
 
+    pub fn relief(&self, radius: f64) -> f64 {
+        self.relief_scale.unwrap_or(radius / RELIEF_DESIGN_RADIUS_M)
+    }
+
     pub fn height(&self, dir: V3, radius: f64) -> f64 {
         let carves = self
             .carves
@@ -92,8 +96,7 @@ impl Planet {
                 target_h: carve.target_h,
             })
             .collect();
-        let relief = self.relief_scale.unwrap_or(radius / RELIEF_DESIGN_RADIUS_M);
-        spec(&self.hpf, self.hpf_res, self.hash, carves).compose(Ops::new(Precision::F64).normalize(dir)) * relief
+        spec(&self.hpf, self.hpf_res, self.hash, carves).compose(Ops::new(Precision::F64).normalize(dir)) * self.relief(radius)
     }
 }
 
