@@ -1,0 +1,1412 @@
+{
+ "spoint": "5f43c86c",
+ "source": "spoint 5f43c86c: src/interaction/pressRouter.js (routePress)",
+ "cases": [
+  {
+   "name": "witness-forward",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "label": "Press E"
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "near",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "witness-backward",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     -1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "behind",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "no-target-sideways",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     1,
+     0,
+     0
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "custom-label",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "label": "Open"
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "near",
+     "distance": 2,
+     "angle": 0,
+     "label": "Open",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "tie-keeps-first",
+   "input": {
+    "objects": [
+     {
+      "id": "first",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "second",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "first",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "tie-keeps-first-reversed",
+   "input": {
+    "objects": [
+     {
+      "id": "second",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "first",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "second",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "zero-distance-skipped",
+   "input": {
+    "objects": [
+     {
+      "id": "self",
+      "position": [
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "near",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "only-zero-distance",
+   "input": {
+    "objects": [
+     {
+      "id": "self",
+      "position": [
+       0,
+       0,
+       0
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "beyond-max-distance",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxDistance": 1.5
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "max-distance-inclusive",
+   "input": {
+    "objects": [
+     {
+      "id": "edge",
+      "position": [
+       0,
+       0,
+       3
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "edge",
+     "distance": 3,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "angle-excluded",
+   "input": {
+    "objects": [
+     {
+      "id": "side",
+      "position": [
+       1,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": 0.1
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "angle-included",
+   "input": {
+    "objects": [
+     {
+      "id": "side",
+      "position": [
+       1,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": 0.5
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "side",
+     "distance": 2.23606797749979,
+     "angle": 0.46364760900080615,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "default-angle-excluded",
+   "input": {
+    "objects": [
+     {
+      "id": "wide",
+      "position": [
+       1,
+       0,
+       1.5
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "angle-zero-on-axis",
+   "input": {
+    "objects": [
+     {
+      "id": "axis",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": 0
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "axis",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "angle-pi-includes-behind",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": 3.141592653589793
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "near",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "unnormalized-forward",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     5
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "near",
+     "distance": 2,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "origin-offset",
+   "input": {
+    "objects": [
+     {
+      "id": "a",
+      "position": [
+       5,
+       1,
+       5
+      ]
+     },
+     {
+      "id": "b",
+      "position": [
+       5,
+       0,
+       8
+      ]
+     }
+    ],
+    "origin": [
+     5,
+     0,
+     5
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "b",
+     "distance": 3,
+     "angle": 0,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "nearest-in-cone",
+   "input": {
+    "objects": [
+     {
+      "id": "p",
+      "position": [
+       0,
+       0,
+       2.5
+      ]
+     },
+     {
+      "id": "q",
+      "position": [
+       0.2,
+       0,
+       1.5
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": true,
+     "target": "q",
+     "distance": 1.5132745950421556,
+     "angle": 0.13255153229667405,
+     "label": "Press E",
+     "reasonCode": null
+    }
+   }
+  },
+  {
+   "name": "empty-objects",
+   "input": {
+    "objects": [],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "value": {
+     "ok": false,
+     "target": null,
+     "label": "Press E",
+     "reasonCode": "press-no-target"
+    }
+   }
+  },
+  {
+   "name": "objects-null",
+   "input": {
+    "objects": null,
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-objects-invalid",
+    "message": "[press-router] press-objects-invalid: objects must be an array"
+   }
+  },
+  {
+   "name": "objects-not-array",
+   "input": {
+    "objects": "near",
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-objects-invalid",
+    "message": "[press-router] press-objects-invalid: objects must be an array"
+   }
+  },
+  {
+   "name": "object-empty-id",
+   "input": {
+    "objects": [
+     {
+      "id": "",
+      "position": [
+       0,
+       0,
+       1
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-object-invalid",
+    "message": "[press-router] press-object-invalid: objects[0] needs a string id"
+   }
+  },
+  {
+   "name": "object-numeric-id",
+   "input": {
+    "objects": [
+     {
+      "id": 5,
+      "position": [
+       0,
+       0,
+       1
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-object-invalid",
+    "message": "[press-router] press-object-invalid: objects[0] needs a string id"
+   }
+  },
+  {
+   "name": "object-missing-position",
+   "input": {
+    "objects": [
+     {
+      "id": "x"
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "vec3-invalid",
+    "message": "[vec3] vec3-invalid: objects[0].position must be an array of three finite numbers"
+   }
+  },
+  {
+   "name": "object-short-position",
+   "input": {
+    "objects": [
+     {
+      "id": "x",
+      "position": [
+       0,
+       1
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "vec3-invalid",
+    "message": "[vec3] vec3-invalid: objects[0].position must be an array of three finite numbers"
+   }
+  },
+  {
+   "name": "second-object-invalid",
+   "input": {
+    "objects": [
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     },
+     {
+      "id": "",
+      "position": [
+       0,
+       0,
+       1
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-object-invalid",
+    "message": "[press-router] press-object-invalid: objects[1] needs a string id"
+   }
+  },
+  {
+   "name": "origin-invalid",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "vec3-invalid",
+    "message": "[vec3] vec3-invalid: origin must be an array of three finite numbers"
+   }
+  },
+  {
+   "name": "forward-zero",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     0
+    ]
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "vec3-zero-length",
+    "message": "[vec3] vec3-zero-length: cannot normalize a zero vector"
+   }
+  },
+  {
+   "name": "max-distance-zero",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxDistance": 0
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-distance-invalid",
+    "message": "[press-router] press-distance-invalid: maxDistance must be a positive finite number"
+   }
+  },
+  {
+   "name": "max-distance-negative",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxDistance": -1
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-distance-invalid",
+    "message": "[press-router] press-distance-invalid: maxDistance must be a positive finite number"
+   }
+  },
+  {
+   "name": "max-distance-string",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxDistance": "3"
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-distance-invalid",
+    "message": "[press-router] press-distance-invalid: maxDistance must be a positive finite number"
+   }
+  },
+  {
+   "name": "max-angle-over-pi",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": 4
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-angle-invalid",
+    "message": "[press-router] press-angle-invalid: maxAngleRad must be finite in [0,PI]"
+   }
+  },
+  {
+   "name": "max-angle-negative",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": -0.1
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-angle-invalid",
+    "message": "[press-router] press-angle-invalid: maxAngleRad must be finite in [0,PI]"
+   }
+  },
+  {
+   "name": "max-angle-null",
+   "input": {
+    "objects": [
+     {
+      "id": "near",
+      "position": [
+       0,
+       0,
+       2
+      ]
+     },
+     {
+      "id": "behind",
+      "position": [
+       0,
+       0,
+       -2
+      ]
+     },
+     {
+      "id": "far",
+      "position": [
+       0,
+       0,
+       20
+      ]
+     }
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "forward": [
+     0,
+     0,
+     1
+    ],
+    "maxAngleRad": null
+   },
+   "expect": {
+    "ok": false,
+    "name": "TypeError",
+    "reasonCode": "press-angle-invalid",
+    "message": "[press-router] press-angle-invalid: maxAngleRad must be finite in [0,PI]"
+   }
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
