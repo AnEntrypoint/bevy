@@ -66,6 +66,13 @@ mod vegetation;
 mod viewer;
 mod viewer_world;
 mod world;
+#[allow(dead_code)]
+mod js_math;
+#[allow(dead_code)]
+mod vec3;
+#[cfg(test)]
+#[allow(dead_code)]
+mod testkit;
 
 fn exit_when_no_gpu_adapter() {
     let default_hook = std::panic::take_hook();
