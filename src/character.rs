@@ -8,6 +8,8 @@ pub const STICK_TO_FLOOR_M: f64 = 0.5;
 pub const MAX_WALL_PLANES: usize = 2;
 const UP: f64 = 1.0;
 const DOWN: f64 = -1.0;
+const CROUCH_SHIFT_M: f64 = 0.225;
+const CHARACTER_PADDING_M: f64 = 0.02;
 const WALL_MERGE_DOT_MIN: f64 = 0.98;
 const MIN_WALL_NORMAL_LENGTH: f64 = 1e-6;
 
@@ -21,6 +23,7 @@ pub struct Contact {
 pub trait CharacterSpace {
     fn slide(&mut self, position: [f64; 3], velocity: [f64; 3], dt: f64) -> ([f64; 3], Vec<Contact>);
     fn cast(&mut self, position: [f64; 3], direction: f64, max_distance: f64) -> Option<Contact>;
+    fn nearby(&mut self, position: [f64; 3], margin: f64) -> Vec<Contact>;
 }
 
 pub fn vertical_velocity(vy: f64, was_grounded: bool, gravity_y: f64, dt: f64) -> f64 {
@@ -61,16 +64,18 @@ impl CharacterController {
         let was_grounded = self.on_ground;
         let start = self.position;
         let (flat, hits) = space.slide(start, self.velocity, dt);
-        let mut pos = flat;
         let [vx, _, vz] = self.velocity;
         let blocked = hits.iter().any(|h| !walkable(h) && h.normal[0] * vx + h.normal[2] * vz < 0.0);
-        if was_grounded && self.velocity[1] <= 0.0 && blocked {
-            if let Some(stepped) = self.step_up(space, start, flat, dt) {
-                pos = stepped;
-            }
-        }
-        let mut ground = hits.iter().find(|h| walkable(h)).copied();
-        if was_grounded && self.velocity[1] <= 0.0 && ground.is_none() {
+        let stairs = if was_grounded && self.velocity[1] <= 0.0 && blocked {
+            self.walk_stairs(space, start, flat, dt)
+        } else {
+            None
+        };
+        let (mut pos, mut ground) = match stairs {
+            Some((stepped, landing)) => (stepped, Some(landing)),
+            None => (flat, hits.iter().find(|h| walkable(h)).copied().or_else(|| space.nearby(flat, CHARACTER_PADDING_M).into_iter().find(|h| walkable(h)))),
+        };
+        if stairs.is_none() && was_grounded && self.velocity[1] <= 0.0 && ground.is_none() {
             if let Some(hit) = space.cast(pos, DOWN, STICK_TO_FLOOR_M) {
                 if walkable(&hit) {
                     pos[1] -= hit.distance;
@@ -88,7 +93,11 @@ impl CharacterController {
         self.position = pos;
     }
 
-    fn step_up<S: CharacterSpace>(&self, space: &mut S, start: [f64; 3], flat: [f64; 3], dt: f64) -> Option<[f64; 3]> {
+    pub fn set_crouch(&mut self, crouching: bool) {
+        self.position[1] += if crouching { -CROUCH_SHIFT_M } else { CROUCH_SHIFT_M };
+    }
+
+    fn walk_stairs<S: CharacterSpace>(&self, space: &mut S, start: [f64; 3], flat: [f64; 3], dt: f64) -> Option<([f64; 3], Contact)> {
         let raise = space.cast(start, UP, MAX_STEP_HEIGHT_M).map_or(MAX_STEP_HEIGHT_M, |h| h.distance);
         let raised = [start[0], start[1] + raise, start[2]];
         let horizontal = [self.velocity[0], 0.0, self.velocity[2]];
@@ -96,7 +105,7 @@ impl CharacterController {
         let down = space.cast(advanced, DOWN, MAX_STEP_HEIGHT_M + raise)?;
         let landed = [advanced[0], advanced[1] - down.distance, advanced[2]];
         let progress = |p: [f64; 3]| (p[0] - start[0]).powi(2) + (p[2] - start[2]).powi(2);
-        (progress(landed) > progress(flat)).then_some(landed)
+        (progress(landed) > progress(flat)).then_some((landed, down))
     }
 
     fn record_wall(&mut self, hit: &Contact, pos: [f64; 3]) {
@@ -163,8 +172,9 @@ pub fn apply_chart_transfer<T: ChartTransfer>(characters: &mut [CharacterControl
 #[cfg(test)]
 mod tests {
     use super::*;
+    use avian3d::collision::collider::contact_query::contact;
     use avian3d::prelude::*;
-    use bevy::ecs::system::RunSystemOnce;
+    use bevy::ecs::system::{Query, RunSystemOnce};
     use bevy::math::{Dir3 as Dir, Quat, Vec3 as Vector};
     use serde_json::Value;
     use std::time::Duration;
@@ -225,6 +235,26 @@ mod tests {
     }
 
     impl CharacterSpace for AvianScene {
+        fn nearby(&mut self, position: [f64; 3], margin: f64) -> Vec<Contact> {
+            let (radius, half_height) = (self.radius, self.half_height);
+            let p = to_vector(position);
+            self.app
+                .world_mut()
+                .run_system_once(move |spatial: SpatialQuery, bodies: Query<(&Collider, &Position)>| {
+                    let probe = Collider::capsule(radius + margin as f32, 2.0 * half_height);
+                    let shape = Collider::capsule(radius, 2.0 * half_height);
+                    let mut contacts = Vec::new();
+                    for entity in spatial.shape_intersections(&probe, p, Quat::IDENTITY, &SpatialQueryFilter::default()) {
+                        let Ok((collider, at)) = bodies.get(entity) else { continue };
+                        if let Ok(Some(hit)) = contact(collider, at.0, Quat::IDENTITY, &shape, p, Quat::IDENTITY, margin as f32) {
+                            contacts.push(Contact { distance: -hit.penetration as f64, point: from_vector(at.0 + hit.local_point1), normal: from_vector(hit.local_normal1) });
+                        }
+                    }
+                    contacts
+                })
+                .unwrap()
+        }
+
         fn slide(&mut self, position: [f64; 3], velocity: [f64; 3], dt: f64) -> ([f64; 3], Vec<Contact>) {
             let (radius, half_height) = (self.radius, self.half_height);
             let (p, v) = (to_vector(position), to_vector(velocity));
@@ -343,6 +373,9 @@ mod tests {
             if step["jump"].as_bool().unwrap() && character.on_ground {
                 character.velocity[1] = jump_speed;
             }
+            if let Some(crouch) = step["crouch"].as_bool() {
+                character.set_crouch(crouch);
+            }
             let cmd = vec3(&step["cmd"]);
             let vy = vertical_velocity(character.velocity[1], character.on_ground, gravity, dt);
             character.velocity = [cmd[0], vy, cmd[2]];
@@ -398,13 +431,17 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "open: spoint reports grounded on steep step-corner contacts and drops off the far step edge later; max position error 0.286 m, grounded mismatches 22"]
+    #[ignore = "open: spoint climbs onto the step top with the flat ground normal 0.02 m lower than the corner contact, and its walk-stairs landing advances about 0.015 m further across the step corner, so the drop-off point sits 0.024 m off and later trajectory drifts to 0.175 m against a 0.02 m tolerance"]
     fn walk_step_matches_spoint() {
         assert_scenario("walk-step");
     }
 
     #[test]
-    #[ignore = "open: spoint setCrouch centre offset is not reproduced and crouch input is ignored, so this scenario only checks standing"]
+    fn crouch_airborne_matches_spoint() {
+        assert_scenario("crouch-airborne");
+    }
+
+    #[test]
     fn crouch_matches_spoint() {
         assert_scenario("crouch");
     }

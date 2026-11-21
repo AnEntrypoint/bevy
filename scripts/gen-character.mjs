@@ -25,6 +25,7 @@ const scenarios = [
   { name: 'wall-slide', start: [2, 1.3, 0], steps: [...repeat(10, idle), ...repeat(60, { cmd: [3, 0, 0] }), ...repeat(60, { cmd: [3, 0, -2] })] },
   { name: 'jump', start: [0, 1.3, 0], steps: [...repeat(10, idle), { cmd: [0, 0, 0], jump: true }, ...repeat(90, idle)] },
   { name: 'crouch', start: [0, 1.3, 0], steps: [...repeat(10, idle), { cmd: [0, 0, 0], crouch: true }, ...repeat(30, idle), { cmd: [0, 0, 0], crouch: false }, ...repeat(20, idle)] },
+  { name: 'crouch-airborne', start: [0, 1.3, 0], steps: [...repeat(10, idle), { cmd: [0, 0, 0], jump: true }, ...repeat(5, idle), { cmd: [0, 0, 0], crouch: true }, ...repeat(60, idle)] },
 ]
 
 const buildScene = async () => {
