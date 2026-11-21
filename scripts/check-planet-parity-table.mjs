@@ -14,7 +14,7 @@ const linesOf = (root, path) => {
   return files.get(key)
 }
 const tokensOf = (text) => [...new Set(text.toLowerCase().match(/[a-z_][a-z0-9_]{2,}|\d+(?:\.\d+)?/g) ?? [])]
-const rowsOf = (text) => text.split('\n').filter((l) => /^\| [a-z]{3}:[A-Za-z0-9._-]+ \| /.test(l) && !/^\| [a-z]{3}:nf/.test(l)).map((l) => l.slice(2, -2).split(' | '))
+const rowsOf = (text) => text.split('\n').filter((l) => /^\| [a-z]{3}:[A-Za-z0-9._-]+ \| /.test(l) && !/^\| [a-z]{3}:nf\d+ /.test(l)).map((l) => l.slice(2, -2).split(' | '))
 const WINDOW = 2
 const failures = []
 let rows = 0

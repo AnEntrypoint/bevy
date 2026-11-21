@@ -205,16 +205,16 @@ Measured by loading each preset through ez-tree's loadPreset, the call at client
 | geo:gpu.texWarp | vertex texWarp: snoise3 of dir*450, amplitude 1.2 | 450.0 / 1.2 | packages/mapspinner/src/tsl/terrain-material-tsl.js:23 | none | 1 | open |
 | geo:nf.steps | near-field tile grid steps default (cells per tile side) | 9 | src/terrain/NearFieldLattice.js:2 | none | 1 | open |
 | geo:nf.budget | near-field default tile budget | 64 | src/terrain/NearFieldLattice.js:4 | none | 1 | open |
-| geo:nf.budgetUse | plan() instance budget passed by planet-tsl = leaves.length of the near face; perAxis = max(1, min(floor(sqrt(budget)), wanted, coverageCap)) |  | packages/mapspinner/src/tsl/planet-tsl.js:193 | none | 1 | open |
+| geo:nf.budgetUse | plan() instance budget passed by planet-tsl = leaves.length of the near face; perAxis = max(1, min(floor(sqrt(budget)), wanted, coverageCap)) | const budget = Number.isInteger(instanceBudget) && instanceBudget >= 1 ? instanceBudget : leaves.length; const perAxis = Math.max(1, Math.min(Math.floor(Math.sqrt(budget)), wanted, coverageCap)) | src/terrain/NearFieldLattice.js:59-61; packages/mapspinner/src/tsl/planet-tsl.js:193 | none | 1 | open |
 | geo:nf.floorTiles | NEAR_FIELD_FLOOR_TILES: leaf floor = tileM * 1 | 1 | src/terrain/NearFieldLattice.js:6 | none | 1 | open |
 | geo:nf.minGround | MIN_GROUND_PER_FACE_METRE (outer reach divides by it) | 0.6 | src/terrain/NearFieldLattice.js:8 | none | 1 | open |
 | geo:nf.tileM | tileM = gridSteps * spacingM (spacing = collider spacing) | 9 * spacing | src/terrain/NearFieldLattice.js:23 | none | 1 | open |
-| geo:nf.reach | floorReachLeaves outerM=(cap*tileM/2+tileM)/0.6, innerM=max(0, cap*tileM/(2*gpf)-maxLeafM) |  | src/terrain/NearFieldLattice.js:29 | none | 1 | open |
-| geo:nf.verts | near-field tile vertex count (gs+3)^2 per tile (same ring grid) | 144 at 9 | src/terrain/NearFieldLattice.js:96 | none | 1 | open |
+| geo:nf.reach | floorReachLeaves outerM=(cap*tileM/2+tileM)/0.6, innerM=max(0, cap*tileM/(2*gpf)-maxLeafM) | const outerM = (coverageCap * tileM / 2 + tileM) / MIN_GROUND_PER_FACE_METRE; const innerM = Math.max(0, (coverageCap * tileM) / (2 * gpf) - maxLeafM) | src/terrain/NearFieldLattice.js:29-30 | none | 1 | open |
+| geo:nf.verts | near-field tile vertex count (gs+3)^2 per tile (same ring grid) | vertexCount: tiles.length * (gs + 3) * (gs + 3) (144 per tile at gs 9) | src/terrain/NearFieldLattice.js:96 | none | 1 | open |
 | geo:nf.gpf | groundPerFaceMetre: 3x3 samples spread by halfSpan, step d = max(1e-6, R*1e-4), larger axis returned | d = R*1e-4 | packages/mapspinner/src/quadtree.js:181 | none | 1 | open |
 | geo:nf.gpfDoc | cube-sphere face metre is 0.778 m of ground at the spawn (non-conformal map) | 0.778 (value stated in comment) | packages/mapspinner/src/quadtree.js:170 | none | 1 | open |
-| geo:nf.suppress | tile suppressed when fully covered by a straddling leaf; fully covered leaves dropped |  | src/terrain/NearFieldLattice.js:88 | none | 1 | open |
-| geo:nf.faceClamp | near tile origin clamped to face half span (faceHalfSpanM = radius) |  | src/terrain/NearFieldLattice.js:66 | none | 1 | open |
+| geo:nf.suppress | tile suppressed when fully covered by a straddling leaf; fully covered leaves dropped | if (covered) { suppressed++; continue } | src/terrain/NearFieldLattice.js:88-90 | none | 1 | open |
+| geo:nf.faceClamp | near tile origin clamped to face half span (faceHalfSpanM = radius) | x0 = Math.min(Math.max(x0, -faceHalfSpanM), faceHalfSpanM - perAxis * tileMLocal) | src/terrain/NearFieldLattice.js:66 | none | 1 | open |
 | geo:nf.level | near tiles drawn with level 0 (excluded from morph, which needs level>=1) | level 0 | src/terrain/NearFieldLattice.js:91 | none | 1 | open |
 | geo:col.extent | collider heightfield default extent (m) | 510 | src/shared/colliderLattice.js:2 | 510.0 fallback (src/terrain_stream.rs:97) | 1 | open |
 | geo:col.res | collider default resolution (m) | 4 | src/shared/colliderLattice.js:3 | 4.0 fallback (src/terrain_stream.rs:98) | 1 | open |
