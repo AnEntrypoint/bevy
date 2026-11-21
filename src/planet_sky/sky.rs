@@ -61,11 +61,17 @@ impl Default for SkyPlanet {
 pub enum SkyView {
     #[default]
     Sky,
+    #[cfg(test)]
     ProbeTransmittance,
+    #[cfg(test)]
     ProbeScattering,
+    #[cfg(test)]
     ProbeAerialRadiance,
+    #[cfg(test)]
     ProbeAerialTransmittance,
+    #[cfg(test)]
     ProbeRadiance,
+    #[cfg(test)]
     ProbeDisplay,
 }
 
@@ -73,11 +79,17 @@ impl SkyView {
     fn fragment_entry(self) -> &'static str {
         match self {
             Self::Sky => "sky_fragment",
+            #[cfg(test)]
             Self::ProbeTransmittance => "probe_transmittance",
+            #[cfg(test)]
             Self::ProbeScattering => "probe_scattering",
+            #[cfg(test)]
             Self::ProbeAerialRadiance => "probe_aerial_radiance",
+            #[cfg(test)]
             Self::ProbeAerialTransmittance => "probe_aerial_transmittance",
+            #[cfg(test)]
             Self::ProbeRadiance => "probe_radiance",
+            #[cfg(test)]
             Self::ProbeDisplay => "probe_display",
         }
     }

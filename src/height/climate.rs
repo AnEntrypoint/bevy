@@ -108,6 +108,7 @@ pub fn dir_to_face_uv(dir: V3) -> (usize, f64, f64) {
     (face, dot(dir, frame.1) * scale * 0.5 + 0.5, dot(dir, frame.2) * scale * 0.5 + 0.5)
 }
 
+#[cfg(test)]
 pub fn sample_dir(seed: i64, dir: V3) -> Climate {
     let (face, fu, fv) = dir_to_face_uv(dir);
     sample_uv(seed, face, fu, fv, None)

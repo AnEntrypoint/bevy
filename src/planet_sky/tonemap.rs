@@ -3,67 +3,75 @@ use bevy::asset::uuid_handle;
 use bevy::camera::Hdr;
 use bevy::core_pipeline::fullscreen_material::{FullscreenMaterial, FullscreenMaterialPlugin};
 use bevy::core_pipeline::tonemapping::{DebandDither, Tonemapping};
-use bevy::math::{DMat3, DVec3};
 use bevy::prelude::*;
 use bevy::render::RenderApp;
 use bevy::render::extract_component::ExtractComponent;
 use bevy::render::render_resource::ShaderType;
 use bevy::shader::{Shader, ShaderRef};
 
-pub const DISPLAY_CLAMP: f64 = 0.995;
-pub const ACES_EXPOSURE_DIVISOR: f64 = 0.6;
-pub const ACES_INPUT_ROWS: [[f64; 3]; 3] = [[0.59719, 0.35458, 0.04823], [0.076, 0.90834, 0.01566], [0.0284, 0.13383, 0.83777]];
-pub const ACES_OUTPUT_ROWS: [[f64; 3]; 3] = [[1.60475, -0.53108, -0.07367], [-0.10208, 1.10813, -0.00605], [-0.00327, -0.07276, 1.07602]];
-const RRT_QUADRATIC_SHIFT: f64 = 0.0245786;
-const RRT_NUMERATOR_FLOOR: f64 = 0.000090537;
-const RRT_LINEAR_SHIFT: f64 = 0.4329510;
-const RRT_DENOMINATOR_SLOPE: f64 = 0.983729;
-const RRT_DENOMINATOR_FLOOR: f64 = 0.238081;
 const TONEMAP_SHADER: Handle<Shader> = uuid_handle!("3b8c5e1a-2f47-4d96-8a0e-6c1d9b7f4e23");
 const TONEMAP_SHADER_PATH: &str = "shaders/planet/atmosphere_tonemap.wgsl";
 
-fn matrix(rows: [[f64; 3]; 3]) -> DMat3 {
-    DMat3::from_cols_array_2d(&rows).transpose()
+#[cfg(test)]
+mod twin {
+    use bevy::math::{DMat3, DVec3};
+
+    pub const DISPLAY_CLAMP: f64 = 0.995;
+    pub const ACES_EXPOSURE_DIVISOR: f64 = 0.6;
+    pub const ACES_INPUT_ROWS: [[f64; 3]; 3] = [[0.59719, 0.35458, 0.04823], [0.076, 0.90834, 0.01566], [0.0284, 0.13383, 0.83777]];
+    pub const ACES_OUTPUT_ROWS: [[f64; 3]; 3] = [[1.60475, -0.53108, -0.07367], [-0.10208, 1.10813, -0.00605], [-0.00327, -0.07276, 1.07602]];
+    pub const RRT_QUADRATIC_SHIFT: f64 = 0.0245786;
+    pub const RRT_NUMERATOR_FLOOR: f64 = 0.000090537;
+    pub const RRT_LINEAR_SHIFT: f64 = 0.4329510;
+    pub const RRT_DENOMINATOR_SLOPE: f64 = 0.983729;
+    pub const RRT_DENOMINATOR_FLOOR: f64 = 0.238081;
+
+    pub fn matrix(rows: [[f64; 3]; 3]) -> DMat3 {
+        DMat3::from_cols_array_2d(&rows).transpose()
+    }
+
+    pub fn rrt_odt_fit(v: DVec3) -> DVec3 {
+        let numerator = v * (v + RRT_QUADRATIC_SHIFT) - RRT_NUMERATOR_FLOOR;
+        let denominator = v * ((v + RRT_LINEAR_SHIFT) * RRT_DENOMINATOR_SLOPE) + RRT_DENOMINATOR_FLOOR;
+        numerator / denominator
+    }
+
+    pub fn aces_filmic(colour: DVec3, exposure: f64) -> DVec3 {
+        let fitted = rrt_odt_fit(matrix(ACES_INPUT_ROWS) * (colour * exposure / ACES_EXPOSURE_DIVISOR));
+        (matrix(ACES_OUTPUT_ROWS) * fitted).clamp(DVec3::ZERO, DVec3::ONE)
+    }
+
+    pub fn invert_aces_filmic(display_linear: DVec3, exposure: f64) -> DVec3 {
+        let z = (matrix(ACES_OUTPUT_ROWS).inverse() * display_linear).clamp(DVec3::ZERO, DVec3::splat(DISPLAY_CLAMP));
+        let a = z * RRT_DENOMINATOR_SLOPE - 1.0;
+        let b = z * (RRT_DENOMINATOR_SLOPE * RRT_LINEAR_SHIFT) - RRT_QUADRATIC_SHIFT;
+        let c = z * RRT_DENOMINATOR_FLOOR + RRT_NUMERATOR_FLOOR;
+        let discriminant = (b * b - a * c * 4.0).max(DVec3::ZERO);
+        let y = (-b - discriminant.map(f64::sqrt)) / (a * 2.0);
+        matrix(ACES_INPUT_ROWS).inverse() * y * (ACES_EXPOSURE_DIVISOR / exposure)
+    }
+
+    pub fn srgb_oetf(linear: DVec3) -> DVec3 {
+        linear.map(|c| if c < 0.0031308 { c * 12.92 } else { 1.055 * c.powf(0.41666) - 0.055 })
+    }
+
+    pub fn srgb_to_linear(display: DVec3) -> DVec3 {
+        display.map(|c| if c < 0.04045 { c * 0.0773993808 } else { (c * 0.9478672986 + 0.0521327014).powf(2.4) })
+    }
+
+    pub fn scene_linear_to_display_referred(linear: DVec3, exposure: f64, aces: bool) -> DVec3 {
+        let mapped = if aces { aces_filmic(linear, exposure) } else { linear };
+        srgb_oetf(mapped.clamp(DVec3::ZERO, DVec3::ONE))
+    }
+
+    pub fn display_referred_to_scene_linear(display: DVec3, exposure: f64, aces: bool) -> DVec3 {
+        let t = srgb_to_linear(display).clamp(DVec3::ZERO, DVec3::splat(DISPLAY_CLAMP));
+        if aces { invert_aces_filmic(t, exposure) } else { t }
+    }
 }
 
-fn rrt_odt_fit(v: DVec3) -> DVec3 {
-    let numerator = v * (v + RRT_QUADRATIC_SHIFT) - RRT_NUMERATOR_FLOOR;
-    let denominator = v * ((v + RRT_LINEAR_SHIFT) * RRT_DENOMINATOR_SLOPE) + RRT_DENOMINATOR_FLOOR;
-    numerator / denominator
-}
-
-pub fn aces_filmic(colour: DVec3, exposure: f64) -> DVec3 {
-    let fitted = rrt_odt_fit(matrix(ACES_INPUT_ROWS) * (colour * exposure / ACES_EXPOSURE_DIVISOR));
-    (matrix(ACES_OUTPUT_ROWS) * fitted).clamp(DVec3::ZERO, DVec3::ONE)
-}
-
-pub fn invert_aces_filmic(display_linear: DVec3, exposure: f64) -> DVec3 {
-    let z = (matrix(ACES_OUTPUT_ROWS).inverse() * display_linear).clamp(DVec3::ZERO, DVec3::splat(DISPLAY_CLAMP));
-    let a = z * RRT_DENOMINATOR_SLOPE - 1.0;
-    let b = z * (RRT_DENOMINATOR_SLOPE * RRT_LINEAR_SHIFT) - RRT_QUADRATIC_SHIFT;
-    let c = z * RRT_DENOMINATOR_FLOOR + RRT_NUMERATOR_FLOOR;
-    let discriminant = (b * b - a * c * 4.0).max(DVec3::ZERO);
-    let y = (-b - discriminant.map(f64::sqrt)) / (a * 2.0);
-    matrix(ACES_INPUT_ROWS).inverse() * y * (ACES_EXPOSURE_DIVISOR / exposure)
-}
-
-pub fn srgb_oetf(linear: DVec3) -> DVec3 {
-    linear.map(|c| if c < 0.0031308 { c * 12.92 } else { 1.055 * c.powf(0.41666) - 0.055 })
-}
-
-pub fn srgb_to_linear(display: DVec3) -> DVec3 {
-    display.map(|c| if c < 0.04045 { c * 0.0773993808 } else { (c * 0.9478672986 + 0.0521327014).powf(2.4) })
-}
-
-pub fn scene_linear_to_display_referred(linear: DVec3, exposure: f64, aces: bool) -> DVec3 {
-    let mapped = if aces { aces_filmic(linear, exposure) } else { linear };
-    srgb_oetf(mapped.clamp(DVec3::ZERO, DVec3::ONE))
-}
-
-pub fn display_referred_to_scene_linear(display: DVec3, exposure: f64, aces: bool) -> DVec3 {
-    let t = srgb_to_linear(display).clamp(DVec3::ZERO, DVec3::splat(DISPLAY_CLAMP));
-    if aces { invert_aces_filmic(t, exposure) } else { t }
-}
+#[cfg(test)]
+pub use twin::*;
 
 #[derive(Component, ExtractComponent, Clone, Copy, ShaderType, Default, Debug, PartialEq)]
 #[extract_app(RenderApp)]
@@ -106,6 +114,7 @@ mod tests {
     use super::*;
     use crate::offscreen::{add_target, capture, headless_app, render_lock, texel};
     use crate::testkit::{cases, close, parse};
+    use bevy::math::DVec3;
     use bevy::camera::{ClearColorConfig, RenderTarget};
     use bevy::render::render_resource::TextureFormat;
     use serde_json::Value;

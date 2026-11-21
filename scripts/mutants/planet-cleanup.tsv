@@ -1,0 +1,3 @@
+cleanup-quality-high-is-medium	src/globe.rs	"high" => Some(Quality::High),	"high" => Some(Quality::Medium),	cargo test --bin bevy-jayzee globe::tests::the_quality_key
+cleanup-quality-key-ignored	src/globe.rs	Some(quality) => self.quality = quality,	Some(_) => {}	cargo test --bin bevy-jayzee globe::tests::the_quality_key
+cleanup-quality-unknown-resets	src/globe.rs	None => eprintln!("globe: quality {name} is not low, medium, high or ultra, keeping the current one"),	None => self.quality = Quality::Low,	cargo test --bin bevy-jayzee globe::tests::the_quality_key

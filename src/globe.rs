@@ -39,6 +39,7 @@ pub struct GlobeWorld {
     pub bodies: Vec<(f32, f32)>,
     pub hpf_tex_res: usize,
     pub hash_version: HashVersion,
+    pub quality: Quality,
     pub relief_scale: Option<f64>,
     pub anchor_dir: [f64; 3],
     pub carves: Vec<CarveConfig>,
@@ -54,7 +55,6 @@ const DEFAULT_ANCHOR_DIR: [f64; 3] = [-0.641, 0.2558, 0.7237];
 const CAMERA_VIEWPORT_HEIGHT_PX: f64 = 720.0;
 const CAMERA_FOV_Y_RAD: f64 = std::f64::consts::FRAC_PI_4;
 const CAMERA_FAR_RADII: f32 = 4.0;
-const VIEWER_QUALITY: Quality = Quality::Ultra;
 
 impl Default for GlobeWorld {
     fn default() -> Self {
@@ -72,6 +72,7 @@ impl Default for GlobeWorld {
             bodies: vec![(0.0, 0.0)],
             hpf_tex_res: DEFAULT_HPF_TEX_RES,
             hash_version: HashVersion::Integer,
+            quality: Quality::default(),
             relief_scale: None,
             anchor_dir: DEFAULT_ANCHOR_DIR,
             carves: Vec::new(),
@@ -82,6 +83,16 @@ impl Default for GlobeWorld {
 
 fn default_planet_config() -> PlanetConfig {
     PlanetConfig { seed: DEFAULT_SEED as i32, hpf_res: DEFAULT_HPF_TEX_RES, hash: HashVersion::Integer, relief_scale: None, anchor_dir: DEFAULT_ANCHOR_DIR, radius: f64::from(DEFAULT_RADIUS), carves: Vec::new() }
+}
+
+fn quality_named(name: &str) -> Option<Quality> {
+    match name {
+        "low" => Some(Quality::Low),
+        "medium" => Some(Quality::Medium),
+        "high" => Some(Quality::High),
+        "ultra" => Some(Quality::Ultra),
+        _ => None,
+    }
 }
 
 fn vec3_of(value: &Value) -> Option<[f64; 3]> {
@@ -174,6 +185,12 @@ impl GlobeWorld {
                 self.hash_version = HashVersion::Integer;
             } else {
                 eprintln!("globe: hashVersion {hash} is not 1 or 2, keeping the current one");
+            }
+        }
+        if let Some(name) = object.get("quality").and_then(Value::as_str) {
+            match quality_named(name) {
+                Some(quality) => self.quality = quality,
+                None => eprintln!("globe: quality {name} is not low, medium, high or ultra, keeping the current one"),
             }
         }
         if let Some(scale) = object.get("reliefScale").and_then(Value::as_f64) {
@@ -343,9 +360,9 @@ fn align_lights_with_focus(
     }
 }
 
-fn equip_camera(mut commands: Commands, cameras: Query<Entity, Added<Camera3d>>) {
+fn equip_camera(mut commands: Commands, quality: Res<Quality>, cameras: Query<Entity, Added<Camera3d>>) {
     for camera in &cameras {
-        commands.entity(camera).insert((SkyCamera, reference_view(VIEWER_QUALITY)));
+        commands.entity(camera).insert((SkyCamera, reference_view(*quality)));
     }
 }
 
@@ -365,7 +382,7 @@ pub fn register(app: &mut App) {
             globe.water_plugin(),
             AtmosphereLutPlugin,
             PlanetSkyPlugin,
-            LightPlugin { quality: VIEWER_QUALITY },
+            LightPlugin { quality: globe.quality },
             ToneMapPlugin,
         ))
         .insert_resource(globe.terrain_frame())
@@ -775,6 +792,15 @@ mod tests {
     }
 
     #[test]
+    fn the_quality_key_selects_the_light_preset_and_unknown_names_keep_the_default() {
+        for (name, want) in [("low", Quality::Low), ("medium", Quality::Medium), ("high", Quality::High), ("ultra", Quality::Ultra)] {
+            assert_eq!(GlobeWorld::from_value(Some(&json!({ "quality": name }))).quality, want, "{name}");
+        }
+        assert_eq!(GlobeWorld::from_value(Some(&json!({ "quality": "extreme" }))).quality, Quality::Ultra);
+        assert_eq!(GlobeWorld::from_value(Some(&json!({}))).quality, Quality::Ultra);
+    }
+
+    #[test]
     fn hash_version_one_elevation_matches_the_spoint_sampler() {
         let fixture = spoint_sampler_fixture();
         let case = spoint_case(&fixture, "hashVersion1");
@@ -977,7 +1003,7 @@ mod tests {
         let mut cameras = app.world_mut().query_filtered::<(&Tonemapping, &crate::planet_sky::tonemap::ToneMap), (With<Camera3d>, With<SkyCamera>)>();
         let (tonemapping, tone_map) = cameras.single(app.world()).unwrap();
         assert_eq!(*tonemapping, Tonemapping::None);
-        assert_eq!(*tone_map, crate::planet_sky::tonemap::ToneMap::for_quality(VIEWER_QUALITY));
+        assert_eq!(*tone_map, crate::planet_sky::tonemap::ToneMap::for_quality(Quality::default()));
     }
 
     #[test]

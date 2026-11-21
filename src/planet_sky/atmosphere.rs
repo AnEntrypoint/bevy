@@ -137,6 +137,7 @@ pub fn mu_s_from_layer(layer: usize, layers: usize) -> f64 {
     ((MU_S_WARP_K * t).tanh() / MU_S_WARP_K.tanh()).clamp(-1.0, 1.0)
 }
 
+#[cfg(test)]
 pub fn layer_from_mu_s(mu_s: f64, layers: usize) -> usize {
     let t = (mu_s.clamp(-0.999999, 0.999999) * MU_S_WARP_K.tanh()).atanh() / MU_S_WARP_K;
     let w = ((t + 1.0) * 0.5).clamp(0.0, 1.0);

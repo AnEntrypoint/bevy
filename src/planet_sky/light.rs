@@ -127,6 +127,7 @@ pub static KEYFRAMES: LazyLock<[Keyframe; 7]> = LazyLock::new(|| {
 
 #[derive(Clone, Copy, Debug)]
 pub struct SkyLight {
+    #[cfg(test)]
     pub elevation_deg: f64,
     pub direction: DVec3,
     pub sun_hex: u32,
@@ -139,10 +140,6 @@ pub struct SkyLight {
 impl SkyLight {
     pub fn sun_linear(&self) -> [f64; 3] {
         hex_to_linear(self.sun_hex)
-    }
-
-    pub fn ambient_linear(&self) -> [f64; 3] {
-        hex_to_linear(self.ambient_hex)
     }
 }
 
@@ -176,6 +173,7 @@ pub fn evaluate(fraction: f64) -> SkyLight {
     let span = hi.deg - lo.deg;
     let f = if span > 0.0 { ((elevation_deg - lo.deg) / span).clamp(0.0, 1.0) } else { 0.0 };
     SkyLight {
+        #[cfg(test)]
         elevation_deg,
         direction,
         sun_hex: mix_colour(lo.sun, hi.sun, f),

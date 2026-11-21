@@ -5,7 +5,7 @@ use crate::offscreen::{FOV_Y, Frame, HEIGHT, SKY_COLOUR, WIDTH, add_target, capt
 use crate::planet_lod::guard::{builds_on_main_thread, mark_main_thread};
 use crate::planet_lod::origin::FloatingOrigin;
 use crate::planet_lod::quadtree::{QuadtreeConfig, select_leaves};
-use crate::testkit::{close, parse};
+use crate::testkit::close;
 use bevy::camera::visibility::NoFrustumCulling;
 use bevy::math::DVec3;
 use bevy::prelude::*;
@@ -22,7 +22,6 @@ const SEARCH_POINTS: usize = 40_000;
 const SHORE_STEP_RAD: f64 = 0.002;
 const SHORE_STEPS: usize = 3000;
 const SHORE_BISECTIONS: usize = 40;
-const WET_M: f64 = -20.0;
 const CENSUS_STEP_PX_M: f32 = 1.9;
 const CENSUS_RANGE: f64 = 8.0;
 const CENSUS_SAMPLE_STRIDE: u32 = 3;
