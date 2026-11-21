@@ -1,0 +1,3302 @@
+{
+ "spoint": "5f43c86c",
+ "kinds": [
+  "flatten",
+  "pond",
+  "lake",
+  "sea",
+  "river",
+  "path",
+  "road",
+  "clear",
+  "hole",
+  "grade",
+  "spline",
+  "liquid"
+ ],
+ "cases": [
+  {
+   "name": "empty list",
+   "specs": [],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "null specs",
+   "specs": null,
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind flatten",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 4
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 4
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 4
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 3.90868478541381
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.423881554251178
+    }
+   ]
+  },
+  {
+   "name": "kind pond",
+   "specs": [
+    {
+     "kind": "pond",
+     "center": [
+      3,
+      1
+     ],
+     "radius": 1.5,
+     "falloff": 0.5,
+     "level": -1
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": -0.8062480225999704
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind lake",
+   "specs": [
+    {
+     "kind": "lake",
+     "center": [
+      -2,
+      2
+     ],
+     "radius": 1,
+     "falloff": 0,
+     "level": 0.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind sea",
+   "specs": [
+    {
+     "kind": "sea",
+     "center": [
+      0,
+      -3
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "level": -0.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": -0.1478174124758147
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": -0.5
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 0.045883010662487234
+    }
+   ]
+  },
+  {
+   "name": "kind river",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       -4,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 0.75
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 0.9375
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -1.0625
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -1.3125
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind path",
+   "specs": [
+    {
+     "kind": "path",
+     "points": [
+      [
+       -3,
+       -3,
+       0.5
+      ],
+      [
+       3,
+       -3,
+       2
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind road",
+   "specs": [
+    {
+     "kind": "road",
+     "points": [
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       2,
+       4,
+       1.5
+      ],
+      [
+       4,
+       2,
+       1
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 0
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind clear",
+   "specs": [
+    {
+     "kind": "clear",
+     "center": [
+      5,
+      5
+     ],
+     "radius": 1.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind hole",
+   "specs": [
+    {
+     "kind": "hole",
+     "center": [
+      -5,
+      -5
+     ],
+     "radius": 1
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind grade",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 0.25,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.75
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.8125
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 2.125
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 2.329262172572739
+    }
+   ]
+  },
+  {
+   "name": "kind spline",
+   "specs": [
+    {
+     "kind": "spline",
+     "points": [
+      [
+       -1,
+       -4,
+       1
+      ],
+      [
+       1,
+       -4,
+       3
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 1
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 2.5
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "kind liquid",
+   "specs": [
+    {
+     "kind": "liquid",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 6,
+     "level": 0
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "all kinds in one list",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    },
+    {
+     "kind": "pond",
+     "center": [
+      3,
+      1
+     ],
+     "radius": 1.5,
+     "falloff": 0.5,
+     "level": -1
+    },
+    {
+     "kind": "lake",
+     "center": [
+      -2,
+      2
+     ],
+     "radius": 1,
+     "falloff": 0,
+     "level": 0.5
+    },
+    {
+     "kind": "sea",
+     "center": [
+      0,
+      -3
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "level": -0.5
+    },
+    {
+     "kind": "river",
+     "points": [
+      [
+       -4,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    },
+    {
+     "kind": "path",
+     "points": [
+      [
+       -3,
+       -3,
+       0.5
+      ],
+      [
+       3,
+       -3,
+       2
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5
+    },
+    {
+     "kind": "road",
+     "points": [
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       2,
+       4,
+       1.5
+      ],
+      [
+       4,
+       2,
+       1
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 0
+    },
+    {
+     "kind": "clear",
+     "center": [
+      5,
+      5
+     ],
+     "radius": 1.5
+    },
+    {
+     "kind": "hole",
+     "center": [
+      -5,
+      -5
+     ],
+     "radius": 1
+    },
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 0.25,
+     "maxGrade": 0.5
+    },
+    {
+     "kind": "spline",
+     "points": [
+      [
+       -1,
+       -4,
+       1
+      ],
+      [
+       1,
+       -4,
+       3
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 1
+    },
+    {
+     "kind": "liquid",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 6,
+     "level": 0
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.75
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.8125
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -1.0625
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 2.125
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 2.5
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -1.3125
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 2.095193516004161
+    }
+   ]
+  },
+  {
+   "name": "pond then flatten",
+   "specs": [
+    {
+     "kind": "pond",
+     "center": [
+      3,
+      1
+     ],
+     "radius": 1.5,
+     "falloff": 0.5,
+     "level": -1
+    },
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 4
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 4
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 4
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 3.8049406357608144
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.423881554251178
+    }
+   ]
+  },
+  {
+   "name": "flatten then pond",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    },
+    {
+     "kind": "pond",
+     "center": [
+      3,
+      1
+     ],
+     "radius": 1.5,
+     "falloff": 0.5,
+     "level": -1
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 4
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 4
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 4
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": -0.6541573150518665
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.423881554251178
+    }
+   ]
+  },
+  {
+   "name": "clear wins over later flatten",
+   "specs": [
+    {
+     "kind": "clear",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2
+    },
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "height": 9
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.1987700360861481
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": 1.0563488726675598
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 9
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 9
+    }
+   ]
+  },
+  {
+   "name": "river ignores a third point coordinate",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       0,
+       0,
+       9
+      ],
+      [
+       4,
+       0,
+       9
+      ]
+     ],
+     "width": 1,
+     "falloff": 0,
+     "depth": 1
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 0.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 0.6875
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "grade slope equal to maxGrade",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 0.5,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 1.5
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 1.625
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 2
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 2.25
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 2.561648356445464
+    }
+   ]
+  },
+  {
+   "name": "not a list string",
+   "specs": "x",
+   "error": {
+    "reasonCode": "not-a-list",
+    "index": -1
+   },
+   "points": []
+  },
+  {
+   "name": "not a list object",
+   "specs": {
+    "kind": "flatten"
+   },
+   "error": {
+    "reasonCode": "not-a-list",
+    "index": -1
+   },
+   "points": []
+  },
+  {
+   "name": "null mark",
+   "specs": [
+    null
+   ],
+   "error": {
+    "reasonCode": "not-an-object",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "number mark",
+   "specs": [
+    3
+   ],
+   "error": {
+    "reasonCode": "not-an-object",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "string mark",
+   "specs": [
+    "flatten"
+   ],
+   "error": {
+    "reasonCode": "not-an-object",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "valid then number mark",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    },
+    3
+   ],
+   "error": {
+    "reasonCode": "not-an-object",
+    "index": 1
+   },
+   "points": []
+  },
+  {
+   "name": "array mark",
+   "specs": [
+    []
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "missing kind",
+   "specs": [
+    {
+     "center": [
+      0,
+      0
+     ],
+     "radius": 1,
+     "falloff": 0,
+     "height": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind not a string",
+   "specs": [
+    {
+     "kind": 3,
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind null",
+   "specs": [
+    {
+     "kind": null,
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind misspelled",
+   "specs": [
+    {
+     "kind": "Flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind constructor",
+   "specs": [
+    {
+     "kind": "constructor",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind __proto__",
+   "specs": [
+    {
+     "kind": "__proto__",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "kind toString",
+   "specs": [
+    {
+     "kind": "toString",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "unknown-kind",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten radius zero",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 0,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten radius negative",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": -1,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten radius string NaN",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": "NaN",
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten radius string Infinity",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": "Infinity",
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten falloff negative",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": -0.5,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten falloff zero accepted",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 0,
+     "height": 4
+    }
+   ],
+   "error": null,
+   "points": [
+    {
+     "x": 0,
+     "z": 0,
+     "yGuess": 0,
+     "height": 4
+    },
+    {
+     "x": 0.25,
+     "z": 0.25,
+     "yGuess": 1,
+     "height": 4
+    },
+    {
+     "x": -2.5,
+     "z": 3,
+     "yGuess": 0.5,
+     "height": -0.4375
+    },
+    {
+     "x": 1,
+     "z": -1,
+     "yGuess": -2,
+     "height": 4
+    },
+    {
+     "x": 3.5,
+     "z": 4.5,
+     "yGuess": 4,
+     "height": 2.625
+    },
+    {
+     "x": -3.75,
+     "z": -0.25,
+     "yGuess": 0,
+     "height": -0.3125
+    },
+    {
+     "x": 5,
+     "z": 5,
+     "yGuess": 1,
+     "height": 2.875
+    },
+    {
+     "x": -5,
+     "z": -5,
+     "yGuess": 0.5,
+     "height": 0.3125
+    },
+    {
+     "x": 1.5,
+     "z": 1.5,
+     "yGuess": -1,
+     "height": 1.75
+    },
+    {
+     "x": 0.5,
+     "z": -4,
+     "yGuess": 2,
+     "height": 3
+    },
+    {
+     "x": -4,
+     "z": 0.25,
+     "yGuess": 0,
+     "height": -0.5625
+    },
+    {
+     "x": 2,
+     "z": -2,
+     "yGuess": 3,
+     "height": 3.375
+    }
+   ]
+  },
+  {
+   "name": "flatten height missing",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 1,
+     "falloff": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten center short",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      1
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten center long",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      1,
+      2,
+      3
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten center string coordinate",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      1,
+      "2"
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten center null",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": null,
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "flatten center checked before radius",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      1
+     ],
+     "radius": 0,
+     "falloff": 1,
+     "height": 4
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "pond level missing",
+   "specs": [
+    {
+     "kind": "pond",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 1,
+     "falloff": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "lake center string",
+   "specs": [
+    {
+     "kind": "lake",
+     "center": "00",
+     "radius": 1,
+     "falloff": 0,
+     "level": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "sea level Infinity string",
+   "specs": [
+    {
+     "kind": "sea",
+     "center": [
+      0,
+      -3
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "level": "Infinity"
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river one point",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       0,
+       0
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "short-polyline",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river points missing",
+   "specs": [
+    {
+     "kind": "river",
+     "width": 1,
+     "falloff": 0,
+     "depth": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "short-polyline",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river points string",
+   "specs": [
+    {
+     "kind": "river",
+     "points": "ab",
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "short-polyline",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river point too short",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river point is string",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       0,
+       0
+      ],
+      "ab"
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river point coordinate null",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       null
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river width zero",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       -4,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       1
+      ]
+     ],
+     "width": 0,
+     "falloff": 0.5,
+     "depth": 0.75
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "river depth negative",
+   "specs": [
+    {
+     "kind": "river",
+     "points": [
+      [
+       -4,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": -1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "path level missing",
+   "specs": [
+    {
+     "kind": "path",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       1,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "path level non-number",
+   "specs": [
+    {
+     "kind": "path",
+     "points": [
+      [
+       0,
+       0,
+       1
+      ],
+      [
+       1,
+       1,
+       "x"
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "path point with four entries",
+   "specs": [
+    {
+     "kind": "path",
+     "points": [
+      [
+       0,
+       0,
+       1,
+       5
+      ],
+      [
+       1,
+       1,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "path width zero",
+   "specs": [
+    {
+     "kind": "path",
+     "points": [
+      [
+       -3,
+       -3,
+       0.5
+      ],
+      [
+       3,
+       -3,
+       2
+      ]
+     ],
+     "width": 0,
+     "falloff": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "road falloff negative",
+   "specs": [
+    {
+     "kind": "road",
+     "points": [
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       2,
+       4,
+       1.5
+      ],
+      [
+       4,
+       2,
+       1
+      ]
+     ],
+     "width": 0.5,
+     "falloff": -1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "clear radius zero",
+   "specs": [
+    {
+     "kind": "clear",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "hole center short",
+   "specs": [
+    {
+     "kind": "hole",
+     "center": [
+      0
+     ],
+     "radius": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "grade too steep",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 2,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "grade-too-steep",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "grade too steep negative",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": -1,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "grade-too-steep",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "grade maxGrade negative",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 0.25,
+     "maxGrade": -1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "grade falloff negative with steep slope",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": -1,
+     "level": 2,
+     "slope": 2,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "grade slope string",
+   "specs": [
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": "x",
+     "maxGrade": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "steep grade after valid mark",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 2,
+     "falloff": 1,
+     "height": 4
+    },
+    {
+     "kind": "grade",
+     "center": [
+      1,
+      1
+     ],
+     "radius": 3,
+     "falloff": 1,
+     "level": 2,
+     "slope": 2,
+     "maxGrade": 0.5
+    }
+   ],
+   "error": {
+    "reasonCode": "grade-too-steep",
+    "index": 1
+   },
+   "points": []
+  },
+  {
+   "name": "spline width negative",
+   "specs": [
+    {
+     "kind": "spline",
+     "points": [
+      [
+       -1,
+       -4,
+       1
+      ],
+      [
+       1,
+       -4,
+       3
+      ]
+     ],
+     "width": -1,
+     "falloff": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "spline falloff zero",
+   "specs": [
+    {
+     "kind": "spline",
+     "points": [
+      [
+       -1,
+       -4,
+       1
+      ],
+      [
+       1,
+       -4,
+       3
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "spline one point",
+   "specs": [
+    {
+     "kind": "spline",
+     "points": [
+      [
+       0,
+       0,
+       1
+      ]
+     ],
+     "width": 0.5,
+     "falloff": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "short-polyline",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "liquid radius zero",
+   "specs": [
+    {
+     "kind": "liquid",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 0,
+     "level": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "liquid center string",
+   "specs": [
+    {
+     "kind": "liquid",
+     "center": "x",
+     "radius": 6,
+     "level": 0
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-point",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "liquid level missing",
+   "specs": [
+    {
+     "kind": "liquid",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 1
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "first refusal wins",
+   "specs": [
+    {
+     "kind": "flatten",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 0,
+     "falloff": 1,
+     "height": 4
+    },
+    {
+     "kind": "nope"
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 0
+   },
+   "points": []
+  },
+  {
+   "name": "refusal index after accepted marks",
+   "specs": [
+    {
+     "kind": "pond",
+     "center": [
+      3,
+      1
+     ],
+     "radius": 1.5,
+     "falloff": 0.5,
+     "level": -1
+    },
+    {
+     "kind": "river",
+     "points": [
+      [
+       -4,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       1
+      ]
+     ],
+     "width": 1,
+     "falloff": 0.5,
+     "depth": 0.75
+    },
+    {
+     "kind": "clear",
+     "center": [
+      5,
+      5
+     ],
+     "radius": -2
+    }
+   ],
+   "error": {
+    "reasonCode": "bad-number",
+    "index": 2
+   },
+   "points": []
+  }
+ ]
+}
