@@ -1,0 +1,3143 @@
+{
+ "spoint": "5f43c86c",
+ "spawn": {
+  "setups": [
+   {
+    "name": "default",
+    "config": {},
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "any",
+     "mesh": "capsule",
+     "color": "#33cc88",
+     "sx": 0.4,
+     "sy": 0.9,
+     "sz": 0.4
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   },
+   {
+    "name": "red-gizmo",
+    "config": {
+     "team": "red",
+     "showGizmo": true
+    },
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "red",
+     "mesh": "capsule",
+     "color": "#33cc88",
+     "sx": 0.4,
+     "sy": 0.9,
+     "sz": 0.4
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   },
+   {
+    "name": "red-hidden",
+    "config": {
+     "team": "red",
+     "showGizmo": false
+    },
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "red"
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   },
+   {
+    "name": "null-team",
+    "config": {
+     "team": null
+    },
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "any",
+     "mesh": "capsule",
+     "color": "#33cc88",
+     "sx": 0.4,
+     "sy": 0.9,
+     "sz": 0.4
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   },
+   {
+    "name": "empty-team",
+    "config": {
+     "team": ""
+    },
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "",
+     "mesh": "capsule",
+     "color": "#33cc88",
+     "sx": 0.4,
+     "sy": 0.9,
+     "sz": 0.4
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   },
+   {
+    "name": "green-undefined-gizmo",
+    "config": {
+     "team": "green"
+    },
+    "setup": {
+     "_spawnPoint": true,
+     "_spawnTeam": "green",
+     "mesh": "capsule",
+     "color": "#33cc88",
+     "sx": 0.4,
+     "sy": 0.9,
+     "sz": 0.4
+    },
+    "afterBlue": "blue",
+    "afterNoTeam": "any"
+   }
+  ],
+  "entities": [
+   {
+    "name": "red",
+    "position": [
+     0,
+     1,
+     0
+    ],
+    "custom": {
+     "_spawnPoint": true,
+     "_spawnTeam": "red"
+    }
+   },
+   {
+    "name": "any",
+    "position": [
+     10,
+     1,
+     -10
+    ],
+    "custom": {
+     "_spawnPoint": true,
+     "_spawnTeam": "any"
+    }
+   },
+   {
+    "name": "blue",
+    "position": [
+     20,
+     1,
+     -20
+    ],
+    "custom": {
+     "_spawnPoint": true,
+     "_spawnTeam": "blue"
+    }
+   },
+   {
+    "name": "untagged",
+    "position": [
+     30,
+     1,
+     -30
+    ],
+    "custom": {
+     "_spawnPoint": true
+    }
+   },
+   {
+    "name": "empty",
+    "position": [
+     40,
+     1,
+     -40
+    ],
+    "custom": {
+     "_spawnPoint": true,
+     "_spawnTeam": ""
+    }
+   },
+   {
+    "name": "plain",
+    "position": [
+     50,
+     1,
+     -50
+    ],
+    "custom": {}
+   },
+   {
+    "name": "green",
+    "position": [
+     60,
+     1,
+     -60
+    ],
+    "custom": {
+     "_spawnPoint": true,
+     "_spawnTeam": "green"
+    }
+   }
+  ],
+  "collect": [
+   {
+    "name": "unset",
+    "team": null,
+    "positions": [
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      20,
+      1,
+      -20
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ],
+     [
+      60,
+      1,
+      -60
+     ]
+    ]
+   },
+   {
+    "name": "any",
+    "team": "any",
+    "positions": [
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      20,
+      1,
+      -20
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ],
+     [
+      60,
+      1,
+      -60
+     ]
+    ]
+   },
+   {
+    "name": "empty",
+    "team": "",
+    "positions": [
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      20,
+      1,
+      -20
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ],
+     [
+      60,
+      1,
+      -60
+     ]
+    ]
+   },
+   {
+    "name": "red",
+    "team": "red",
+    "positions": [
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ]
+    ]
+   },
+   {
+    "name": "blue",
+    "team": "blue",
+    "positions": [
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      20,
+      1,
+      -20
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ]
+    ]
+   },
+   {
+    "name": "green",
+    "team": "green",
+    "positions": [
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ],
+     [
+      60,
+      1,
+      -60
+     ]
+    ]
+   },
+   {
+    "name": "mauve",
+    "team": "mauve",
+    "positions": [
+     [
+      10,
+      1,
+      -10
+     ],
+     [
+      30,
+      1,
+      -30
+     ],
+     [
+      40,
+      1,
+      -40
+     ]
+    ]
+   }
+  ]
+ },
+ "powerups": {
+  "defs": [
+   {
+    "type": "damage",
+    "color": 16724804,
+    "emissive": 11141120,
+    "buff": {
+     "duration": 20,
+     "speedMultiplier": 1,
+     "fireRateMultiplier": 1,
+     "damageMultiplier": 2
+    }
+   },
+   {
+    "type": "speed",
+    "color": 3386111,
+    "emissive": 17578,
+    "buff": {
+     "duration": 20,
+     "speedMultiplier": 1.5,
+     "fireRateMultiplier": 1,
+     "damageMultiplier": 1
+    }
+   },
+   {
+    "type": "rapid",
+    "color": 16763955,
+    "emissive": 11167232,
+    "buff": {
+     "duration": 20,
+     "speedMultiplier": 1,
+     "fireRateMultiplier": 2,
+     "damageMultiplier": 1
+    }
+   }
+  ],
+  "respawnMs": 15000,
+  "main": {
+   "startAt": 1000000,
+   "spawnPoints": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     10,
+     10,
+     0
+    ],
+    [
+     20,
+     10,
+     0
+    ],
+    [
+     30,
+     10,
+     0
+    ]
+   ],
+   "setup": [
+    [
+     "spawn",
+     "powerup_damage"
+    ],
+    [
+     "spawn",
+     "powerup_speed"
+    ],
+    [
+     "spawn",
+     "powerup_rapid"
+    ]
+   ],
+   "trace": [
+    {
+     "label": "pickup-damage-dz1",
+     "at": 1000000,
+     "health": 100,
+     "buff": {
+      "expiresAt": 1020000,
+      "speed": 1,
+      "fireRate": 1,
+      "damage": 2
+     },
+     "events": [
+      [
+       "buff_applied",
+       1,
+       20,
+       1,
+       1,
+       2
+      ],
+      [
+       "destroy",
+       "powerup_damage"
+      ]
+     ]
+    },
+    {
+     "label": "no-respawn-before-15s",
+     "at": 1014999,
+     "health": 100,
+     "buff": {
+      "expiresAt": 1020000,
+      "speed": 1,
+      "fireRate": 1,
+      "damage": 2
+     },
+     "events": []
+    },
+    {
+     "label": "respawn-damage-at-15s",
+     "at": 1015000,
+     "health": 100,
+     "buff": {
+      "expiresAt": 1020000,
+      "speed": 1,
+      "fireRate": 1,
+      "damage": 2
+     },
+     "events": [
+      [
+       "spawn",
+       "powerup_damage"
+      ]
+     ]
+    },
+    {
+     "label": "regen-while-buffed",
+     "at": 1019000,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1020000,
+      "speed": 1,
+      "fireRate": 1,
+      "damage": 2
+     },
+     "events": []
+    },
+    {
+     "label": "expired-at-20s",
+     "at": 1020000,
+     "health": 55,
+     "buff": null,
+     "events": [
+      [
+       "buff_expired",
+       1
+      ]
+     ]
+    },
+    {
+     "label": "pickup-speed-dz1.7-boundary",
+     "at": 1020001,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040001,
+      "speed": 1.5,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": [
+      [
+       "buff_applied",
+       1,
+       20,
+       1.5,
+       1,
+       1
+      ],
+      [
+       "destroy",
+       "powerup_speed"
+      ]
+     ]
+    },
+    {
+     "label": "outside-dz1.75",
+     "at": 1020002,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040001,
+      "speed": 1.5,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": []
+    },
+    {
+     "label": "pickup-rapid-center",
+     "at": 1020003,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040003,
+      "speed": 1,
+      "fireRate": 2,
+      "damage": 1
+     },
+     "events": [
+      [
+       "buff_applied",
+       1,
+       20,
+       1,
+       2,
+       1
+      ],
+      [
+       "destroy",
+       "powerup_rapid"
+      ]
+     ]
+    },
+    {
+     "label": "speed-not-yet-respawned",
+     "at": 1035000,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040003,
+      "speed": 1,
+      "fireRate": 2,
+      "damage": 1
+     },
+     "events": []
+    },
+    {
+     "label": "speed-respawn-at-35001",
+     "at": 1035001,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040003,
+      "speed": 1,
+      "fireRate": 2,
+      "damage": 1
+     },
+     "events": [
+      [
+       "spawn",
+       "powerup_speed"
+      ]
+     ]
+    },
+    {
+     "label": "rapid-respawn-at-35003",
+     "at": 1035003,
+     "health": 55,
+     "buff": {
+      "expiresAt": 1040003,
+      "speed": 1,
+      "fireRate": 2,
+      "damage": 1
+     },
+     "events": [
+      [
+       "spawn",
+       "powerup_rapid"
+      ]
+     ]
+    },
+    {
+     "label": "rapid-expired-at-40003",
+     "at": 1040003,
+     "health": 55,
+     "buff": null,
+     "events": [
+      [
+       "buff_expired",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "defaults": {
+   "startAt": 2000000,
+   "spawnPoints": [
+    [
+     0,
+     10,
+     0
+    ],
+    [
+     10,
+     10,
+     0
+    ],
+    [
+     20,
+     10,
+     0
+    ]
+   ],
+   "setup": [
+    [
+     "spawn",
+     "powerup_quick"
+    ],
+    [
+     "spawn",
+     "powerup_plain"
+    ]
+   ],
+   "trace": [
+    {
+     "label": "quick-pickup",
+     "at": 2000000,
+     "health": 100,
+     "buff": {
+      "expiresAt": 2005000,
+      "speed": 2,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": [
+      [
+       "buff_applied",
+       1,
+       5,
+       2,
+       1,
+       1
+      ],
+      [
+       "destroy",
+       "powerup_quick"
+      ]
+     ]
+    },
+    {
+     "label": "quick-away-before-4s",
+     "at": 2003999,
+     "health": 100,
+     "buff": {
+      "expiresAt": 2005000,
+      "speed": 2,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": []
+    },
+    {
+     "label": "quick-respawn-4s",
+     "at": 2004000,
+     "health": 100,
+     "buff": {
+      "expiresAt": 2005000,
+      "speed": 2,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": [
+      [
+       "spawn",
+       "powerup_quick"
+      ]
+     ]
+    },
+    {
+     "label": "quick-expired-5s",
+     "at": 2005000,
+     "health": 100,
+     "buff": null,
+     "events": [
+      [
+       "buff_expired",
+       1
+      ]
+     ]
+    },
+    {
+     "label": "plain-pickup",
+     "at": 2005001,
+     "health": 100,
+     "buff": {
+      "expiresAt": 2008001,
+      "speed": 1,
+      "fireRate": 1,
+      "damage": 1
+     },
+     "events": [
+      [
+       "buff_applied",
+       1,
+       3,
+       1,
+       1,
+       1
+      ],
+      [
+       "destroy",
+       "powerup_plain"
+      ]
+     ]
+    },
+    {
+     "label": "plain-away-before-15s",
+     "at": 2020000,
+     "health": 100,
+     "buff": null,
+     "events": [
+      [
+       "buff_expired",
+       1
+      ]
+     ]
+    },
+    {
+     "label": "plain-respawn-15s",
+     "at": 2020001,
+     "health": 100,
+     "buff": null,
+     "events": [
+      [
+       "spawn",
+       "powerup_plain"
+      ]
+     ]
+    }
+   ]
+  },
+  "refusals": [
+   {
+    "name": "duration-nan",
+    "error": "[combat] spec.powerups[0].buff.duration must be a finite number"
+   },
+   {
+    "name": "empty-type",
+    "error": "[combat] spec.powerups[0].type must be a non-empty string"
+   },
+   {
+    "name": "multiplier-string",
+    "error": "[combat] spec.powerups[0].buff.damageMultiplier must be a finite number"
+   }
+  ]
+ },
+ "fire": {
+  "spec": {
+   "radius": 63600,
+   "role": "authority",
+   "stepTicks": 30,
+   "seed": 1337,
+   "leadTicks": 6,
+   "regrowSteps": 1200,
+   "classes": {
+    "grass": {
+     "fuel": 3000,
+     "burnRate": 1500,
+     "igniteHeat": 90,
+     "heatOut": 500,
+     "spotChance": 0,
+     "spotHeat": 0,
+     "smoke": 40,
+     "damage": 6
+    },
+    "shrub": {
+     "fuel": 12000,
+     "burnRate": 2000,
+     "igniteHeat": 170,
+     "heatOut": 800,
+     "spotChance": 40,
+     "spotHeat": 400,
+     "smoke": 90,
+     "damage": 10
+    },
+    "forest": {
+     "fuel": 45000,
+     "burnRate": 2500,
+     "igniteHeat": 600,
+     "heatOut": 1200,
+     "spotChance": 120,
+     "spotHeat": 700,
+     "smoke": 160,
+     "damage": 16
+    }
+   },
+   "gameplay": {
+    "damageEveryTicks": 15,
+    "statusDamagePerSec": 6,
+    "burnStatusSeconds": 4,
+    "smokeBlockDepth": 1,
+    "smokeHeightM": 30,
+    "eyeHeightM": 1.6,
+    "explosionImpulse": 12
+   },
+   "firebreaks": {
+    "kinds": [
+     "road",
+     "river"
+    ],
+    "water": true
+   }
+  },
+  "cases": [
+   {
+    "name": "absent",
+    "config": {},
+    "spawnPoints": [
+     [
+      5,
+      6,
+      7
+     ]
+    ],
+    "powerupCount": 3,
+    "powerupRespawnMs": 15000,
+    "fireSpec": null,
+    "rayBlockedArgs": null,
+    "rayBlockedResult": null,
+    "ignitePositions": [],
+    "ignitionSeeds": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "shooterIds": [
+     1,
+     255,
+     256,
+     300,
+     65537
+    ]
+   },
+   {
+    "name": "disabled",
+    "config": {
+     "fire": {
+      "enabled": false,
+      "radius": 1
+     }
+    },
+    "spawnPoints": [
+     [
+      5,
+      6,
+      7
+     ]
+    ],
+    "powerupCount": 3,
+    "powerupRespawnMs": 15000,
+    "fireSpec": null,
+    "rayBlockedArgs": null,
+    "rayBlockedResult": null,
+    "ignitePositions": [],
+    "ignitionSeeds": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "shooterIds": [
+     1,
+     255,
+     256,
+     300,
+     65537
+    ]
+   },
+   {
+    "name": "enabled-string",
+    "config": {
+     "fire": {
+      "enabled": "true",
+      "radius": 1
+     }
+    },
+    "spawnPoints": [
+     [
+      5,
+      6,
+      7
+     ]
+    ],
+    "powerupCount": 3,
+    "powerupRespawnMs": 15000,
+    "fireSpec": null,
+    "rayBlockedArgs": null,
+    "rayBlockedResult": null,
+    "ignitePositions": [],
+    "ignitionSeeds": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "shooterIds": [
+     1,
+     255,
+     256,
+     300,
+     65537
+    ]
+   },
+   {
+    "name": "enabled-default",
+    "config": {
+     "fire": {
+      "enabled": true
+     }
+    },
+    "spawnPoints": [
+     [
+      5,
+      6,
+      7
+     ]
+    ],
+    "powerupCount": 3,
+    "powerupRespawnMs": 15000,
+    "fireSpec": {
+     "radius": 63600,
+     "role": "authority",
+     "stepTicks": 30,
+     "seed": 1337,
+     "leadTicks": 6,
+     "regrowSteps": 1200,
+     "classes": {
+      "grass": {
+       "fuel": 3000,
+       "burnRate": 1500,
+       "igniteHeat": 90,
+       "heatOut": 500,
+       "spotChance": 0,
+       "spotHeat": 0,
+       "smoke": 40,
+       "damage": 6
+      },
+      "shrub": {
+       "fuel": 12000,
+       "burnRate": 2000,
+       "igniteHeat": 170,
+       "heatOut": 800,
+       "spotChance": 40,
+       "spotHeat": 400,
+       "smoke": 90,
+       "damage": 10
+      },
+      "forest": {
+       "fuel": 45000,
+       "burnRate": 2500,
+       "igniteHeat": 600,
+       "heatOut": 1200,
+       "spotChance": 120,
+       "spotHeat": 700,
+       "smoke": 160,
+       "damage": 16
+      }
+     },
+     "gameplay": {
+      "damageEveryTicks": 15,
+      "statusDamagePerSec": 6,
+      "burnStatusSeconds": 4,
+      "smokeBlockDepth": 1,
+      "smokeHeightM": 30,
+      "eyeHeightM": 1.6,
+      "explosionImpulse": 12
+     },
+     "firebreaks": {
+      "kinds": [
+       "road",
+       "river"
+      ],
+      "water": true
+     }
+    },
+    "rayBlockedArgs": [
+     [
+      0,
+      1,
+      2
+     ],
+     [
+      0,
+      0,
+      1
+     ],
+     4
+    ],
+    "rayBlockedResult": true,
+    "ignitePositions": [
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ]
+    ],
+    "ignitionSeeds": [
+     1,
+     255,
+     0,
+     44,
+     1
+    ],
+    "shooterIds": [
+     1,
+     255,
+     256,
+     300,
+     65537
+    ]
+   },
+   {
+    "name": "enabled-tuned",
+    "config": {
+     "fire": {
+      "enabled": true,
+      "radius": 1000,
+      "seed": 7,
+      "stepTicks": 10,
+      "leadTicks": 3,
+      "regrowSteps": 50
+     }
+    },
+    "spawnPoints": [
+     [
+      5,
+      6,
+      7
+     ]
+    ],
+    "powerupCount": 3,
+    "powerupRespawnMs": 15000,
+    "fireSpec": {
+     "radius": 1000,
+     "role": "authority",
+     "stepTicks": 10,
+     "seed": 7,
+     "leadTicks": 3,
+     "regrowSteps": 50,
+     "classes": {
+      "grass": {
+       "fuel": 3000,
+       "burnRate": 1500,
+       "igniteHeat": 90,
+       "heatOut": 500,
+       "spotChance": 0,
+       "spotHeat": 0,
+       "smoke": 40,
+       "damage": 6
+      },
+      "shrub": {
+       "fuel": 12000,
+       "burnRate": 2000,
+       "igniteHeat": 170,
+       "heatOut": 800,
+       "spotChance": 40,
+       "spotHeat": 400,
+       "smoke": 90,
+       "damage": 10
+      },
+      "forest": {
+       "fuel": 45000,
+       "burnRate": 2500,
+       "igniteHeat": 600,
+       "heatOut": 1200,
+       "spotChance": 120,
+       "spotHeat": 700,
+       "smoke": 160,
+       "damage": 16
+      }
+     },
+     "gameplay": {
+      "damageEveryTicks": 15,
+      "statusDamagePerSec": 6,
+      "burnStatusSeconds": 4,
+      "smokeBlockDepth": 1,
+      "smokeHeightM": 30,
+      "eyeHeightM": 1.6,
+      "explosionImpulse": 12
+     },
+     "firebreaks": {
+      "kinds": [
+       "road",
+       "river"
+      ],
+      "water": true
+     }
+    },
+    "rayBlockedArgs": [
+     [
+      0,
+      1,
+      2
+     ],
+     [
+      0,
+      0,
+      1
+     ],
+     4
+    ],
+    "rayBlockedResult": true,
+    "ignitePositions": [
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ],
+     [
+      1,
+      2,
+      3
+     ]
+    ],
+    "ignitionSeeds": [
+     1,
+     255,
+     0,
+     44,
+     1
+    ],
+    "shooterIds": [
+     1,
+     255,
+     256,
+     300,
+     65537
+    ]
+   }
+  ]
+ },
+ "client": {
+  "startAt": 3000000,
+  "steps": [
+   {
+    "label": "shoot-first",
+    "now": 3000000,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000000,
+    "lastReloadTime": 0,
+    "boost": null,
+    "velocity": [
+     -1.2,
+     0,
+     1.6
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "shoot-at-100ms-gate-closed",
+    "now": 3000100,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000000,
+    "lastReloadTime": 0,
+    "boost": null,
+    "velocity": [
+     -1.2,
+     0,
+     1.6
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-after-100ms",
+    "now": 3000101,
+    "ammo": 28,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000101,
+    "lastReloadTime": 0,
+    "boost": null,
+    "velocity": [
+     -2.4,
+     0,
+     3.2
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "buff-rapid-applied",
+    "now": 3000101,
+    "ammo": 28,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000101,
+    "lastReloadTime": 0,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -2.4,
+     0,
+     3.2
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-boosted-at-50ms-gate-closed",
+    "now": 3000151,
+    "ammo": 28,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000101,
+    "lastReloadTime": 0,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -2.4,
+     0,
+     3.2
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-boosted-after-50ms",
+    "now": 3000152,
+    "ammo": 27,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 0,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "reload-request",
+    "now": 3000152,
+    "ammo": 27,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000152,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": [
+     [
+      "reload"
+     ]
+    ]
+   },
+   {
+    "label": "reload-request-inside-100ms",
+    "now": 3000200,
+    "ammo": 27,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000152,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "reload-request-after-100ms",
+    "now": 3000253,
+    "ammo": 27,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": [
+     [
+      "reload"
+     ]
+    ]
+   },
+   {
+    "label": "reload-start",
+    "now": 3000260,
+    "ammo": 27,
+    "reloading": true,
+    "reloadEndTime": 3002260,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-while-reloading",
+    "now": 3000261,
+    "ammo": 27,
+    "reloading": true,
+    "reloadEndTime": 3002260,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "reload-request-while-reloading",
+    "now": 3000400,
+    "ammo": 27,
+    "reloading": true,
+    "reloadEndTime": 3002260,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "frame-mid-reload",
+    "now": 3000500,
+    "ammo": 27,
+    "reloading": true,
+    "reloadEndTime": 3002260,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "reload-complete",
+    "now": 3002260,
+    "ammo": 30,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3000152,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -3.5999999999999996,
+     0,
+     4.800000000000001
+    ],
+    "events": []
+   },
+   {
+    "label": "drain-0",
+    "now": 3002300,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002300,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -4.8,
+     0,
+     6.4
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-1",
+    "now": 3002360,
+    "ammo": 28,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002360,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -6,
+     0,
+     8
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-2",
+    "now": 3002420,
+    "ammo": 27,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002420,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -7.2,
+     0,
+     9.6
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-3",
+    "now": 3002480,
+    "ammo": 26,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002480,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -8.4,
+     0,
+     11.2
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-4",
+    "now": 3002540,
+    "ammo": 25,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002540,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -9.6,
+     0,
+     12.799999999999999
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-5",
+    "now": 3002600,
+    "ammo": 24,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002600,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -10.799999999999999,
+     0,
+     14.399999999999999
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-6",
+    "now": 3002660,
+    "ammo": 23,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002660,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -11.999999999999998,
+     0,
+     15.999999999999998
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-7",
+    "now": 3002720,
+    "ammo": 22,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002720,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -13.199999999999998,
+     0,
+     17.599999999999998
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-8",
+    "now": 3002780,
+    "ammo": 21,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002780,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -14.399999999999997,
+     0,
+     19.2
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-9",
+    "now": 3002840,
+    "ammo": 20,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002840,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -15.599999999999996,
+     0,
+     20.8
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-10",
+    "now": 3002900,
+    "ammo": 19,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002900,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -16.799999999999997,
+     0,
+     22.400000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-11",
+    "now": 3002960,
+    "ammo": 18,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3002960,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -17.999999999999996,
+     0,
+     24.000000000000004
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-12",
+    "now": 3003020,
+    "ammo": 17,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003020,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -19.199999999999996,
+     0,
+     25.600000000000005
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-13",
+    "now": 3003080,
+    "ammo": 16,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003080,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -20.399999999999995,
+     0,
+     27.200000000000006
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-14",
+    "now": 3003140,
+    "ammo": 15,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003140,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -21.599999999999994,
+     0,
+     28.800000000000008
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-15",
+    "now": 3003200,
+    "ammo": 14,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003200,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -22.799999999999994,
+     0,
+     30.40000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-16",
+    "now": 3003260,
+    "ammo": 13,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003260,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -23.999999999999993,
+     0,
+     32.00000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-17",
+    "now": 3003320,
+    "ammo": 12,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003320,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -25.199999999999992,
+     0,
+     33.60000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-18",
+    "now": 3003380,
+    "ammo": 11,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003380,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -26.39999999999999,
+     0,
+     35.20000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-19",
+    "now": 3003440,
+    "ammo": 10,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003440,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -27.59999999999999,
+     0,
+     36.80000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-20",
+    "now": 3003500,
+    "ammo": 9,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003500,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -28.79999999999999,
+     0,
+     38.40000000000001
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-21",
+    "now": 3003560,
+    "ammo": 8,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003560,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -29.99999999999999,
+     0,
+     40.000000000000014
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-22",
+    "now": 3003620,
+    "ammo": 7,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003620,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -31.19999999999999,
+     0,
+     41.600000000000016
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-23",
+    "now": 3003680,
+    "ammo": 6,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003680,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -32.39999999999999,
+     0,
+     43.20000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-24",
+    "now": 3003740,
+    "ammo": 5,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003740,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -33.599999999999994,
+     0,
+     44.80000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-25",
+    "now": 3003800,
+    "ammo": 4,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003800,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -34.8,
+     0,
+     46.40000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-26",
+    "now": 3003860,
+    "ammo": 3,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003860,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -36,
+     0,
+     48.00000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-27",
+    "now": 3003920,
+    "ammo": 2,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003920,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -37.2,
+     0,
+     49.60000000000002
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-28",
+    "now": 3003980,
+    "ammo": 1,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3003980,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -38.400000000000006,
+     0,
+     51.200000000000024
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-29",
+    "now": 3004040,
+    "ammo": 0,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3004040,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -39.60000000000001,
+     0,
+     52.800000000000026
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "drain-30",
+    "now": 3004100,
+    "ammo": 0,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3004040,
+    "lastReloadTime": 3000253,
+    "boost": {
+     "expiresAt": 3020101,
+     "fireRate": 2
+    },
+    "velocity": [
+     -39.60000000000001,
+     0,
+     52.800000000000026
+    ],
+    "events": []
+   },
+   {
+    "label": "boost-lapsed-frame",
+    "now": 3020101,
+    "ammo": 0,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3004040,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -39.60000000000001,
+     0,
+     52.800000000000026
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-empty-after-drain",
+    "now": 3020200,
+    "ammo": 0,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3004040,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -39.60000000000001,
+     0,
+     52.800000000000026
+    ],
+    "events": []
+   },
+   {
+    "label": "respawn-refill",
+    "now": 3020300,
+    "ammo": 30,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3004040,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -39.60000000000001,
+     0,
+     52.800000000000026
+    ],
+    "events": []
+   },
+   {
+    "label": "shoot-unboosted-first",
+    "now": 3020301,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3020301,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -40.80000000000001,
+     0,
+     54.40000000000003
+    ],
+    "events": [
+     [
+      "fire",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       0.6,
+       0,
+       -0.8
+      ]
+     ],
+     [
+      "tracer",
+      [
+       0,
+       10.9,
+       0
+      ],
+      [
+       60,
+       10.9,
+       -80
+      ]
+     ]
+    ]
+   },
+   {
+    "label": "shoot-unboosted-at-100ms-gate-closed",
+    "now": 3020401,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3020301,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -40.80000000000001,
+     0,
+     54.40000000000003
+    ],
+    "events": []
+   },
+   {
+    "label": "hit-taken-knockback",
+    "now": 3020500,
+    "ammo": 29,
+    "reloading": false,
+    "reloadEndTime": null,
+    "lastShootTime": 3020301,
+    "lastReloadTime": 3000253,
+    "boost": null,
+    "velocity": [
+     -36.80000000000001,
+     0,
+     54.40000000000003
+    ],
+    "events": [
+     [
+      "knockback",
+      [
+       1,
+       0,
+       0
+      ],
+      4,
+      3020500
+     ]
+    ]
+   }
+  ]
+ },
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
