@@ -5,6 +5,7 @@ mod height;
 mod hitscan;
 mod character;
 mod chart_transfer;
+mod field_lattice;
 mod field_layers;
 mod field_paint;
 mod height_delta;
