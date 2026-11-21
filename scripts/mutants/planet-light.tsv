@@ -1,0 +1,36 @@
+sun-colour-horizon	src/planet_sky/light.rs	keyframe(0.0, 0xff7a3c,	keyframe(0.0, 0xff7a3d,	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+sun-intensity-morning	src/planet_sky/light.rs	keyframe(8.0, 0xffa552, 1.8,	keyframe(8.0, 0xffa552, 1.7,	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+ambient-intensity-morning	src/planet_sky/light.rs	Some(0.65)	Some(0.66)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+fill-scale-midday	src/planet_sky/light.rs	Some(0.48), 0.96)	Some(0.48), 0.97)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+scalar-interpolation	src/planet_sky/light.rs	(1.0 - f) * lo + f * hi	(1.0 - f) * lo + f * lo	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+colour-interpolation	src/planet_sky/light.rs	lo[c] + (hi[c] - lo[c]) * f)	lo[c] + (hi[c] - lo[c]) * f * f)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+tilt	src/planet_sky/light.rs	TILT_DEG: f64 = 23.0	TILT_DEG: f64 = 22.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+day-length	src/planet_sky/light.rs	DAY_LENGTH_S: f64 = 600.0	DAY_LENGTH_S: f64 = 300.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+start-fraction	src/planet_sky/light.rs	START_FRACTION: f64 = 0.3	START_FRACTION: f64 = 0.25	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+azimuth	src/planet_sky/light.rs	let azimuth = fraction * TAU;	let azimuth = fraction * PI;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+cascade-count-ultra	src/planet_sky/light.rs	Quality::Ultra => 3	Quality::Ultra => 2	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+cascade-blend	src/planet_sky/light.rs	CASCADE_BLEND_M: f32 = 4.0	CASCADE_BLEND_M: f32 = 5.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+cascade-split	src/planet_sky/light.rs	CASCADE_SPLIT: f32 = 3.2	CASCADE_SPLIT: f32 = 3.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+cascade-first-far	src/planet_sky/light.rs	CASCADE_FIRST_FAR_M: f32 = 60.0	CASCADE_FIRST_FAR_M: f32 = 50.0	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+shadows-flag-low-on	src/planet_sky/light.rs	self != Quality::Low	true	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+shadows-flag-light-off	src/planet_sky/light.rs	shadow_maps_enabled: quality.shadows_enabled()	shadow_maps_enabled: false	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+exposure-low	src/planet_sky/light.rs	if self == Quality::Low { 0.8 }	if self == Quality::Low { 0.9 }	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+sun-illuminance-scale	src/planet_sky/light.rs	light.illuminance = sky.sun_intensity as f32;	light.illuminance = 2.0 * sky.sun_intensity as f32;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+ambient-over-pi	src/planet_sky/light.rs	brightness: (intensity / PI) as f32	brightness: intensity as f32	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+light-direction-sign	src/planet_sky/light.rs	looking_to(-toward_sun, Vec3::Y)	looking_to(toward_sun, Vec3::Y)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+clock-no-wrap	src/planet_sky/light.rs	next - next.floor()	next	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+fill-scale-ignored	src/planet_sky/light.rs	light.illuminance = (FILL_INTENSITY * sky.fill_scale) as f32;	light.illuminance = FILL_INTENSITY as f32;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::light 2>&1
+aces-input-orientation	src/planet_sky/tonemap.rs	DMat3::from_cols_array_2d(&rows).transpose()	DMat3::from_cols_array_2d(&rows)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+aces-input-value	src/planet_sky/tonemap.rs	[[0.59719, 0.35458, 0.04823]	[[0.59718, 0.35458, 0.04823]	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+aces-output-value	src/planet_sky/tonemap.rs	[[1.60475, -0.53108, -0.07367]	[[1.60476, -0.53108, -0.07367]	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+display-clamp	src/planet_sky/tonemap.rs	DISPLAY_CLAMP: f64 = 0.995	DISPLAY_CLAMP: f64 = 0.99	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+rrt-shift	src/planet_sky/tonemap.rs	RRT_QUADRATIC_SHIFT: f64 = 0.0245786	RRT_QUADRATIC_SHIFT: f64 = 0.0245787	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+exposure-divisor	src/planet_sky/tonemap.rs	ACES_EXPOSURE_DIVISOR: f64 = 0.6	ACES_EXPOSURE_DIVISOR: f64 = 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+tonemap-off-flag	src/planet_sky/tonemap.rs	Self { exposure: quality.exposure(), aces: 1.0,	Self { exposure: quality.exposure(), aces: 0.0,	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+tonemap-exposure-ignored	src/planet_sky/tonemap.rs	Self { exposure: quality.exposure(),	Self { exposure: 1.0,	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-input-transposed	assets/shaders/planet/atmosphere_tonemap.wgsl	vec3<f32>(0.59719, 0.07600, 0.02840),	vec3<f32>(0.59719, 0.35458, 0.04823),	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-output-transposed	assets/shaders/planet/atmosphere_tonemap.wgsl	vec3<f32>(1.60475, -0.10208, -0.00327),	vec3<f32>(1.60475, -0.53108, -0.07367),	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-exposure-divisor	assets/shaders/planet/atmosphere_tonemap.wgsl	ACES_EXPOSURE_DIVISOR: f32 = 0.6	ACES_EXPOSURE_DIVISOR: f32 = 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-rrt-slope	assets/shaders/planet/atmosphere_tonemap.wgsl	* 0.983729)	* 0.95)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-aces-gate	assets/shaders/planet/atmosphere_tonemap.wgsl	tonemap.aces > 0.5	tonemap.aces < 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
+wgsl-exposure-uniform	assets/shaders/planet/atmosphere_tonemap.wgsl	aces_filmic(source.rgb, tonemap.exposure)	aces_filmic(source.rgb, 1.0)	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_sky::tonemap 2>&1
