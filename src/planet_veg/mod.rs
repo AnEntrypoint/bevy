@@ -4,3 +4,6 @@ pub mod grass;
 pub mod rock;
 pub mod species;
 pub mod tree;
+pub mod grass_render;
+pub mod rock_render;
+pub mod trees_render;
