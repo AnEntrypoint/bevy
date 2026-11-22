@@ -1,5 +1,7 @@
 cd /workspace/bevy || exit 2
-scratch=/workspace/tmp/bevy/window
+exec 9>/workspace/tmp/bevy/tree.lock
+flock 9
+scratch=/workspace/tmp/bevy/window-$$
 mkdir -p target/witness "$scratch"
 overall=0
 note() { echo "$@" | tee -a $log; }
