@@ -1,7 +1,9 @@
 
 use std::collections::HashMap;
+#[cfg(test)]
 use std::f64::consts::PI;
 
+#[cfg(test)]
 use serde_json::{json, Map, Value};
 use crate::rock_tri_table::TRI_TABLE;
 
@@ -24,6 +26,7 @@ const EDGE_TABLE: [i32; 256] = [
     0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c, 0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0,
 ];
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CaveAxis {
     X,
@@ -31,6 +34,7 @@ pub enum CaveAxis {
     Z,
 }
 
+#[cfg(test)]
 impl CaveAxis {
     pub fn parse(name: &str) -> Self {
         match name {
@@ -49,6 +53,7 @@ impl CaveAxis {
     }
 }
 
+#[cfg(test)]
 fn tunnel_hash(seed: i32, index: i32) -> f64 {
     let mut h = seed as u32;
     h = (h ^ index as u32).wrapping_mul(0x27d4eb2d);
@@ -60,6 +65,7 @@ fn tunnel_hash(seed: i32, index: i32) -> f64 {
     h as f64 / 4294967296.0
 }
 
+#[cfg(test)]
 pub fn make_sphere_cave_sdf(cx: f64, cy: f64, cz: f64, radius: f64) -> impl Fn(f64, f64, f64) -> f64 {
     move |x, y, z| {
         let (dx, dy, dz) = (x - cx, y - cy, z - cz);
@@ -67,6 +73,7 @@ pub fn make_sphere_cave_sdf(cx: f64, cy: f64, cz: f64, radius: f64) -> impl Fn(f
     }
 }
 
+#[cfg(test)]
 pub fn make_cylinder_cave_sdf(cx: f64, cy: f64, cz: f64, radius: f64, half_height: f64, axis: CaveAxis) -> impl Fn(f64, f64, f64) -> f64 {
     move |x, y, z| {
         let (dx, dy, dz) = (x - cx, y - cy, z - cz);
@@ -83,6 +90,7 @@ pub fn make_cylinder_cave_sdf(cx: f64, cy: f64, cz: f64, radius: f64, half_heigh
     }
 }
 
+#[cfg(test)]
 pub fn make_tunnel_cave_sdf(seed: i32, radius: f64, length: f64, axis: CaveAxis, warp_amp: f64, warp_freq: f64) -> impl Fn(f64, f64, f64) -> f64 {
     move |x, y, z| {
         let (along, u, v) = match axis {
@@ -107,6 +115,7 @@ pub struct CaveMesh {
     pub indices: Vec<u32>,
 }
 
+#[cfg(test)]
 impl CaveMesh {
     pub fn vertex_count(&self) -> usize {
         self.positions.len() / 3
@@ -198,6 +207,7 @@ pub fn polygonize_cave_sdf(sdf: impl Fn(f64, f64, f64) -> f64, res: usize) -> Ca
     CaveMesh { positions, indices }
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CaveShape {
     Sphere,
@@ -205,6 +215,7 @@ pub enum CaveShape {
     Tunnel { length: f64, axis: CaveAxis, seed: f64, warp_amp: f64, warp_freq: f64 },
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CaveVolume {
     pub world_x: f64,
@@ -214,24 +225,29 @@ pub struct CaveVolume {
     pub shape: CaveShape,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CaveCarveLayer {
     volumes: Vec<CaveVolume>,
 }
 
+#[cfg(test)]
 fn finite(spec: &Value, key: &str) -> Option<f64> {
     spec.get(key).and_then(Value::as_f64).filter(|v| v.is_finite())
 }
 
+#[cfg(test)]
 fn finite_or(spec: &Value, key: &str, fallback: f64) -> f64 {
     finite(spec, key).unwrap_or(fallback)
 }
 
+#[cfg(test)]
 fn parse_anchor(spec: &Value) -> Option<(f64, f64, f64, f64)> {
     let world_radius = finite(spec, "worldRadius").filter(|r| *r > 0.0)?;
     Some((finite(spec, "worldX")?, finite(spec, "worldY")?, finite(spec, "worldZ")?, world_radius))
 }
 
+#[cfg(test)]
 fn parse_shape(spec: &Value, world_radius: f64) -> Option<CaveShape> {
     let axis = CaveAxis::parse(spec.get("axis").and_then(Value::as_str).unwrap_or("y"));
     match spec.get("kind").and_then(Value::as_str) {
@@ -253,6 +269,7 @@ fn parse_shape(spec: &Value, world_radius: f64) -> Option<CaveShape> {
     }
 }
 
+#[cfg(test)]
 fn vertical_span(vol: &CaveVolume, horizontal: f64) -> f64 {
     match vol.shape {
         CaveShape::Sphere => (vol.world_radius * vol.world_radius - horizontal * horizontal).max(0.0).sqrt(),
@@ -273,6 +290,7 @@ fn vertical_span(vol: &CaveVolume, horizontal: f64) -> f64 {
     }
 }
 
+#[cfg(test)]
 impl CaveCarveLayer {
     pub fn new() -> Self {
         Self::default()
@@ -317,6 +335,7 @@ impl CaveCarveLayer {
     }
 }
 
+#[cfg(test)]
 fn volume_json(vol: &CaveVolume) -> Value {
     let mut out = Map::new();
     out.insert("worldX".into(), json!(vol.world_x));
@@ -344,6 +363,7 @@ fn volume_json(vol: &CaveVolume) -> Value {
     Value::Object(out)
 }
 
+#[cfg(test)]
 pub fn load_cave_carve_layer(json: &Value) -> CaveCarveLayer {
     let mut layer = CaveCarveLayer::new();
     if let Some(volumes) = json.get("volumes").and_then(Value::as_array) {
@@ -354,6 +374,7 @@ pub fn load_cave_carve_layer(json: &Value) -> CaveCarveLayer {
     layer
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

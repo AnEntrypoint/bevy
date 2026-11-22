@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::planet_lod::guard::note_build;
 use crate::planet_veg::gpu::buffers::VegBounds;
 use crate::planet_veg::gpu::draw::{VegDrawSet, VegMaterial};

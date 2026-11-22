@@ -53,50 +53,11 @@ pub fn make_rock_sdf(seed: i32) -> impl Fn(f64, f64, f64) -> f64 {
     }
 }
 
-pub struct RockHull {
-    pub positions: Vec<f32>,
-    pub indices: Vec<u32>,
-    pub v_count: usize,
-    pub avg_radius: f64,
-    pub squash_ratio: f64,
-    pub bottom_y: f64,
-    pub height: f64,
+pub fn generate_rock_hull_data(num_shapes: usize, base_seed: i32, hull_res: usize) -> Vec<CaveMesh> {
+    (0..num_shapes).map(|s| polygonize_cave_sdf(make_rock_sdf(base_seed + s as i32 * 7919), hull_res)).collect()
 }
 
-pub fn generate_rock_hull_data(num_shapes: usize, base_seed: i32, hull_res: usize) -> Vec<RockHull> {
-    (0..num_shapes)
-        .map(|s| {
-            let CaveMesh { positions, indices } = polygonize_cave_sdf(make_rock_sdf(base_seed + s as i32 * 7919), hull_res);
-            let v_count = positions.len() / 3;
-            let n = v_count as f64;
-            let (mut cx, mut cy, mut cz) = (0.0, 0.0, 0.0);
-            for p in positions.chunks_exact(3) {
-                cx += f64::from(p[0]);
-                cy += f64::from(p[1]);
-                cz += f64::from(p[2]);
-            }
-            let (cx, cy, cz) = (cx / n, cy / n, cz / n);
-            let (mut total, mut min_y, mut max_y) = (0.0, f64::INFINITY, f64::NEG_INFINITY);
-            for p in positions.chunks_exact(3) {
-                let (dx, dy, dz) = (f64::from(p[0]) - cx, f64::from(p[1]) - cy, f64::from(p[2]) - cz);
-                total += (dx * dx + dy * dy + dz * dz).sqrt();
-                min_y = min_y.min(f64::from(p[1]));
-                max_y = max_y.max(f64::from(p[1]));
-            }
-            let avg_radius = total / n;
-            RockHull {
-                positions,
-                indices,
-                v_count,
-                avg_radius,
-                squash_ratio: ((max_y - min_y) / 2.0) / avg_radius,
-                bottom_y: min_y,
-                height: max_y - min_y,
-            }
-        })
-        .collect()
-}
-
+#[cfg(test)]
 mod tests {
     use serde_json::Value;
 
@@ -156,6 +117,16 @@ mod tests {
         }
     }
 
+    fn hull_metrics(hull: &CaveMesh) -> [(f64, &'static str); 4] {
+        let n = hull.vertex_count() as f64;
+        let points = || hull.positions.chunks_exact(3).map(|p| [p[0], p[1], p[2]].map(f64::from));
+        let centre = points().fold([0.0; 3], |c, p| [c[0] + p[0], c[1] + p[1], c[2] + p[2]]).map(|c| c / n);
+        let avg_radius = points().map(|p| ((p[0] - centre[0]).powi(2) + (p[1] - centre[1]).powi(2) + (p[2] - centre[2]).powi(2)).sqrt()).sum::<f64>() / n;
+        let min_y = points().map(|p| p[1]).fold(f64::INFINITY, f64::min);
+        let max_y = points().map(|p| p[1]).fold(f64::NEG_INFINITY, f64::max);
+        [(avg_radius, "avgRadius"), (((max_y - min_y) / 2.0) / avg_radius, "squashRatio"), (min_y, "bottomY"), (max_y - min_y, "height")]
+    }
+
     #[test]
     fn hull_data_matches_spoint_generate_rock_hull_data() {
         let fixture = fixture();
@@ -169,11 +140,11 @@ mod tests {
         assert_eq!(got.len(), shapes.len(), "shape count");
         for (i, (g, w)) in got.iter().zip(shapes).enumerate() {
             let what = format!("shape {i}");
-            assert_eq!(g.v_count as u64, w["vCount"].as_u64().unwrap(), "{what}: vertex count");
+            assert_eq!(g.vertex_count() as u64, w["vCount"].as_u64().unwrap(), "{what}: vertex count");
             assert_eq!(g.indices.len() as u64, w["ic"].as_u64().unwrap(), "{what}: index count");
             assert_eq!(g.indices, u32s(&w["indices"]), "{what}: indices");
             assert_positions(&g.positions, &w["positions"], &what);
-            for (got, key) in [(g.avg_radius, "avgRadius"), (g.squash_ratio, "squashRatio"), (g.bottom_y, "bottomY"), (g.height, "height")] {
+            for (got, key) in hull_metrics(g) {
                 let want = num(w, key);
                 assert!((got - want).abs() <= METRIC_TOLERANCE, "{what}: {key} {got} against spoint {want}");
             }

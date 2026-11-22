@@ -34,7 +34,6 @@ mod press_router;
 mod terrain_grid_sample;
 #[cfg(test)]
 mod lattice_surface;
-#[cfg(test)]
 mod rock_shapes;
 #[cfg(test)]
 mod spline_carve;
@@ -48,7 +47,6 @@ mod terrain_config;
 mod spawn_clearance;
 #[cfg(test)]
 mod field_names;
-#[cfg(test)]
 mod rock_tri_table;
 #[cfg(test)]
 mod canonical_json;
@@ -74,7 +72,6 @@ mod hud_overlay;
 mod chart_reanchor_service;
 #[cfg(test)]
 mod chart_local_point;
-#[cfg(test)]
 mod cave_sdf;
 #[cfg(test)]
 mod biome_override;

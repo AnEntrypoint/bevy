@@ -2,7 +2,7 @@ use super::*;
 use crate::planet_lod::guard;
 use serde_json::Value;
 
-const REFERENCE: &str = include_str!("clump_reference.json");
+const REFERENCE: &str = include_str!("../../../testdata/parity/spoint-planet-grass-clump.json");
 
 fn reference() -> Value {
     serde_json::from_str(REFERENCE).unwrap()

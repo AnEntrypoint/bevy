@@ -10,7 +10,7 @@ use bevy::render::render_resource::{BufferDescriptor, BufferUsages, CommandEncod
 use bevy::render::renderer::{RenderDevice, RenderQueue};
 use serde_json::Value;
 
-const WIND_REFERENCE: &str = include_str!("wind_reference.json");
+const WIND_REFERENCE: &str = include_str!("../../../testdata/parity/spoint-planet-grass-wind.json");
 const PUMP_LIMIT: usize = 900;
 const PROBE_TOLERANCE: f32 = 0.006;
 const PROBE_COLOUR_SCALE: f32 = 1.2;
