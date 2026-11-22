@@ -361,11 +361,7 @@ fn probe_texel(image: &Image, x: u32, y: u32) -> [f32; 4] {
 }
 
 fn probe_quad() -> Mesh {
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 10.0, 0.0], [-1.0, 10.0, 0.0]])
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 4])
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-        .with_inserted_indices(Indices::U32(vec![0, 1, 2, 0, 2, 3]))
+    veg_mesh(vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 10.0, 0.0], [-1.0, 10.0, 0.0]], vec![[0.0, 0.0, 1.0]; 4], vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], vec![0, 1, 2, 0, 2, 3])
 }
 
 #[test]

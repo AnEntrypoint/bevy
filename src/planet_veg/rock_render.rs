@@ -1,7 +1,7 @@
 use crate::planet_lod::guard::note_build;
 use crate::planet_veg::gpu::buffers::VegBounds;
 use crate::planet_veg::gpu::draw::{VegDrawSet, VegMaterial};
-use crate::planet_veg::grass_render::{insert_veg_shader, veg_mesh};
+use crate::planet_veg::gpu::draw::{insert_veg_shader, veg_mesh};
 use crate::rock_shapes::generate_rock_hull_data;
 use bevy::asset::uuid_handle;
 use bevy::prelude::*;

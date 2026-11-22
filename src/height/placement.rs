@@ -132,6 +132,7 @@ impl PlacementLattice {
         self.cell_dir(c[0], (c[1] + 0.5) * self.cells_per_chunk, (c[2] + 0.5) * self.cells_per_chunk)
     }
 
+    #[cfg(test)]
     pub fn chunk_corner_dir(&self, key: f64, corner_u: f64, corner_v: f64) -> V3 {
         let c = self.decode_chunk(key);
         self.cell_dir(c[0], (c[1] + corner_u) * self.cells_per_chunk, (c[2] + corner_v) * self.cells_per_chunk)

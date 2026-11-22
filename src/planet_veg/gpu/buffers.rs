@@ -7,6 +7,7 @@ use bevy::render::renderer::{RenderDevice, RenderQueue};
 use super::store::VegFrame;
 
 pub const TREE_SLOTS_PER_GEO: u32 = 4;
+#[cfg(test)]
 pub const SHADOW_TIER: u32 = 3;
 pub const GRASS_SLOTS: u32 = 2;
 pub const DRAW_ARGS_BYTES: u64 = 20;

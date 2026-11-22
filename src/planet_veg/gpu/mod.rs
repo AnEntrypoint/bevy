@@ -12,7 +12,6 @@ use bevy::render::extract_resource::ExtractResourcePlugin;
 use bevy::render::render_resource::SpecializedMeshPipelines;
 use bevy::render::renderer::RenderGraph;
 use bevy::render::{GpuResourceAppExt, Render, RenderApp, RenderStartup, RenderSystems};
-use bevy::shader::Shader;
 
 use buffers::{VegBounds, VegGpuConfig, apply_bounds, apply_frame};
 use cull::{CULL_SHADER, CULL_SHADER_PATH, CULL_SOURCE, VegCullSettings, VegWitness, init_cull, poll_stats, prepare_cull, run_cull};
@@ -26,9 +25,7 @@ pub struct VegGpuPlugin {
 
 impl Plugin for VegGpuPlugin {
     fn build(&self, app: &mut App) {
-        if let Some(mut shaders) = app.world_mut().get_resource_mut::<Assets<Shader>>() {
-            let _ = shaders.insert(CULL_SHADER.id(), Shader::from_wgsl(CULL_SOURCE, CULL_SHADER_PATH));
-        }
+        draw::insert_veg_shader(app, &CULL_SHADER, CULL_SOURCE, CULL_SHADER_PATH);
         let witness = VegWitness::default();
         app.insert_resource(self.config.clone())
             .insert_resource(VegStore::new(&self.config))
@@ -66,4 +63,4 @@ mod render_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-mod twin;
+pub(crate) mod twin;

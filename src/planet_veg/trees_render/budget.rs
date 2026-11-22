@@ -36,6 +36,7 @@ fn checked_max_px(max_px: u32, source: &str) -> Result<u32, Refusal> {
 }
 
 impl TextureBudget {
+    #[cfg(test)]
     pub fn new(leaf_max_px: u32, bark_max_px: u32) -> Result<Self, Refusal> {
         Ok(Self { leaf_max_px: checked_max_px(leaf_max_px, "leaf")?, bark_max_px: checked_max_px(bark_max_px, "bark")? })
     }

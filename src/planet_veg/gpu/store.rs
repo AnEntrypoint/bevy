@@ -71,6 +71,7 @@ impl ChunkTable {
         true
     }
 
+    #[cfg(test)]
     pub fn generation(&self, slot: u16) -> u16 {
         self.generations[usize::from(slot)]
     }
@@ -132,6 +133,7 @@ impl RangeAllocator {
         }
     }
 
+    #[cfg(test)]
     pub fn free_total(&self) -> u32 {
         self.free.values().sum()
     }
@@ -172,6 +174,7 @@ impl UploadQueue {
         self.pending.retain(|_, upload| upload.chunk != chunk);
     }
 
+    #[cfg(test)]
     pub fn pending_bytes(&self) -> usize {
         self.pending.values().map(|upload| upload.bytes.len() - upload.sent).sum()
     }
@@ -240,6 +243,7 @@ impl VegStore {
         self.table.load(anchor, rotation)
     }
 
+    #[cfg(test)]
     pub fn is_live(&self, chunk: ChunkRef) -> bool {
         self.table.is_live(chunk)
     }
@@ -272,18 +276,22 @@ impl VegStore {
         true
     }
 
+    #[cfg(test)]
     pub fn resident_records(&self, kind: VegKind) -> u32 {
         self.kinds[kind.index()].ranges.values().map(|(_, len)| len).sum()
     }
 
+    #[cfg(test)]
     pub fn pending_bytes(&self, kind: VegKind) -> usize {
         self.kinds[kind.index()].queue.pending_bytes()
     }
 
+    #[cfg(test)]
     pub fn chunk_range(&self, chunk: ChunkRef, kind: VegKind) -> Option<(u32, u32)> {
         self.kinds[kind.index()].ranges.get(&chunk.slot).copied()
     }
 
+    #[cfg(test)]
     pub fn table(&self) -> &ChunkTable {
         &self.table
     }

@@ -9,6 +9,12 @@ use crate::planet_sky::light::{FILL_FROM, Fill, LightPlugin, Quality, Sun};
 use crate::planet_sky::lut::{AtmosphereLutPlugin, luts_ready};
 use crate::planet_sky::sky::{PlanetSkyPlugin, SkyCamera, SkyPlanet, SkySun};
 use crate::planet_sky::tonemap::{ToneMapPlugin, reference_view};
+use crate::planet_veg::gpu::VegGpuPlugin;
+use crate::planet_veg::gpu::draw::{VegCamera, VegEnvironment};
+use crate::planet_veg::grass_render::GrassRenderPlugin;
+use crate::planet_veg::rock_render::RockRenderPlugin;
+use crate::planet_veg::stream::{VegSource, VegStreamPlugin};
+use crate::planet_veg::trees_render::TreesRenderPlugin;
 use crate::planet_water::surface::WaterPlugin;
 use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
 use bevy::app::App;
@@ -267,6 +273,11 @@ impl GlobeWorld {
         PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3(), seed: self.seed as i32 }
     }
 
+    fn veg_stream_plugin(&self) -> VegStreamPlugin {
+        let source = VegSource { planet: self.planet.clone(), seed: self.seed as u32, radius: f64::from(self.radius), hash: self.hash_version };
+        VegStreamPlugin { source, centre: self.center.as_dvec3(), anchor_dir: self.anchor_dir }
+    }
+
     fn water_plugin(&self) -> WaterPlugin {
         WaterPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3() }
     }
@@ -360,10 +371,29 @@ fn align_lights_with_focus(
     }
 }
 
-fn equip_camera(mut commands: Commands, quality: Res<Quality>, cameras: Query<Entity, Added<Camera3d>>) {
+pub(crate) fn equip_camera(mut commands: Commands, quality: Res<Quality>, cameras: Query<Entity, Added<Camera3d>>) {
     for camera in &cameras {
-        commands.entity(camera).insert((SkyCamera, reference_view(*quality)));
+        commands.entity(camera).insert((SkyCamera, VegCamera, reference_view(*quality)));
     }
+}
+
+fn light_vegetation(
+    time: Res<Time>,
+    quality: Res<Quality>,
+    toward_sun: Res<SkySun>,
+    ambient: Res<GlobalAmbientLight>,
+    sun: Query<&DirectionalLight, With<Sun>>,
+    mut environment: ResMut<VegEnvironment>,
+) {
+    let sun_irradiance = sun.single().map_or(Vec3::ZERO, |light| light.color.to_linear().to_vec3() * light.illuminance);
+    let ambient_mul = ambient.color.to_linear().to_vec3() * ambient.brightness * std::f32::consts::PI;
+    let lit = VegEnvironment { sun_direction: toward_sun.0.normalize_or(Vec3::Y), sun_irradiance, ambient_mul, exposure: quality.exposure(), time_s: time.elapsed_secs(), ..*environment };
+    environment.set_if_neq(lit);
+}
+
+pub(crate) fn add_vegetation(app: &mut App, globe: &GlobeWorld) {
+    app.add_plugins((VegGpuPlugin::default(), TreesRenderPlugin::default(), RockRenderPlugin, GrassRenderPlugin::default(), globe.veg_stream_plugin()))
+        .add_systems(PostUpdate, light_vegetation.after(align_lights_with_focus));
 }
 
 fn warn_missing_textures() {
@@ -390,6 +420,7 @@ pub fn register(app: &mut App) {
         .add_systems(Startup, warn_missing_textures)
         .add_systems(Update, equip_camera)
         .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
+        add_vegetation(app, &globe);
     } else {
         app.add_plugins(ColliderStreamPlugin);
     }

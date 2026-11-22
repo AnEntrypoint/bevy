@@ -8,10 +8,9 @@ pub use assets::{TreeAssets, TreeLook};
 pub use budget::TextureBudget;
 
 use crate::planet_veg::gpu::buffers::{VegBounds, VegGpuConfig};
-use crate::planet_veg::gpu::draw::{VegDrawSet, VegMaterial};
+use crate::planet_veg::gpu::draw::{VegDrawSet, VegMaterial, insert_veg_shader, veg_mesh};
 use assets::build_tree_assets;
-use bevy::asset::{RenderAssetUsages, uuid_handle};
-use bevy::mesh::{Indices, PrimitiveTopology};
+use bevy::asset::uuid_handle;
 use bevy::prelude::*;
 use bevy::render::extract_resource::{ExtractResource, ExtractResourcePlugin};
 use bevy::render::renderer::RenderGraph;
@@ -96,19 +95,11 @@ fn impostor_material() -> VegMaterial {
 }
 
 fn tier_mesh(geometry: &assets::MergedGeometry) -> Mesh {
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, geometry.positions.clone())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, geometry.normals.clone())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, geometry.uvs.clone())
-        .with_inserted_indices(Indices::U32(geometry.indices.clone()))
+    veg_mesh(geometry.positions.clone(), geometry.normals.clone(), geometry.uvs.clone(), geometry.indices.clone())
 }
 
 fn corner_quad() -> Mesh {
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![[-0.5, -0.5, 0.0], [0.5, -0.5, 0.0], [0.5, 0.5, 0.0], [-0.5, 0.5, 0.0]])
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 4])
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-        .with_inserted_indices(Indices::U32(vec![0, 1, 2, 0, 2, 3]))
+    veg_mesh(vec![[-0.5, -0.5, 0.0], [0.5, -0.5, 0.0], [0.5, 0.5, 0.0], [-0.5, 0.5, 0.0]], vec![[0.0, 0.0, 1.0]; 4], vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], vec![0, 1, 2, 0, 2, 3])
 }
 
 fn spawn_tree_draws(mut commands: Commands, assets: &TreeAssets, config: &VegGpuConfig, meshes: &mut Assets<Mesh>, bounds: &mut VegBounds) {
@@ -140,10 +131,8 @@ fn finish_load(mut commands: Commands, load: Option<ResMut<TreeLoad>>, config: R
 
 impl Plugin for TreesRenderPlugin {
     fn build(&self, app: &mut App) {
-        if let Some(mut shaders) = app.world_mut().get_resource_mut::<Assets<Shader>>() {
-            for (handle, source, path) in [(TREE_SHADER, TREE_SOURCE, TREE_SHADER_PATH), (IMPOSTOR_SHADER, IMPOSTOR_SOURCE, IMPOSTOR_SHADER_PATH), (CAPTURE_SHADER, CAPTURE_SOURCE, CAPTURE_SHADER_PATH)] {
-                let _ = shaders.insert(handle.id(), Shader::from_wgsl(source, path));
-            }
+        for (handle, source, path) in [(TREE_SHADER, TREE_SOURCE, TREE_SHADER_PATH), (IMPOSTOR_SHADER, IMPOSTOR_SOURCE, IMPOSTOR_SHADER_PATH), (CAPTURE_SHADER, CAPTURE_SOURCE, CAPTURE_SHADER_PATH)] {
+            insert_veg_shader(app, &handle, source, path);
         }
         let (directory, budget, look) = (self.directory.clone(), self.budget, self.look);
         let task = AsyncComputeTaskPool::get_or_init(Default::default).spawn(async move { build_tree_assets(&directory, budget, look) });

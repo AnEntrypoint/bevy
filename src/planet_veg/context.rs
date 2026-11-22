@@ -113,6 +113,7 @@ impl ChunkFrame {
         [dot(v, self.basis.east), dot(v, self.basis.up), dot(v, self.basis.north)]
     }
 
+    #[cfg(test)]
     pub fn local_to_world(&self, x: f64, y: f64, z: f64) -> V3 {
         let s = self.surface_base() + y;
         [0, 1, 2].map(|i| self.basis.up[i] * s + (self.basis.east[i] * x + self.basis.north[i] * z))
@@ -320,11 +321,13 @@ pub mod fixture {
     pub const RADIUS: f64 = 63_600.0;
     pub const RELIEF_SCALE: f64 = 0.001;
 
+    pub fn planet_config() -> PlanetConfig {
+        PlanetConfig { seed: SEED as i32, hpf_res: 128, hash: HashVersion::Integer, relief_scale: Some(RELIEF_SCALE), anchor_dir: [0.0, 1.0, 0.0], radius: RADIUS, carves: Vec::new() }
+    }
+
     pub fn planet() -> &'static Planet {
         static PLANET: OnceLock<Planet> = OnceLock::new();
-        PLANET.get_or_init(|| {
-            Planet::new(&PlanetConfig { seed: SEED as i32, hpf_res: 128, hash: HashVersion::Integer, relief_scale: Some(RELIEF_SCALE), anchor_dir: [0.0, 1.0, 0.0], radius: RADIUS, carves: Vec::new() })
-        })
+        PLANET.get_or_init(|| Planet::new(&planet_config()))
     }
 
     pub fn context() -> PlacementContext<'static> {

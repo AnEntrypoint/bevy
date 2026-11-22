@@ -37,6 +37,7 @@ pub struct PartGeometry {
 }
 
 impl PartGeometry {
+    #[cfg(test)]
     pub fn triangles(&self) -> usize {
         self.indices.len() / 3
     }
@@ -45,6 +46,7 @@ impl PartGeometry {
         self.positions.len()
     }
 
+    #[cfg(test)]
     pub fn bounds(&self) -> ([f32; 3], [f32; 3]) {
         let mut min = [f32::INFINITY; 3];
         let mut max = [f32::NEG_INFINITY; 3];

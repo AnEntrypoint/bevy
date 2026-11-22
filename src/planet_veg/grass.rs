@@ -19,8 +19,10 @@ pub const SCALE_MIN: f64 = 0.462;
 pub const SCALE_SPAN: f64 = 3.213;
 pub const BLADES_PER_CELL: i32 = 79;
 pub const CLUMP_R: f64 = 1.15;
+#[cfg(test)]
 pub const FULL_R_M: f64 = 16.0;
 pub const FALLOFF_EXPONENT: f64 = 1.25;
+#[cfg(test)]
 pub const FADE_M: f64 = 5.0;
 pub const MIN_Q: f64 = 1e-4;
 
@@ -82,8 +84,13 @@ pub struct GrassBlade {
     pub ground: [f32; 3],
 }
 
+pub fn grass_rank(q: f32) -> f64 {
+    f64::from(q).max(MIN_Q).powf(1.0 / FALLOFF_EXPONENT)
+}
+
+#[cfg(test)]
 pub fn grass_blade_edge_m(q: f32) -> f32 {
-    (FULL_R_M / f64::from(q).max(MIN_Q).powf(1.0 / FALLOFF_EXPONENT) + FADE_M) as f32
+    (FULL_R_M / grass_rank(q) + FADE_M) as f32
 }
 
 pub fn grass_density(temp: f64, humidity: f64, slope_ratio: f64) -> f64 {

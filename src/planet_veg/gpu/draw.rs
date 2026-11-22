@@ -2,7 +2,8 @@ use super::buffers::{DRAW_ARGS_BYTES, LIGHT_UNIFORM_BYTES, Packer, SLOT_UNIFORM_
 use super::cull::VegWitness;
 use bevy::camera::{MainPassResolutionOverride, Viewport};
 use bevy::core_pipeline::core_3d::CORE_3D_DEPTH_FORMAT;
-use bevy::mesh::{Mesh, MeshVertexBufferLayoutRef};
+use bevy::asset::RenderAssetUsages;
+use bevy::mesh::{Indices, Mesh, MeshVertexBufferLayoutRef, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::render::RenderApp;
 use bevy::render::camera::ExtractedCamera;
@@ -23,6 +24,20 @@ use bevy::shader::Shader;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
+
+pub fn insert_veg_shader(app: &mut App, shader: &Handle<Shader>, source: &'static str, path: &'static str) {
+    if let Some(mut shaders) = app.world_mut().get_resource_mut::<Assets<Shader>>() {
+        let _ = shaders.insert(shader.id(), Shader::from_wgsl(source, path));
+    }
+}
+
+pub fn veg_mesh(positions: Vec<[f32; 3]>, normals: Vec<[f32; 3]>, uvs: Vec<[f32; 2]>, indices: Vec<u32>) -> Mesh {
+    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+        .with_inserted_indices(Indices::U32(indices))
+}
 
 #[derive(Component, ExtractComponent, Clone, Copy, Debug, Default)]
 #[extract_app(RenderApp)]

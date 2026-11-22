@@ -19,6 +19,7 @@ pub const TREELINE_M: f64 = 4000.0;
 pub const TREELINE_FADE_M: f64 = 120.0;
 pub const SHAPE_VARIANTS: u8 = 3;
 
+#[cfg(test)]
 pub const SPECIES: [&str; 15] = [
     "Oak Large", "Pine Medium", "Aspen Medium", "Ash Medium", "Bush", "Ash Small", "Ash Large", "Aspen Small", "Aspen Large", "Bush 2", "Bush 3", "Oak Small", "Oak Medium", "Pine Small",
     "Pine Large",
@@ -96,9 +97,12 @@ const SPECIES_ROUND: f64 = 10.0;
 const PATCH_SPREAD: f64 = 0.60;
 const VARIANT_SPREAD: f64 = 0.30;
 
+#[cfg(test)]
 pub const FALLOFF_NEAR_M: f64 = 96.0;
+#[cfg(test)]
 pub const FALLOFF_FLOOR: f64 = 0.15;
 pub const RENDER_DISTANCE_M: f64 = 640.0;
+#[cfg(test)]
 pub const RING_M: f64 = RENDER_DISTANCE_M + 40.0;
 
 const SIZE_SIBLINGS: [[u8; 3]; 5] = [[11, 12, OAK], [13, PINE, 14], [7, ASPEN, 8], [5, ASH, 6], [BUSH, 9, 10]];
@@ -192,10 +196,12 @@ pub fn soil_multiplier(elev: f64, relief_scale: f64) -> f64 {
     rendered_soil_weight(elev) * treeline_multiplier(elev, relief_margin_scale(relief_scale))
 }
 
+#[cfg(test)]
 pub fn tree_coin(trunk_id: u32) -> f64 {
     rand(trunk_id, 0)
 }
 
+#[cfg(test)]
 pub fn veg_keep_prob(distance_m: f64) -> f64 {
     if distance_m <= FALLOFF_NEAR_M {
         1.0
@@ -207,6 +213,7 @@ pub fn veg_keep_prob(distance_m: f64) -> f64 {
     }
 }
 
+#[cfg(test)]
 pub fn thin_trees(instances: &[TreeInstance], player_distances: &[f64]) -> Vec<usize> {
     (0..instances.len())
         .filter(|&i| {

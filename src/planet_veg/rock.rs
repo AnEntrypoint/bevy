@@ -24,6 +24,7 @@ pub const SQUASH_MIN: f64 = 0.55;
 pub const SQUASH_SPAN: f64 = 0.55;
 pub const SCALE_LEVELS: usize = 10;
 pub const SQUASH_LEVELS: usize = 3;
+#[cfg(test)]
 pub const MAX_INSTANCES: usize = 12000;
 
 const K_JIT_X: i32 = 0;
@@ -83,10 +84,12 @@ fn log_level(value: f64, lo: f64, span: f64, levels: usize) -> usize {
     raw.clamp(0.0, (levels - 1) as f64) as usize
 }
 
+#[cfg(test)]
 pub fn scale_table() -> [f32; SCALE_LEVELS] {
     std::array::from_fn(|level| log_entry(SCALE_MIN, SCALE_SPAN, SCALE_LEVELS, level))
 }
 
+#[cfg(test)]
 pub fn squash_table() -> [f32; SQUASH_LEVELS] {
     std::array::from_fn(|level| log_entry(SQUASH_MIN, SQUASH_SPAN, SQUASH_LEVELS, level))
 }
@@ -109,6 +112,7 @@ pub fn rock_density(erosion: f64, slope_ratio: f64, humidity: f64, elev_norm: f6
     d.clamp(FLOOR, 1.0)
 }
 
+#[cfg(test)]
 pub fn room_under_cap(resident: usize, placed: usize) -> usize {
     placed.min(MAX_INSTANCES.saturating_sub(resident))
 }

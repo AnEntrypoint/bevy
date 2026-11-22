@@ -216,6 +216,7 @@ pub struct VegWitness {
     pub readback: Arc<AtomicBool>,
 }
 
+#[cfg(test)]
 impl VegWitness {
     pub fn dispatches(&self) -> u32 {
         self.dispatches.load(Ordering::SeqCst)

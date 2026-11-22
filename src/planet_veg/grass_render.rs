@@ -1,9 +1,8 @@
 use super::gpu::buffers::Packer;
 use super::gpu::cull::{GrassCullSettings, VegCullSettings};
-use super::gpu::draw::{VegDrawSet, VegEnvironment, VegMaterial, VegMaterialGroups, prepare_draws};
+use super::gpu::draw::{VegDrawSet, VegEnvironment, VegMaterial, VegMaterialGroups, insert_veg_shader, prepare_draws, veg_mesh};
 use crate::planet_lod::guard;
 use bevy::asset::{RenderAssetUsages, uuid_handle};
-use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::extract_resource::{ExtractResource, ExtractResourcePlugin};
@@ -37,20 +36,6 @@ const CLUMP_ANISOTROPY: u16 = 4;
 
 pub const GRASS_ANIM_SPEED: f32 = 0.25;
 pub const GRASS_PARAMS_BYTES: usize = 80;
-
-pub fn insert_veg_shader(app: &mut App, shader: &Handle<Shader>, source: &'static str, path: &'static str) {
-    if let Some(mut shaders) = app.world_mut().get_resource_mut::<Assets<Shader>>() {
-        let _ = shaders.insert(shader.id(), Shader::from_wgsl(source, path));
-    }
-}
-
-pub fn veg_mesh(positions: Vec<[f32; 3]>, normals: Vec<[f32; 3]>, uvs: Vec<[f32; 2]>, indices: Vec<u32>) -> Mesh {
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-        .with_inserted_indices(Indices::U32(indices))
-}
 
 #[derive(Resource, ExtractResource, Clone, Copy, Debug, PartialEq)]
 #[extract_app(RenderApp)]
