@@ -1,6 +1,9 @@
 cd /workspace/bevy || exit 2
-exec 9>/workspace/tmp/bevy/tree.lock
-flock 9
+if [ -z "$TREE_LOCK_HELD" ]; then
+  exec 9>"${TREE_LOCK:-/workspace/tmp/bevy/tree.lock}"
+  flock 9
+  export TREE_LOCK_HELD=1
+fi
 scratch=/workspace/tmp/bevy/window-$$
 mkdir -p target/witness "$scratch"
 overall=0

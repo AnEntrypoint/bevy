@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-part=${1:?usage: window-planet-stage4.sh core|red-a1|red-a2|red-water|red-veg|red-bench|legacy|timing}
+part=${1:?usage: window-planet-stage4.sh core|red-a1|red-a2|red-water|red-veg|red-bench|legacy-census|legacy-mutants|timing}
 log=target/witness/window-planet-stage4-$part.log
 . /workspace/bevy/scripts/lib/window.sh
 : > "$log"
@@ -22,11 +22,11 @@ case "$part" in
   red-water) tables water s4-water ;;
   red-veg) tables veg-stream veg-budget ;;
   red-bench) tables s4-bench ;;
-  legacy)
+  legacy-census) ONLY="build-debug census-d1 census-d2 census-d1-check census-d2-check census-png-sha" bash scripts/phase-b.sh || overall=1 ;;
+  legacy-mutants)
     names=$(bash -c "mutant() { case \" $changed \" in *\" \$2 \"*) echo \$1;; esac; }; eval \"\$(grep '^mutant ' scripts/phase-b.sh)\"" | tr '\n' ' ')
     note "LEGACY-ONLY $names"
-    ONLY="build-debug census-d1 census-d2 census-d1-check census-d2-check census-png-sha $names" bash scripts/phase-b.sh
-    grep -q "^WITNESS-SET overall=0" <(tail -n 1 target/witness/window-job-r143.log) || overall=1
+    ONLY="$names" bash scripts/phase-b.sh || overall=1
     ;;
   timing)
     run bench-planet cargo run --bin bevy-jayzee -- bench-planet
