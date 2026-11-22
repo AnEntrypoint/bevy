@@ -22,6 +22,16 @@ const CLIMATE_BAKE_MAX_LEVEL: u32 = 7;
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct PatchKey(pub NodeKey);
 
+#[derive(SystemSet, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct LeafSelection;
+
+#[derive(Resource, Default)]
+pub struct SelectedLeaves {
+    pub keys: HashSet<NodeKey>,
+    pub camera: DVec3,
+    pub generation: u64,
+}
+
 #[derive(Resource, Default, Clone, Debug, PartialEq)]
 pub struct PlanetLodStats {
     pub live_patches: usize,
@@ -34,6 +44,8 @@ pub struct PlanetLodStats {
     pub highest_level: u8,
     pub min_elevation: f32,
     pub max_elevation: f32,
+    pub selections: usize,
+    pub bookkeeping_passes: usize,
 }
 
 #[derive(Resource)]
@@ -70,10 +82,11 @@ struct LivePatch {
 
 #[derive(Resource, Default)]
 struct Streamer {
-    wanted: HashSet<NodeKey>,
     live: HashMap<NodeKey, LivePatch>,
     pending: HashMap<NodeKey, Task<PatchMesh>>,
+    nearest_last: Vec<NodeKey>,
     camera: Option<DVec3>,
+    bookkeeping_due: bool,
 }
 
 fn overlaps(a: NodeKey, b: NodeKey) -> bool {
@@ -103,16 +116,32 @@ fn plan_leaves(
     origin: Res<FloatingOrigin>,
     camera: Query<&Transform, With<Camera3d>>,
     mut streamer: ResMut<Streamer>,
+    mut selected: ResMut<SelectedLeaves>,
+    mut stats: ResMut<PlanetLodStats>,
 ) {
     let Ok(transform) = camera.single() else { return };
     let position = origin.to_world(transform.translation) - source.centre;
     if streamer.camera == Some(position) {
         return;
     }
-    let streamer = &mut *streamer;
     streamer.camera = Some(position);
-    streamer.wanted = leaves_at(&source, position).into_iter().collect();
-    streamer.pending.retain(|key, _| streamer.wanted.contains(key));
+    stats.selections += 1;
+    let keys: HashSet<NodeKey> = leaves_at(&source, position).into_iter().collect();
+    if keys == selected.keys {
+        return;
+    }
+    stats.bookkeeping_passes += 1;
+    let streamer = &mut *streamer;
+    streamer.pending.retain(|key, _| keys.contains(key));
+    let mut missing: Vec<(f64, NodeKey)> = keys
+        .iter()
+        .filter(|key| !streamer.live.contains_key(key) && !streamer.pending.contains_key(key))
+        .map(|key| ((key.centre_dir() * source.config.radius - position).length_squared(), *key))
+        .collect();
+    missing.sort_by(|a, b| b.0.total_cmp(&a.0));
+    streamer.nearest_last = missing.into_iter().map(|(_, key)| key).collect();
+    streamer.bookkeeping_due = true;
+    *selected = SelectedLeaves { keys, camera: position, generation: selected.generation + 1 };
 }
 
 fn poll_climate(mut bake: ResMut<ClimateBake>) {
@@ -124,21 +153,14 @@ fn poll_climate(mut bake: ResMut<ClimateBake>) {
 }
 
 fn start_tasks(source: Res<Source>, climate: Res<ClimateBake>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
-    let room = MAX_TASKS_IN_FLIGHT.saturating_sub(streamer.pending.len());
-    let camera = streamer.camera.unwrap_or_default();
-    let mut missing: Vec<(f64, NodeKey)> = streamer
-        .wanted
-        .iter()
-        .filter(|key| !streamer.live.contains_key(key) && !streamer.pending.contains_key(key))
-        .map(|key| ((key.centre_dir() * source.config.radius - camera).length_squared(), *key))
-        .collect();
-    missing.sort_by(|a, b| a.0.total_cmp(&b.0));
     let Some(baked) = climate.ready().cloned() else {
-        stats.waiting_on_climate = missing.len();
+        stats.waiting_on_climate = streamer.nearest_last.len();
         return;
     };
     stats.waiting_on_climate = 0;
-    for (_, key) in missing.into_iter().take(room) {
+    let room = MAX_TASKS_IN_FLIGHT.saturating_sub(streamer.pending.len());
+    let first_started = streamer.nearest_last.len().saturating_sub(room);
+    for key in streamer.nearest_last.split_off(first_started) {
         let (planet, config, baked) = (source.planet.clone(), source.config.clone(), baked.clone());
         let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &baked, &config, key) });
         streamer.pending.insert(key, task);
@@ -165,6 +187,7 @@ fn finish_tasks(
     }
     stats.spawned_this_frame = finished.len();
     stats.max_spawned_in_frame = stats.max_spawned_in_frame.max(finished.len());
+    streamer.bookkeeping_due |= !finished.is_empty();
     for (key, patch) in finished {
         streamer.pending.remove(&key);
         let local = origin.to_local(patch.origin + source.centre);
@@ -176,13 +199,17 @@ fn finish_tasks(
     }
 }
 
-fn retire_patches(mut commands: Commands, mut streamer: ResMut<Streamer>) {
+fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+    if !streamer.bookkeeping_due {
+        return;
+    }
+    stats.bookkeeping_passes += 1;
     let streamer = &mut *streamer;
     let replaced: Vec<NodeKey> = streamer
         .live
         .keys()
-        .filter(|key| !streamer.wanted.contains(key))
-        .filter(|key| streamer.wanted.iter().filter(|leaf| overlaps(**leaf, **key)).all(|leaf| streamer.live.contains_key(leaf)))
+        .filter(|key| !selected.keys.contains(key))
+        .filter(|key| selected.keys.iter().filter(|leaf| overlaps(**leaf, **key)).all(|leaf| streamer.live.contains_key(leaf)))
         .copied()
         .collect();
     for key in replaced {
@@ -192,11 +219,15 @@ fn retire_patches(mut commands: Commands, mut streamer: ResMut<Streamer>) {
     }
 }
 
-fn publish_stats(streamer: Res<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+fn publish_stats(mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+    stats.tasks_in_flight = streamer.pending.len();
+    if !std::mem::take(&mut streamer.bookkeeping_due) {
+        return;
+    }
+    stats.bookkeeping_passes += 1;
     stats.live_patches = streamer.live.len();
     stats.vertices = streamer.live.values().map(|patch| patch.vertices).sum();
     stats.triangles = streamer.live.values().map(|patch| patch.triangles).sum();
-    stats.tasks_in_flight = streamer.pending.len();
     stats.highest_level = streamer.live.keys().map(|key| key.level).max().unwrap_or(0);
     stats.min_elevation = streamer.live.values().map(|patch| patch.min_elevation).reduce(f32::min).unwrap_or(0.0);
     stats.max_elevation = streamer.live.values().map(|patch| patch.max_elevation).fold(0.0, f32::max);
@@ -218,9 +249,10 @@ impl Plugin for PlanetLodPlugin {
             .init_resource::<FloatingOrigin>()
             .insert_resource(ClimateBake { baking: Some(baking), ready: None })
             .init_resource::<Streamer>()
+            .init_resource::<SelectedLeaves>()
             .init_resource::<PlanetLodStats>()
             .add_plugins(ColliderStreamPlugin)
-            .add_systems(Update, (rebase_system, plan_leaves, poll_climate, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
+            .add_systems(Update, (rebase_system, plan_leaves.in_set(LeafSelection), poll_climate, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
     }
 }
 
@@ -246,6 +278,10 @@ mod tests {
     const FOV_Y_RAD: f64 = 1.0;
     const SHORELINE_ALTITUDE_M: f64 = 0.5;
     const GROUND_ALTITUDE_M: f64 = 2.0;
+    const STILL_FRAMES: usize = 60;
+    const FRAMES_PER_MOVE: usize = 3;
+    const NUDGE_M: f32 = 0.001;
+    const PASSES_PER_STREAMING_FRAME: usize = 3;
 
     fn altitudes(radius: f64) -> [(&'static str, f64); 5] {
         [("orbit", radius), ("high", radius * 0.1), ("low", radius * 0.005), ("ground", GROUND_ALTITUDE_M), ("shoreline", SHORELINE_ALTITUDE_M)]
@@ -456,6 +492,69 @@ mod tests {
         settle(&mut app, &HashSet::new());
         let handles: HashSet<AssetId<TerrainMaterial>> = app.world_mut().query::<&MeshMaterial3d<TerrainMaterial>>().iter(app.world()).map(|material| material.0.id()).collect();
         assert_eq!(handles, HashSet::from([app.world().resource::<TerrainMaterialHandle>().0.id()]));
+    }
+
+    fn counts(app: &App) -> (usize, usize) {
+        let stats = app.world().resource::<PlanetLodStats>();
+        (stats.selections, stats.bookkeeping_passes)
+    }
+
+    #[test]
+    fn a_still_camera_costs_one_selection_and_no_bookkeeping_once_settled() {
+        let radius = 63_600.0;
+        let mut app = app_at(radius, 13, surface_direction() * (radius + GROUND_ALTITUDE_M));
+        for _ in 0..SETTLE_FRAME_LIMIT {
+            std::thread::sleep(FRAME_PAUSE);
+            wait_for_started_patches(&app);
+            let (_, passes_before) = counts(&app);
+            app.update();
+            let (selections, passes) = counts(&app);
+            assert_eq!(selections, 1, "the still camera is selected once");
+            assert!(passes - passes_before <= PASSES_PER_STREAMING_FRAME, "{} passes in one streaming frame", passes - passes_before);
+            if settled(&mut app) {
+                break;
+            }
+        }
+        assert!(settled(&mut app));
+        let settled_counts = counts(&app);
+        for _ in 0..STILL_FRAMES {
+            app.update();
+        }
+        assert_eq!(counts(&app), settled_counts, "a settled still camera does bookkeeping every frame");
+    }
+
+    fn nudge_camera(app: &mut App, by: Vec3) {
+        let mut camera = app.world_mut().query_filtered::<&mut Transform, With<Camera3d>>();
+        camera.single_mut(app.world_mut()).unwrap().translation += by;
+    }
+
+    fn run_frames(app: &mut App, frames: usize) {
+        for _ in 0..frames {
+            app.update();
+        }
+    }
+
+    #[test]
+    fn the_selection_runs_once_per_camera_move_and_its_generation_follows_the_set() {
+        let radius = 63_600.0;
+        let altitude = radius * 0.005;
+        let mut app = app_at(radius, 13, surface_direction() * (radius + altitude));
+        run_frames(&mut app, FRAMES_PER_MOVE);
+        let generation = |app: &App| app.world().resource::<SelectedLeaves>().generation;
+        assert_eq!((counts(&app).0, generation(&app)), (1, 1));
+        let first = app.world().resource::<SelectedLeaves>().keys.clone();
+        assert_eq!(first, expected_leaves(&mut app));
+        nudge_camera(&mut app, Vec3::X * NUDGE_M);
+        run_frames(&mut app, FRAMES_PER_MOVE);
+        assert_eq!(counts(&app).0, 2, "a nudge is one more selection");
+        assert_eq!(generation(&app), 1, "an unchanged set keeps its generation");
+        move_camera_on_surface(&mut app, radius, altitude);
+        run_frames(&mut app, FRAMES_PER_MOVE);
+        let second = expected_leaves(&mut app);
+        assert_ne!(first, second);
+        assert_eq!(generation(&app), 2);
+        assert_eq!(app.world().resource::<SelectedLeaves>().keys, second);
+        assert_eq!(counts(&app).0, 3);
     }
 
     #[test]

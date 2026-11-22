@@ -1,0 +1,8 @@
+collider-start-cap-ignored	src/planet_lod/collider.rs	.filter(outside_keep_radius).take(COLLIDER_BUILDS_PER_FRAME)	.filter(outside_keep_radius)	cargo test --bin bevy-jayzee planet_lod::collider
+collider-finish-cap-ignored	src/planet_lod/collider.rs	in ready.take(COLLIDER_BUILDS_PER_FRAME)	in ready	cargo test --bin bevy-jayzee planet_lod::collider
+collider-build-not-noted	src/planet_lod/collider.rs	note_build();	();	cargo test --bin bevy-jayzee planet_lod::guard
+retire-scans-every-frame	src/planet_lod/stream.rs	if !streamer.bookkeeping_due {	if false {	cargo test --bin bevy-jayzee planet_lod::stream
+stats-sum-every-frame	src/planet_lod/stream.rs	if !std::mem::take(&mut streamer.bookkeeping_due) {	if std::mem::take(&mut streamer.bookkeeping_due) && false {	cargo test --bin bevy-jayzee planet_lod::stream
+selection-every-frame	src/planet_lod/stream.rs	if streamer.camera == Some(position) {	if false {	cargo test --bin bevy-jayzee planet_lod::stream
+selection-twice-per-move	src/planet_lod/stream.rs	streamer.camera = Some(position);	streamer.camera = None;	cargo test --bin bevy-jayzee planet_lod::stream
+generation-bumped-on-an-unchanged-set	src/planet_lod/stream.rs	if keys == selected.keys {	if false {	cargo test --bin bevy-jayzee planet_lod::stream

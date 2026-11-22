@@ -1,8 +1,8 @@
+use super::guard::note_build;
 use crate::js_math::round_half_up;
 use avian3d::prelude::{Collider, RigidBody};
 use bevy::prelude::*;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 pub const PRESET_EXTENT_M: f64 = 256.0;
@@ -10,14 +10,7 @@ pub const PRESET_RESOLUTION_M: f64 = 2.0;
 pub const KEEP_FRACTION: f64 = 0.4;
 const NON_FINITE_HEIGHT_M: f64 = -1000.0;
 const HEIGHT_SNAP_PER_M: f64 = 1000.0;
-const MAIN_THREAD_NAME: &str = "main";
-
-static MAIN_THREAD_BUILDS: AtomicUsize = AtomicUsize::new(0);
-
-#[cfg(test)]
-pub fn main_thread_collider_builds() -> usize {
-    MAIN_THREAD_BUILDS.load(Ordering::SeqCst)
-}
+pub const COLLIDER_BUILDS_PER_FRAME: usize = 8;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Lattice {
@@ -88,9 +81,7 @@ pub struct BuiltField {
 }
 
 pub fn build_collider(lattice: &Lattice, chart: Chart) -> BuiltField {
-    if std::thread::current().name() == Some(MAIN_THREAD_NAME) {
-        MAIN_THREAD_BUILDS.fetch_add(1, Ordering::SeqCst);
-    }
+    note_build();
     let field = sample_field(lattice, chart.body, chart.height.as_ref());
     let columns_along_x: Vec<Vec<f32>> = (0..field.n).map(|x| (0..field.n).map(|z| field.heights[z * field.n + x]).collect()).collect();
     let collider = Collider::heightfield(columns_along_x, Vec3::new(lattice.extent as f32, 1.0, lattice.extent as f32));
@@ -140,13 +131,12 @@ fn start_builds(
     mut stats: ResMut<ColliderStats>,
     bodies: Query<(Entity, &Transform, Option<&GroundField>), (With<NearBody>, Without<PendingBuild>)>,
 ) {
-    for (entity, transform, field) in &bodies {
+    let outside_keep_radius = |(_, transform, field): &(Entity, &Transform, Option<&GroundField>)| {
         let body = transform.translation;
-        let outside_keep_radius = field.is_none_or(|f| chebyshev(chart_xz(&f.pose, body), f.centre) > lattice.0.keep_radius());
-        if !outside_keep_radius {
-            continue;
-        }
-        let (lattice, ground) = (lattice.0, ground.clone());
+        field.is_none_or(|f| chebyshev(chart_xz(&f.pose, body), f.centre) > lattice.0.keep_radius())
+    };
+    for (entity, transform, _) in bodies.iter().filter(outside_keep_radius).take(COLLIDER_BUILDS_PER_FRAME) {
+        let (lattice, ground, body) = (lattice.0, ground.clone(), transform.translation);
         let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, (ground.0)(body)) });
         commands.entity(entity).insert(PendingBuild(task));
         stats.builds_started += 1;
@@ -154,10 +144,8 @@ fn start_builds(
 }
 
 fn finish_builds(mut commands: Commands, mut pending: Query<(Entity, &mut PendingBuild, Option<&GroundField>)>) {
-    for (entity, mut build, field) in &mut pending {
-        let Some(built) = check_ready(&mut build.0) else {
-            continue;
-        };
+    let ready = pending.iter_mut().filter_map(|(entity, mut build, field)| check_ready(&mut build.0).map(|built| (entity, built, field)));
+    for (entity, built, field) in ready.take(COLLIDER_BUILDS_PER_FRAME) {
         let transform = built.pose * Transform::from_xyz(built.centre[0] as f32, 0.0, built.centre[1] as f32);
         let collider_entity = match field {
             Some(f) => {
@@ -192,11 +180,13 @@ impl Plugin for ColliderStreamPlugin {
 mod tests {
     use super::*;
     use crate::height::planet_frame::ChartFrame;
+    use crate::planet_lod::guard::{builds_on_main_thread, mark_main_thread};
     use crate::testkit::{cases, close, parse};
     use serde_json::Value;
     use bevy::ecs::schedule::SingleThreadedExecutor;
     use std::cell::RefCell;
     use std::collections::HashMap;
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::{Duration, Instant};
 
     const HEIGHT_TOLERANCE_MM: f64 = 2.0;
@@ -296,18 +286,15 @@ mod tests {
         RAY_HEIGHT_M - distance
     }
 
-    fn on_main_thread<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
-        std::thread::Builder::new().name(MAIN_THREAD_NAME.into()).spawn(job).unwrap().join().unwrap()
-    }
-
     #[test]
     fn collider_streams_in_off_the_main_thread_with_the_reference_heights() {
         let fixture = fixture();
         let case = cases(&fixture, "cases")[0].clone();
         let radius = case["radius"].as_f64().unwrap();
         let ground = ground_of(&fixture, radius);
-        let before = main_thread_collider_builds();
-        let (found, builds_started) = on_main_thread(move || {
+        mark_main_thread();
+        let before = builds_on_main_thread();
+        let (found, builds_started) = {
             let (mut app, entity) = app_with_body(ground, Vec3::new(0.0, 0.0, 0.0));
             tick_until_field(&mut app, entity);
             let n = case["n"].as_u64().unwrap() as usize;
@@ -322,12 +309,69 @@ mod tests {
                 })
                 .collect();
             (found, app.world().resource::<ColliderStats>().builds_started)
-        });
+        };
         assert_eq!(builds_started, 1);
         for (got, want) in found {
             close(got, want, 0.01, "height under the body");
         }
-        assert_eq!(main_thread_collider_builds() - before, 0, "collider builds on the main thread");
+        assert_eq!(builds_on_main_thread() - before, 0, "collider builds on the main thread");
+    }
+
+    const CROWD_SPACING_M: f32 = 1000.0;
+    const FRAMES_BEFORE_OPENING: usize = 3;
+    const GATE_LIMIT: Duration = Duration::from_secs(2);
+
+    fn pending_tasks_finished(app: &mut App) -> bool {
+        app.world_mut().query::<&PendingBuild>().iter(app.world()).all(|build| build.0.is_finished())
+    }
+
+    fn fields(app: &mut App) -> usize {
+        app.world_mut().query::<&GroundField>().iter(app.world()).count()
+    }
+
+    fn started(app: &App) -> usize {
+        app.world().resource::<ColliderStats>().builds_started
+    }
+
+    #[test]
+    fn a_crowd_of_bodies_starts_and_finishes_at_most_the_cap_per_frame() {
+        let crowd = COLLIDER_BUILDS_PER_FRAME * (FRAMES_BEFORE_OPENING + 1);
+        let open = Arc::new(AtomicBool::new(false));
+        let gate = open.clone();
+        let gate_expires = Instant::now() + GATE_LIMIT;
+        let (mut app, _) = app_with_body(
+            move |_, _| {
+                while !gate.load(Ordering::SeqCst) && Instant::now() < gate_expires {
+                    std::thread::sleep(Duration::from_millis(1));
+                }
+                0.0
+            },
+            Vec3::ZERO,
+        );
+        for i in 1..crowd {
+            app.world_mut().spawn((NearBody, Transform::from_xyz(i as f32 * CROWD_SPACING_M, 0.0, 0.0)));
+        }
+        for frame in 1..=FRAMES_BEFORE_OPENING {
+            app.update();
+            assert_eq!(started(&app), frame * COLLIDER_BUILDS_PER_FRAME, "builds started by frame {frame}");
+        }
+        open.store(true, Ordering::SeqCst);
+        let begun = Instant::now();
+        let mut most_finished = 0;
+        while fields(&mut app) < crowd {
+            assert!(begun.elapsed() < FIELD_WAIT, "the crowd never got its colliders");
+            while !pending_tasks_finished(&mut app) {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            let (fields_before, started_before) = (fields(&mut app), started(&app));
+            app.update();
+            let finished = fields(&mut app) - fields_before;
+            assert!(finished <= COLLIDER_BUILDS_PER_FRAME, "{finished} builds finished in one frame");
+            assert!(started(&app) - started_before <= COLLIDER_BUILDS_PER_FRAME);
+            most_finished = most_finished.max(finished);
+        }
+        assert_eq!(most_finished, COLLIDER_BUILDS_PER_FRAME, "the finish cap was never exercised");
+        assert_eq!(started(&app), crowd);
     }
 
     #[test]
