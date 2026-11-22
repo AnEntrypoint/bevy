@@ -114,6 +114,7 @@ mod planet_lod;
 mod refusal;
 mod planet_material;
 mod planet_sky;
+mod planet_veg;
 mod planet_water;
 mod world;
 mod js_math;
