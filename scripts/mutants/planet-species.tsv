@@ -1,0 +1,11 @@
+tier-order	src/planet_veg/species.rs	tier_geometry(bin, &header, 0)?, tier_geometry(bin, &header, 1)?	tier_geometry(bin, &header, 1)?, tier_geometry(bin, &header, 0)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+part-swap	src/planet_veg/species.rs	branch: find_part(bin, header, "branch", tier)?	branch: find_part(bin, header, "leaf", tier)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+index-offset	src/planet_veg/species.rs	index_data, entry.indices, entry.vertices)?	index_data + 4, entry.indices, entry.vertices)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+position-scale	src/planet_veg/species.rs	.map(|p| [p[0], p[1], p[2]])	.map(|p| [p[0], p[1] * 1.01, p[2]])	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+species-order	src/planet_veg/species.rs	("Bush", 2.8),	("Bush 3", 2.8),	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+target-height	src/planet_veg/species.rs	("Oak Large", 9.0),	("Oak Large", 9.5),	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+uv-stride	src/planet_veg/species.rs	entry.uvs, entry.vertices * 2)?	entry.uvs, entry.vertices * 3)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+shadow-part	src/planet_veg/species.rs	find_part(bin, &header, "shadow", SHADOW_TIER)?	find_part(bin, &header, "leaf", SHADOW_TIER)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+normals-from-positions	src/planet_veg/species.rs	words(bin, entry.normals, entry.vertices * 3)?	words(bin, entry.positions, entry.vertices * 3)?	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+build-not-noted	src/planet_veg/species.rs	    note_build();	    let _unnoted = 0;	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species
+file-stem	src/planet_veg/species.rs	.replace(' ', "_")	.replace(' ', "-")	cd /workspace/bevy && cargo test --bin bevy-jayzee planet_veg::species

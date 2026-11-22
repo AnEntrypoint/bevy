@@ -25,25 +25,45 @@ Each witness uses these poses on the preset planet. The reference has no named p
 
 ## Measured: triangles per species
 
-Measured by loading each preset through ez-tree's loadPreset, the call at client/core/VegetationBuild.js:496, with the species-to-preset names of VegetationBuild.js:19-23. The counts are deterministic (two runs identical) and are the counts before the tier caps (VegetationBuild.js:556: branch cap 6000, leaf cap 1400) and the meshopt tiers at 0.28 and 0.07 for branches and 0.30 and 0.09 for leaves (VegetationBuild.js:550-551). The triangle count after meshopt simplification is open until stage 3.
+Measured by running the reference's own build under node (scripts/gen-planet-species.mjs, fixture testdata/parity/spoint-planet-species.json, spoint 5f43c86c): buildSpecies (ez-tree loadPreset, species-to-preset names at client/core/VegetationBuild.js:22-26, TARGET_H scaling at :28-32 and :516-523) then speciesLodChain (:541-551 and :553-566): tier 0 is capGeo of the source at 6000 triangles for the branch and 1400 for the leaf (:542-543, capGeo at :183-211), tier 1 is simplifyGeo at 0.28 (branch) and 0.30 (leaf) strict, tier 2 is simplifyGeo at 0.07 (branch) and 0.09 (leaf) sloppy, and the shadow geometry is the branch at 0.07 sloppy (:548-551). simplifyGeo (:390-424) runs meshoptimizer at strict error 0.02 with the Sparse flag (sloppy at error 0.05), and for a leaf-card cloud that stays above its target substitutes the card merge (mergedLeafCloud, :245-372). Shape variants 1 and 2 are not measured (variant 0 only; the impostor bakes variant 0). The numbers are deterministic (two runs byte-identical) and the shipped assets (assets/planet/vegetation/*.veg, baked by scripts/bake-vegetation.mjs) load back to the same counts, vertex counts, bounds and buffer hashes (src/planet_veg/species.rs tests).
 
-| species | preset | branch triangles | leaf triangles | branch vertices | leaf vertices | tier 0 caps |
+Every column from tier 0 onward is the delivered triangle count after the step; the source of tier 1, tier 2 and the shadow is the tier 0 count. The vertex columns are the tier 0 vertex buffers: the simplified tiers keep the same vertex buffer (only the index is rewritten) except where the leaf-card merge replaces it.
+
+| species | preset | branch source | branch vertices | branch tier 0 (cap 6000) | branch tier 1 (0.28) | branch tier 2 (0.07 sloppy) | shadow (0.07 sloppy) | leaf source | leaf vertices | leaf tier 0 (cap 1400) | leaf tier 1 (0.30) | leaf tier 2 (0.09 sloppy) | leaf cap |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Oak Large | Oak Large | 12006 | 8984 | 5827 | 1622 | 636 | 636 | 10560 | 21120 | 7988 | 2396 | 718 | unmet (refused) |
+| Pine Medium | Pine Medium | 10032 | 6431 | 5968 | 1635 | 351 | 351 | 9840 | 19680 | 4883 | 1464 | 438 | unmet (refused) |
+| Aspen Medium | Aspen Medium | 5088 | 3376 | 5088 | 1312 | 325 | 325 | 2112 | 4224 | 1936 | 580 | 174 | unmet (refused) |
+| Ash Medium | Ash Medium | 9120 | 6639 | 5831 | 1533 | 367 | 367 | 10880 | 21760 | 7512 | 2252 | 676 | unmet (refused) |
+| Bush | Bush 1 | 8880 | 6331 | 5575 | 1406 | 365 | 365 | 4992 | 9984 | 4688 | 1406 | 420 | unmet (refused) |
+| Ash Small | Ash Small | 5616 | 3706 | 5616 | 1566 | 357 | 357 | 5456 | 10912 | 4140 | 1242 | 372 | unmet (refused) |
+| Ash Large | Ash Large | 11832 | 8738 | 5952 | 1626 | 507 | 507 | 9680 | 19360 | 7892 | 2366 | 710 | unmet (refused) |
+| Aspen Small | Aspen Small | 2496 | 1642 | 2496 | 656 | 122 | 122 | 1120 | 2240 | 1120 | 336 | 100 | met |
+| Aspen Large | Aspen Large | 7200 | 4861 | 5986 | 1588 | 317 | 317 | 6468 | 12936 | 5476 | 1642 | 492 | unmet (refused) |
+| Bush 2 | Bush 2 | 3352 | 2375 | 3352 | 798 | 228 | 228 | 1408 | 2816 | 1400 | 420 | 126 | met |
+| Bush 3 | Bush 3 | 13674 | 10212 | 4970 | 1356 | 333 | 333 | 2496 | 4992 | 2496 | 748 | 224 | unmet (refused) |
+| Oak Small | Oak Small | 3206 | 2344 | 3206 | 848 | 194 | 194 | 3600 | 7200 | 2400 | 720 | 216 | unmet (refused) |
+| Oak Medium | Oak Medium | 3166 | 2780 | 3166 | 871 | 289 | 289 | 10640 | 21280 | 8008 | 2402 | 720 | unmet (refused) |
+| Pine Small | Pine Small | 11112 | 7124 | 5892 | 1641 | 367 | 367 | 7644 | 15288 | 2832 | 848 | 254 | unmet (refused) |
+| Pine Large | Pine Large | 12192 | 7817 | 5881 | 1564 | 351 | 351 | 7200 | 14400 | 7200 | 2160 | 648 | unmet (refused) |
+
+Totals over the 15 species (min / max / total):
+
+| part and tier | source triangles | delivered triangles |
+|---|---|---|
+| branch tier 0 | 2496 / 13674 / 118972 | 2496 / 5986 / 74806 |
+| branch tier 1 | 2496 / 5986 / 74806 | 656 / 1641 / 20022 |
+| branch tier 2 | 2496 / 5986 / 74806 | 122 / 636 / 5109 |
+| shadow (branch 0.07 sloppy) | 2496 / 5986 / 74806 | 122 / 636 / 5109 |
+| leaf tier 0 | 1120 / 10880 / 94096 | 1120 / 8008 / 69971 |
+| leaf tier 1 | 1120 / 8008 / 69971 | 336 / 2402 / 20982 |
+| leaf tier 2 | 1120 / 8008 / 69971 | 100 / 720 / 6288 |
+
+Branch tier 0 is never refused: the branch cap of 6000 is met by all 15 species. The reference records 13 leaf cap refusals (leafCapRefusals, VegetationBuild.js:383-393 and :188-211): the leaf cap of 1400 is not met at tier 0 for Oak Large, Pine Medium, Aspen Medium, Ash Medium, Bush, Ash Small, Ash Large, Aspen Large, Bush 3, Oak Small, Oak Medium, Pine Small, Pine Large (strict meshopt at error 0.02 stops above 1400 and the card merge is not applied at tier 0). Aspen Small (1120 source) and Bush 2 (1408 source, 1400 delivered) meet it. Delivered tier 0 leaf triangles range 1120 to 8008.
+
+| id | rule or number | reference value | source (path:line in /workspace/spoint) | port today | stage | status |
 |---|---|---|---|---|---|---|
-| Oak Large | Oak Large | 12006 | 10560 | 8984 | 21120 | branch min(12006, 6000), leaf min(10560, 1400) |
-| Pine Medium | Pine Medium | 10032 | 9840 | 6431 | 19680 | branch min(10032, 6000), leaf min(9840, 1400) |
-| Aspen Medium | Aspen Medium | 5088 | 2112 | 3376 | 4224 | branch min(5088, 6000), leaf min(2112, 1400) |
-| Ash Medium | Ash Medium | 9120 | 10880 | 6639 | 21760 | branch min(9120, 6000), leaf min(10880, 1400) |
-| Bush | Bush 1 | 8880 | 4992 | 6331 | 9984 | branch min(8880, 6000), leaf min(4992, 1400) |
-| Ash Small | Ash Small | 5616 | 5456 | 3706 | 10912 | branch min(5616, 6000), leaf min(5456, 1400) |
-| Ash Large | Ash Large | 11832 | 9680 | 8738 | 19360 | branch min(11832, 6000), leaf min(9680, 1400) |
-| Aspen Small | Aspen Small | 2496 | 1120 | 1642 | 2240 | branch min(2496, 6000), leaf min(1120, 1400) |
-| Aspen Large | Aspen Large | 7200 | 6468 | 4861 | 12936 | branch min(7200, 6000), leaf min(6468, 1400) |
-| Bush 2 | Bush 2 | 3352 | 1408 | 2375 | 2816 | branch min(3352, 6000), leaf min(1408, 1400) |
-| Bush 3 | Bush 3 | 13674 | 2496 | 10212 | 4992 | branch min(13674, 6000), leaf min(2496, 1400) |
-| Oak Small | Oak Small | 3206 | 3600 | 2344 | 7200 | branch min(3206, 6000), leaf min(3600, 1400) |
-| Oak Medium | Oak Medium | 3166 | 10640 | 2780 | 21280 | branch min(3166, 6000), leaf min(10640, 1400) |
-| Pine Small | Pine Small | 11112 | 7644 | 7124 | 15288 | branch min(11112, 6000), leaf min(7644, 1400) |
-| Pine Large | Pine Large | 12192 | 7200 | 7817 | 14400 | branch min(12192, 6000), leaf min(7200, 1400) |
+| mea:tris-tier | triangle counts after the tier 0 cap and meshopt simplification per species and tier (15 species x 3 tiers x branch and leaf, plus the shadow list) | branch tier 0 74806 total, leaf tier 0 69971 total, per species in the table above | client/core/VegetationBuild.js:541-546 and :383-393 | scripts/bake-vegetation.mjs bakes the reference chain; src/planet_veg/species.rs load_species returns it (tests equal testdata/parity/spoint-planet-species.json) | 3 | measured |
 
 ## Geometry and level of detail
 
@@ -1094,7 +1114,6 @@ Values the reference source does not state, or that the table cannot yet confirm
 | grb:nf3 | Named camera presets (orbit, high altitude, low altitude, forest ground, shoreline): none exist as presets; only bookmarks (B55-B59), hitch probe altitude (B37), gate poses (B35, B36) and tps-game spawns (B47-B51). Numeric high/low altitude poses: not found. | not found in the reference source | open |
 | grb:nf4 | Render-stat caps: grep of client/core/RuntimeStats.js, FrameMetrics.js, PerformanceProfiler.js for budget/limit found no fixed render-stat limits beyond those tabulated. | not found in the reference source | open |
 | grb:nf5 | Bevy planet camera/spawn poses: grep of /workspace/bevy .rs for orbit/altitude/spawn_point found only the demo camera (wasm-viewer/src/lib.rs:154 from_xyz(0,5.2,11), :317 orbit radius 11); no planet poses. | not found in the reference source | open |
-| mea:tris-tier | triangle counts after meshopt simplification per species and tier | measured in stage 3 | open |
 | mea:eye | eye height of the poses | read in stage 1 | open |
 
 ## Removed rows

@@ -1,0 +1,3385 @@
+{
+ "rev": "5f43c86c",
+ "caps": {
+  "branch": 6000,
+  "leaf": 1400
+ },
+ "ratios": {
+  "branch": [
+   null,
+   0.28,
+   0.07
+  ],
+  "leaf": [
+   null,
+   0.3,
+   0.09
+  ],
+  "shadow": [
+   null,
+   null,
+   0.07
+  ]
+ },
+ "species": [
+  {
+   "name": "Oak Large",
+   "preset": "Oak Large",
+   "targetH": 9,
+   "width": 8.706783771514893,
+   "height": 9,
+   "sourceHeight": 9,
+   "boxMin": [
+    -4.404688835144043,
+    0,
+    -3.954512596130371
+   ],
+   "boxMax": [
+    4.222584247589111,
+    9,
+    4.7522711753845215
+   ],
+   "sphereCentre": [
+    -0.09105229377746582,
+    4.5,
+    0.3988792896270752
+   ],
+   "sphereRadius": 7.603254640086163,
+   "bark": {
+    "type": "oak",
+    "tint": 16774097,
+    "textureScale": [
+     1,
+     10
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "oak",
+    "tint": 14013901,
+    "alphaTest": 0.5,
+    "map": "leaves/oak_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 12006,
+     "targetTris": 6000,
+     "deliveredTris": 5827,
+     "vertices": 8984,
+     "min": [
+      -3.951148748397827,
+      0,
+      -3.586945056915283
+     ],
+     "max": [
+      3.7264440059661865,
+      8.532670021057129,
+      4.068509101867676
+     ],
+     "hashes": {
+      "positions": 2395289739,
+      "normals": 1141738672,
+      "uvs": 3532110089,
+      "indices": 39764442
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 10560,
+     "targetTris": 1400,
+     "deliveredTris": 7988,
+     "vertices": 21120,
+     "min": [
+      -4.404688835144043,
+      0.7892542481422424,
+      -3.954512596130371
+     ],
+     "max": [
+      4.222584247589111,
+      9,
+      4.7522711753845215
+     ],
+     "hashes": {
+      "positions": 1722421302,
+      "normals": 2623572469,
+      "uvs": 1925162437,
+      "indices": 4160977925
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5827,
+     "targetTris": 1631,
+     "deliveredTris": 1622,
+     "vertices": 8984,
+     "min": [
+      -3.951148748397827,
+      0,
+      -3.586945056915283
+     ],
+     "max": [
+      3.7264440059661865,
+      8.532670021057129,
+      4.068509101867676
+     ],
+     "hashes": {
+      "positions": 2395289739,
+      "normals": 1141738672,
+      "uvs": 3532110089,
+      "indices": 1127525384
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 7988,
+     "targetTris": 2396,
+     "deliveredTris": 2396,
+     "vertices": 4792,
+     "min": [
+      -4.4694623947143555,
+      0.5665140151977539,
+      -4.067751884460449
+     ],
+     "max": [
+      4.482329845428467,
+      9.266345977783203,
+      4.827905654907227
+     ],
+     "hashes": {
+      "positions": 2019427820,
+      "normals": 4041197445,
+      "uvs": 3415947333,
+      "indices": 1654477045
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5827,
+     "targetTris": 407,
+     "deliveredTris": 636,
+     "vertices": 8984,
+     "min": [
+      -3.951148748397827,
+      0,
+      -3.586945056915283
+     ],
+     "max": [
+      3.7264440059661865,
+      8.532670021057129,
+      4.068509101867676
+     ],
+     "hashes": {
+      "positions": 2395289739,
+      "normals": 1141738672,
+      "uvs": 3532110089,
+      "indices": 238190947
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 7988,
+     "targetTris": 718,
+     "deliveredTris": 718,
+     "vertices": 1436,
+     "min": [
+      -4.804189205169678,
+      0.45389658212661743,
+      -4.112784385681152
+     ],
+     "max": [
+      5.030473232269287,
+      8.94842529296875,
+      4.851465225219727
+     ],
+     "hashes": {
+      "positions": 1006946455,
+      "normals": 949006157,
+      "uvs": 532093573,
+      "indices": 1832635187
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5827,
+     "targetTris": 407,
+     "deliveredTris": 636,
+     "vertices": 8984,
+     "min": [
+      -3.951148748397827,
+      0,
+      -3.586945056915283
+     ],
+     "max": [
+      3.7264440059661865,
+      8.532670021057129,
+      4.068509101867676
+     ],
+     "hashes": {
+      "positions": 2395289739,
+      "normals": 1141738672,
+      "uvs": 3532110089,
+      "indices": 238190947
+     }
+    }
+   ]
+  },
+  {
+   "name": "Pine Medium",
+   "preset": "Pine Medium",
+   "targetH": 12,
+   "width": 7.501092195510864,
+   "height": 12,
+   "sourceHeight": 12,
+   "boxMin": [
+    -3.704282760620117,
+    0,
+    -3.6327998638153076
+   ],
+   "boxMax": [
+    3.796809434890747,
+    12,
+    2.983645439147949
+   ],
+   "sphereCentre": [
+    0.04626333713531494,
+    6,
+    -0.3245772123336792
+   ],
+   "sphereRadius": 7.810949567316681,
+   "bark": {
+    "type": "pine",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/pine_color_1k.jpg",
+     "normal": "bark/pine_normal_1k.jpg",
+     "ao": "bark/pine_ao_1k.jpg",
+     "roughness": "bark/pine_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "pine",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/pine_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 10032,
+     "targetTris": 6000,
+     "deliveredTris": 5968,
+     "vertices": 6431,
+     "min": [
+      -3.605435848236084,
+      0,
+      -3.4617528915405273
+     ],
+     "max": [
+      3.5393142700195312,
+      11.67984390258789,
+      2.654017686843872
+     ],
+     "hashes": {
+      "positions": 746413720,
+      "normals": 1432049955,
+      "uvs": 876236306,
+      "indices": 2813156678
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 9840,
+     "targetTris": 1400,
+     "deliveredTris": 4883,
+     "vertices": 19680,
+     "min": [
+      -3.704282760620117,
+      0.5497668385505676,
+      -3.6327998638153076
+     ],
+     "max": [
+      3.796809434890747,
+      12,
+      2.983645439147949
+     ],
+     "hashes": {
+      "positions": 1738693975,
+      "normals": 1904019371,
+      "uvs": 3569816517,
+      "indices": 3279558410
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5968,
+     "targetTris": 1671,
+     "deliveredTris": 1635,
+     "vertices": 6431,
+     "min": [
+      -3.605435848236084,
+      0,
+      -3.4617528915405273
+     ],
+     "max": [
+      3.5393142700195312,
+      11.67984390258789,
+      2.654017686843872
+     ],
+     "hashes": {
+      "positions": 746413720,
+      "normals": 1432049955,
+      "uvs": 876236306,
+      "indices": 894378474
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 4883,
+     "targetTris": 1464,
+     "deliveredTris": 1464,
+     "vertices": 2928,
+     "min": [
+      -3.410719394683838,
+      0.5352194905281067,
+      -3.5886428356170654
+     ],
+     "max": [
+      3.839959144592285,
+      12.096101760864258,
+      2.855783462524414
+     ],
+     "hashes": {
+      "positions": 244253831,
+      "normals": 3273462733,
+      "uvs": 351725765,
+      "indices": 377529989
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5968,
+     "targetTris": 417,
+     "deliveredTris": 351,
+     "vertices": 6431,
+     "min": [
+      -3.605435848236084,
+      0,
+      -3.4617528915405273
+     ],
+     "max": [
+      3.5393142700195312,
+      11.67984390258789,
+      2.654017686843872
+     ],
+     "hashes": {
+      "positions": 746413720,
+      "normals": 1432049955,
+      "uvs": 876236306,
+      "indices": 1991815257
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 4883,
+     "targetTris": 439,
+     "deliveredTris": 438,
+     "vertices": 876,
+     "min": [
+      -3.236238479614258,
+      1.0289932489395142,
+      -3.3872361183166504
+     ],
+     "max": [
+      3.8868038654327393,
+      11.944478988647461,
+      2.7551326751708984
+     ],
+     "hashes": {
+      "positions": 4220494855,
+      "normals": 1666130541,
+      "uvs": 142201733,
+      "indices": 3706208235
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5968,
+     "targetTris": 417,
+     "deliveredTris": 351,
+     "vertices": 6431,
+     "min": [
+      -3.605435848236084,
+      0,
+      -3.4617528915405273
+     ],
+     "max": [
+      3.5393142700195312,
+      11.67984390258789,
+      2.654017686843872
+     ],
+     "hashes": {
+      "positions": 746413720,
+      "normals": 1432049955,
+      "uvs": 876236306,
+      "indices": 1991815257
+     }
+    }
+   ]
+  },
+  {
+   "name": "Aspen Medium",
+   "preset": "Aspen Medium",
+   "targetH": 9.5,
+   "width": 4.4296793937683105,
+   "height": 9.5,
+   "sourceHeight": 9.5,
+   "boxMin": [
+    -2.1424007415771484,
+    0,
+    -2.132683277130127
+   ],
+   "boxMax": [
+    2.287278652191162,
+    9.5,
+    1.8671351671218872
+   ],
+   "sphereCentre": [
+    0.07243895530700684,
+    4.75,
+    -0.13277405500411987
+   ],
+   "sphereRadius": 5.6096035314127635,
+   "bark": {
+    "type": "birch",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/birch_color_1k.jpg",
+     "normal": "bark/birch_normal_1k.jpg",
+     "ao": "bark/birch_ao_1k.jpg",
+     "roughness": "bark/birch_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "aspen",
+    "tint": 16775778,
+    "alphaTest": 0.5,
+    "map": "leaves/aspen_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 5088,
+     "targetTris": 6000,
+     "deliveredTris": 5088,
+     "vertices": 3376,
+     "min": [
+      -1.8255034685134888,
+      0,
+      -1.8629181385040283
+     ],
+     "max": [
+      1.6998831033706665,
+      8.934919357299805,
+      1.627930760383606
+     ],
+     "hashes": {
+      "positions": 2449319106,
+      "normals": 1824688227,
+      "uvs": 3774196585,
+      "indices": 1875545832
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 2112,
+     "targetTris": 1400,
+     "deliveredTris": 1936,
+     "vertices": 4224,
+     "min": [
+      -2.1424007415771484,
+      4.496591567993164,
+      -2.132683277130127
+     ],
+     "max": [
+      2.287278652191162,
+      9.5,
+      1.8671351671218872
+     ],
+     "hashes": {
+      "positions": 2159811067,
+      "normals": 433507293,
+      "uvs": 906626501,
+      "indices": 1295739541
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5088,
+     "targetTris": 1424,
+     "deliveredTris": 1312,
+     "vertices": 3376,
+     "min": [
+      -1.8255034685134888,
+      0,
+      -1.8629181385040283
+     ],
+     "max": [
+      1.6998831033706665,
+      8.934919357299805,
+      1.627930760383606
+     ],
+     "hashes": {
+      "positions": 2449319106,
+      "normals": 1824688227,
+      "uvs": 3774196585,
+      "indices": 1425959730
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 1936,
+     "targetTris": 580,
+     "deliveredTris": 580,
+     "vertices": 1160,
+     "min": [
+      -2.3968658447265625,
+      4.232543468475342,
+      -2.239309549331665
+     ],
+     "max": [
+      2.2188401222229004,
+      9.551457405090332,
+      1.973738670349121
+     ],
+     "hashes": {
+      "positions": 1753607014,
+      "normals": 2055134773,
+      "uvs": 1227338053,
+      "indices": 482985413
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5088,
+     "targetTris": 356,
+     "deliveredTris": 325,
+     "vertices": 3376,
+     "min": [
+      -1.8255034685134888,
+      0,
+      -1.8629181385040283
+     ],
+     "max": [
+      1.6998831033706665,
+      8.934919357299805,
+      1.627930760383606
+     ],
+     "hashes": {
+      "positions": 2449319106,
+      "normals": 1824688227,
+      "uvs": 3774196585,
+      "indices": 2068450314
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 1936,
+     "targetTris": 174,
+     "deliveredTris": 174,
+     "vertices": 348,
+     "min": [
+      -2.45414662361145,
+      4.166131019592285,
+      -1.8087869882583618
+     ],
+     "max": [
+      2.2021284103393555,
+      9.602133750915527,
+      2.125552177429199
+     ],
+     "hashes": {
+      "positions": 2549299277,
+      "normals": 2787454829,
+      "uvs": 3589121669,
+      "indices": 3345943787
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5088,
+     "targetTris": 356,
+     "deliveredTris": 325,
+     "vertices": 3376,
+     "min": [
+      -1.8255034685134888,
+      0,
+      -1.8629181385040283
+     ],
+     "max": [
+      1.6998831033706665,
+      8.934919357299805,
+      1.627930760383606
+     ],
+     "hashes": {
+      "positions": 2449319106,
+      "normals": 1824688227,
+      "uvs": 3774196585,
+      "indices": 2068450314
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ash Medium",
+   "preset": "Ash Medium",
+   "targetH": 10,
+   "width": 8.50035572052002,
+   "height": 10,
+   "sourceHeight": 10,
+   "boxMin": [
+    -3.7748055458068848,
+    0,
+    -3.613201379776001
+   ],
+   "boxMax": [
+    4.725550174713135,
+    10,
+    4.670671463012695
+   ],
+   "sphereCentre": [
+    0.475372314453125,
+    5,
+    0.5287350416183472
+   ],
+   "sphereRadius": 7.760132032557009,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "ash",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/ash_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 9120,
+     "targetTris": 6000,
+     "deliveredTris": 5831,
+     "vertices": 6639,
+     "min": [
+      -3.2792439460754395,
+      0,
+      -3.059859037399292
+     ],
+     "max": [
+      4.191826343536377,
+      9.781499862670898,
+      4.203105449676514
+     ],
+     "hashes": {
+      "positions": 2724662045,
+      "normals": 2283101004,
+      "uvs": 2612837593,
+      "indices": 2594097841
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 10880,
+     "targetTris": 1400,
+     "deliveredTris": 7512,
+     "vertices": 21760,
+     "min": [
+      -3.7748055458068848,
+      1.4857003688812256,
+      -3.613201379776001
+     ],
+     "max": [
+      4.725550174713135,
+      10,
+      4.670671463012695
+     ],
+     "hashes": {
+      "positions": 3002719805,
+      "normals": 1577180931,
+      "uvs": 2258742725,
+      "indices": 2170772741
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5831,
+     "targetTris": 1632,
+     "deliveredTris": 1533,
+     "vertices": 6639,
+     "min": [
+      -3.2792439460754395,
+      0,
+      -3.059859037399292
+     ],
+     "max": [
+      4.191826343536377,
+      9.781499862670898,
+      4.203105449676514
+     ],
+     "hashes": {
+      "positions": 2724662045,
+      "normals": 2283101004,
+      "uvs": 2612837593,
+      "indices": 3097801423
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 7512,
+     "targetTris": 2253,
+     "deliveredTris": 2252,
+     "vertices": 4504,
+     "min": [
+      -3.9159812927246094,
+      1.4263076782226562,
+      -3.7899861335754395
+     ],
+     "max": [
+      4.957523822784424,
+      10.338089942932129,
+      4.716349124908447
+     ],
+     "hashes": {
+      "positions": 975154900,
+      "normals": 166928869,
+      "uvs": 3004190277,
+      "indices": 2095757997
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5831,
+     "targetTris": 408,
+     "deliveredTris": 367,
+     "vertices": 6639,
+     "min": [
+      -3.2792439460754395,
+      0,
+      -3.059859037399292
+     ],
+     "max": [
+      4.191826343536377,
+      9.781499862670898,
+      4.203105449676514
+     ],
+     "hashes": {
+      "positions": 2724662045,
+      "normals": 2283101004,
+      "uvs": 2612837593,
+      "indices": 86720012
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 7512,
+     "targetTris": 676,
+     "deliveredTris": 676,
+     "vertices": 1352,
+     "min": [
+      -3.805938482284546,
+      1.492984414100647,
+      -4.067874431610107
+     ],
+     "max": [
+      5.369583606719971,
+      10.476946830749512,
+      5.006952285766602
+     ],
+     "hashes": {
+      "positions": 1509553564,
+      "normals": 2429064189,
+      "uvs": 1747209541,
+      "indices": 3891489677
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5831,
+     "targetTris": 408,
+     "deliveredTris": 367,
+     "vertices": 6639,
+     "min": [
+      -3.2792439460754395,
+      0,
+      -3.059859037399292
+     ],
+     "max": [
+      4.191826343536377,
+      9.781499862670898,
+      4.203105449676514
+     ],
+     "hashes": {
+      "positions": 2724662045,
+      "normals": 2283101004,
+      "uvs": 2612837593,
+      "indices": 86720012
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bush",
+   "preset": "Bush 1",
+   "targetH": 2.8,
+   "width": 2.995597720146179,
+   "height": 2.8,
+   "sourceHeight": 2.7999999641209357,
+   "boxMin": [
+    -1.0443366765975952,
+    -1.1804651478541928e-8,
+    -1.6772674322128296
+   ],
+   "boxMax": [
+    1.8381778001785278,
+    2.799999952316284,
+    1.3183302879333496
+   ],
+   "sphereCentre": [
+    0.3969205617904663,
+    1.3999999702558164,
+    -0.17946857213974
+   ],
+   "sphereRadius": 2.506117276228616,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "ash",
+    "tint": 14745557,
+    "alphaTest": 0.5,
+    "map": "leaves/ash_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 8880,
+     "targetTris": 6000,
+     "deliveredTris": 5575,
+     "vertices": 6331,
+     "min": [
+      -0.8163045644760132,
+      0.2892184853553772,
+      -1.277283787727356
+     ],
+     "max": [
+      1.581679344177246,
+      2.528576135635376,
+      1.0652998685836792
+     ],
+     "hashes": {
+      "positions": 1472283583,
+      "normals": 1936815483,
+      "uvs": 1342852459,
+      "indices": 3468583264
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 4992,
+     "targetTris": 1400,
+     "deliveredTris": 4688,
+     "vertices": 9984,
+     "min": [
+      -1.0443366765975952,
+      -1.1804651478541928e-8,
+      -1.6772674322128296
+     ],
+     "max": [
+      1.8381778001785278,
+      2.799999952316284,
+      1.3183302879333496
+     ],
+     "hashes": {
+      "positions": 4028759681,
+      "normals": 3588325335,
+      "uvs": 821841349,
+      "indices": 209052229
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5575,
+     "targetTris": 1561,
+     "deliveredTris": 1406,
+     "vertices": 6331,
+     "min": [
+      -0.8163045644760132,
+      0.2892184853553772,
+      -1.277283787727356
+     ],
+     "max": [
+      1.581679344177246,
+      2.528576135635376,
+      1.0652998685836792
+     ],
+     "hashes": {
+      "positions": 1472283583,
+      "normals": 1936815483,
+      "uvs": 1342852459,
+      "indices": 912950584
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 4688,
+     "targetTris": 1406,
+     "deliveredTris": 1406,
+     "vertices": 2812,
+     "min": [
+      -1.1850569248199463,
+      -0.038126666098833084,
+      -1.7237459421157837
+     ],
+     "max": [
+      1.9062317609786987,
+      2.8411624431610107,
+      1.4462778568267822
+     ],
+     "hashes": {
+      "positions": 3089121358,
+      "normals": 733822501,
+      "uvs": 1312323717,
+      "indices": 1305355063
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5575,
+     "targetTris": 390,
+     "deliveredTris": 365,
+     "vertices": 6331,
+     "min": [
+      -0.8163045644760132,
+      0.2892184853553772,
+      -1.277283787727356
+     ],
+     "max": [
+      1.581679344177246,
+      2.528576135635376,
+      1.0652998685836792
+     ],
+     "hashes": {
+      "positions": 1472283583,
+      "normals": 1936815483,
+      "uvs": 1342852459,
+      "indices": 957177374
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 4688,
+     "targetTris": 421,
+     "deliveredTris": 420,
+     "vertices": 840,
+     "min": [
+      -1.3614076375961304,
+      -0.08988991379737854,
+      -1.67210054397583
+     ],
+     "max": [
+      2.0660810470581055,
+      2.9194953441619873,
+      1.5993314981460571
+     ],
+     "hashes": {
+      "positions": 197216663,
+      "normals": 3080296109,
+      "uvs": 2852302149,
+      "indices": 521385461
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5575,
+     "targetTris": 390,
+     "deliveredTris": 365,
+     "vertices": 6331,
+     "min": [
+      -0.8163045644760132,
+      0.2892184853553772,
+      -1.277283787727356
+     ],
+     "max": [
+      1.581679344177246,
+      2.528576135635376,
+      1.0652998685836792
+     ],
+     "hashes": {
+      "positions": 1472283583,
+      "normals": 1936815483,
+      "uvs": 1342852459,
+      "indices": 957177374
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ash Small",
+   "preset": "Ash Small",
+   "targetH": 6.5,
+   "width": 5.803320646286011,
+   "height": 6.5,
+   "sourceHeight": 6.5,
+   "boxMin": [
+    -2.79711651802063,
+    0,
+    -2.469593048095703
+   ],
+   "boxMax": [
+    3.006204128265381,
+    6.5,
+    2.5825555324554443
+   ],
+   "sphereCentre": [
+    0.10454380512237549,
+    3.25,
+    0.056481242179870605
+   ],
+   "sphereRadius": 5.036187441993557,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "ash",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/ash_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 5616,
+     "targetTris": 6000,
+     "deliveredTris": 5616,
+     "vertices": 3706,
+     "min": [
+      -2.3777222633361816,
+      0,
+      -2.143392562866211
+     ],
+     "max": [
+      2.608189821243286,
+      6.106415748596191,
+      2.1107709407806396
+     ],
+     "hashes": {
+      "positions": 142102572,
+      "normals": 1193317130,
+      "uvs": 2569288164,
+      "indices": 3767272494
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 5456,
+     "targetTris": 1400,
+     "deliveredTris": 4140,
+     "vertices": 10912,
+     "min": [
+      -2.79711651802063,
+      1.7543792724609375,
+      -2.469593048095703
+     ],
+     "max": [
+      3.006204128265381,
+      6.5,
+      2.5825555324554443
+     ],
+     "hashes": {
+      "positions": 2472543543,
+      "normals": 3165138459,
+      "uvs": 3657121733,
+      "indices": 3211858181
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5616,
+     "targetTris": 1572,
+     "deliveredTris": 1566,
+     "vertices": 3706,
+     "min": [
+      -2.3777222633361816,
+      0,
+      -2.143392562866211
+     ],
+     "max": [
+      2.608189821243286,
+      6.106415748596191,
+      2.1107709407806396
+     ],
+     "hashes": {
+      "positions": 142102572,
+      "normals": 1193317130,
+      "uvs": 2569288164,
+      "indices": 1124695248
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 4140,
+     "targetTris": 1242,
+     "deliveredTris": 1242,
+     "vertices": 2484,
+     "min": [
+      -2.7867841720581055,
+      1.6996325254440308,
+      -2.54555344581604
+     ],
+     "max": [
+      3.03186297416687,
+      6.571400165557861,
+      2.60524582862854
+     ],
+     "hashes": {
+      "positions": 1704386696,
+      "normals": 198884725,
+      "uvs": 2452150021,
+      "indices": 1393668451
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5616,
+     "targetTris": 393,
+     "deliveredTris": 357,
+     "vertices": 3706,
+     "min": [
+      -2.3777222633361816,
+      0,
+      -2.143392562866211
+     ],
+     "max": [
+      2.608189821243286,
+      6.106415748596191,
+      2.1107709407806396
+     ],
+     "hashes": {
+      "positions": 142102572,
+      "normals": 1193317130,
+      "uvs": 2569288164,
+      "indices": 743977888
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 4140,
+     "targetTris": 372,
+     "deliveredTris": 372,
+     "vertices": 744,
+     "min": [
+      -2.9107654094696045,
+      1.7181504964828491,
+      -2.6256632804870605
+     ],
+     "max": [
+      3.2183690071105957,
+      6.651035785675049,
+      2.749249219894409
+     ],
+     "hashes": {
+      "positions": 1646355642,
+      "normals": 3364539981,
+      "uvs": 1611685701,
+      "indices": 403989013
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5616,
+     "targetTris": 393,
+     "deliveredTris": 357,
+     "vertices": 3706,
+     "min": [
+      -2.3777222633361816,
+      0,
+      -2.143392562866211
+     ],
+     "max": [
+      2.608189821243286,
+      6.106415748596191,
+      2.1107709407806396
+     ],
+     "hashes": {
+      "positions": 142102572,
+      "normals": 1193317130,
+      "uvs": 2569288164,
+      "indices": 743977888
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ash Large",
+   "preset": "Ash Large",
+   "targetH": 13,
+   "width": 11.52895736694336,
+   "height": 13,
+   "sourceHeight": 13,
+   "boxMin": [
+    -5.361863136291504,
+    0,
+    -5.448214054107666
+   ],
+   "boxMax": [
+    5.361683368682861,
+    13,
+    6.080743312835693
+   ],
+   "sphereCentre": [
+    -0.00008988380432128906,
+    6.5,
+    0.31626462936401367
+   ],
+   "sphereRadius": 10.209203049371013,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "ash",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/ash_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 11832,
+     "targetTris": 6000,
+     "deliveredTris": 5952,
+     "vertices": 8738,
+     "min": [
+      -4.61031436920166,
+      0,
+      -4.6572089195251465
+     ],
+     "max": [
+      4.423723220825195,
+      11.874926567077637,
+      5.273195743560791
+     ],
+     "hashes": {
+      "positions": 917297332,
+      "normals": 389450170,
+      "uvs": 2346187015,
+      "indices": 1494274128
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 9680,
+     "targetTris": 1400,
+     "deliveredTris": 7892,
+     "vertices": 19360,
+     "min": [
+      -5.361863136291504,
+      2.719580888748169,
+      -5.448214054107666
+     ],
+     "max": [
+      5.361683368682861,
+      13,
+      6.080743312835693
+     ],
+     "hashes": {
+      "positions": 3894823165,
+      "normals": 3333076935,
+      "uvs": 76943301,
+      "indices": 1671011581
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5952,
+     "targetTris": 1666,
+     "deliveredTris": 1626,
+     "vertices": 8738,
+     "min": [
+      -4.61031436920166,
+      0,
+      -4.6572089195251465
+     ],
+     "max": [
+      4.423723220825195,
+      11.874926567077637,
+      5.273195743560791
+     ],
+     "hashes": {
+      "positions": 917297332,
+      "normals": 389450170,
+      "uvs": 2346187015,
+      "indices": 1964037401
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 7892,
+     "targetTris": 2367,
+     "deliveredTris": 2366,
+     "vertices": 4732,
+     "min": [
+      -5.73032283782959,
+      2.4426825046539307,
+      -5.6916985511779785
+     ],
+     "max": [
+      5.833913326263428,
+      13.231399536132812,
+      6.5916032791137695
+     ],
+     "hashes": {
+      "positions": 2790492416,
+      "normals": 1648947829,
+      "uvs": 1542623365,
+      "indices": 723856487
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5952,
+     "targetTris": 416,
+     "deliveredTris": 507,
+     "vertices": 8738,
+     "min": [
+      -4.61031436920166,
+      0,
+      -4.6572089195251465
+     ],
+     "max": [
+      4.423723220825195,
+      11.874926567077637,
+      5.273195743560791
+     ],
+     "hashes": {
+      "positions": 917297332,
+      "normals": 389450170,
+      "uvs": 2346187015,
+      "indices": 2847935110
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 7892,
+     "targetTris": 710,
+     "deliveredTris": 710,
+     "vertices": 1420,
+     "min": [
+      -6.120650291442871,
+      1.939790964126587,
+      -5.927435398101807
+     ],
+     "max": [
+      5.913515567779541,
+      13.367464065551758,
+      6.553725719451904
+     ],
+     "hashes": {
+      "positions": 120756538,
+      "normals": 1703351909,
+      "uvs": 1654558085,
+      "indices": 1281557331
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5952,
+     "targetTris": 416,
+     "deliveredTris": 507,
+     "vertices": 8738,
+     "min": [
+      -4.61031436920166,
+      0,
+      -4.6572089195251465
+     ],
+     "max": [
+      4.423723220825195,
+      11.874926567077637,
+      5.273195743560791
+     ],
+     "hashes": {
+      "positions": 917297332,
+      "normals": 389450170,
+      "uvs": 2346187015,
+      "indices": 2847935110
+     }
+    }
+   ]
+  },
+  {
+   "name": "Aspen Small",
+   "preset": "Aspen Small",
+   "targetH": 6,
+   "width": 3.128820776939392,
+   "height": 6,
+   "sourceHeight": 6,
+   "boxMin": [
+    -1.2653617858886719,
+    0,
+    -1.3751094341278076
+   ],
+   "boxMax": [
+    1.8634589910507202,
+    6,
+    1.6235631704330444
+   ],
+   "sphereCentre": [
+    0.29904860258102417,
+    3,
+    0.12422686815261841
+   ],
+   "sphereRadius": 3.7007282000827684,
+   "bark": {
+    "type": "birch",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/birch_color_1k.jpg",
+     "normal": "bark/birch_normal_1k.jpg",
+     "ao": "bark/birch_ao_1k.jpg",
+     "roughness": "bark/birch_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "aspen",
+    "tint": 16775778,
+    "alphaTest": 0.5,
+    "map": "leaves/aspen_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 2496,
+     "targetTris": 6000,
+     "deliveredTris": 2496,
+     "vertices": 1642,
+     "min": [
+      -0.9729516506195068,
+      0,
+      -1.0183207988739014
+     ],
+     "max": [
+      1.2530863285064697,
+      5.328836441040039,
+      1.1900182962417603
+     ],
+     "hashes": {
+      "positions": 4165059662,
+      "normals": 1472040488,
+      "uvs": 3070185661,
+      "indices": 1806866379
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 1120,
+     "targetTris": 1400,
+     "deliveredTris": 1120,
+     "vertices": 2240,
+     "min": [
+      -1.2653617858886719,
+      2.3374176025390625,
+      -1.3751094341278076
+     ],
+     "max": [
+      1.8634589910507202,
+      6,
+      1.6235631704330444
+     ],
+     "hashes": {
+      "positions": 3730469050,
+      "normals": 1096153879,
+      "uvs": 677624261,
+      "indices": 2483808325
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 2496,
+     "targetTris": 698,
+     "deliveredTris": 656,
+     "vertices": 1642,
+     "min": [
+      -0.9729516506195068,
+      0,
+      -1.0183207988739014
+     ],
+     "max": [
+      1.2530863285064697,
+      5.328836441040039,
+      1.1900182962417603
+     ],
+     "hashes": {
+      "positions": 4165059662,
+      "normals": 1472040488,
+      "uvs": 3070185661,
+      "indices": 3782717537
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 1120,
+     "targetTris": 336,
+     "deliveredTris": 336,
+     "vertices": 672,
+     "min": [
+      -1.4384565353393555,
+      2.2071828842163086,
+      -1.4420182704925537
+     ],
+     "max": [
+      2.0889594554901123,
+      5.976426124572754,
+      1.8246594667434692
+     ],
+     "hashes": {
+      "positions": 2258279844,
+      "normals": 1400043093,
+      "uvs": 1037746117,
+      "indices": 4111206533
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 2496,
+     "targetTris": 174,
+     "deliveredTris": 122,
+     "vertices": 1642,
+     "min": [
+      -0.9729516506195068,
+      0,
+      -1.0183207988739014
+     ],
+     "max": [
+      1.2530863285064697,
+      5.328836441040039,
+      1.1900182962417603
+     ],
+     "hashes": {
+      "positions": 4165059662,
+      "normals": 1472040488,
+      "uvs": 3070185661,
+      "indices": 4241861760
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 1120,
+     "targetTris": 100,
+     "deliveredTris": 100,
+     "vertices": 200,
+     "min": [
+      -1.721369743347168,
+      1.9946296215057373,
+      -1.4027544260025024
+     ],
+     "max": [
+      2.152770757675171,
+      6.114922523498535,
+      1.861938714981079
+     ],
+     "hashes": {
+      "positions": 1865535040,
+      "normals": 1619697781,
+      "uvs": 1486398789,
+      "indices": 3456575621
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 2496,
+     "targetTris": 174,
+     "deliveredTris": 122,
+     "vertices": 1642,
+     "min": [
+      -0.9729516506195068,
+      0,
+      -1.0183207988739014
+     ],
+     "max": [
+      1.2530863285064697,
+      5.328836441040039,
+      1.1900182962417603
+     ],
+     "hashes": {
+      "positions": 4165059662,
+      "normals": 1472040488,
+      "uvs": 3070185661,
+      "indices": 4241861760
+     }
+    }
+   ]
+  },
+  {
+   "name": "Aspen Large",
+   "preset": "Aspen Large",
+   "targetH": 13,
+   "width": 6.045384645462036,
+   "height": 13,
+   "sourceHeight": 13,
+   "boxMin": [
+    -2.951172351837158,
+    0,
+    -3.2004048824310303
+   ],
+   "boxMax": [
+    2.8852763175964355,
+    13,
+    2.844979763031006
+   ],
+   "sphereCentre": [
+    -0.03294801712036133,
+    6.5,
+    -0.1777125597000122
+   ],
+   "sphereRadius": 7.739683594671705,
+   "bark": {
+    "type": "birch",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/birch_color_1k.jpg",
+     "normal": "bark/birch_normal_1k.jpg",
+     "ao": "bark/birch_ao_1k.jpg",
+     "roughness": "bark/birch_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "aspen",
+    "tint": 16580390,
+    "alphaTest": 0.5,
+    "map": "leaves/aspen_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 7200,
+     "targetTris": 6000,
+     "deliveredTris": 5986,
+     "vertices": 4861,
+     "min": [
+      -2.3762216567993164,
+      0,
+      -2.592480182647705
+     ],
+     "max": [
+      2.393303155899048,
+      12.583783149719238,
+      2.059126615524292
+     ],
+     "hashes": {
+      "positions": 760124116,
+      "normals": 4100847072,
+      "uvs": 3735384114,
+      "indices": 2491841261
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 6468,
+     "targetTris": 1400,
+     "deliveredTris": 5476,
+     "vertices": 12936,
+     "min": [
+      -2.951172351837158,
+      5.146926403045654,
+      -3.2004048824310303
+     ],
+     "max": [
+      2.8852763175964355,
+      13,
+      2.844979763031006
+     ],
+     "hashes": {
+      "positions": 997301439,
+      "normals": 928618186,
+      "uvs": 355275077,
+      "indices": 2504595149
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5986,
+     "targetTris": 1676,
+     "deliveredTris": 1588,
+     "vertices": 4861,
+     "min": [
+      -2.3762216567993164,
+      0,
+      -2.592480182647705
+     ],
+     "max": [
+      2.393303155899048,
+      12.583783149719238,
+      2.059126615524292
+     ],
+     "hashes": {
+      "positions": 760124116,
+      "normals": 4100847072,
+      "uvs": 3735384114,
+      "indices": 2450675095
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 5476,
+     "targetTris": 1642,
+     "deliveredTris": 1642,
+     "vertices": 3284,
+     "min": [
+      -3.1826412677764893,
+      4.884349822998047,
+      -3.3458619117736816
+     ],
+     "max": [
+      3.0722246170043945,
+      13.071155548095703,
+      2.935635805130005
+     ],
+     "hashes": {
+      "positions": 2504570307,
+      "normals": 420982749,
+      "uvs": 191914245,
+      "indices": 121141751
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5986,
+     "targetTris": 419,
+     "deliveredTris": 317,
+     "vertices": 4861,
+     "min": [
+      -2.3762216567993164,
+      0,
+      -2.592480182647705
+     ],
+     "max": [
+      2.393303155899048,
+      12.583783149719238,
+      2.059126615524292
+     ],
+     "hashes": {
+      "positions": 760124116,
+      "normals": 4100847072,
+      "uvs": 3735384114,
+      "indices": 1441258769
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 5476,
+     "targetTris": 492,
+     "deliveredTris": 492,
+     "vertices": 984,
+     "min": [
+      -3.4924895763397217,
+      4.502113342285156,
+      -3.5114707946777344
+     ],
+     "max": [
+      2.9275991916656494,
+      13.29854679107666,
+      3.110750913619995
+     ],
+     "hashes": {
+      "positions": 316668654,
+      "normals": 401775301,
+      "uvs": 3158385221,
+      "indices": 2293626517
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5986,
+     "targetTris": 419,
+     "deliveredTris": 317,
+     "vertices": 4861,
+     "min": [
+      -2.3762216567993164,
+      0,
+      -2.592480182647705
+     ],
+     "max": [
+      2.393303155899048,
+      12.583783149719238,
+      2.059126615524292
+     ],
+     "hashes": {
+      "positions": 760124116,
+      "normals": 4100847072,
+      "uvs": 3735384114,
+      "indices": 1441258769
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bush 2",
+   "preset": "Bush 2",
+   "targetH": 3,
+   "width": 3.38184130191803,
+   "height": 3,
+   "sourceHeight": 2.9999999999608513,
+   "boxMin": [
+    -1.2908344268798828,
+    3.914853857756029e-11,
+    -1.5289777517318726
+   ],
+   "boxMax": [
+    1.301206350326538,
+    3,
+    1.8528635501861572
+   ],
+   "sphereCentre": [
+    0.005185961723327637,
+    1.5000000000195743,
+    0.16194289922714233
+   ],
+   "sphereRadius": 2.6055482139956943,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "aspen",
+    "tint": 14745557,
+    "alphaTest": 0.5,
+    "map": "leaves/aspen_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 3352,
+     "targetTris": 6000,
+     "deliveredTris": 3352,
+     "vertices": 2375,
+     "min": [
+      -0.991303026676178,
+      3.914853857756029e-11,
+      -1.28888738155365
+     ],
+     "max": [
+      1.0537091493606567,
+      2.6151809692382812,
+      1.5713574886322021
+     ],
+     "hashes": {
+      "positions": 2275667727,
+      "normals": 2554735533,
+      "uvs": 2053961803,
+      "indices": 88102837
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 1408,
+     "targetTris": 1400,
+     "deliveredTris": 1400,
+     "vertices": 2816,
+     "min": [
+      -1.2908344268798828,
+      0.6922248005867004,
+      -1.5289777517318726
+     ],
+     "max": [
+      1.301206350326538,
+      3,
+      1.8528635501861572
+     ],
+     "hashes": {
+      "positions": 2262131797,
+      "normals": 849721197,
+      "uvs": 1306889669,
+      "indices": 186305877
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 3352,
+     "targetTris": 938,
+     "deliveredTris": 798,
+     "vertices": 2375,
+     "min": [
+      -0.991303026676178,
+      3.914853857756029e-11,
+      -1.28888738155365
+     ],
+     "max": [
+      1.0537091493606567,
+      2.6151809692382812,
+      1.5713574886322021
+     ],
+     "hashes": {
+      "positions": 2275667727,
+      "normals": 2554735533,
+      "uvs": 2053961803,
+      "indices": 2059362672
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 1400,
+     "targetTris": 420,
+     "deliveredTris": 420,
+     "vertices": 840,
+     "min": [
+      -1.2808760404586792,
+      0.7863633036613464,
+      -1.5677882432937622
+     ],
+     "max": [
+      1.4701695442199707,
+      2.951124668121338,
+      1.861440896987915
+     ],
+     "hashes": {
+      "positions": 932374231,
+      "normals": 703908741,
+      "uvs": 2852302149,
+      "indices": 521385461
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 3352,
+     "targetTris": 234,
+     "deliveredTris": 228,
+     "vertices": 2375,
+     "min": [
+      -0.991303026676178,
+      3.914853857756029e-11,
+      -1.28888738155365
+     ],
+     "max": [
+      1.0537091493606567,
+      2.6151809692382812,
+      1.5713574886322021
+     ],
+     "hashes": {
+      "positions": 2275667727,
+      "normals": 2554735533,
+      "uvs": 2053961803,
+      "indices": 183870974
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 1400,
+     "targetTris": 126,
+     "deliveredTris": 126,
+     "vertices": 252,
+     "min": [
+      -1.4166356325149536,
+      0.5552323460578918,
+      -1.5641274452209473
+     ],
+     "max": [
+      1.4090651273727417,
+      2.8752644062042236,
+      1.884622573852539
+     ],
+     "hashes": {
+      "positions": 4224699050,
+      "normals": 611607701,
+      "uvs": 2889898117,
+      "indices": 2264285863
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 3352,
+     "targetTris": 234,
+     "deliveredTris": 228,
+     "vertices": 2375,
+     "min": [
+      -0.991303026676178,
+      3.914853857756029e-11,
+      -1.28888738155365
+     ],
+     "max": [
+      1.0537091493606567,
+      2.6151809692382812,
+      1.5713574886322021
+     ],
+     "hashes": {
+      "positions": 2275667727,
+      "normals": 2554735533,
+      "uvs": 2053961803,
+      "indices": 183870974
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bush 3",
+   "preset": "Bush 3",
+   "targetH": 3.2,
+   "width": 5.093533754348755,
+   "height": 3.2,
+   "sourceHeight": 3.200000052365344,
+   "boxMin": [
+    -2.6073391437530518,
+    -4.681627974179037e-9,
+    -2.3479952812194824
+   ],
+   "boxMax": [
+    2.486194610595703,
+    3.200000047683716,
+    2.475952625274658
+   ],
+   "sphereCentre": [
+    -0.060572266578674316,
+    1.600000021501044,
+    0.06397867202758789
+   ],
+   "sphereRadius": 3.855339150009942,
+   "bark": {
+    "type": "oak",
+    "tint": 13552830,
+    "textureScale": [
+     0.5,
+     5
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "pine",
+    "tint": 10339327,
+    "alphaTest": 0.5,
+    "map": "leaves/pine_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 13674,
+     "targetTris": 6000,
+     "deliveredTris": 4970,
+     "vertices": 10212,
+     "min": [
+      -2.0182554721832275,
+      0.3772884011268616,
+      -1.8794357776641846
+     ],
+     "max": [
+      1.8557453155517578,
+      3.0753250122070312,
+      1.9103890657424927
+     ],
+     "hashes": {
+      "positions": 1164418176,
+      "normals": 38337270,
+      "uvs": 1797752819,
+      "indices": 2939969038
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 2496,
+     "targetTris": 1400,
+     "deliveredTris": 2496,
+     "vertices": 4992,
+     "min": [
+      -2.6073391437530518,
+      -4.681627974179037e-9,
+      -2.3479952812194824
+     ],
+     "max": [
+      2.486194610595703,
+      3.200000047683716,
+      2.475952625274658
+     ],
+     "hashes": {
+      "positions": 3993051590,
+      "normals": 4074677179,
+      "uvs": 2009888197,
+      "indices": 327865541
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 4970,
+     "targetTris": 1391,
+     "deliveredTris": 1356,
+     "vertices": 10212,
+     "min": [
+      -2.0182554721832275,
+      0.3772884011268616,
+      -1.8794357776641846
+     ],
+     "max": [
+      1.8557453155517578,
+      3.0753250122070312,
+      1.9103890657424927
+     ],
+     "hashes": {
+      "positions": 1164418176,
+      "normals": 38337270,
+      "uvs": 1797752819,
+      "indices": 2571859778
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 2496,
+     "targetTris": 748,
+     "deliveredTris": 748,
+     "vertices": 1496,
+     "min": [
+      -2.697482109069824,
+      -0.1684844195842743,
+      -2.5376622676849365
+     ],
+     "max": [
+      2.4985992908477783,
+      3.386732816696167,
+      2.509272336959839
+     ],
+     "hashes": {
+      "positions": 729798276,
+      "normals": 227302341,
+      "uvs": 1503838789,
+      "indices": 3407712941
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 4970,
+     "targetTris": 347,
+     "deliveredTris": 333,
+     "vertices": 10212,
+     "min": [
+      -2.0182554721832275,
+      0.3772884011268616,
+      -1.8794357776641846
+     ],
+     "max": [
+      1.8557453155517578,
+      3.0753250122070312,
+      1.9103890657424927
+     ],
+     "hashes": {
+      "positions": 1164418176,
+      "normals": 38337270,
+      "uvs": 1797752819,
+      "indices": 1904356063
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 2496,
+     "targetTris": 224,
+     "deliveredTris": 224,
+     "vertices": 448,
+     "min": [
+      -2.6238598823547363,
+      -0.13827256858348846,
+      -2.751760482788086
+     ],
+     "max": [
+      2.8127598762512207,
+      3.627871513366699,
+      2.5569987297058105
+     ],
+     "hashes": {
+      "positions": 4097699401,
+      "normals": 529057989,
+      "uvs": 3189639621,
+      "indices": 214962437
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 4970,
+     "targetTris": 347,
+     "deliveredTris": 333,
+     "vertices": 10212,
+     "min": [
+      -2.0182554721832275,
+      0.3772884011268616,
+      -1.8794357776641846
+     ],
+     "max": [
+      1.8557453155517578,
+      3.0753250122070312,
+      1.9103890657424927
+     ],
+     "hashes": {
+      "positions": 1164418176,
+      "normals": 38337270,
+      "uvs": 1797752819,
+      "indices": 1904356063
+     }
+    }
+   ]
+  },
+  {
+   "name": "Oak Small",
+   "preset": "Oak Small",
+   "targetH": 5.5,
+   "width": 4.535406589508057,
+   "height": 5.5,
+   "sourceHeight": 5.5,
+   "boxMin": [
+    -2.1769354343414307,
+    0,
+    -2.348853349685669
+   ],
+   "boxMax": [
+    2.358471155166626,
+    5.5,
+    2.115943670272827
+   ],
+   "sphereCentre": [
+    0.09076786041259766,
+    2.75,
+    -0.1164548397064209
+   ],
+   "sphereRadius": 4.205779516379317,
+   "bark": {
+    "type": "oak",
+    "tint": 16774097,
+    "textureScale": [
+     1,
+     10
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "oak",
+    "tint": 14013901,
+    "alphaTest": 0.5,
+    "map": "leaves/oak_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 3206,
+     "targetTris": 6000,
+     "deliveredTris": 3206,
+     "vertices": 2344,
+     "min": [
+      -2.0091259479522705,
+      0,
+      -2.1060965061187744
+     ],
+     "max": [
+      2.1540896892547607,
+      5.439594268798828,
+      1.9622814655303955
+     ],
+     "hashes": {
+      "positions": 2548309343,
+      "normals": 745953787,
+      "uvs": 1360770421,
+      "indices": 166347939
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 3600,
+     "targetTris": 1400,
+     "deliveredTris": 2400,
+     "vertices": 7200,
+     "min": [
+      -2.1769354343414307,
+      1.1915063858032227,
+      -2.348853349685669
+     ],
+     "max": [
+      2.358471155166626,
+      5.5,
+      2.115943670272827
+     ],
+     "hashes": {
+      "positions": 873477289,
+      "normals": 3523794625,
+      "uvs": 158300101,
+      "indices": 4209753709
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 3206,
+     "targetTris": 897,
+     "deliveredTris": 848,
+     "vertices": 2344,
+     "min": [
+      -2.0091259479522705,
+      0,
+      -2.1060965061187744
+     ],
+     "max": [
+      2.1540896892547607,
+      5.439594268798828,
+      1.9622814655303955
+     ],
+     "hashes": {
+      "positions": 2548309343,
+      "normals": 745953787,
+      "uvs": 1360770421,
+      "indices": 2138513557
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 2400,
+     "targetTris": 720,
+     "deliveredTris": 720,
+     "vertices": 1440,
+     "min": [
+      -2.136639356613159,
+      1.1326721906661987,
+      -2.4062252044677734
+     ],
+     "max": [
+      2.2887377738952637,
+      5.464921951293945,
+      2.107579469680786
+     ],
+     "hashes": {
+      "positions": 3385170738,
+      "normals": 2994387405,
+      "uvs": 995962821,
+      "indices": 1174406981
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 3206,
+     "targetTris": 224,
+     "deliveredTris": 194,
+     "vertices": 2344,
+     "min": [
+      -2.0091259479522705,
+      0,
+      -2.1060965061187744
+     ],
+     "max": [
+      2.1540896892547607,
+      5.439594268798828,
+      1.9622814655303955
+     ],
+     "hashes": {
+      "positions": 2548309343,
+      "normals": 745953787,
+      "uvs": 1360770421,
+      "indices": 3274768367
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 2400,
+     "targetTris": 216,
+     "deliveredTris": 216,
+     "vertices": 432,
+     "min": [
+      -2.1554691791534424,
+      1.116140365600586,
+      -2.4594810009002686
+     ],
+     "max": [
+      2.3553202152252197,
+      5.460947036743164,
+      2.0004053115844727
+     ],
+     "hashes": {
+      "positions": 1650998540,
+      "normals": 2249458269,
+      "uvs": 3370581189,
+      "indices": 486615285
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 3206,
+     "targetTris": 224,
+     "deliveredTris": 194,
+     "vertices": 2344,
+     "min": [
+      -2.0091259479522705,
+      0,
+      -2.1060965061187744
+     ],
+     "max": [
+      2.1540896892547607,
+      5.439594268798828,
+      1.9622814655303955
+     ],
+     "hashes": {
+      "positions": 2548309343,
+      "normals": 745953787,
+      "uvs": 1360770421,
+      "indices": 3274768367
+     }
+    }
+   ]
+  },
+  {
+   "name": "Oak Medium",
+   "preset": "Oak Medium",
+   "targetH": 7,
+   "width": 5.788938522338867,
+   "height": 7,
+   "sourceHeight": 7,
+   "boxMin": [
+    -3.2334203720092773,
+    0,
+    -2.644909143447876
+   ],
+   "boxMax": [
+    2.457888603210449,
+    7,
+    3.144029378890991
+   ],
+   "sphereCentre": [
+    -0.38776588439941406,
+    3.5,
+    0.24956011772155762
+   ],
+   "sphereRadius": 5.359636346498601,
+   "bark": {
+    "type": "oak",
+    "tint": 16774097,
+    "textureScale": [
+     1,
+     10
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/oak_color_1k.jpg",
+     "normal": "bark/oak_normal_1k.jpg",
+     "ao": "bark/oak_ao_1k.jpg",
+     "roughness": "bark/oak_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "oak",
+    "tint": 14013901,
+    "alphaTest": 0.5,
+    "map": "leaves/oak_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 3166,
+     "targetTris": 6000,
+     "deliveredTris": 3166,
+     "vertices": 2780,
+     "min": [
+      -2.9240667819976807,
+      0,
+      -2.369055986404419
+     ],
+     "max": [
+      2.0752129554748535,
+      6.599004745483398,
+      2.788989782333374
+     ],
+     "hashes": {
+      "positions": 1079926402,
+      "normals": 2033450149,
+      "uvs": 1761705901,
+      "indices": 2237663674
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 10640,
+     "targetTris": 1400,
+     "deliveredTris": 8008,
+     "vertices": 21280,
+     "min": [
+      -3.2334203720092773,
+      0.9334651827812195,
+      -2.644909143447876
+     ],
+     "max": [
+      2.457888603210449,
+      7,
+      3.144029378890991
+     ],
+     "hashes": {
+      "positions": 436328543,
+      "normals": 1993018674,
+      "uvs": 2786863045,
+      "indices": 1781132637
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 3166,
+     "targetTris": 886,
+     "deliveredTris": 871,
+     "vertices": 2780,
+     "min": [
+      -2.9240667819976807,
+      0,
+      -2.369055986404419
+     ],
+     "max": [
+      2.0752129554748535,
+      6.599004745483398,
+      2.788989782333374
+     ],
+     "hashes": {
+      "positions": 1079926402,
+      "normals": 2033450149,
+      "uvs": 1761705901,
+      "indices": 246477072
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 8008,
+     "targetTris": 2402,
+     "deliveredTris": 2402,
+     "vertices": 4804,
+     "min": [
+      -3.282982587814331,
+      0.9096744060516357,
+      -2.7390823364257812
+     ],
+     "max": [
+      2.6624932289123535,
+      7.022139072418213,
+      3.336348056793213
+     ],
+     "hashes": {
+      "positions": 2714158692,
+      "normals": 1933050269,
+      "uvs": 3801723909,
+      "indices": 3198705943
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 3166,
+     "targetTris": 221,
+     "deliveredTris": 289,
+     "vertices": 2780,
+     "min": [
+      -2.9240667819976807,
+      0,
+      -2.369055986404419
+     ],
+     "max": [
+      2.0752129554748535,
+      6.599004745483398,
+      2.788989782333374
+     ],
+     "hashes": {
+      "positions": 1079926402,
+      "normals": 2033450149,
+      "uvs": 1761705901,
+      "indices": 2536876816
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 8008,
+     "targetTris": 720,
+     "deliveredTris": 720,
+     "vertices": 1440,
+     "min": [
+      -3.4518423080444336,
+      0.6412856578826904,
+      -2.9454853534698486
+     ],
+     "max": [
+      2.8950417041778564,
+      7.019313812255859,
+      3.294926166534424
+     ],
+     "hashes": {
+      "positions": 2010025376,
+      "normals": 2600034525,
+      "uvs": 995962821,
+      "indices": 1174406981
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 3166,
+     "targetTris": 221,
+     "deliveredTris": 289,
+     "vertices": 2780,
+     "min": [
+      -2.9240667819976807,
+      0,
+      -2.369055986404419
+     ],
+     "max": [
+      2.0752129554748535,
+      6.599004745483398,
+      2.788989782333374
+     ],
+     "hashes": {
+      "positions": 1079926402,
+      "normals": 2033450149,
+      "uvs": 1761705901,
+      "indices": 2536876816
+     }
+    }
+   ]
+  },
+  {
+   "name": "Pine Small",
+   "preset": "Pine Small",
+   "targetH": 8,
+   "width": 3.6709476709365845,
+   "height": 8,
+   "sourceHeight": 8,
+   "boxMin": [
+    -1.8178631067276,
+    0,
+    -1.895071268081665
+   ],
+   "boxMax": [
+    1.8204551935195923,
+    8,
+    1.7758764028549194
+   ],
+   "sphereCentre": [
+    0.0012960433959960938,
+    4,
+    -0.0595974326133728
+   ],
+   "sphereRadius": 4.7621743158106975,
+   "bark": {
+    "type": "pine",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/pine_color_1k.jpg",
+     "normal": "bark/pine_normal_1k.jpg",
+     "ao": "bark/pine_ao_1k.jpg",
+     "roughness": "bark/pine_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "pine",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/pine_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 11112,
+     "targetTris": 6000,
+     "deliveredTris": 5892,
+     "vertices": 7124,
+     "min": [
+      -1.5683687925338745,
+      0,
+      -1.7242790460586548
+     ],
+     "max": [
+      1.6233949661254883,
+      7.734224319458008,
+      1.7182000875473022
+     ],
+     "hashes": {
+      "positions": 2675304574,
+      "normals": 669849635,
+      "uvs": 437472759,
+      "indices": 2961567231
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 7644,
+     "targetTris": 1400,
+     "deliveredTris": 2832,
+     "vertices": 15288,
+     "min": [
+      -1.8178631067276,
+      0.4113846719264984,
+      -1.895071268081665
+     ],
+     "max": [
+      1.8204551935195923,
+      8,
+      1.7758764028549194
+     ],
+     "hashes": {
+      "positions": 14442488,
+      "normals": 558584176,
+      "uvs": 4021061701,
+      "indices": 2410670085
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5892,
+     "targetTris": 1649,
+     "deliveredTris": 1641,
+     "vertices": 7124,
+     "min": [
+      -1.5683687925338745,
+      0,
+      -1.7242790460586548
+     ],
+     "max": [
+      1.6233949661254883,
+      7.734224319458008,
+      1.7182000875473022
+     ],
+     "hashes": {
+      "positions": 2675304574,
+      "normals": 669849635,
+      "uvs": 437472759,
+      "indices": 3789670402
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 2832,
+     "targetTris": 849,
+     "deliveredTris": 848,
+     "vertices": 1696,
+     "min": [
+      -1.7361342906951904,
+      0.3039471209049225,
+      -1.7903385162353516
+     ],
+     "max": [
+      1.9017279148101807,
+      8.013774871826172,
+      1.8351731300354004
+     ],
+     "hashes": {
+      "positions": 811874954,
+      "normals": 1043304389,
+      "uvs": 3822976965,
+      "indices": 488357893
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5892,
+     "targetTris": 412,
+     "deliveredTris": 367,
+     "vertices": 7124,
+     "min": [
+      -1.5683687925338745,
+      0,
+      -1.7242790460586548
+     ],
+     "max": [
+      1.6233949661254883,
+      7.734224319458008,
+      1.7182000875473022
+     ],
+     "hashes": {
+      "positions": 2675304574,
+      "normals": 669849635,
+      "uvs": 437472759,
+      "indices": 803136079
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 2832,
+     "targetTris": 254,
+     "deliveredTris": 254,
+     "vertices": 508,
+     "min": [
+      -1.873989224433899,
+      0.235382080078125,
+      -1.6912494897842407
+     ],
+     "max": [
+      1.826768159866333,
+      8.081719398498535,
+      1.8344788551330566
+     ],
+     "hashes": {
+      "positions": 72441962,
+      "normals": 2615622149,
+      "uvs": 634988677,
+      "indices": 749239115
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5892,
+     "targetTris": 412,
+     "deliveredTris": 367,
+     "vertices": 7124,
+     "min": [
+      -1.5683687925338745,
+      0,
+      -1.7242790460586548
+     ],
+     "max": [
+      1.6233949661254883,
+      7.734224319458008,
+      1.7182000875473022
+     ],
+     "hashes": {
+      "positions": 2675304574,
+      "normals": 669849635,
+      "uvs": 437472759,
+      "indices": 803136079
+     }
+    }
+   ]
+  },
+  {
+   "name": "Pine Large",
+   "preset": "Pine Large",
+   "targetH": 16,
+   "width": 10.466129302978516,
+   "height": 16,
+   "sourceHeight": 16,
+   "boxMin": [
+    -5.44763708114624,
+    0,
+    -3.948596477508545
+   ],
+   "boxMax": [
+    5.018492221832275,
+    16,
+    4.963062763214111
+   ],
+   "sphereCentre": [
+    -0.21457242965698242,
+    8,
+    0.5072331428527832
+   ],
+   "sphereRadius": 10.547008260751282,
+   "bark": {
+    "type": "pine",
+    "tint": 16777215,
+    "textureScale": [
+     1,
+     1
+    ],
+    "flatShading": false,
+    "maps": {
+     "color": "bark/pine_color_1k.jpg",
+     "normal": "bark/pine_normal_1k.jpg",
+     "ao": "bark/pine_ao_1k.jpg",
+     "roughness": "bark/pine_roughness_1k.jpg"
+    }
+   },
+   "leaf": {
+    "type": "pine",
+    "tint": 16777215,
+    "alphaTest": 0.5,
+    "map": "leaves/pine_color.png"
+   },
+   "parts": [
+    {
+     "part": "branch",
+     "tier": 0,
+     "sourceTris": 12192,
+     "targetTris": 6000,
+     "deliveredTris": 5881,
+     "vertices": 7817,
+     "min": [
+      -4.769495010375977,
+      0,
+      -3.423593521118164
+     ],
+     "max": [
+      4.340778827667236,
+      15.283402442932129,
+      4.379277229309082
+     ],
+     "hashes": {
+      "positions": 2518089121,
+      "normals": 3474397809,
+      "uvs": 2782061762,
+      "indices": 4203054192
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 0,
+     "sourceTris": 7200,
+     "targetTris": 1400,
+     "deliveredTris": 7200,
+     "vertices": 14400,
+     "min": [
+      -5.44763708114624,
+      0.8575082421302795,
+      -3.948596477508545
+     ],
+     "max": [
+      5.018492221832275,
+      16,
+      4.963062763214111
+     ],
+     "hashes": {
+      "positions": 328643124,
+      "normals": 2609301845,
+      "uvs": 778719685,
+      "indices": 1363313221
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 1,
+     "sourceTris": 5881,
+     "targetTris": 1646,
+     "deliveredTris": 1564,
+     "vertices": 7817,
+     "min": [
+      -4.769495010375977,
+      0,
+      -3.423593521118164
+     ],
+     "max": [
+      4.340778827667236,
+      15.283402442932129,
+      4.379277229309082
+     ],
+     "hashes": {
+      "positions": 2518089121,
+      "normals": 3474397809,
+      "uvs": 2782061762,
+      "indices": 3148083592
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 1,
+     "sourceTris": 7200,
+     "targetTris": 2160,
+     "deliveredTris": 2160,
+     "vertices": 4320,
+     "min": [
+      -5.399697780609131,
+      0.7918515801429749,
+      -3.9511873722076416
+     ],
+     "max": [
+      5.2684550285339355,
+      16.287996292114258,
+      5.058682918548584
+     ],
+     "hashes": {
+      "positions": 881108552,
+      "normals": 1167612101,
+      "uvs": 3029750725,
+      "indices": 1105794501
+     }
+    },
+    {
+     "part": "branch",
+     "tier": 2,
+     "sourceTris": 5881,
+     "targetTris": 411,
+     "deliveredTris": 351,
+     "vertices": 7817,
+     "min": [
+      -4.769495010375977,
+      0,
+      -3.423593521118164
+     ],
+     "max": [
+      4.340778827667236,
+      15.283402442932129,
+      4.379277229309082
+     ],
+     "hashes": {
+      "positions": 2518089121,
+      "normals": 3474397809,
+      "uvs": 2782061762,
+      "indices": 2352204932
+     }
+    },
+    {
+     "part": "leaf",
+     "tier": 2,
+     "sourceTris": 7200,
+     "targetTris": 648,
+     "deliveredTris": 648,
+     "vertices": 1296,
+     "min": [
+      -5.230105400085449,
+      0.5506439208984375,
+      -4.303313255310059
+     ],
+     "max": [
+      5.542788028717041,
+      16.528417587280273,
+      5.353139877319336
+     ],
+     "hashes": {
+      "positions": 2656202787,
+      "normals": 2132744805,
+      "uvs": 3821648581,
+      "indices": 2735470917
+     }
+    },
+    {
+     "part": "shadow",
+     "tier": 2,
+     "sourceTris": 5881,
+     "targetTris": 411,
+     "deliveredTris": 351,
+     "vertices": 7817,
+     "min": [
+      -4.769495010375977,
+      0,
+      -3.423593521118164
+     ],
+     "max": [
+      4.340778827667236,
+      15.283402442932129,
+      4.379277229309082
+     ],
+     "hashes": {
+      "positions": 2518089121,
+      "normals": 3474397809,
+      "uvs": 2782061762,
+      "indices": 2352204932
+     }
+    }
+   ]
+  }
+ ],
+ "leafCapRefusals": [
+  {
+   "species": "Oak Large#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 7988,
+   "source": 10560,
+   "cards": 5280,
+   "mergeFactor": 7.542857142857143,
+   "reason": "leaf-card cloud of 5280 card(s): reaching 1400 triangle(s) means merging 7.54 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 7988"
+  },
+  {
+   "species": "Pine Medium#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 4883,
+   "source": 9840,
+   "cards": 4920,
+   "mergeFactor": 7.0285714285714285,
+   "reason": "leaf-card cloud of 4920 card(s): reaching 1400 triangle(s) means merging 7.03 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 4883"
+  },
+  {
+   "species": "Aspen Medium#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 1936,
+   "source": 2112,
+   "cards": 1056,
+   "mergeFactor": 1.5085714285714287,
+   "reason": "leaf-card cloud of 1056 card(s): reaching 1400 triangle(s) means merging 1.51 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 1936"
+  },
+  {
+   "species": "Ash Medium#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 7512,
+   "source": 10880,
+   "cards": 5440,
+   "mergeFactor": 7.771428571428571,
+   "reason": "leaf-card cloud of 5440 card(s): reaching 1400 triangle(s) means merging 7.77 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 7512"
+  },
+  {
+   "species": "Bush#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 4688,
+   "source": 4992,
+   "cards": 2496,
+   "mergeFactor": 3.565714285714286,
+   "reason": "leaf-card cloud of 2496 card(s): reaching 1400 triangle(s) means merging 3.57 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 4688"
+  },
+  {
+   "species": "Ash Small#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 4140,
+   "source": 5456,
+   "cards": 2728,
+   "mergeFactor": 3.8971428571428572,
+   "reason": "leaf-card cloud of 2728 card(s): reaching 1400 triangle(s) means merging 3.90 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 4140"
+  },
+  {
+   "species": "Ash Large#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 7892,
+   "source": 9680,
+   "cards": 4840,
+   "mergeFactor": 6.914285714285715,
+   "reason": "leaf-card cloud of 4840 card(s): reaching 1400 triangle(s) means merging 6.91 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 7892"
+  },
+  {
+   "species": "Aspen Large#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 5476,
+   "source": 6468,
+   "cards": 3234,
+   "mergeFactor": 4.62,
+   "reason": "leaf-card cloud of 3234 card(s): reaching 1400 triangle(s) means merging 4.62 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 5476"
+  },
+  {
+   "species": "Bush 3#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 2496,
+   "source": 2496,
+   "cards": 1248,
+   "mergeFactor": 1.782857142857143,
+   "reason": "leaf-card cloud of 1248 card(s): reaching 1400 triangle(s) means merging 1.78 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 2496"
+  },
+  {
+   "species": "Oak Small#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 2400,
+   "source": 3600,
+   "cards": 1800,
+   "mergeFactor": 2.5714285714285716,
+   "reason": "leaf-card cloud of 1800 card(s): reaching 1400 triangle(s) means merging 2.57 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 2400"
+  },
+  {
+   "species": "Oak Medium#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 8008,
+   "source": 10640,
+   "cards": 5320,
+   "mergeFactor": 7.6,
+   "reason": "leaf-card cloud of 5320 card(s): reaching 1400 triangle(s) means merging 7.60 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 8008"
+  },
+  {
+   "species": "Pine Small#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 2832,
+   "source": 7644,
+   "cards": 3822,
+   "mergeFactor": 5.46,
+   "reason": "leaf-card cloud of 3822 card(s): reaching 1400 triangle(s) means merging 5.46 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 2832"
+  },
+  {
+   "species": "Pine Large#0",
+   "kind": "leaf-card-cloud",
+   "target": 1400,
+   "delivered": 7200,
+   "source": 7200,
+   "cards": 3600,
+   "mergeFactor": 5.142857142857143,
+   "reason": "leaf-card cloud of 3600 card(s): reaching 1400 triangle(s) means merging 5.14 leaf card(s) into one, which is a visible change in the near band, and meshopt at strict error 0.02 stops at 7200"
+  }
+ ],
+ "spointStatusBefore": "",
+ "spointStatusAfter": ""
+}
