@@ -21,6 +21,7 @@ use bevy::app::App;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::math::DVec3;
 use bevy::prelude::*;
+use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy::render::view::window::screenshot::{Screenshot, save_to_disk};
 use bevy::time::{Time, TimeUpdateStrategy, Virtual};
 use serde_json::{Map, Value, json};
@@ -402,6 +403,8 @@ fn warn_missing_textures() {
     }
 }
 
+const RENDER_ASSET_BYTES_PER_FRAME: usize = 4 << 20;
+
 pub fn register(app: &mut App) {
     let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
     let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
@@ -417,6 +420,7 @@ pub fn register(app: &mut App) {
         ))
         .insert_resource(globe.terrain_frame())
         .insert_resource(SkyPlanet { centre: globe.center, radius: globe.radius })
+        .insert_resource(RenderAssetBytesPerFrame::new(RENDER_ASSET_BYTES_PER_FRAME))
         .add_systems(Startup, warn_missing_textures)
         .add_systems(Update, equip_camera)
         .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
@@ -1018,6 +1022,35 @@ mod tests {
         assert!(app.is_plugin_added::<PlanetSkyPlugin>());
         assert!(app.is_plugin_added::<LightPlugin>());
         assert!(app.is_plugin_added::<ToneMapPlugin>());
+    }
+
+    #[test]
+    fn the_viewer_caps_the_render_asset_bytes_uploaded_per_frame() {
+        let app = viewer_app(globe());
+        assert_eq!(app.world().resource::<RenderAssetBytesPerFrame>().max_bytes, Some(RENDER_ASSET_BYTES_PER_FRAME));
+    }
+
+    #[test]
+    fn two_large_images_upload_on_separate_frames_under_the_budget() {
+        use bevy::render::render_asset::RenderAssets;
+        use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+        use bevy::render::texture::GpuImage;
+        let _serial = crate::offscreen::render_lock();
+        let mut app = crate::offscreen::headless_app();
+        app.insert_resource(RenderAssetBytesPerFrame::new(RENDER_ASSET_BYTES_PER_FRAME));
+        app.finish();
+        app.cleanup();
+        crate::offscreen::pump(&mut app);
+        let side = Extent3d { width: 2048, height: 2048, depth_or_array_layers: 1 };
+        let image = || Image::new_fill(side, TextureDimension::D2, &[0, 0, 0, 255], TextureFormat::Rgba8Unorm, bevy::asset::RenderAssetUsages::RENDER_WORLD);
+        let handles = [image(), image()].map(|image| app.world_mut().resource_mut::<Assets<Image>>().add(image));
+        let uploaded = |app: &App| handles.each_ref().map(|handle| app.sub_app(bevy::render::RenderApp).world().resource::<RenderAssets<GpuImage>>().get(handle).is_some());
+        let first = (0..8).find_map(|_| {
+            crate::offscreen::pump(&mut app);
+            Some(uploaded(&app)).filter(|frame| frame.contains(&true))
+        });
+        crate::offscreen::pump(&mut app);
+        assert_eq!((first.map(|frame| frame.iter().filter(|done| **done).count()), uploaded(&app)), (Some(1), [true, true]));
     }
 
     #[test]

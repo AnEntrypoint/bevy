@@ -23,6 +23,7 @@ const ROCK_RENDER_DISTANCE_M: f64 = 320.0;
 const GRASS_RENDER_DISTANCE_M: f64 = 88.0;
 const GRASS_DROP_MARGIN_M: f64 = 16.0;
 const TASKS_PER_THREAD: usize = 2;
+const RING_WORK_PER_FRAME: usize = 64;
 const NEAREST_KIND_FIRST: [VegKind; 3] = [VegKind::Grass, VegKind::Rock, VegKind::Tree];
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -110,12 +111,35 @@ fn chord_sq_within(radius_m: f64, planet_radius: f64) -> f64 {
     4.0 * (radius_m / planet_radius / 2.0).sin().powi(2)
 }
 
+fn has_room(work: usize) -> bool {
+    work < RING_WORK_PER_FRAME
+}
+
+struct RingPlan {
+    ring: Vec<u64>,
+    dropped: Vec<u64>,
+}
+
+fn plan_rings(lattice: &PlacementLattice, dir: [f64; 3], streamed: [Vec<u64>; 3]) -> [RingPlan; 3] {
+    let mut streamed = streamed.into_iter();
+    RINGS.map(|ring| {
+        let drop_chord_sq = chord_sq_within(ring.drop_m, lattice.radius);
+        let beyond = |key: &u64| {
+            let centre = lattice.chunk_centre_dir(*key as f64);
+            (0..3).map(|axis| (centre[axis] - dir[axis]).powi(2)).sum::<f64>() > drop_chord_sq
+        };
+        let dropped = streamed.next().into_iter().flatten().filter(beyond).collect();
+        RingPlan { ring: lattice.ring_around_dir(dir, ring.load_m).into_iter().map(|key| key as u64).collect(), dropped }
+    })
+}
+
 #[derive(Default)]
 struct KindStream {
     ring: Vec<u64>,
     cursor: usize,
     loaded: HashMap<u64, Option<ChunkRef>>,
     building: HashMap<u64, Task<PlacedChunk>>,
+    dropping: Vec<u64>,
     refused: usize,
 }
 
@@ -124,15 +148,25 @@ impl KindStream {
         self.loaded.contains_key(&key) || self.building.contains_key(&key)
     }
 
-    fn drop_beyond(&mut self, keep: impl Fn(u64) -> bool, store: &mut VegStore) {
-        self.building.retain(|key, _| keep(*key));
-        self.loaded.retain(|key, chunk| {
-            let kept = keep(*key);
-            if let (false, Some(chunk)) = (kept, chunk) {
-                store.remove_chunk(*chunk);
+    fn streamed_keys(&self) -> Vec<u64> {
+        self.loaded.keys().chain(self.building.keys()).copied().collect()
+    }
+
+    fn replan(&mut self, plan: RingPlan) {
+        self.ring = plan.ring;
+        self.cursor = 0;
+        self.dropping = plan.dropped;
+    }
+
+    fn drop_some(&mut self, work: &mut usize, store: &mut VegStore) {
+        while has_room(*work) {
+            let Some(key) = self.dropping.pop() else { return };
+            *work += 1;
+            self.building.remove(&key);
+            if let Some(Some(chunk)) = self.loaded.remove(&key) {
+                store.remove_chunk(chunk);
             }
-            kept
-        });
+        }
     }
 
     fn finish(&mut self, store: &mut VegStore, centre: DVec3, eye: DVec3) {
@@ -163,6 +197,7 @@ pub struct VegStreamStats {
     pub queued_chunks: [usize; 3],
     pub refused_chunks: usize,
     pub tasks_in_flight: usize,
+    pub ring_work: usize,
 }
 
 struct WindChart {
@@ -185,6 +220,7 @@ pub struct VegStream {
     lattice: PlacementLattice,
     wind: WindChart,
     focus: Option<f64>,
+    planning: Option<Task<[RingPlan; 3]>>,
     kinds: [KindStream; 3],
 }
 
@@ -194,31 +230,48 @@ impl VegStream {
         let basis = anchor_basis(plugin.anchor_dir);
         let wind = WindChart { point: plugin.centre + DVec3::from(basis.up) * source.radius, east: DVec3::from(basis.east), north: DVec3::from(basis.north) };
         let lattice = PlacementLattice::new(source.radius, CHUNK_M, tree::GRID).expect("a placement lattice over a finite planet radius always builds");
-        Self { source, centre: plugin.centre, lattice, wind, focus: None, kinds: Default::default() }
+        Self { source, centre: plugin.centre, lattice, wind, focus: None, planning: None, kinds: Default::default() }
     }
 
-    fn refocus(&mut self, dir: [f64; 3], store: &mut VegStore) {
-        let lattice = &self.lattice;
-        for (kind, ring) in self.kinds.iter_mut().zip(RINGS) {
-            let drop_chord_sq = chord_sq_within(ring.drop_m, lattice.radius);
-            let keep = |key: u64| {
-                let centre = lattice.chunk_centre_dir(key as f64);
-                (0..3).map(|axis| (centre[axis] - dir[axis]).powi(2)).sum::<f64>() <= drop_chord_sq
-            };
-            kind.drop_beyond(keep, store);
-            kind.ring = lattice.ring_around_dir(dir, ring.load_m).into_iter().map(|key| key as u64).collect();
-            kind.cursor = 0;
+    fn advance(&mut self, eye: DVec3, store: &mut VegStore) -> usize {
+        let dir = eye.normalize().to_array();
+        let focus = self.lattice.chunk_key_of_dir(dir);
+        if self.planning.is_none() && self.focus != Some(focus) {
+            self.focus = Some(focus);
+            let (lattice, streamed) = (self.lattice.clone(), self.kinds.each_ref().map(KindStream::streamed_keys));
+            self.planning = Some(AsyncComputeTaskPool::get().spawn(async move { plan_rings(&lattice, dir, streamed) }));
+        }
+        if let Some(plans) = self.planning.as_mut().and_then(check_ready) {
+            self.planning = None;
+            self.kinds.iter_mut().zip(plans).for_each(|(kind, plan)| kind.replan(plan));
+        }
+        let centre = self.centre;
+        for kind in &mut self.kinds {
+            kind.finish(store, centre, eye);
+        }
+        let mut work = 0;
+        self.drop_due(&mut work, store);
+        if self.planning.is_none() {
+            self.spawn(&mut work);
+        }
+        work
+    }
+
+    fn drop_due(&mut self, work: &mut usize, store: &mut VegStore) {
+        for kind in &mut self.kinds {
+            kind.drop_some(work, store);
         }
     }
 
-    fn spawn(&mut self) {
+    fn spawn(&mut self, work: &mut usize) {
         let pool = AsyncComputeTaskPool::get();
         let mut room = (pool.thread_num() * TASKS_PER_THREAD).saturating_sub(self.kinds.iter().map(|kind| kind.building.len()).sum());
         for kind in NEAREST_KIND_FIRST {
             let stream = &mut self.kinds[kind.index()];
-            while room > 0 && stream.cursor < stream.ring.len() {
+            while room > 0 && has_room(*work) && stream.cursor < stream.ring.len() {
                 let key = stream.ring[stream.cursor];
                 stream.cursor += 1;
+                *work += 1;
                 if stream.is_streamed(key) {
                     continue;
                 }
@@ -229,12 +282,13 @@ impl VegStream {
         }
     }
 
-    fn stats(&self) -> VegStreamStats {
+    fn stats(&self, ring_work: usize) -> VegStreamStats {
         VegStreamStats {
             resident_chunks: self.kinds.each_ref().map(|kind| kind.loaded.values().filter(|chunk| chunk.is_some()).count()),
-            queued_chunks: self.kinds.each_ref().map(|kind| kind.ring[kind.cursor..].iter().filter(|key| !kind.is_streamed(**key)).count()),
+            queued_chunks: self.kinds.each_ref().map(|kind| kind.ring.len() - kind.cursor),
             refused_chunks: self.kinds.iter().map(|kind| kind.refused).sum(),
-            tasks_in_flight: self.kinds.iter().map(|kind| kind.building.len()).sum(),
+            tasks_in_flight: self.kinds.iter().map(|kind| kind.building.len()).sum::<usize>() + usize::from(self.planning.is_some()),
+            ring_work,
         }
     }
 }
@@ -254,18 +308,8 @@ fn stream_vegetation(
         look.set_if_neq(anchored);
     }
     let eye = eye_world - stream.centre;
-    let dir = eye.normalize().to_array();
-    let focus = stream.lattice.chunk_key_of_dir(dir);
-    if stream.focus != Some(focus) {
-        stream.focus = Some(focus);
-        stream.refocus(dir, &mut store);
-    }
-    let centre = stream.centre;
-    for kind in &mut stream.kinds {
-        kind.finish(&mut store, centre, eye);
-    }
-    stream.spawn();
-    stats.set_if_neq(stream.stats());
+    let ring_work = stream.advance(eye, &mut store);
+    stats.set_if_neq(stream.stats(ring_work));
 }
 
 pub struct VegStreamPlugin {

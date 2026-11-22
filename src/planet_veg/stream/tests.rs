@@ -16,6 +16,7 @@ use crate::planet_veg::trees_render::TreesWitness;
 use crate::testkit::{cases, parse};
 use bevy::render::render_resource::TextureFormat;
 use serde_json::Value;
+use bevy::tasks::TaskPool;
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
 use std::sync::atomic::Ordering;
@@ -105,6 +106,16 @@ fn within(position: DVec3, radius_m: f64, keys: &BTreeSet<u64>) -> BTreeSet<u64>
     keys.iter().copied().filter(|key| (DVec3::from(stream.lattice.chunk_centre_dir(*key as f64)) - dir).length_squared() <= limit).collect()
 }
 
+fn refocus_now(stream: &mut VegStream, position: DVec3, store: &mut VegStore) {
+    let plans = plan_rings(&stream.lattice, position.normalize().to_array(), stream.kinds.each_ref().map(KindStream::streamed_keys));
+    stream.kinds.iter_mut().zip(plans).for_each(|(kind, plan)| kind.replan(plan));
+    while stream.kinds.iter().any(|kind| !kind.dropping.is_empty()) {
+        let mut work = 0;
+        stream.drop_due(&mut work, store);
+        assert!(work <= RING_WORK_PER_FRAME);
+    }
+}
+
 fn loaded_keys(stream: &VegStream, kind: VegKind) -> BTreeSet<u64> {
     stream.kinds[kind.index()].loaded.keys().copied().collect()
 }
@@ -122,23 +133,48 @@ fn chunks_stay_until_they_pass_the_drop_radius() {
     let mut stream = bare_stream();
     let mut store = VegStore::new(&VegGpuConfig::default());
     let first = player_world();
-    stream.refocus(first.normalize().to_array(), &mut store);
+    refocus_now(&mut stream, first, &mut store);
     let trees = &mut stream.kinds[VegKind::Tree.index()];
     let first_ring: BTreeSet<u64> = trees.ring.iter().copied().collect();
     first_ring.iter().for_each(|key| {
         trees.loaded.insert(*key, None);
     });
     let near = along_north(first, 2.0 * CHUNK_M);
-    stream.refocus(near.normalize().to_array(), &mut store);
+    refocus_now(&mut stream, near, &mut store);
     let kept = loaded_keys(&stream, VegKind::Tree);
     let beyond_ring: BTreeSet<u64> = first_ring.difference(&ring_around(near, RINGS[0].load_m)).copied().collect();
     assert!(!beyond_ring.is_empty());
     assert_eq!(kept, within(near, RINGS[0].drop_m, &first_ring));
     assert!(beyond_ring.is_subset(&kept), "chunks past the ring but inside the drop radius stay loaded");
     let far = along_north(first, 4.0 * DROP_MARGIN_M);
-    stream.refocus(far.normalize().to_array(), &mut store);
+    refocus_now(&mut stream, far, &mut store);
     assert_eq!(loaded_keys(&stream, VegKind::Tree), within(far, RINGS[0].drop_m, &first_ring));
     assert!(loaded_keys(&stream, VegKind::Tree).len() < kept.len());
+}
+
+#[test]
+fn a_refocus_spreads_its_ring_work_over_frames_under_the_cap() {
+    AsyncComputeTaskPool::get_or_init(TaskPool::new);
+    let mut stream = bare_stream();
+    let mut store = VegStore::new(&VegGpuConfig::default());
+    let (first, near) = (player_world(), along_north(player_world(), 2.0 * CHUNK_M));
+    let streamed = RINGS.map(|ring| ring_around(first, ring.drop_m + DROP_MARGIN_M).union(&ring_around(near, ring.load_m)).copied().collect::<BTreeSet<u64>>());
+    for (kind, keys) in stream.kinds.iter_mut().zip(&streamed) {
+        kind.loaded.extend(keys.iter().map(|key| (*key, None)));
+    }
+    let kept: usize = RINGS.iter().zip(&streamed).map(|(ring, keys)| within(near, ring.drop_m, keys).len()).sum();
+    let ring_slots: usize = RINGS.iter().map(|ring| ring_around(near, ring.load_m).len()).sum();
+    let total = streamed.iter().map(BTreeSet::len).sum::<usize>() - kept + ring_slots;
+    let settled = |stream: &VegStream| stream.focus.is_some() && stream.stats(0).tasks_in_flight == 0 && stream.stats(0).queued_chunks == [0; 3];
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+    let mut busy = Vec::new();
+    while !settled(&stream) {
+        assert!(std::time::Instant::now() < deadline, "the refocus did not finish");
+        busy.extend(Some(stream.advance(near, &mut store)).filter(|work| *work > 0));
+    }
+    assert!(total > RING_WORK_PER_FRAME && busy.iter().all(|work| *work <= RING_WORK_PER_FRAME), "{busy:?}");
+    assert_eq!((busy.iter().sum::<usize>(), busy.len()), (total, total.div_ceil(RING_WORK_PER_FRAME)));
+    assert_eq!(stream.kinds.iter().map(|kind| kind.loaded.len()).sum::<usize>(), kept);
 }
 
 #[test]
@@ -173,6 +209,7 @@ fn records_keep_the_reference_rank_and_rotation_order() {
 struct Census {
     app: App,
     camera: Entity,
+    peak_ring_work: usize,
 }
 
 impl Census {
@@ -189,7 +226,7 @@ impl Census {
         spawn_view(&mut app, &target, SKY_COLOUR, &frame, 1.0);
         let camera = app.world_mut().query_filtered::<Entity, With<Camera3d>>().single(app.world()).unwrap();
         app.world().resource::<VegWitness>().readback.store(true, Ordering::SeqCst);
-        let mut census = Self { app, camera };
+        let mut census = Self { app, camera, peak_ring_work: 0 };
         census.place(player);
         census
     }
@@ -216,15 +253,22 @@ impl Census {
         self.app.world().resource::<VegStream>().focus.is_some() && stats.tasks_in_flight == 0 && stats.queued_chunks == [0; 3] && VegKind::ALL.iter().all(|kind| store.pending_bytes(*kind) == 0)
     }
 
+    fn pump(&mut self) {
+        pump(&mut self.app);
+        let ring_work = self.app.world().resource::<VegStreamStats>().ring_work;
+        assert!(ring_work <= RING_WORK_PER_FRAME, "{ring_work} ring work in one frame");
+        self.peak_ring_work = self.peak_ring_work.max(ring_work);
+    }
+
     fn settle(&mut self, label: &str) -> CullStats {
         let entities = (0..PUMP_LIMIT).find_map(|_| {
-            pump(&mut self.app);
+            self.pump();
             self.assets_ready().then(|| self.entities())
         });
         let entities = entities.unwrap_or_else(|| panic!("{label}: the vegetation assets did not load in {PUMP_LIMIT} frames"));
         let mut seen = Vec::new();
         for _ in 0..PUMP_LIMIT {
-            pump(&mut self.app);
+            self.pump();
             assert_eq!(self.entities(), entities, "{label}: streaming changed the entity count");
             let stats = self.app.world().resource::<VegWitness>().latest_stats();
             seen.push(stats.filter(|_| self.streamed()));
@@ -339,6 +383,7 @@ fn the_forest_census_streams_the_reference_rings_onto_the_gpu() {
     let ring = ring_around(second, REFERENCE_TREE_RING_M);
     assert_eq!(loaded_keys(census.stream(), VegKind::Tree), ring.union(&within(second, REFERENCE_TREE_DROP_M, &first_trees)).copied().collect());
     assert_ne!(moved, stats);
+    assert_eq!(census.peak_ring_work, RING_WORK_PER_FRAME);
     let store = census.app.world().resource::<VegStore>();
     let resident = VegKind::ALL.map(|kind| store.resident_records(kind));
     eprintln!("census: anchor {stats:?}, draws {draws}, entities {entities}, second pose {moved:?}, records {resident:?}, stream {:?}", census.app.world().resource::<VegStreamStats>());
