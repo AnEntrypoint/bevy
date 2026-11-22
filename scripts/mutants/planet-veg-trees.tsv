@@ -1,0 +1,157 @@
+veg_chunk	src/planet_veg/tree.rs	pub const CHUNK_M: f64 = 32.0;	pub const CHUNK_M: f64 = 16.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_cell	src/planet_veg/tree.rs	pub const CELL_M: f64 = 4.0;	pub const CELL_M: f64 = 3.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_grid	src/planet_veg/tree.rs	pub const GRID: f64 = 8.0;	pub const GRID: f64 = 7.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_jitter	src/planet_veg/tree.rs	pub const JITTER_M: f64 = 1.8;	pub const JITTER_M: f64 = 1.9;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_slope_d	src/planet_veg/tree.rs	pub const SLOPE_D: f64 = 1.5;	pub const SLOPE_D: f64 = 1.4;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_slope_max	src/planet_veg/tree.rs	pub const SLOPE_MAX: f64 = 0.6;	pub const SLOPE_MAX: f64 = 0.7;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_sea_reject	src/planet_veg/context.rs	pub const SEA_REJECT: f64 = -2.0;	pub const SEA_REJECT: f64 = -3.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_treeline	src/planet_veg/tree.rs	pub const TREELINE_M: f64 = 4000.0;	pub const TREELINE_M: f64 = 3000.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+veg_treeline_fade	src/planet_veg/tree.rs	pub const TREELINE_FADE_M: f64 = 120.0;	pub const TREELINE_FADE_M: f64 = 100.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+shape_variants	src/planet_veg/tree.rs	pub const SHAPE_VARIANTS: u8 = 3;	pub const SHAPE_VARIANTS: u8 = 2;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_jit_x	src/planet_veg/tree.rs	const K_JIT_X: i32 = 0;	const K_JIT_X: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_jit_z	src/planet_veg/tree.rs	const K_JIT_Z: i32 = 1;	const K_JIT_Z: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_coin	src/planet_veg/tree.rs	const K_COIN: i32 = 2;	const K_COIN: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_variant	src/planet_veg/tree.rs	const K_VARIANT: i32 = 3;	const K_VARIANT: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_yaw	src/planet_veg/tree.rs	const K_YAW: i32 = 4;	const K_YAW: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_scale	src/planet_veg/tree.rs	const K_SCALE: i32 = 5;	const K_SCALE: i32 = 6;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_wind	src/planet_veg/tree.rs	const K_WIND: i32 = 6;	const K_WIND: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_species_h	src/planet_veg/tree.rs	const K_SPECIES_H: i32 = 7;	const K_SPECIES_H: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_size	src/planet_veg/tree.rs	const K_SIZE: i32 = 8;	const K_SIZE: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_shape	src/planet_veg/tree.rs	const K_SHAPE: i32 = 9;	const K_SHAPE: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_tint_hue	src/planet_veg/tree.rs	const K_TINT_HUE: i32 = 10;	const K_TINT_HUE: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_tint_sat	src/planet_veg/tree.rs	const K_TINT_SAT: i32 = 11;	const K_TINT_SAT: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_tint_val	src/planet_veg/tree.rs	const K_TINT_VAL: i32 = 12;	const K_TINT_VAL: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_lean	src/planet_veg/tree.rs	const K_LEAN: i32 = 13;	const K_LEAN: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_lean_dir	src/planet_veg/tree.rs	const K_LEAN_DIR: i32 = 14;	const K_LEAN_DIR: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_understory	src/planet_veg/tree.rs	const K_UNDERSTORY: i32 = 15;	const K_UNDERSTORY: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+key_k_companion	src/planet_veg/tree.rs	const K_COMPANION: i32 = 16;	const K_COMPANION: i32 = 5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+seed_salt	src/planet_veg/tree.rs	const SEED_SALT: u32 = 0x7eed;	const SEED_SALT: u32 = 0x7eee;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+cell_hash_seed	src/planet_veg/tree.rs	const CELL_HASH_SEED: u32 = 0x5eed;	const CELL_HASH_SEED: u32 = 0x5eee;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_seed	src/planet_veg/tree.rs	const GROVE_SEED: u32 = 0x67a0e5;	const GROVE_SEED: u32 = 0x67a0e6;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_detail_salt	src/planet_veg/tree.rs	const GROVE_DETAIL_SALT: u32 = 0x9e37;	const GROVE_DETAIL_SALT: u32 = 0x9e38;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+patch_t_seed	src/planet_veg/tree.rs	const PATCH_T_SEED: u32 = 0x51a7c1;	const PATCH_T_SEED: u32 = 0x51a7c2;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+patch_h_seed	src/planet_veg/tree.rs	const PATCH_H_SEED: u32 = 0x2b3c4d;	const PATCH_H_SEED: u32 = 0x2b3c4e;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+season_seed	src/planet_veg/tree.rs	const SEASON_SEED: u32 = 0x5ea50a;	const SEASON_SEED: u32 = 0x5ea50b;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_cell	src/planet_veg/tree.rs	const GROVE_CELL_M: f64 = 96.0;	const GROVE_CELL_M: f64 = 95.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_detail_cell	src/planet_veg/tree.rs	const GROVE_DETAIL_CELL_M: f64 = 37.0;	const GROVE_DETAIL_CELL_M: f64 = 38.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+patch_cell	src/planet_veg/tree.rs	const PATCH_CELL_M: f64 = 64.0;	const PATCH_CELL_M: f64 = 65.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+season_cell	src/planet_veg/tree.rs	const SEASON_CELL_M: f64 = 420.0;	const SEASON_CELL_M: f64 = 421.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_mul_floor	src/planet_veg/tree.rs	const GROVE_MUL_FLOOR: f64 = 0.15;	const GROVE_MUL_FLOOR: f64 = 0.16;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_mul_span	src/planet_veg/tree.rs	const GROVE_MUL_SPAN: f64 = 1.45;	const GROVE_MUL_SPAN: f64 = 1.46;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_smoothstep_low	src/planet_veg/tree.rs	const GROVE_EDGES: [f64; 2] = [0.30, 0.70];	const GROVE_EDGES: [f64; 2] = [0.31, 0.70];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_smoothstep_high	src/planet_veg/tree.rs	const GROVE_EDGES: [f64; 2] = [0.30, 0.70];	const GROVE_EDGES: [f64; 2] = [0.30, 0.69];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_coarse_weight	src/planet_veg/tree.rs	const GROVE_COARSE_WEIGHT: f64 = 0.7;	const GROVE_COARSE_WEIGHT: f64 = 0.71;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+grove_detail_weight	src/planet_veg/tree.rs	const GROVE_DETAIL_WEIGHT: f64 = 0.3;	const GROVE_DETAIL_WEIGHT: f64 = 0.31;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+understory_base	src/planet_veg/tree.rs	const UNDERSTORY_BASE: f64 = 0.08;	const UNDERSTORY_BASE: f64 = 0.09;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+understory_gain	src/planet_veg/tree.rs	const UNDERSTORY_CLEARING_GAIN: f64 = 0.35;	const UNDERSTORY_CLEARING_GAIN: f64 = 0.45;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+scale_low	src/planet_veg/tree.rs	const SCALE_LOW: f64 = 0.62;	const SCALE_LOW: f64 = 0.63;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+scale_span_age	src/planet_veg/tree.rs	const SCALE_SPAN_AGE: f64 = 0.72;	const SCALE_SPAN_AGE: f64 = 0.73;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+age_exponent	src/planet_veg/tree.rs	const SCALE_AGE_SKEW: f64 = 1.4;	const SCALE_AGE_SKEW: f64 = 1.5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_class_scale_small	src/planet_veg/tree.rs	const SIZE_CLASS_SCALE: [f64; 3] = [0.90, 1.0, 1.10];	const SIZE_CLASS_SCALE: [f64; 3] = [0.91, 1.0, 1.10];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_class_scale_large	src/planet_veg/tree.rs	const SIZE_CLASS_SCALE: [f64; 3] = [0.90, 1.0, 1.10];	const SIZE_CLASS_SCALE: [f64; 3] = [0.90, 1.0, 1.11];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_class_cut_low	src/planet_veg/tree.rs	const SIZE_CLASS_CUTS: [f64; 2] = [0.40, 0.75];	const SIZE_CLASS_CUTS: [f64; 2] = [0.41, 0.75];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_class_cut_high	src/planet_veg/tree.rs	const SIZE_CLASS_CUTS: [f64; 2] = [0.40, 0.75];	const SIZE_CLASS_CUTS: [f64; 2] = [0.40, 0.76];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_random_weight	src/planet_veg/tree.rs	const SIZE_RANDOM_WEIGHT: f64 = 0.7;	const SIZE_RANDOM_WEIGHT: f64 = 0.71;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+size_lowland_weight	src/planet_veg/tree.rs	const SIZE_LOWLAND_WEIGHT: f64 = 0.3;	const SIZE_LOWLAND_WEIGHT: f64 = 0.31;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_max_tree	src/planet_veg/tree.rs	const LEAN_MAX_TREE: f64 = 0.09;	const LEAN_MAX_TREE: f64 = 0.10;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_max_bush	src/planet_veg/tree.rs	const LEAN_MAX_BUSH: f64 = 0.16;	const LEAN_MAX_BUSH: f64 = 0.17;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_bright_low	src/planet_veg/tree.rs	const TINT_BRIGHT_LOW: f64 = 0.80;	const TINT_BRIGHT_LOW: f64 = 0.81;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_bright_span	src/planet_veg/tree.rs	const TINT_BRIGHT_SPAN: f64 = 0.36;	const TINT_BRIGHT_SPAN: f64 = 0.37;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_age_darken	src/planet_veg/tree.rs	const TINT_AGE_DARKEN: f64 = 0.06;	const TINT_AGE_DARKEN: f64 = 0.07;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_sat_low	src/planet_veg/tree.rs	const TINT_SAT_LOW: f64 = 0.35;	const TINT_SAT_LOW: f64 = 0.36;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_sat_span	src/planet_veg/tree.rs	const TINT_SAT_SPAN: f64 = 0.65;	const TINT_SAT_SPAN: f64 = 0.66;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_hue_random_weight	src/planet_veg/tree.rs	const TINT_HUE_RANDOM_WEIGHT: f64 = 0.55;	const TINT_HUE_RANDOM_WEIGHT: f64 = 0.56;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_hue_season_weight	src/planet_veg/tree.rs	const TINT_HUE_SEASON_WEIGHT: f64 = 0.45;	const TINT_HUE_SEASON_WEIGHT: f64 = 0.46;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_warm	src/planet_veg/tree.rs	const TINT_WARM: [f64; 3] = [1.22, 0.76, 0.52];	const TINT_WARM: [f64; 3] = [1.23, 0.76, 0.52];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_cool	src/planet_veg/tree.rs	const TINT_COOL: [f64; 3] = [0.64, 1.07, 0.58];	const TINT_COOL: [f64; 3] = [0.64, 1.08, 0.58];	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_pine_strength	src/planet_veg/tree.rs	const PINE_TINT_STRENGTH: f64 = 0.4;	const PINE_TINT_STRENGTH: f64 = 0.5;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_bush_strength	src/planet_veg/tree.rs	const BUSH_TINT_STRENGTH: f64 = 0.8;	const BUSH_TINT_STRENGTH: f64 = 0.9;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_weight_form	src/planet_veg/tree.rs	let w = hue.abs() * sat;	let w = hue * sat;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tint_target_form	src/planet_veg/tree.rs	(value * (1.0 + w * (t - 1.0))) as f32	(value * (1.0 + w * (t - 0.9))) as f32	cargo test --bin bevy-jayzee planet_veg::tree::tests
+companion_chance	src/planet_veg/tree.rs	const COMPANION_CHANCE: f64 = 0.22;	const COMPANION_CHANCE: f64 = 0.23;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+companion_oak	src/planet_veg/tree.rs	OAK => Some(ASH),	OAK => Some(ASPEN),	cargo test --bin bevy-jayzee planet_veg::tree::tests
+companion_ash	src/planet_veg/tree.rs	ASH => Some(ASPEN),	ASH => Some(OAK),	cargo test --bin bevy-jayzee planet_veg::tree::tests
+companion_aspen	src/planet_veg/tree.rs	ASPEN => Some(OAK),	ASPEN => Some(ASH),	cargo test --bin bevy-jayzee planet_veg::tree::tests
+companion_pine	src/planet_veg/tree.rs	PINE => Some(ASPEN),	PINE => Some(OAK),	cargo test --bin bevy-jayzee planet_veg::tree::tests
+arid_line	src/planet_veg/context.rs	const ARIDITY_LINE: f64 = 0.28;	const ARIDITY_LINE: f64 = 0.38;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_pine_elevation	src/planet_veg/tree.rs	const PINE_ELEV_NORM: f64 = 0.62;	const PINE_ELEV_NORM: f64 = 0.63;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_pine_temp	src/planet_veg/tree.rs	const PINE_TEMP: f64 = 0.30;	const PINE_TEMP: f64 = 0.31;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_oak_temp	src/planet_veg/tree.rs	const OAK_TEMP: f64 = 0.62;	const OAK_TEMP: f64 = 0.52;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_oak_humidity	src/planet_veg/tree.rs	const OAK_HUMIDITY: f64 = 0.55;	const OAK_HUMIDITY: f64 = 0.45;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_ash_humidity	src/planet_veg/tree.rs	const ASH_HUMIDITY: f64 = 0.50;	const ASH_HUMIDITY: f64 = 0.40;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+species_rounding	src/planet_veg/tree.rs	const SPECIES_ROUND: f64 = 10.0;	const SPECIES_ROUND: f64 = 20.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+patch_spread	src/planet_veg/tree.rs	const PATCH_SPREAD: f64 = 0.60;	const PATCH_SPREAD: f64 = 0.90;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+variant_spread	src/planet_veg/tree.rs	const VARIANT_SPREAD: f64 = 0.30;	const VARIANT_SPREAD: f64 = 0.31;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sibling_oak	src/planet_veg/tree.rs	[[11, 12, OAK],	[[11, 12, 12],	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sibling_pine	src/planet_veg/tree.rs	[13, PINE, 14]	[13, 14, PINE]	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sibling_aspen	src/planet_veg/tree.rs	[7, ASPEN, 8]	[8, ASPEN, 7]	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sibling_ash	src/planet_veg/tree.rs	[5, ASH, 6]	[6, ASH, 5]	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sibling_bush	src/planet_veg/tree.rs	[BUSH, 9, 10]]	[BUSH, 10, 9]]	cargo test --bin bevy-jayzee planet_veg::tree::tests
+density_ceiling	src/planet_veg/tree.rs	density_ceiling: base_density(1.0, 1.0, 0.0)	density_ceiling: base_density(0.5, 0.5, 0.0)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+base_density_floor	src/planet_veg/tree.rs	(0.12 + 0.73 * wet * (0.4 + 0.6 * warm))	(0.13 + 0.73 * wet * (0.4 + 0.6 * warm))	cargo test --bin bevy-jayzee planet_veg::tree::tests
+base_density_wet	src/planet_veg/tree.rs	(0.12 + 0.73 * wet * (0.4 + 0.6 * warm))	(0.12 + 0.74 * wet * (0.4 + 0.6 * warm))	cargo test --bin bevy-jayzee planet_veg::tree::tests
+base_density_warm	src/planet_veg/tree.rs	(0.12 + 0.73 * wet * (0.4 + 0.6 * warm))	(0.12 + 0.73 * wet * (0.5 + 0.5 * warm))	cargo test --bin bevy-jayzee planet_veg::tree::tests
+base_density_erosion	src/planet_veg/tree.rs	* (1.0 - 0.45 * ero)	* (1.0 - 0.5 * ero)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sea_reject_applied	src/planet_veg/context.rs	sea_bias < SEA_REJECT	sea_bias < -1.0e9	cargo test --bin bevy-jayzee planet_veg::tree::tests
+density_coin_before_solve	src/planet_veg/tree.rs	if coin >= base {	if coin >= base * 0.9 {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+density_coin_after_solve	src/planet_veg/tree.rs	if density_mul <= 0.0 || coin >= base * density_mul {	if density_mul <= 0.0 || coin >= base {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+slope_both_axes	src/planet_veg/tree.rs	if slope[0].hypot(slope[1]) > SLOPE_MAX {	if slope[0].abs() > SLOPE_MAX {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+snow_rejection_grass	src/planet_veg/tree.rs	w.snow > w.grass && w.snow > w.rock && w.snow > w.sand	w.snow > w.rock && w.snow > w.sand	cargo test --bin bevy-jayzee planet_veg::tree::tests
+snow_rejection_rock	src/planet_veg/tree.rs	w.snow > w.grass && w.snow > w.rock && w.snow > w.sand	w.snow > w.grass && w.snow > w.sand	cargo test --bin bevy-jayzee planet_veg::tree::tests
+snow_rejection_sand	src/planet_veg/tree.rs	w.snow > w.grass && w.snow > w.rock && w.snow > w.sand	w.snow > w.grass && w.snow > w.rock	cargo test --bin bevy-jayzee planet_veg::tree::tests
+snow_rejection_off	src/planet_veg/tree.rs	w.snow > w.grass && w.snow > w.rock && w.snow > w.sand	false	cargo test --bin bevy-jayzee planet_veg::tree::tests
+elevation_norm_scale	src/planet_veg/tree.rs	let elev_norm = (elev / TREELINE_M).clamp(0.0, 1.0);	let elev_norm = (elev / 1000.0).clamp(0.0, 1.0);	cargo test --bin bevy-jayzee planet_veg::tree::tests
+treeline_relief_scale	src/planet_veg/tree.rs	rendered_soil_weight(elev) * treeline_multiplier(elev, relief_margin_scale(relief_scale))	rendered_soil_weight(elev) * treeline_multiplier(elev, 1.0)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+treeline_fade_form	src/planet_veg/tree.rs	1.0 - (elev - treeline) / (TREELINE_FADE_M * relief_margin)	1.0 - (elev - treeline) / TREELINE_FADE_M	cargo test --bin bevy-jayzee planet_veg::tree::tests
+treeline_above	src/planet_veg/tree.rs	if elev > treeline {	if elev > treeline * 2.0 {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+yaw_range	src/planet_veg/tree.rs	let yaw = (rand(cell_hash, K_YAW) * PI * 2.0) as f32;	let yaw = (rand(cell_hash, K_YAW) * PI) as f32;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+wind_range	src/planet_veg/tree.rs	let wind_phase = (rand(cell_hash, K_WIND) * PI * 2.0) as f32;	let wind_phase = (rand(cell_hash, K_WIND) * PI) as f32;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_square	src/planet_veg/tree.rs	lean_quat(lean_r * lean_r * lean_max,	lean_quat(lean_r * lean_max,	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_bush_split	src/planet_veg/tree.rs	let lean_max = if genus == BUSH { LEAN_MAX_BUSH } else { LEAN_MAX_TREE };	let lean_max = LEAN_MAX_TREE;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tree_coin_key	src/planet_veg/tree.rs	rand(trunk_id, 0)	rand(trunk_id, 1)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_near	src/planet_veg/tree.rs	pub const FALLOFF_NEAR_M: f64 = 96.0;	pub const FALLOFF_NEAR_M: f64 = 97.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_floor	src/planet_veg/tree.rs	pub const FALLOFF_FLOOR: f64 = 0.15;	pub const FALLOFF_FLOOR: f64 = 0.16;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_render_distance	src/planet_veg/tree.rs	pub const RENDER_DISTANCE_M: f64 = 640.0;	pub const RENDER_DISTANCE_M: f64 = 641.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_ring_margin	src/planet_veg/tree.rs	pub const RING_M: f64 = RENDER_DISTANCE_M + 40.0;	pub const RING_M: f64 = RENDER_DISTANCE_M + 41.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_smoothstep	src/planet_veg/tree.rs	(1.0 - FALLOFF_FLOOR) * (t * t * (3.0 - 2.0 * t))	(1.0 - FALLOFF_FLOOR) * (t * t * (3.0 - t))	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_comparison	src/planet_veg/tree.rs	tree_coin(instances[i].trunk_id) < veg_keep_prob(d)	tree_coin(instances[i].trunk_id) <= 0.5 * veg_keep_prob(d)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+thin_ring	src/planet_veg/tree.rs	d <= RING_M && (d <= FALLOFF_NEAR_M	(d <= FALLOFF_NEAR_M	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_mul_1	src/planet_veg/context.rs	0x27d4eb2d	0x27d4eb2e	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_mul_2	src/planet_veg/context.rs	0x165667b1	0x165667b2	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_mul_3	src/planet_veg/context.rs	0x2c1b3c6d	0x2c1b3c6e	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_mul_4	src/planet_veg/context.rs	0x297a2d39	0x297a2d3a	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_shift_15a	src/planet_veg/context.rs	h ^= h >> 15;	h ^= h >> 14;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_shift_12	src/planet_veg/context.rs	h ^= h >> 12;	h ^= h >> 11;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_shift_15b	src/planet_veg/context.rs	h ^ (h >> 15)	h ^ (h >> 16)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+hash_second_input	src/planet_veg/context.rs	h = (h ^ iz as u32).wrapping_mul	h = (h ^ (iz as u32 >> 1)).wrapping_mul	cargo test --bin bevy-jayzee planet_veg::tree::tests
+rand_mul_1	src/planet_veg/context.rs	0x9e3779b1	0x9e3779b2	cargo test --bin bevy-jayzee planet_veg::tree::tests
+rand_mul_2	src/planet_veg/context.rs	0x85ebca6b	0x85ebca6c	cargo test --bin bevy-jayzee planet_veg::tree::tests
+rand_shift_16	src/planet_veg/context.rs	x = (x ^ (x >> 16))	x = (x ^ (x >> 15))	cargo test --bin bevy-jayzee planet_veg::tree::tests
+rand_shift_13	src/planet_veg/context.rs	x ^= x >> 13;	x ^= x >> 12;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+rand_key_offset	src/planet_veg/context.rs	k.wrapping_add(1) as u32	k as u32	cargo test --bin bevy-jayzee planet_veg::tree::tests
+noise_fade	src/planet_veg/context.rs	let t = f[k] - i[k];	let t = (f[k] - i[k]) * 0.99;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+noise_corner_order	src/planet_veg/context.rs	let x10 = lerp(corner(0, 1, 0), corner(1, 1, 0), tx);	let x10 = lerp(corner(0, 1, 0), corner(1, 1, 0), ty);	cargo test --bin bevy-jayzee planet_veg::tree::tests
+noise_second_hash	src/planet_veg/context.rs	corner(1, 0, 1)	corner(1, 1, 1)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+smoothstep_clamp	src/planet_veg/context.rs	let t = ((x - a) / (b - a)).clamp(0.0, 1.0);	let t = ((x - a) / (b - a)).clamp(0.0, 0.9);	cargo test --bin bevy-jayzee planet_veg::tree::tests
+jitter_signed	src/planet_veg/context.rs	(rand(h, k) * 2.0 - 1.0) * jitter.over_cell	rand(h, k) * jitter.over_cell	cargo test --bin bevy-jayzee planet_veg::tree::tests
+jitter_centre	src/planet_veg/context.rs	i + 0.5 + offset(jitter.k_x)	i + offset(jitter.k_x)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+jitter_key_z	src/planet_veg/context.rs	j + 0.5 + offset(jitter.k_z)	j + 0.5 + offset(jitter.k_x)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+cell_hash_args	src/planet_veg/context.rs	hash3(jitter.prejitter_seed, row_bits, j_bits)	hash3(jitter.prejitter_seed, j_bits, row_bits)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+cell_area	src/planet_veg/context.rs	area: lattice.cell_area_over_target(i + 0.5, j + 0.5),	area: 1.0,	cargo test --bin bevy-jayzee planet_veg::tree::tests
+cell_id	src/planet_veg/context.rs	id: lattice.cell_id(dec[0], i, j),	id: lattice.cell_id(dec[0], j, i),	cargo test --bin bevy-jayzee planet_veg::tree::tests
+soil_beach_top	src/planet_veg/context.rs	const RENDERED_BEACH_TOP_M: f64 = 15.0;	const RENDERED_BEACH_TOP_M: f64 = 16.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+soil_sand_only	src/planet_veg/context.rs	RENDERED_BEACH_TOP_M * 0.3;	RENDERED_BEACH_TOP_M * 0.4;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+soil_smoothstep_top	src/planet_veg/context.rs	} else if t >= 1.0 {	} else if t >= 0.9 {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+soil_smoothstep_bottom	src/planet_veg/context.rs	if t.is_nan() || t <= 0.0 {	if t.is_nan() || t <= 0.1 {	cargo test --bin bevy-jayzee planet_veg::tree::tests
+relief_baseline	src/planet_veg/context.rs	const RELIEF_CALIBRATION_BASELINE: f64 = 0.01;	const RELIEF_CALIBRATION_BASELINE: f64 = 0.02;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+pole_switch	src/planet_veg/context.rs	const POLE_REF_SWITCH: f64 = 0.99;	const POLE_REF_SWITCH: f64 = 0.9;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+sector_size	src/planet_veg/context.rs	const SECTOR_M: f64 = 8.0;	const SECTOR_M: f64 = 9.0;	cargo test --bin bevy-jayzee planet_veg::tree::tests
+slope_probe_span	src/planet_veg/context.rs	(east_hi - east_lo) / (2.0 * step_m)	(east_hi - east_lo) / step_m	cargo test --bin bevy-jayzee planet_veg::tree::tests
+slope_probe_north	src/planet_veg/context.rs	(north_hi - north_lo) / (2.0 * step_m)	(north_hi - north_lo) / (3.0 * step_m)	cargo test --bin bevy-jayzee planet_veg::tree::tests
+painted_slope_form	src/planet_veg/context.rs	1.0 - 1.0 / (1.0 + slope[0] * slope[0] + slope[1] * slope[1]).sqrt()	1.0 - 1.0 / (1.0 + slope[0] * slope[0]).sqrt()	cargo test --bin bevy-jayzee planet_veg::tree::tests
+surface_base	src/planet_veg/context.rs	rho * du - frame.surface_base()	rho * du	cargo test --bin bevy-jayzee planet_veg::tree::tests
+tangent_north	src/planet_veg/context.rs	let north = [east[1] * d[2] - east[2] * d[1],	let north = [east[2] * d[1] - east[1] * d[2],	cargo test --bin bevy-jayzee planet_veg::tree::tests
+quat_trace_branch	src/planet_veg/context.rs	let s = 0.5 / (trace + 1.0).sqrt();	let s = 0.5 / (trace + 1.1).sqrt();	cargo test --bin bevy-jayzee planet_veg::tree::tests
+quat_mul_x	src/planet_veg/context.rs	a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],	a[3] * b[0] + a[0] * b[3] - a[1] * b[2] + a[2] * b[1],	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_half_angle	src/planet_veg/context.rs	let (s, c) = ((magnitude * 0.5).sin(), (magnitude * 0.5).cos());	let (s, c) = (magnitude.sin(), (magnitude * 0.5).cos());	cargo test --bin bevy-jayzee planet_veg::tree::tests
+lean_axis	src/planet_veg/context.rs	[round_f32(dir_angle.cos() * s), 0.0, round_f32(dir_angle.sin() * s), round_f32(c)]	[round_f32(dir_angle.sin() * s), 0.0, round_f32(dir_angle.cos() * s), round_f32(c)]	cargo test --bin bevy-jayzee planet_veg::tree::tests

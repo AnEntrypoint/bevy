@@ -1,17 +1,10 @@
-
-#[cfg(test)]
 use crate::height::ops_jsgen::V3;
 
-#[cfg(test)]
 const QUARTER_TURN: f64 = std::f64::consts::FRAC_PI_2;
-#[cfg(test)]
 const FACE_EDGE_ANGLE: f64 = std::f64::consts::FRAC_PI_4;
-#[cfg(test)]
 const FACE_COUNT: f64 = 6.0;
-#[cfg(test)]
 const MIN_AXIS_STRETCH: f64 = 0.66;
 
-#[cfg(test)]
 const FACE_BASIS: [f64; 54] = [
     1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0,
     -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0,
@@ -21,7 +14,6 @@ const FACE_BASIS: [f64; 54] = [
     0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
 ];
 
-#[cfg(test)]
 pub fn cube_face_of(dx: f64, dy: f64, dz: f64) -> f64 {
     let (ax, ay, az) = (dx.abs(), dy.abs(), dz.abs());
     if ax >= ay && ax >= az {
@@ -35,7 +27,6 @@ pub fn cube_face_of(dx: f64, dy: f64, dz: f64) -> f64 {
     }
 }
 
-#[cfg(test)]
 fn face_angles(face: f64, d: V3) -> [f64; 2] {
     let b = face as usize * 9;
     let dn = d[0] * FACE_BASIS[b] + d[1] * FACE_BASIS[b + 1] + d[2] * FACE_BASIS[b + 2];
@@ -44,7 +35,6 @@ fn face_angles(face: f64, d: V3) -> [f64; 2] {
     [du.atan2(dn), dv.atan2(dn)]
 }
 
-#[cfg(test)]
 fn dir_of_face_angles(face: f64, au: f64, av: f64) -> V3 {
     let b = face as usize * 9;
     let (tu, tv) = (au.tan(), av.tan());
@@ -55,7 +45,6 @@ fn dir_of_face_angles(face: f64, au: f64, av: f64) -> V3 {
     [x / l, y / l, z / l]
 }
 
-#[cfg(test)]
 fn clamp_index(i: f64, n: f64) -> f64 {
     if i < 0.0 {
         0.0
@@ -66,7 +55,6 @@ fn clamp_index(i: f64, n: f64) -> f64 {
     }
 }
 
-#[cfg(test)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlacementLattice {
     pub radius: f64,
@@ -80,9 +68,7 @@ pub struct PlacementLattice {
     centre_cell_area_over_target: f64,
 }
 
-#[cfg(test)]
 impl PlacementLattice {
-    #[cfg(test)]
     pub fn new(radius: f64, chunk_m: f64, cells_per_chunk: f64) -> Result<Self, String> {
         if !(radius.is_finite() && radius > 0.0) {
             return Err(format!("placement lattice needs a finite planet radius, got {radius}"));
@@ -109,12 +95,10 @@ impl PlacementLattice {
         })
     }
 
-    #[cfg(test)]
     pub fn cell_dir(&self, face: f64, fu: f64, fv: f64) -> V3 {
         dir_of_face_angles(face, fu * self.cell_angle - FACE_EDGE_ANGLE, fv * self.cell_angle - FACE_EDGE_ANGLE)
     }
 
-    #[cfg(test)]
     pub fn cell_area_over_target(&self, fu: f64, fv: f64) -> f64 {
         let tu = (fu * self.cell_angle - FACE_EDGE_ANGLE).tan();
         let tv = (fv * self.cell_angle - FACE_EDGE_ANGLE).tan();
@@ -124,12 +108,10 @@ impl PlacementLattice {
         self.centre_cell_area_over_target * su * sv / (l2 * l2.sqrt())
     }
 
-    #[cfg(test)]
     pub fn chunk_key(&self, face: f64, ci: f64, cj: f64) -> f64 {
         (face * self.chunks_per_face + ci) * self.chunks_per_face + cj
     }
 
-    #[cfg(test)]
     pub fn decode_chunk(&self, key: f64) -> [f64; 3] {
         let cj = key % self.chunks_per_face;
         let rest = (key - cj) / self.chunks_per_face;
@@ -137,7 +119,6 @@ impl PlacementLattice {
         [(rest - ci) / self.chunks_per_face, ci, cj]
     }
 
-    #[cfg(test)]
     pub fn chunk_key_of_dir(&self, d: V3) -> f64 {
         let face = cube_face_of(d[0], d[1], d[2]);
         let a = face_angles(face, d);
@@ -146,29 +127,24 @@ impl PlacementLattice {
         self.chunk_key(face, ci, cj)
     }
 
-    #[cfg(test)]
     pub fn chunk_centre_dir(&self, key: f64) -> V3 {
         let c = self.decode_chunk(key);
         self.cell_dir(c[0], (c[1] + 0.5) * self.cells_per_chunk, (c[2] + 0.5) * self.cells_per_chunk)
     }
 
-    #[cfg(test)]
     pub fn chunk_corner_dir(&self, key: f64, corner_u: f64, corner_v: f64) -> V3 {
         let c = self.decode_chunk(key);
         self.cell_dir(c[0], (c[1] + corner_u) * self.cells_per_chunk, (c[2] + corner_v) * self.cells_per_chunk)
     }
 
-    #[cfg(test)]
     pub fn cell_id(&self, face: f64, i: f64, j: f64) -> f64 {
         (face * self.cells_per_face + i) * self.cells_per_face + j
     }
 
-    #[cfg(test)]
     pub fn hash_row(&self, face: f64, i: f64) -> f64 {
         face * self.cells_per_face + i
     }
 
-    #[cfg(test)]
     pub fn ring_around_dir(&self, d: V3, radius_m: f64) -> Vec<f64> {
         let max_angle = radius_m / self.radius;
         let max_chord_sq = 4.0 * (max_angle / 2.0).sin().powi(2);
