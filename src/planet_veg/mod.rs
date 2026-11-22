@@ -7,3 +7,4 @@ pub mod tree;
 pub mod grass_render;
 pub mod rock_render;
 pub mod trees_render;
+pub mod stream;
