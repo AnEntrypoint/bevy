@@ -292,6 +292,18 @@ fn veg_frustum_planes_accept_inside_and_reject_each_side() {
 }
 
 #[test]
+fn veg_frustum_planes_follow_the_eye_away_from_the_render_origin() {
+    for eye in [Vec3::new(0.0, 0.0, -180.0), Vec3::new(6.0e4, -3.0e3, 2.5e4)] {
+        let view = CullView::new(eye, wide_projection() * Mat4::from_translation(-eye));
+        let inside = |offset: Vec3| sphere_in_frustum(&view.planes, offset, 0.0);
+        assert!(inside(Vec3::new(0.0, 0.0, -20.0)), "20 m ahead of {eye:?} is culled");
+        assert!(inside(Vec3::new(9.0, -9.0, -10.0)), "inside corner of {eye:?} is culled");
+        assert!(!inside(Vec3::new(11.0, 0.0, -10.0)), "right of {eye:?} is kept");
+        assert!(!inside(Vec3::new(0.0, 0.0, 5.0)), "behind {eye:?} is kept");
+    }
+}
+
+#[test]
 fn veg_upload_budgets_are_the_design_numbers() {
     assert_eq!(VegKind::Tree.upload_budget_bytes(), 64 * 1024);
     assert_eq!(VegKind::Rock.upload_budget_bytes(), 64 * 1024);

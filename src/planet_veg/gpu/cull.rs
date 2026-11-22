@@ -120,7 +120,7 @@ pub fn frustum_planes(clip_from_world: Mat4) -> [Vec4; 6] {
 
 impl CullView {
     pub fn new(eye: Vec3, clip_from_world: Mat4) -> Self {
-        Self { planes: frustum_planes(clip_from_world), eye }
+        Self { planes: frustum_planes(clip_from_world).map(|plane| plane + Vec4::W * plane.truncate().dot(eye)), eye }
     }
 
     pub fn from_extracted(view: &ExtractedView) -> Self {
