@@ -1,0 +1,61 @@
+rock_ramp_low	assets/shaders/planet/vegetation_rock.wgsl	vec3<f32>(0.30, 0.28, 0.25)	vec3<f32>(0.40, 0.28, 0.25)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_ramp_high	assets/shaders/planet/vegetation_rock.wgsl	vec3<f32>(0.66, 0.62, 0.56)	vec3<f32>(0.66, 0.52, 0.56)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_tint_gain	assets/shaders/planet/vegetation_rock.wgsl	ROCK_TINT_GAIN: f32 = 2.05	ROCK_TINT_GAIN: f32 = 1.80	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_variant_base	assets/shaders/planet/vegetation_rock.wgsl	VARIANT_TINT_BASE: f32 = 0.78	VARIANT_TINT_BASE: f32 = 0.60	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_variant_span	assets/shaders/planet/vegetation_rock.wgsl	VARIANT_TINT_SPAN: f32 = 0.4	VARIANT_TINT_SPAN: f32 = 0.3	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_variant_tint_max	assets/shaders/planet/vegetation_rock.wgsl	min(1.0, VARIANT_TINT_BASE	max(1.0, VARIANT_TINT_BASE	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_noise_octave_low_weight	assets/shaders/planet/vegetation_rock.wgsl	rock_noise(local_position * 1.7) * 0.6	rock_noise(local_position * 1.7) * 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_noise_octave_mid_freq	assets/shaders/planet/vegetation_rock.wgsl	rock_noise(local_position * 6.5)	rock_noise(local_position * 5.5)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_noise_octave_high_weight	assets/shaders/planet/vegetation_rock.wgsl	rock_noise(local_position * 23.0) * 0.1	rock_noise(local_position * 23.0) * 0.2	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_hash_offset	assets/shaders/planet/vegetation_rock.wgsl	fract(point * 0.3183099 + 0.1)	fract(point * 0.3183099 + 0.2)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_noise_smoothstep	assets/shaders/planet/vegetation_rock.wgsl	f = f * f * (3.0 - 2.0 * f);	f = f;	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_squash_ignored	assets/shaders/planet/vegetation_rock.wgsl	vec3<f32>(rock.scale, rock.scale * rock.squash, rock.scale)	vec3<f32>(rock.scale, rock.scale, rock.scale)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_normal_not_inverse_scaled	assets/shaders/planet/vegetation_rock.wgsl	vertex.normal / scale	vertex.normal * scale	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_chunk_rotation_order	assets/shaders/planet/vegetation_rock.wgsl	quat_mul(chunk.rotation, rock.rotation)	quat_mul(rock.rotation, chunk.rotation)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_clip_offset	assets/shaders/planet/vegetation_rock.wgsl	out.clip_position = view.clip_from_world * vec4<f32>(world_position, 1.0);	out.clip_position = view.clip_from_world * vec4<f32>(world_position + vec3<f32>(0.0, 1.5, 0.0), 1.0);	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_lambert_pi	assets/shaders/planet/vegetation_common.wgsl	INV_PI: f32 = 0.3183098861837907	INV_PI: f32 = 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_ambient_dropped	assets/shaders/planet/vegetation_common.wgsl	albedo * light.ambient_mul + light.ambient_add	albedo * light.ambient_add	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_sun_clamp	assets/shaders/planet/vegetation_common.wgsl	max(dot(normal, light.sun_direction), 0.0)	abs(dot(normal, light.sun_direction))	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_grade_aces	assets/shaders/planet/vegetation_common.wgsl	exposed * 2.51 + 0.03	exposed * 2.41 + 0.03	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_grade_contrast	assets/shaders/planet/vegetation_common.wgsl	(saturated - 0.5) * light.look_contrast + 0.5	(saturated - 0.5) + 0.5	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_grade_gamma	assets/shaders/planet/vegetation_common.wgsl	vec3<f32>(1.0 / 2.2)	vec3<f32>(1.0 / 2.0)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+common_quat_rotate	assets/shaders/planet/vegetation_common.wgsl	return v + q.w * t + cross(q.xyz, t);	return v - q.w * t + cross(q.xyz, t);	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_seed_base	src/planet_veg/rock_render.rs	ROCK_BASE_SEED: i32 = 1337	ROCK_BASE_SEED: i32 = 1338	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_mesh_resolution	src/planet_veg/rock_render.rs	ROCK_MESH_RES: usize = 16	ROCK_MESH_RES: usize = 14	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_seed_stride	src/rock_shapes.rs	base_seed + s as i32 * 7919	base_seed + s as i32 * 7918	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_normal_flipped	src/planet_veg/rock_render.rs	(c - b).cross(a - b)	(a - b).cross(c - b)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_normals_unnormalised	src/planet_veg/rock_render.rs	sum.normalize_or_zero().to_array()	(sum * 0.5).to_array()	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_bound_radius_min	src/planet_veg/rock_render.rs	.fold(0.0, f32::max)	.fold(0.0, f32::min)	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_slot_kind_zero	src/planet_veg/rock_render.rs	VegDrawSet::rock(kind as u32,	VegDrawSet::rock(0,	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_bounds_unpublished	src/planet_veg/rock_render.rs	bounds.rock_kind = built.iter().map(|rock| rock.bounds).collect();	bounds.rock_kind = vec![[0.0; 4]; ROCK_TYPES];	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+rock_wrong_fragment_entry	src/planet_veg/rock_render.rs	fragment_entry: "fs_rock"	fragment_entry: "fs_rock_probe"	cd /workspace/bevy && cargo test --bin bevy-jayzee rock_render
+grass_near_segments	src/planet_veg/grass_render.rs	NEAR_SEGMENTS: u32 = 2	NEAR_SEGMENTS: u32 = 3	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_mid_segments	src/planet_veg/grass_render.rs	MID_SEGMENTS: u32 = 1	MID_SEGMENTS: u32 = 2	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_clump_seed	src/planet_veg/grass_render.rs	CLUMP_SEED: u32 = 0x2f6e2b1	CLUMP_SEED: u32 = 0x2f6e2b2	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_clump_base_scaled	src/planet_veg/grass_render.rs	let centre = self.base_x + (	let centre = self.base_x * size + (	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_clump_width_power	src/planet_veg/grass_render.rs	(1.0 - v).powf(0.85)	(1.0 - v).powf(0.5)	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_clump_order	src/planet_veg/grass_render.rs	blades.sort_by(|a, b| a.height.total_cmp(&b.height));	blades.sort_by(|a, b| b.height.total_cmp(&a.height));	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_anim_speed	src/planet_veg/grass_render.rs	GRASS_ANIM_SPEED: f32 = 0.25	GRASS_ANIM_SPEED: f32 = 0.3	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_wind_strength_ignored	src/planet_veg/grass_render.rs	look.wind_amplitude * environment.wind_strength	look.wind_amplitude	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_ring_packed_wrong	src/planet_veg/grass_render.rs	.f32s(&[settings.edge_cap_m, settings.full_radius_m,	.f32s(&[settings.full_radius_m, settings.full_radius_m,	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_gust_scale	assets/shaders/planet/vegetation_grass.wgsl	GUST_NOISE_SCALE: f32 = 0.06	GUST_NOISE_SCALE: f32 = 0.07	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_wave1_k	assets/shaders/planet/vegetation_grass.wgsl	WAVE1_K: f32 = 0.075	WAVE1_K: f32 = 0.085	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_wave2_gain	assets/shaders/planet/vegetation_grass.wgsl	WAVE2_GAIN: f32 = 0.5	WAVE2_GAIN: f32 = 0.4	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_sway_base	assets/shaders/planet/vegetation_grass.wgsl	SWAY_BASE: f32 = 0.2	SWAY_BASE: f32 = 0.3	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_flutter_x	assets/shaders/planet/vegetation_grass.wgsl	FLUTTER_X: f32 = 0.25	FLUTTER_X: f32 = 0.35	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_flutter_rate	assets/shaders/planet/vegetation_grass.wgsl	FLUTTER_Z_RATE: f32 = 0.7	FLUTTER_Z_RATE: f32 = 0.6	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_sway_height	assets/shaders/planet/vegetation_grass.wgsl	SWAY_HEIGHT_GAIN: f32 = 0.45	SWAY_HEIGHT_GAIN: f32 = 0.55	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_sway_profile	assets/shaders/planet/vegetation_grass.wgsl	* height * height * SWAY_HEIGHT_GAIN	* height * SWAY_HEIGHT_GAIN	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_wind_hash	assets/shaders/planet/vegetation_grass.wgsl	0x2545f491u	0x2545f493u	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_ground_tint	assets/shaders/planet/vegetation_grass.wgsl	GROUND_TINT_MIX: f32 = 0.85	GROUND_TINT_MIX: f32 = 0.2	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_tip_ground_gain	assets/shaders/planet/vegetation_grass.wgsl	TIP_GROUND_GAIN: f32 = 1.1	TIP_GROUND_GAIN: f32 = 0.7	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_shadow_ignored	assets/shaders/planet/vegetation_grass.wgsl	light.sun_irradiance * wrap * shadow	light.sun_irradiance * wrap	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_tint_width	assets/shaders/planet/vegetation_grass.wgsl	grass.width_min + grass.width_span * blade.tint	grass.width_min	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_height_scale	assets/shaders/planet/vegetation_grass.wgsl	blade.scale * grass.height_scale	blade.scale	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_alpha_cutoff	assets/shaders/planet/vegetation_grass.wgsl	ALPHA_CUTOFF: f32 = 0.6	ALPHA_CUTOFF: f32 = 0.2	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_fade_edge	assets/shaders/planet/vegetation_grass.wgsl	let fade_in = clamp((edge - distance_h) / grass.fade_m, 0.0, 1.0);	let fade_in = 1.0;	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_texture_flip	assets/shaders/planet/vegetation_grass.wgsl	vec2<f32>(in.uv.x, 1.0 - in.uv.y)	vec2<f32>(in.uv.x, in.uv.y)	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_ambient	assets/shaders/planet/vegetation_grass.wgsl	AMBIENT: vec3<f32> = vec3<f32>(0.32, 0.36, 0.4)	AMBIENT: vec3<f32> = vec3<f32>(0.62, 0.36, 0.4)	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_grow	assets/shaders/planet/vegetation_grass.wgsl	GROW_K: f32 = 0.005	GROW_K: f32 = 0.05	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_backlit_gain	assets/shaders/planet/vegetation_grass.wgsl	backlit * 0.55 * shadow	backlit * 0.95 * shadow	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
+grass_colour_along	assets/shaders/planet/vegetation_grass.wgsl	smoothstep(0.0, 0.95, along_v)	smoothstep(0.0, 0.5, along_v)	cd /workspace/bevy && cargo test --bin bevy-jayzee grass_render
