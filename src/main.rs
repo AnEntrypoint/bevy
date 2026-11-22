@@ -95,6 +95,7 @@ mod png_check;
 mod basisu;
 mod css_anim;
 mod bench;
+mod bench_planet;
 mod client;
 mod protocol;
 mod render_stats;
