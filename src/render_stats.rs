@@ -27,6 +27,8 @@ pub struct FrameStats {
     pub launch_ms: Option<f64>,
     pub draw_ms: Option<f64>,
     pub cpu_ms: Option<f64>,
+    pub extract_ms: Option<f64>,
+    pub render_ms: Option<f64>,
     pub main: Tally,
     pub shadow: Tally,
     pub shadow_passes: u64,
@@ -72,6 +74,8 @@ struct FrameMarks {
     sim_ms: Option<f64>,
     render_begin: Option<Instant>,
     launch_ms: Option<f64>,
+    extract_end: Option<Instant>,
+    extract_ms: Option<f64>,
 }
 
 fn capture_frame_marks(shared: Res<SharedFrameStats>, mut marks: ResMut<FrameMarks>) {
@@ -79,6 +83,20 @@ fn capture_frame_marks(shared: Res<SharedFrameStats>, mut marks: ResMut<FrameMar
         marks.frame_begin = stats.frame_begin;
         marks.sim_end = stats.sim_end;
         marks.sim_ms = stats.frame_begin.zip(stats.sim_end).map(|(begin, end)| millis(end - begin));
+    }
+}
+
+fn extract_end(mut marks: ResMut<FrameMarks>) {
+    let now = Instant::now();
+    marks.extract_end = Some(now);
+    marks.extract_ms = marks.sim_end.map(|end| millis(now - end));
+}
+
+fn render_close(shared: Res<SharedFrameStats>, marks: Res<FrameMarks>) {
+    let now = Instant::now();
+    if let Ok(mut stats) = shared.0.lock() {
+        stats.extract_ms = marks.extract_ms;
+        stats.render_ms = marks.extract_end.map(|begin| millis(now - begin));
     }
 }
 
@@ -170,6 +188,8 @@ impl Plugin for RenderStatsPlugin {
                 .insert_resource(shared)
                 .init_resource::<FrameMarks>()
                 .add_systems(ExtractSchedule, capture_frame_marks)
+                .add_systems(Render, extract_end.before(RenderSystems::ExtractCommands))
+                .add_systems(Render, render_close.in_set(RenderSystems::PostCleanup))
                 .add_systems(Render, render_begin.before(RenderSystems::Render))
                 .add_systems(Render, render_end.after(RenderSystems::Render))
                 .add_systems(Render, collect_counts.in_set(RenderSystems::Cleanup));

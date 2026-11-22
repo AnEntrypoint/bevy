@@ -104,6 +104,10 @@ fn simulate(bodies: usize, ticks: usize, diagnostics: bool) -> (App, Vec<f64>) {
     (app, samples)
 }
 
+pub fn percentile(sorted: &[f64], q: f64) -> f64 {
+    sorted[((sorted.len() as f64 - 1.0) * q).round() as usize]
+}
+
 fn mean_of(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
@@ -113,7 +117,7 @@ pub fn run(bodies: usize, ticks: usize) {
     let hash = state_hash(&mut app);
     samples.sort_by(f64::total_cmp);
     let mean = mean_of(&samples);
-    let pick = |q: f64| samples[((samples.len() as f64 - 1.0) * q).round() as usize];
+    let pick = |q: f64| percentile(&samples, q);
     let threads = bevy::tasks::ComputeTaskPool::get().thread_num();
     println!(
         "{{\"kind\":\"bench\",\"engine\":\"bevy-avian\",\"bodies\":{bodies},\"ticks\":{ticks},\"threads\":{threads},\"meanMs\":{:.4},\"p50Ms\":{:.4},\"p95Ms\":{:.4},\"p99Ms\":{:.4},\"ticksPerSecondAtMean\":{},\"hash\":\"0x{:08x}\"}}",

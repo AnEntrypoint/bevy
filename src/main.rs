@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod camera_rig;
-#[cfg(test)]
 mod offscreen;
 mod features;
 mod features_ecs;
@@ -147,6 +146,11 @@ fn main() {
         Some("bench") => bench::run(number(1, 2000), number(2, 300)),
         Some("bench-phases") => bench::phases(number(1, 500), number(2, 300)),
         Some("bench-schedules") => bench::schedules(number(1, 500), number(2, 300)),
+        Some("bench-planet") => {
+            if !bench_planet::run(number(1, usize::MAX), number(2, bench_planet::IDLE_FRAMES)) {
+                std::process::exit(1);
+            }
+        }
         Some("det") => {
             if !bench::det(number(1, 2000), number(2, 300)) {
                 std::process::exit(1);
@@ -224,7 +228,7 @@ fn main() {
             println!("{{\"kind\":\"web-report\",\"path\":\"{}\"}}", report);
         }
         _ => {
-            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | bench-phases [bodies] [ticks] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | bake-terrain <dir> <place> | gltf-check <dir> [project] | server | client>");
+            eprintln!("usage: bevy-jayzee <bench [bodies] [ticks] | bench-phases [bodies] [ticks] | bench-planet [path-frames] [idle-frames] | det [bodies] [ticks] | world <dir> [place] [ticks] | viewer <dir> [place] | web <dir> [place] | bake-terrain <dir> <place> | gltf-check <dir> [project] | server | client>");
             std::process::exit(2);
         }
     }
