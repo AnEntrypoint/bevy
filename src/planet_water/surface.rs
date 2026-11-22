@@ -1,10 +1,11 @@
-use super::leaves::{clamp_level, water_instances};
+use super::leaves::water_instances;
 use super::mesh::{WaterMesh, build_water_mesh};
 use super::waves::{DEFAULT_AMPLITUDE, DEFAULT_CHOPPINESS, DEFAULT_FOAM, sea_height_mean, wave_tile_offset};
 use crate::height::Planet;
 use crate::planet_lod::guard::note_build;
 use crate::planet_lod::origin::{FloatingOrigin, rebase_system};
-use crate::planet_lod::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
+use crate::planet_lod::quadtree::{NodeKey, QuadtreeConfig};
+use crate::planet_lod::stream::SelectedLeaves;
 use bevy::asset::{RenderAssetUsages, uuid_handle};
 use bevy::camera::visibility::NoFrustumCulling;
 use bevy::math::DVec3;
@@ -14,7 +15,6 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, RenderPipelineDescriptor, ShaderType, SpecializedMeshPipelineError};
 use bevy::shader::{Shader, ShaderRef};
 use bevy::tasks::{AsyncComputeTaskPool, Task, futures::check_ready};
-use std::collections::HashSet;
 use std::sync::Arc;
 
 pub const UNDERWATER_BELOW_M: f64 = 2.0;
@@ -187,14 +187,14 @@ pub fn framed(
 }
 
 pub fn water_mesh_asset(mesh: WaterMesh) -> Mesh {
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, mesh.positions)
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, mesh.dirs)
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, mesh.land)
         .with_inserted_indices(Indices::U32(mesh.indices))
 }
 
-pub fn build_water(planet: &Planet, radius: f64, leaves: &[NodeKey], origin: DVec3) -> WaterMesh {
+pub fn build_water<'a>(planet: &Planet, radius: f64, leaves: impl IntoIterator<Item = &'a NodeKey>, origin: DVec3) -> WaterMesh {
     note_build();
     let instances = water_instances(leaves, |dir| planet.height(dir.to_array(), radius));
     build_water_mesh(&instances, radius, origin)
@@ -203,32 +203,20 @@ pub fn build_water(planet: &Planet, radius: f64, leaves: &[NodeKey], origin: DVe
 #[derive(Resource)]
 struct Source {
     planet: Arc<Planet>,
-    config: QuadtreeConfig,
-}
-
-struct Pending {
-    keys: HashSet<NodeKey>,
-    task: Task<WaterMesh>,
+    radius: f64,
 }
 
 #[derive(Resource, Default)]
 struct WaterStreamer {
-    camera: Option<DVec3>,
-    wanted: HashSet<NodeKey>,
-    live: Option<(HashSet<NodeKey>, Entity)>,
-    pending: Option<Pending>,
+    generation: u64,
+    live: Option<Entity>,
+    pending: Option<Task<(DVec3, Mesh)>>,
 }
 
 #[derive(Resource)]
 struct SeaMean {
     baking: Option<Task<f64>>,
     value: Option<f64>,
-}
-
-fn leaves_at(source: &Source, position: DVec3) -> Vec<NodeKey> {
-    let radius = source.config.radius;
-    let ground = source.planet.height(position.normalize().to_array(), radius);
-    select_leaves(&source.config.at(position, ground), position, position.length() - radius)
 }
 
 fn tick_clock(time: Res<Time>, mut clock: ResMut<WaterClock>) {
@@ -243,27 +231,13 @@ fn poll_sea_mean(mut mean: ResMut<SeaMean>) {
     }
 }
 
-fn plan_water(source: Res<Source>, frame: Res<WaterFrame>, origin: Res<FloatingOrigin>, camera: Query<&Transform, With<Camera3d>>, mut streamer: ResMut<WaterStreamer>) {
-    let Ok(transform) = camera.single() else { return };
-    let position = origin.to_world(transform.translation) - frame.centre;
-    if streamer.camera == Some(position) {
+fn start_water(source: Res<Source>, mean: Res<SeaMean>, selection: Res<SelectedLeaves>, mut streamer: ResMut<WaterStreamer>) {
+    if mean.value.is_none() || streamer.pending.is_some() || streamer.generation == selection.generation {
         return;
     }
-    streamer.camera = Some(position);
-    streamer.wanted = leaves_at(&source, position).into_iter().map(clamp_level).collect();
-}
-
-fn start_water(source: Res<Source>, mean: Res<SeaMean>, mut streamer: ResMut<WaterStreamer>) {
-    let Some(position) = streamer.camera else { return };
-    let current = |keys: &HashSet<NodeKey>| *keys == streamer.wanted;
-    let settled = streamer.live.as_ref().is_some_and(|(keys, _)| current(keys)) || streamer.pending.as_ref().is_some_and(|pending| current(&pending.keys));
-    if mean.value.is_none() || settled || streamer.pending.is_some() {
-        return;
-    }
-    let (planet, radius) = (source.planet.clone(), source.config.radius);
-    let keys: Vec<NodeKey> = streamer.wanted.iter().copied().collect();
-    let task = AsyncComputeTaskPool::get().spawn(async move { build_water(&planet, radius, &keys, position) });
-    streamer.pending = Some(Pending { keys: streamer.wanted.clone(), task });
+    let (planet, radius, keys, position) = (source.planet.clone(), source.radius, selection.keys.clone(), selection.camera);
+    streamer.generation = selection.generation;
+    streamer.pending = Some(AsyncComputeTaskPool::get().spawn(async move { (position, water_mesh_asset(build_water(&planet, radius, &keys, position))) }));
 }
 
 fn finish_water(
@@ -273,12 +247,12 @@ fn finish_water(
     mut surface: ResMut<WaterSurface>,
     mut streamer: ResMut<WaterStreamer>,
 ) {
-    let Some(pending) = streamer.pending.as_mut() else { return };
-    let Some(mesh) = check_ready(&mut pending.task) else { return };
-    let keys = streamer.pending.take().map(|pending| pending.keys).unwrap_or_default();
-    surface.origin = mesh.origin;
-    let entity = commands.spawn((Mesh3d(meshes.add(water_mesh_asset(mesh))), MeshMaterial3d(handle.0.clone()), Transform::IDENTITY, NoFrustumCulling)).id();
-    if let Some((_, old)) = streamer.live.replace((keys, entity)) {
+    let Some(task) = streamer.pending.as_mut() else { return };
+    let Some((origin, mesh)) = check_ready(task) else { return };
+    streamer.pending = None;
+    surface.origin = origin;
+    let entity = commands.spawn((Mesh3d(meshes.add(mesh)), MeshMaterial3d(handle.0.clone()), Transform::IDENTITY, NoFrustumCulling)).id();
+    if let Some(old) = streamer.live.replace(entity) {
         commands.entity(old).despawn();
     }
 }
@@ -349,13 +323,13 @@ impl Plugin for WaterPlugin {
         });
         app.add_plugins(WaterPipelinePlugin)
             .insert_resource(WaterFrame { centre: self.centre, radius: self.config.radius })
-            .insert_resource(Source { planet: self.planet.clone(), config: self.config.clone() })
+            .insert_resource(Source { planet: self.planet.clone(), radius: self.config.radius })
             .insert_resource(SeaMean { baking: Some(baking), value: None })
             .insert_resource(ocean)
             .init_resource::<FloatingOrigin>()
             .init_resource::<WaterClock>()
             .init_resource::<WaterSurface>()
             .init_resource::<WaterStreamer>()
-            .add_systems(Update, (tick_clock, poll_sea_mean, plan_water, start_water, finish_water, update_params).chain().after(rebase_system));
+            .add_systems(Update, (tick_clock, poll_sea_mean, start_water, finish_water, update_params).chain().after(rebase_system));
     }
 }

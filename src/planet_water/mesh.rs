@@ -6,7 +6,6 @@ const FLIP_BIT: u32 = 17;
 
 #[derive(Clone, Debug)]
 pub struct WaterMesh {
-    pub origin: DVec3,
     pub positions: Vec<[f32; 3]>,
     pub dirs: Vec<[f32; 3]>,
     pub land: Vec<[f32; 2]>,
@@ -37,7 +36,7 @@ fn to_f32(v: DVec3) -> [f32; 3] {
 
 pub fn build_water_mesh(instances: &[WaterInstance], radius: f64, origin: DVec3) -> WaterMesh {
     let local = instance_indices();
-    let mut mesh = WaterMesh { origin, positions: Vec::new(), dirs: Vec::new(), land: Vec::new(), indices: Vec::new() };
+    let mut mesh = WaterMesh { positions: Vec::new(), dirs: Vec::new(), land: Vec::new(), indices: Vec::new() };
     for instance in instances {
         let base = mesh.positions.len() as u32;
         for point in 0..LATTICE_POINTS {

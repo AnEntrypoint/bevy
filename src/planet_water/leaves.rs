@@ -33,10 +33,10 @@ fn land_heights(key: NodeKey, land_height: &impl Fn(DVec3) -> f64) -> [f64; LATT
     std::array::from_fn(|point| land_height(lattice_dir(key, point)))
 }
 
-pub fn water_instances(leaves: &[NodeKey], land_height: impl Fn(DVec3) -> f64) -> Vec<WaterInstance> {
+pub fn water_instances<'a>(leaves: impl IntoIterator<Item = &'a NodeKey>, land_height: impl Fn(DVec3) -> f64) -> Vec<WaterInstance> {
     let mut seen = HashSet::new();
     leaves
-        .iter()
+        .into_iter()
         .map(|&leaf| clamp_level(leaf))
         .filter(|key| seen.insert(*key))
         .filter_map(|key| {

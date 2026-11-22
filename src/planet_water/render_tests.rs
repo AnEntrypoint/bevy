@@ -1,18 +1,25 @@
 use super::surface::{WaterFrame, WaterMaterial, WaterMaterialHandle, WaterParams, WaterPipelinePlugin, WaterPlugin, WaterSurface, build_water, framed, water_mesh_asset};
+use super::leaves::{LATTICE_POINTS, water_instances};
 use super::waves::*;
 use crate::height::{HashVersion, Planet, PlanetConfig};
 use crate::offscreen::{FOV_Y, Frame, HEIGHT, SKY_COLOUR, WIDTH, add_target, capture, headless_app, image_stats, mean_change, render_lock, spawn_view, texel, write_png};
 use crate::planet_lod::guard::{builds_on_main_thread, mark_main_thread};
 use crate::planet_lod::origin::FloatingOrigin;
-use crate::planet_lod::quadtree::{QuadtreeConfig, select_leaves};
+use crate::planet_lod::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
+use crate::planet_lod::stream::SelectedLeaves;
 use crate::testkit::close;
 use bevy::camera::visibility::NoFrustumCulling;
+use bevy::ecs::schedule::SingleThreadedExecutor;
 use bevy::math::DVec3;
 use bevy::prelude::*;
+use bevy::render::RenderApp;
+use bevy::render::mesh::RenderMesh;
+use bevy::render::render_asset::RenderAssets;
 use bevy::render::render_resource::TextureFormat;
 use bevy::tasks::{AsyncComputeTaskPool, block_on};
-use std::time::Duration;
+use std::collections::HashSet;
 use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 const SEED: i32 = 0x5eed1234;
 const HPF_RES: usize = 128;
@@ -130,7 +137,7 @@ impl Pose {
         Frame { forward: heading * pitch.cos() - dir * pitch.sin(), up: heading * pitch.sin() + dir * pitch.cos(), ..base }
     }
 
-    fn leaves(&self, frame: &Frame) -> Vec<crate::planet_lod::quadtree::NodeKey> {
+    fn leaves(&self, frame: &Frame) -> Vec<NodeKey> {
         let config = QuadtreeConfig::reference(RADIUS, f64::from(HEIGHT), FOV_Y);
         let ground = height(frame.position);
         select_leaves(&config.at(frame.position, ground), frame.position, frame.position.length() - RADIUS)
@@ -166,7 +173,7 @@ fn render(pose: &Pose, shot: Shot) -> Image {
         mesh.land.iter_mut().for_each(|land| land[0] = FLOODED_LAND_M);
     }
     let sun_forward = (-frame.sun_to).as_vec3();
-    let mut params = framed(WaterParams::default(), &WaterFrame { centre: DVec3::ZERO, radius: RADIUS }, &origin, Vec3::ZERO, sun_forward, mesh.origin, Vec2::new(WIDTH as f32, HEIGHT as f32));
+    let mut params = framed(WaterParams::default(), &WaterFrame { centre: DVec3::ZERO, radius: RADIUS }, &origin, Vec3::ZERO, sun_forward, frame.position, Vec2::new(WIDTH as f32, HEIGHT as f32));
     params.time = shot.time;
     params.sea_mean = sea_mean();
     params.census_mode = shot.census.unwrap_or(0) as f32;
@@ -285,28 +292,77 @@ fn the_water_mesh_is_built_off_the_main_thread() {
 
 const STREAM_FRAME_LIMIT: usize = 600;
 const STREAM_POLL: Duration = Duration::from_millis(20);
+const STEADY_FRAMES: usize = 20;
+
+fn water_meshes(app: &mut App) -> Vec<(Entity, Handle<Mesh>)> {
+    app.world_mut().query::<(Entity, &Mesh3d)>().iter(app.world()).map(|(entity, mesh)| (entity, mesh.0.clone())).collect()
+}
+
+fn pump_steady(app: &mut App, seen: &mut HashSet<Entity>) {
+    for _ in 0..STEADY_FRAMES {
+        crate::offscreen::pump(app);
+        seen.extend(water_meshes(app).iter().map(|(entity, _)| *entity));
+    }
+}
+
+fn stream_until(app: &mut App, seen: &mut HashSet<Entity>, done: impl Fn(&[(Entity, Handle<Mesh>)]) -> bool) -> (Entity, Handle<Mesh>) {
+    for _ in 0..STREAM_FRAME_LIMIT {
+        crate::offscreen::pump(app);
+        let waters = water_meshes(app);
+        seen.extend(waters.iter().map(|(entity, _)| *entity));
+        if done(&waters) {
+            return waters[0].clone();
+        }
+        std::thread::sleep(STREAM_POLL);
+    }
+    panic!("the water did not stream within {STREAM_FRAME_LIMIT} frames");
+}
+
+fn water_vertices(leaves: &[NodeKey]) -> u32 {
+    (water_instances(leaves, |dir| planet().height(dir.to_array(), RADIUS)).len() * LATTICE_POINTS) as u32
+}
+
+fn assert_drawn_from(app: &App, mesh: &Handle<Mesh>, leaves: &[NodeKey]) {
+    let render = app.sub_app(RenderApp).world().resource::<RenderAssets<RenderMesh>>();
+    assert_eq!(render.get(mesh.id()).map(|mesh| mesh.vertex_count), Some(water_vertices(leaves)), "the render mesh holds the selected leaves");
+    let main = app.world().resource::<Assets<Mesh>>().get(mesh).unwrap();
+    assert!(main.try_attribute(Mesh::ATTRIBUTE_POSITION).is_err(), "the main world keeps no copy of the water mesh");
+}
 
 #[test]
-fn the_plugin_streams_the_water_off_the_main_thread_and_draws_it() {
+fn the_plugin_rebuilds_the_water_off_the_main_thread_once_per_selection_change_and_draws_it() {
     let _serial = render_lock();
     let frame = LOW.frame();
+    let full = LOW.leaves(&frame);
+    let half = full[..full.len() / 2].to_vec();
+    assert_ne!(water_vertices(&half), water_vertices(&full));
     let mut app = headless_app();
+    app.edit_schedule(Update, |schedule| {
+        schedule.set_executor(SingleThreadedExecutor::new());
+    });
+    mark_main_thread();
+    let before = builds_on_main_thread();
     let config = QuadtreeConfig::reference(RADIUS, f64::from(HEIGHT), FOV_Y);
     app.add_plugins(WaterPlugin { planet: planet_arc(), config, centre: DVec3::ZERO });
     app.insert_resource(FloatingOrigin { position: frame.position });
+    app.insert_resource(SelectedLeaves { keys: half.iter().copied().collect(), camera: frame.position + DVec3::X, generation: 1 });
     app.finish();
     app.cleanup();
     let target = add_target(&mut app, TextureFormat::Rgba8UnormSrgb);
     spawn_view(&mut app, &target, SKY_COLOUR, &frame, 1.0);
-    let mut waters = app.world_mut().query::<&Mesh3d>();
-    let mut frames = 0;
-    while waters.iter(app.world()).count() == 0 && frames < STREAM_FRAME_LIMIT {
-        crate::offscreen::pump(&mut app);
-        std::thread::sleep(STREAM_POLL);
-        frames += 1;
-    }
-    assert_eq!(waters.iter(app.world()).count(), 1, "the streamed water mesh after {frames} frames");
+    let mut seen = HashSet::new();
+    let (first, first_mesh) = stream_until(&mut app, &mut seen, |waters| !waters.is_empty());
+    pump_steady(&mut app, &mut seen);
+    assert_eq!(seen.len(), 1, "an unchanged selection keeps the one water mesh");
+    assert_drawn_from(&app, &first_mesh, &half);
+    app.insert_resource(SelectedLeaves { keys: full.iter().copied().collect(), camera: frame.position, generation: 2 });
+    let (second, second_mesh) = stream_until(&mut app, &mut seen, |waters| waters.len() == 1 && waters[0].0 != first);
+    pump_steady(&mut app, &mut seen);
+    assert_eq!(seen.len(), 2, "one rebuild for one selection change");
+    assert_eq!(water_meshes(&mut app).iter().map(|(entity, _)| *entity).collect::<Vec<_>>(), vec![second]);
+    assert_drawn_from(&app, &second_mesh, &full);
     assert!((app.world().resource::<WaterSurface>().origin - frame.position).length() < 1e-6);
+    assert_eq!(builds_on_main_thread(), before, "no water build on the main thread");
     let image = capture(&mut app, target, "plugin");
     write_png(&image, "water-plugin");
     assert!(image_stats(&image).covered >= COVERED_MIN);
