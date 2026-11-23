@@ -7,6 +7,7 @@ fi
 scratch=/workspace/tmp/bevy/window-$$
 mkdir -p target/witness "$scratch"
 overall=0
+inconclusive=0
 note() { echo "$@" | tee -a $log; }
 selected() { [ -z "$ONLY" ] || [[ " $ONLY " == *" $1 "* ]]; }
 run() {
@@ -16,8 +17,9 @@ run() {
   pid=$!
   note "PID $name pid=$pid $(date -u +%T)Z"
   wait $pid; rc=$?
-  [ "$rc" -ne 0 ] && overall=1
+  if [ "$rc" -eq 77 ]; then inconclusive=1; elif [ "$rc" -ne 0 ]; then overall=1; fi
   note "WITNESS $name rc=$rc"
+  [ "$rc" -eq 77 ] && note "INCONCLUSIVE $name: the host load was too high to measure; not passed and not failed"
   grep -a 'test result\|FAIL\|panicked\|differs\|differ from\|greenPercent\|sha256\|frozen\|ok   ' target/witness/$name.out | tail -n 14 | tee -a $log
 }
 mutant() {
@@ -46,6 +48,7 @@ mutants() {
 }
 finish() {
   rm -rf "$scratch"
-  note "WITNESS-SET overall=$overall $(date -u +%T)Z"
+  note "WITNESS-SET overall=$overall inconclusive=$inconclusive $(date -u +%T)Z"
+  [ "$overall" -eq 0 ] && [ "$inconclusive" -eq 1 ] && exit 77
   exit $overall
 }

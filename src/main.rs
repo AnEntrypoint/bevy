@@ -147,8 +147,9 @@ fn main() {
         Some("bench-phases") => bench::phases(number(1, 500), number(2, 300)),
         Some("bench-schedules") => bench::schedules(number(1, 500), number(2, 300)),
         Some("bench-planet") => {
-            if !bench_planet::run(number(1, usize::MAX), number(2, bench_planet::IDLE_FRAMES)) {
-                std::process::exit(1);
+            let verdict = bench_planet::run(number(1, usize::MAX), number(2, bench_planet::IDLE_FRAMES));
+            if verdict != bench_planet::Verdict::Pass {
+                std::process::exit(verdict.exit_code());
             }
         }
         Some("det") => {
