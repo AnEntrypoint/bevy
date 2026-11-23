@@ -1,0 +1,1 @@
+s5-seam-water-replaced-by-lod	src/planet_scene.rs	globe.water_plugin(),	globe.lod_plugin(),	cargo test --bin bevy-jayzee bench_planet::tests::the_default_launch_registers_every_planet_plugin

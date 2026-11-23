@@ -657,4 +657,22 @@ mod tests {
         assert_eq!(over.len(), 1);
         assert_eq!((over[0]["simMs"].as_f64(), over[0]["extractMs"].as_f64(), over[0]["vegQueued"].as_u64()), (Some(6.0), Some(3.0), Some(7)));
     }
+
+    #[test]
+    fn the_default_launch_registers_every_planet_plugin() {
+        let _render = render_lock();
+        let globe = launched_globe();
+        let mut app = headless_app();
+        app.insert_resource(globe.clone());
+        crate::planet_scene::add_planet(&mut app, &globe);
+        app.finish();
+        app.cleanup();
+        pump(&mut app);
+        let world = app.world();
+        assert!(world.contains_resource::<PlanetLodStats>(), "the LOD plugin is missing");
+        assert!(world.contains_resource::<TerrainMaterialHandle>(), "the terrain material is missing");
+        assert!(world.contains_resource::<VegStreamStats>(), "the vegetation stream is missing");
+        assert!(world.contains_resource::<VegFrame>(), "the vegetation uploads are missing");
+        assert!(world.contains_resource::<TreesWitness>(), "the trees are missing");
+    }
 }

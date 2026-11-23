@@ -4,24 +4,19 @@ use crate::planet_lod::collider::{Chart, ColliderGround, ColliderStreamPlugin, L
 use crate::planet_lod::near_field::{NearField, NearFieldOptions};
 use crate::planet_lod::quadtree::QuadtreeConfig;
 use crate::planet_lod::stream::{PlanetLodPlugin, PlanetLodStats};
-use crate::planet_material::terrain::{TerrainFrame, TerrainMaterialPlugin};
-use crate::planet_sky::light::{FILL_FROM, Fill, LightPlugin, Quality, Sun};
-use crate::planet_sky::lut::{AtmosphereLutPlugin, luts_ready};
-use crate::planet_sky::sky::{PlanetSkyPlugin, SkyCamera, SkyPlanet, SkySun};
-use crate::planet_sky::tonemap::{ToneMapPlugin, reference_view};
-use crate::planet_veg::gpu::VegGpuPlugin;
+use crate::planet_material::terrain::TerrainFrame;
+use crate::planet_sky::light::{FILL_FROM, Fill, Quality, Sun};
+use crate::planet_sky::lut::luts_ready;
+use crate::planet_sky::sky::{SkyCamera, SkySun};
+use crate::planet_sky::tonemap::reference_view;
 use crate::planet_veg::gpu::draw::{VegCamera, VegEnvironment};
-use crate::planet_veg::grass_render::GrassRenderPlugin;
-use crate::planet_veg::rock_render::RockRenderPlugin;
 use crate::planet_veg::stream::{VegSource, VegStreamPlugin};
-use crate::planet_veg::trees_render::TreesRenderPlugin;
 use crate::planet_water::surface::WaterPlugin;
 use avian3d::prelude::{Collider, GravityScale, LinearVelocity, PhysicsSystems, Position, RigidBody, Rotation};
 use bevy::app::App;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::math::DVec3;
 use bevy::prelude::*;
-use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy::render::view::window::screenshot::{Screenshot, save_to_disk};
 use bevy::time::{Time, TimeUpdateStrategy, Virtual};
 use serde_json::{Map, Value, json};
@@ -270,20 +265,20 @@ impl GlobeWorld {
         Quat::from_mat3(&Mat3::from_cols(right, up, back)).normalize()
     }
 
-    fn lod_plugin(&self) -> PlanetLodPlugin {
+    pub(crate) fn lod_plugin(&self) -> PlanetLodPlugin {
         PlanetLodPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3(), seed: self.seed as i32 }
     }
 
-    fn veg_stream_plugin(&self) -> VegStreamPlugin {
+    pub(crate) fn veg_stream_plugin(&self) -> VegStreamPlugin {
         let source = VegSource { planet: self.planet.clone(), seed: self.seed as u32, radius: f64::from(self.radius), hash: self.hash_version };
         VegStreamPlugin { source, centre: self.center.as_dvec3(), anchor_dir: self.anchor_dir }
     }
 
-    fn water_plugin(&self) -> WaterPlugin {
+    pub(crate) fn water_plugin(&self) -> WaterPlugin {
         WaterPlugin { planet: self.planet.clone(), config: self.quadtree_config(), centre: self.center.as_dvec3() }
     }
 
-    fn terrain_frame(&self) -> TerrainFrame {
+    pub(crate) fn terrain_frame(&self) -> TerrainFrame {
         let radius = f64::from(self.radius);
         TerrainFrame { centre: self.center.as_dvec3(), radius, relief_scale: self.planet.relief(radius) }
     }
@@ -354,7 +349,7 @@ pub(crate) fn texture_dir() -> Option<PathBuf> {
     first_with_textures(std::iter::once(PathBuf::from(env!("CARGO_MANIFEST_DIR"))).chain(beside_build_tree).chain(std::iter::once(PathBuf::from("."))))
 }
 
-fn align_lights_with_focus(
+pub(crate) fn align_lights_with_focus(
     globe: Res<GlobeWorld>,
     focus: Res<GlobeFocus>,
     mut toward_sun: ResMut<SkySun>,
@@ -378,7 +373,7 @@ pub(crate) fn equip_camera(mut commands: Commands, quality: Res<Quality>, camera
     }
 }
 
-fn light_vegetation(
+pub(crate) fn light_vegetation(
     time: Res<Time>,
     quality: Res<Quality>,
     toward_sun: Res<SkySun>,
@@ -392,43 +387,13 @@ fn light_vegetation(
     environment.set_if_neq(lit);
 }
 
-pub(crate) fn add_vegetation(app: &mut App, globe: &GlobeWorld) {
-    app.add_plugins((VegGpuPlugin::default(), TreesRenderPlugin::default(), RockRenderPlugin, GrassRenderPlugin::default(), globe.veg_stream_plugin()))
-        .add_systems(PostUpdate, light_vegetation.after(align_lights_with_focus));
-}
-
-fn warn_missing_textures() {
-    if texture_dir().is_none() {
-        warn!("planet textures not found: terrain keeps the placeholder look");
-    }
-}
-
-const RENDER_ASSET_BYTES_PER_FRAME: usize = 4 << 20;
-
-fn cap_render_asset_uploads(mut commands: Commands) {
-    commands.insert_resource(RenderAssetBytesPerFrame::new(RENDER_ASSET_BYTES_PER_FRAME));
-}
-
 pub fn register(app: &mut App) {
     let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
     let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
     if app.world().contains_resource::<Assets<Mesh>>() {
-        app.add_plugins((
-            globe.lod_plugin(),
-            TerrainMaterialPlugin,
-            globe.water_plugin(),
-            AtmosphereLutPlugin,
-            PlanetSkyPlugin,
-            LightPlugin { quality: globe.quality },
-            ToneMapPlugin,
-        ))
-        .insert_resource(globe.terrain_frame())
-        .insert_resource(SkyPlanet { centre: globe.center, radius: globe.radius })
-        .add_systems(Startup, warn_missing_textures)
-        .add_systems(Update, equip_camera)
-        .add_systems(Update, cap_render_asset_uploads.run_if(luts_ready).run_if(not(resource_exists::<RenderAssetBytesPerFrame>)))
-        .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
-        add_vegetation(app, &globe);
+        crate::planet_scene::add_planet(app, &globe);
+        app.add_systems(Update, equip_camera)
+            .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
     } else {
         app.add_plugins(ColliderStreamPlugin);
     }
@@ -676,6 +641,13 @@ mod tests {
     const BAKED_HEIGHT_TOLERANCE_M: f64 = 1e-9;
 
     use super::*;
+    use crate::planet_material::terrain::TerrainMaterialPlugin;
+    use crate::planet_scene::RENDER_ASSET_BYTES_PER_FRAME;
+    use crate::planet_sky::light::LightPlugin;
+    use crate::planet_sky::lut::AtmosphereLutPlugin;
+    use crate::planet_sky::sky::{PlanetSkyPlugin, SkyPlanet};
+    use crate::planet_sky::tonemap::ToneMapPlugin;
+    use bevy::render::render_asset::RenderAssetBytesPerFrame;
     use crate::planet_sky::lut::AtmosphereLuts;
 
     fn globe() -> GlobeWorld {

@@ -1,5 +1,6 @@
 use super::*;
-use crate::globe::{GlobeWorld, add_vegetation, equip_camera};
+use crate::globe::{GlobeWorld, equip_camera};
+use crate::planet_scene::add_vegetation;
 use crate::height::PlanetConfig;
 use crate::offscreen::{Frame, SKY_COLOUR, add_target, headless_app, pump, render_lock, spawn_view};
 use crate::planet_lod::guard;

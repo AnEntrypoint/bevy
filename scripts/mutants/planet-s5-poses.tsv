@@ -5,5 +5,5 @@ poses-not-over-the-anchor	src/planet_poses.rs	(Some(altitude), _) => Frame::abov
 poses-shoreline-altitude	src/planet_poses.rs	const SHORE_ALTITUDE_M: f64 = 150.0;	const SHORE_ALTITUDE_M: f64 = 40.0;	cargo test --bin bevy-jayzee planet_poses
 poses-shoreline-pitch	src/planet_poses.rs	const SHORE_PITCH_DOWN_DEG: f64 = 10.0;	const SHORE_PITCH_DOWN_DEG: f64 = 35.0;	cargo test --bin bevy-jayzee planet_poses
 poses-shoreline-faces-the-sea	src/planet_poses.rs	(course * low.cos() - wet * low.sin()).normalize())	(wet * low.sin() - course * low.cos()).normalize())	cargo test --bin bevy-jayzee planet_poses
-s5-no-vegetation	src/globe.rs	        add_vegetation(app, &globe);	        let _ = &globe;	cargo test --bin bevy-jayzee bench_planet::tests::the_default_launch_passes_the_pose_captures
+s5-no-vegetation	src/planet_scene.rs	    add_vegetation(app, globe);	    let _ = globe;	cargo test --bin bevy-jayzee bench_planet::tests::the_default_launch_passes_the_pose_captures
 s5-capture-radius	testdata/spec-world/places/globe/config.yaml	radius: 63600	radius: 6360	cargo test --bin bevy-jayzee default_launch_tests
