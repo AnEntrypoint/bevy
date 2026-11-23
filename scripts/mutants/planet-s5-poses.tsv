@@ -1,4 +1,7 @@
 poses-orbit-altitude	src/planet_poses.rs	Self::Orbit => Some(100_000.0),	Self::Orbit => Some(10_000.0),	cargo test --bin bevy-jayzee planet_poses
 poses-low-uses-the-high-altitude	src/planet_poses.rs	Self::Low => Some(5_000.0),	Self::Low => Some(20_000.0),	cargo test --bin bevy-jayzee planet_poses
 poses-ground-pitch	src/planet_poses.rs	pub const CENSUS_PITCH_DOWN_DEG: f64 = 6.0;	pub const CENSUS_PITCH_DOWN_DEG: f64 = 16.0;	cargo test --bin bevy-jayzee planet_poses
-poses-not-over-the-anchor	src/planet_poses.rs	Some(altitude) => Frame::above(CENSUS_ANCHOR.normalize(), radius, altitude, STRAIGHT_DOWN_DEG),	Some(altitude) => Frame::above(DVec3::Y, radius, altitude, STRAIGHT_DOWN_DEG),	cargo test --bin bevy-jayzee planet_poses
+poses-not-over-the-anchor	src/planet_poses.rs	(Some(altitude), _) => Frame::above(CENSUS_ANCHOR.normalize(), radius, altitude, STRAIGHT_DOWN_DEG),	(Some(altitude), _) => Frame::above(DVec3::Y, radius, altitude, STRAIGHT_DOWN_DEG),	cargo test --bin bevy-jayzee planet_poses
+poses-shoreline-altitude	src/planet_poses.rs	const SHORE_ALTITUDE_M: f64 = 150.0;	const SHORE_ALTITUDE_M: f64 = 40.0;	cargo test --bin bevy-jayzee planet_poses
+poses-shoreline-pitch	src/planet_poses.rs	const SHORE_PITCH_DOWN_DEG: f64 = 10.0;	const SHORE_PITCH_DOWN_DEG: f64 = 35.0;	cargo test --bin bevy-jayzee planet_poses
+poses-shoreline-faces-the-sea	src/planet_poses.rs	(course * low.cos() - wet * low.sin()).normalize())	(wet * low.sin() - course * low.cos()).normalize())	cargo test --bin bevy-jayzee planet_poses
