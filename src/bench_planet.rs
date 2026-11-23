@@ -6,6 +6,7 @@ use crate::offscreen::{Frame, add_target, headless_app, pump, spawn_view};
 use crate::planet_lod::collider::{ColliderStats, NearBody};
 use crate::planet_lod::guard;
 use crate::planet_lod::stream::PlanetLodStats;
+use crate::planet_poses::{CENSUS_ANCHOR, CENSUS_PITCH_DOWN_DEG, Pose, STRAIGHT_DOWN_DEG, mix, on_ground};
 use crate::planet_material::terrain::{TerrainMaterial, TerrainMaterialHandle};
 use crate::planet_sky::lut::AtmosphereLuts;
 use crate::planet_veg::gpu::store::VegFrame;
@@ -25,15 +26,11 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 const STEP_S: f64 = 1.0 / 60.0;
-const CENSUS_ANCHOR: DVec3 = DVec3::new(-40815.595807093756, 16288.03339696503, 46081.50808984984);
-const FLIGHT_ALTITUDES_M: [f64; 3] = [100_000.0, 20_000.0, 5_000.0];
+const FLIGHT_POSES: [Pose; 3] = [Pose::Orbit, Pose::High, Pose::Low];
 const LEG_FRAMES: usize = 600;
 const LANDED_HOLD_FRAMES: usize = 300;
-const STRAIGHT_DOWN_DEG: f64 = 90.0;
-const CENSUS_PITCH_DOWN_DEG: f64 = 6.0;
 const GROUND_SPEED_M_S: f64 = 10.0;
 const GROUND_FRAMES: usize = 4800;
-const TELEPORT_CLEARANCE_M: f64 = 2.0;
 pub const IDLE_FRAMES: usize = 600;
 const SETTLE_LIMIT: usize = 4000;
 const SETTLED_STREAK: usize = 4;
@@ -63,7 +60,7 @@ impl ScriptedPath {
 
     fn frames(self) -> usize {
         match self {
-            Self::Flight => FLIGHT_ALTITUDES_M.len() * LEG_FRAMES + LANDED_HOLD_FRAMES,
+            Self::Flight => FLIGHT_POSES.len() * LEG_FRAMES + LANDED_HOLD_FRAMES,
             Self::Ground => GROUND_FRAMES,
         }
     }
@@ -76,28 +73,15 @@ impl ScriptedPath {
     }
 }
 
-fn mix(a: f64, b: f64, t: f64) -> f64 {
-    a + (b - a) * t
-}
-
-fn on_ground(radius: f64, ground: impl Fn(DVec3) -> f64, metres_north: f64) -> Frame {
-    let start = CENSUS_ANCHOR.normalize();
-    let north = Frame::above(start, radius, 0.0, 0.0).forward;
-    let angle = metres_north / CENSUS_ANCHOR.length();
-    let dir = start * angle.cos() + north * angle.sin();
-    let eye = (CENSUS_ANCHOR.length() - radius - ground(start)).max(TELEPORT_CLEARANCE_M);
-    Frame::above(dir, radius + ground(dir), eye, CENSUS_PITCH_DOWN_DEG)
-}
-
 fn flight_pose(radius: f64, ground: impl Fn(DVec3) -> f64, frame: usize) -> Frame {
-    let landed = on_ground(radius, ground, 0.0);
+    let landed = Pose::Ground.frame(radius, &ground);
     let leg = frame / LEG_FRAMES;
-    let Some(&from) = FLIGHT_ALTITUDES_M.get(leg) else {
+    let Some(from) = FLIGHT_POSES.get(leg).and_then(|pose| pose.altitude_m()) else {
         return landed;
     };
-    let to = FLIGHT_ALTITUDES_M.get(leg + 1).copied().unwrap_or(landed.position.length() - radius);
+    let to = FLIGHT_POSES.get(leg + 1).and_then(|pose| pose.altitude_m()).unwrap_or(landed.position.length() - radius);
     let t = (frame % LEG_FRAMES) as f64 / LEG_FRAMES as f64;
-    let pitch = if leg + 1 == FLIGHT_ALTITUDES_M.len() { mix(STRAIGHT_DOWN_DEG, CENSUS_PITCH_DOWN_DEG, t) } else { STRAIGHT_DOWN_DEG };
+    let pitch = if leg + 1 == FLIGHT_POSES.len() { mix(STRAIGHT_DOWN_DEG, CENSUS_PITCH_DOWN_DEG, t) } else { STRAIGHT_DOWN_DEG };
     Frame::above(CENSUS_ANCHOR.normalize(), radius, mix(from.ln(), to.ln(), t).exp(), pitch)
 }
 
@@ -404,6 +388,7 @@ pub fn run(path_frames: usize, idle_frames: usize) -> Verdict {
 mod tests {
     use super::*;
     use crate::offscreen::render_lock;
+    use crate::planet_poses::TELEPORT_CLEARANCE_M;
     use crate::testkit::parse;
 
     const RADIUS_M: f64 = 63_600.0;
