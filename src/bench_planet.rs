@@ -120,6 +120,8 @@ fn spread(samples_ms: &[f64]) -> Spread {
 struct FrameTimes {
     main_ms: f64,
     render_ms: f64,
+    spawned_patches: usize,
+    tasks_in_flight: usize,
 }
 
 struct PathRun {
@@ -143,6 +145,12 @@ impl PathRun {
         frames_over(&self.main_ms(), self.budget_ms())
     }
 
+    fn over_budget_frames(&self) -> Vec<Value> {
+        let budget = self.budget_ms();
+        let over = self.frames.iter().enumerate().filter(|(_, frame)| frame.main_ms > budget);
+        over.map(|(index, frame)| json!({ "frame": index, "mainMs": frame.main_ms, "spawnedPatches": frame.spawned_patches, "tasksInFlight": frame.tasks_in_flight })).collect()
+    }
+
     fn passes(&self) -> bool {
         self.settle_frames.is_some() && self.idle_settle_frames.is_some() && self.over_budget() == 0
     }
@@ -154,7 +162,7 @@ impl PathRun {
             "frames": self.frames.len(), "settleFrames": self.settle_frames,
             "p50Ms": main.p50, "p99Ms": main.p99, "maxMs": main.max, "renderP99Ms": spread(&render).p99,
             "idle": { "frames": self.idle_ms.len(), "settleFrames": self.idle_settle_frames, "p50Ms": idle.p50, "p99Ms": idle.p99, "maxMs": idle.max },
-            "budgetMs": self.budget_ms(), "overBudget": self.over_budget(), "pass": self.passes()
+            "budgetMs": self.budget_ms(), "overBudget": self.over_budget(), "overBudgetFrames": self.over_budget_frames(), "pass": self.passes()
         })
     }
 }
@@ -252,7 +260,8 @@ impl Bench {
         pump(&mut self.app);
         let stats = self.app.world().resource::<SharedFrameStats>().snapshot();
         let span = |ms: Option<f64>| ms.expect("the render stats time every frame");
-        FrameTimes { main_ms: span(stats.sim_ms) + span(stats.extract_ms), render_ms: span(stats.render_ms) }
+        let lod = self.app.world().resource::<PlanetLodStats>();
+        FrameTimes { main_ms: span(stats.sim_ms) + span(stats.extract_ms), render_ms: span(stats.render_ms), spawned_patches: lod.spawned_this_frame, tasks_in_flight: lod.tasks_in_flight }
     }
 
     fn settle(&mut self, pose: &Frame, limit: usize) -> Option<usize> {
@@ -413,7 +422,7 @@ mod tests {
     }
 
     fn path_run(main_ms: &[f64], settled: bool) -> PathRun {
-        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, render_ms: 0.0 }).collect();
+        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0 }).collect();
         PathRun { path: ScriptedPath::Flight, settle_frames: settled.then_some(1), frames, idle_settle_frames: Some(1), idle_ms: vec![2.0; 10] }
     }
 
