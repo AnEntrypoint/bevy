@@ -132,11 +132,16 @@ fn exit_when_no_gpu_adapter() {
     }));
 }
 
+fn default_launch() -> Vec<String> {
+    let world = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world");
+    ["viewer".to_string(), world.display().to_string(), "globe".to_string()].into()
+}
+
 fn main() {
     exit_when_no_gpu_adapter();
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        args = ["viewer", "testdata/spec-world", "globe"].map(String::from).into();
+        args = default_launch();
     }
     let number = |index: usize, fallback: usize| {
         args.get(index)
@@ -264,4 +269,27 @@ fn generate_static_report(directory: &str, place: Option<&str>) -> String {
         },
         "wasm": { "built": true, "renderer": "Bevy 0.20 WebGPU WASM", "output": "web/wasm/", "url": "http://127.0.0.1:8092/web/wasm/" }
     }).to_string()
+}
+
+#[cfg(test)]
+mod default_launch_tests {
+    use super::default_launch;
+    use crate::globe::GlobeWorld;
+    use crate::tree::WorldTree;
+    use std::path::Path;
+
+    #[test]
+    fn the_default_launch_is_the_preset_planet_from_any_working_directory() {
+        let launch = default_launch();
+        assert_eq!(launch[0], "viewer");
+        assert!(Path::new(&launch[1]).is_absolute(), "the world path depends on the working directory");
+        let tree = WorldTree::load(Path::new(&launch[1])).expect("the default world loads");
+        let place = tree.places.get(&launch[2]).expect("the default place exists");
+        assert!(place.config.extra.contains_key("globe"), "the default place has no globe");
+        let launched = GlobeWorld::from_value(place.config.extra.get("globe"));
+        let preset = GlobeWorld::default();
+        assert_eq!((launched.radius, launched.seed, launched.max_level, launched.anchor_dir), (preset.radius, preset.seed, preset.max_level, preset.anchor_dir));
+        let radius = f64::from(preset.radius);
+        assert_eq!(launched.planet.relief(radius), preset.planet.relief(radius));
+    }
 }

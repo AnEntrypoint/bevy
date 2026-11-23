@@ -1,0 +1,3 @@
+default-launch-relative-world	src/main.rs	std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/spec-world")	std::path::PathBuf::from("testdata/spec-world")	cargo test --bin bevy-jayzee default_launch_tests
+default-launch-place-without-a-globe	src/main.rs	"globe".to_string()].into()	"two".to_string()].into()	cargo test --bin bevy-jayzee default_launch_tests
+default-launch-wrong-preset-radius	src/globe.rs	const DEFAULT_RADIUS: f32 = 63_600.0;	const DEFAULT_RADIUS: f32 = 6_360.0;	cargo test --bin bevy-jayzee default_launch_tests
