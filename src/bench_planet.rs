@@ -456,4 +456,26 @@ mod tests {
             assert!((run["budgetMs"].as_f64().unwrap() - budget).abs() < JSON_ROUND_TRIP_MS, "{} budget {} against {budget}", path.name(), run["budgetMs"]);
         }
     }
+
+    const SETTLE_FRAMES_FOR_UPLOAD_TEST: usize = 600;
+
+    fn patches_without_a_gpu_mesh(app: &mut App) -> usize {
+        use bevy::render::{RenderApp, mesh::RenderMesh, render_asset::RenderAssets};
+        let handles: Vec<_> = app.world_mut().query_filtered::<&Mesh3d, With<crate::planet_lod::stream::PatchKey>>().iter(app.world()).map(|mesh| mesh.0.clone()).collect();
+        let render = app.sub_app(RenderApp).world().resource::<RenderAssets<RenderMesh>>();
+        handles.iter().filter(|handle| render.get(*handle).is_none()).count()
+    }
+
+    #[test]
+    fn no_terrain_patch_is_without_its_gpu_mesh_while_the_planet_streams_in() {
+        let _render = render_lock();
+        let mut bench = Bench::new();
+        let pose = bench.pose(ScriptedPath::Flight, 0);
+        let worst = (0..SETTLE_FRAMES_FOR_UPLOAD_TEST).map(|_| {
+            bench.step(&pose);
+            patches_without_a_gpu_mesh(&mut bench.app)
+        }).max();
+        assert_eq!(worst, Some(0), "a terrain patch was live without its GPU mesh, leaving a hole its neighbours' skirts show");
+        assert!(bench.app.world().resource::<PlanetLodStats>().live_patches > 0, "no patch streamed in");
+    }
 }
