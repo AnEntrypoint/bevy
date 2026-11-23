@@ -3,6 +3,7 @@ use super::guard::{mark_main_thread, note_build};
 use super::origin::{FloatingOrigin, OriginRelative, rebase_system};
 use super::patch::{PatchMesh, build_patch};
 use super::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
+use super::uploaded::{UploadedMeshes, UploadedMeshesPlugin};
 use crate::height::Planet;
 use crate::height::climate::HpfFaces;
 use crate::planet_material::terrain::TerrainMaterialHandle;
@@ -74,6 +75,7 @@ fn bake_climate(seed: i32) -> Arc<HpfFaces> {
 
 struct LivePatch {
     entity: Entity,
+    mesh: AssetId<Mesh>,
     vertices: usize,
     triangles: usize,
     min_elevation: f32,
@@ -173,6 +175,7 @@ fn finish_tasks(
     origin: Res<FloatingOrigin>,
     material: Res<TerrainMaterialHandle>,
     mut meshes: ResMut<Assets<Mesh>>,
+    uploaded: Res<UploadedMeshes>,
     mut streamer: ResMut<Streamer>,
     mut stats: ResMut<PlanetLodStats>,
 ) {
@@ -187,19 +190,22 @@ fn finish_tasks(
     }
     stats.spawned_this_frame = finished.len();
     stats.max_spawned_in_frame = stats.max_spawned_in_frame.max(finished.len());
-    streamer.bookkeeping_due |= !finished.is_empty();
+    streamer.bookkeeping_due |= !finished.is_empty() || uploaded.take_news();
     for (key, patch) in finished {
         streamer.pending.remove(&key);
         let local = origin.to_local(patch.origin + source.centre);
         let (vertices, triangles, min_elevation, max_elevation) = (patch.positions.len(), patch.indices.len() / 3, patch.min_elevation, patch.max_elevation);
+        let mesh = meshes.add(patch_mesh(patch));
+        let mesh_id = mesh.id();
+        uploaded.watch(mesh_id);
         let entity = commands
-            .spawn((Mesh3d(meshes.add(patch_mesh(patch))), MeshMaterial3d(material.0.clone()), Transform::from_translation(local), OriginRelative, PatchKey(key)))
+            .spawn((Mesh3d(mesh), MeshMaterial3d(material.0.clone()), Transform::from_translation(local), OriginRelative, PatchKey(key)))
             .id();
-        streamer.live.insert(key, LivePatch { entity, vertices, triangles, min_elevation, max_elevation });
+        streamer.live.insert(key, LivePatch { entity, mesh: mesh_id, vertices, triangles, min_elevation, max_elevation });
     }
 }
 
-fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, uploaded: Res<UploadedMeshes>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
     if !streamer.bookkeeping_due {
         return;
     }
@@ -209,11 +215,12 @@ fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, mut str
         .live
         .keys()
         .filter(|key| !selected.keys.contains(key))
-        .filter(|key| selected.keys.iter().filter(|leaf| overlaps(**leaf, **key)).all(|leaf| streamer.live.contains_key(leaf)))
+        .filter(|key| selected.keys.iter().filter(|leaf| overlaps(**leaf, **key)).all(|leaf| streamer.live.get(leaf).is_some_and(|child| uploaded.is_uploaded(child.mesh))))
         .copied()
         .collect();
     for key in replaced {
         if let Some(patch) = streamer.live.remove(&key) {
+            uploaded.forget(patch.mesh);
             commands.entity(patch.entity).despawn();
         }
     }
@@ -251,7 +258,7 @@ impl Plugin for PlanetLodPlugin {
             .init_resource::<Streamer>()
             .init_resource::<SelectedLeaves>()
             .init_resource::<PlanetLodStats>()
-            .add_plugins(ColliderStreamPlugin)
+            .add_plugins((ColliderStreamPlugin, UploadedMeshesPlugin))
             .add_systems(Update, (rebase_system, plan_leaves.in_set(LeafSelection), poll_climate, start_tasks, finish_tasks, retire_patches, publish_stats).chain());
     }
 }
@@ -560,5 +567,33 @@ mod tests {
     #[test]
     fn reference_planet_streams_exactly_the_selected_leaves_at_every_altitude() {
         witness(6_360_000.0, 11);
+    }
+
+    #[test]
+    fn a_parent_stays_until_every_child_is_uploaded_to_the_gpu() {
+        let radius = 63_600.0;
+        let altitude = radius * 0.005;
+        let mut app = app_at(radius, 13, surface_direction() * (radius + altitude));
+        app.world().resource::<UploadedMeshes>().track_by_hand();
+        settle(&mut app, &HashSet::new());
+        app.world().resource::<UploadedMeshes>().pretend_every_watched_mesh_uploaded();
+        let first = expected_leaves(&mut app);
+        move_camera_on_surface(&mut app, radius, altitude);
+        let second = expected_leaves(&mut app);
+        assert_ne!(first, second);
+        for _ in 0..SETTLE_FRAME_LIMIT {
+            std::thread::sleep(FRAME_PAUSE);
+            wait_for_started_patches(&app);
+            app.update();
+            let live: HashSet<NodeKey> = live_keys(&mut app).into_iter().collect();
+            if app.world().resource::<Streamer>().pending.is_empty() && second.is_subset(&live) {
+                break;
+            }
+        }
+        let live: HashSet<NodeKey> = live_keys(&mut app).into_iter().collect();
+        assert!(second.is_subset(&live) && live != second, "the old leaves must still be live while the new ones are not uploaded");
+        app.world().resource::<UploadedMeshes>().pretend_every_watched_mesh_uploaded();
+        run_frames(&mut app, FRAMES_PER_MOVE);
+        assert!(settled(&mut app), "the old leaves must retire once the new ones are uploaded");
     }
 }
