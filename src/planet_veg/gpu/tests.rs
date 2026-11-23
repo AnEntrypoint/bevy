@@ -358,3 +358,19 @@ fn veg_twin_swaps_mesh_for_impostor_with_its_own_overlap_and_reentry() {
     let walked = probe().walk(&[75.0, 80.0, 78.0, 77.0, 60.0]);
     assert_eq!(walked, [(Some(2), true), (None, true), (None, true), (Some(2), true), (Some(2), false)]);
 }
+
+#[test]
+fn an_idle_store_publishes_nothing_until_a_chunk_an_upload_or_the_origin_changes() {
+    let mut store = VegStore::new(&VegGpuConfig::default());
+    let origin = FloatingOrigin::default();
+    assert!(store.publish(&origin).is_some(), "the first frame carries the chunk table");
+    assert!(store.publish(&origin).is_none(), "an idle frame publishes nothing");
+    let chunk = store.add_chunk(DVec3::ZERO, Quat::IDENTITY).unwrap();
+    assert!(store.publish(&origin).is_some(), "a new chunk is published");
+    store.upload(chunk, 1.0, trees(3, 0)).unwrap();
+    assert!(store.publish(&origin).is_some(), "an upload is published");
+    assert!(store.publish(&origin).is_none(), "the upload is not published twice");
+    let moved = FloatingOrigin { position: DVec3::new(1.0, 0.0, 0.0) };
+    assert!(store.publish(&moved).is_some(), "a moved origin re-encodes the table");
+    assert!(store.publish(&moved).is_none());
+}

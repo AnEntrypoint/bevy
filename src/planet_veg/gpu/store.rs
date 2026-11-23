@@ -218,6 +218,9 @@ struct KindStore {
 #[derive(Resource)]
 pub struct VegStore {
     table: ChunkTable,
+    table_dirty: bool,
+    encoded_origin: Option<DVec3>,
+    published_counts: [u32; 3],
     kinds: [KindStore; 3],
 }
 
@@ -236,10 +239,11 @@ impl VegStore {
             queue: UploadQueue::new(kind, kind.upload_budget_bytes()),
             ranges: HashMap::new(),
         };
-        Self { table: ChunkTable::default(), kinds: VegKind::ALL.map(kind_store) }
+        Self { table: ChunkTable::default(), table_dirty: true, encoded_origin: None, published_counts: [0; 3], kinds: VegKind::ALL.map(kind_store) }
     }
 
     pub fn add_chunk(&mut self, anchor: DVec3, rotation: Quat) -> Option<ChunkRef> {
+        self.table_dirty = true;
         self.table.load(anchor, rotation)
     }
 
@@ -267,6 +271,7 @@ impl VegStore {
         if !self.table.unload(chunk) {
             return false;
         }
+        self.table_dirty = true;
         for store in &mut self.kinds {
             if let Some((start, len)) = store.ranges.remove(&chunk.slot) {
                 store.allocator.release(start, len);
@@ -296,6 +301,22 @@ impl VegStore {
         &self.table
     }
 
+    pub fn publish(&mut self, origin: &FloatingOrigin) -> Option<VegFrame> {
+        let table = self.table_dirty || self.encoded_origin != Some(origin.position);
+        let writes = VegKind::ALL.map(|kind| self.kinds[kind.index()].queue.drain());
+        let instance_counts = VegKind::ALL.map(|kind| self.kinds[kind.index()].allocator.used_end());
+        if !table && instance_counts == self.published_counts && writes.iter().all(Vec::is_empty) {
+            return None;
+        }
+        self.published_counts = instance_counts;
+        if table {
+            self.table_dirty = false;
+            self.encoded_origin = Some(origin.position);
+        }
+        Some(VegFrame { chunk_table: if table { self.table.encode(origin) } else { Vec::new() }, writes, instance_counts })
+    }
+
+    #[cfg(test)]
     pub fn frame(&mut self, origin: &FloatingOrigin) -> VegFrame {
         VegFrame {
             chunk_table: self.table.encode(origin),
@@ -306,5 +327,7 @@ impl VegStore {
 }
 
 pub fn publish_frame(mut store: ResMut<VegStore>, origin: Res<FloatingOrigin>, mut frame: ResMut<VegFrame>) {
-    *frame = store.frame(&origin);
+    if let Some(published) = store.publish(&origin) {
+        *frame = published;
+    }
 }
