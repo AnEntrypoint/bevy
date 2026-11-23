@@ -232,12 +232,14 @@ fn poll_sea_mean(mut mean: ResMut<SeaMean>) {
 }
 
 fn start_water(source: Res<Source>, mean: Res<SeaMean>, selection: Res<SelectedLeaves>, mut streamer: ResMut<WaterStreamer>) {
+    crate::frame_clock::timed(5, || {
     if mean.value.is_none() || streamer.pending.is_some() || streamer.generation == selection.generation {
         return;
     }
     let (planet, radius, keys, position) = (source.planet.clone(), source.radius, selection.keys.clone(), selection.camera);
     streamer.generation = selection.generation;
     streamer.pending = Some(AsyncComputeTaskPool::get().spawn(async move { (position, water_mesh_asset(build_water(&planet, radius, &keys, position))) }));
+});
 }
 
 fn finish_water(
@@ -247,6 +249,7 @@ fn finish_water(
     mut surface: ResMut<WaterSurface>,
     mut streamer: ResMut<WaterStreamer>,
 ) {
+    crate::frame_clock::timed(6, || {
     let Some(task) = streamer.pending.as_mut() else { return };
     let Some((origin, mesh)) = check_ready(task) else { return };
     streamer.pending = None;
@@ -255,6 +258,7 @@ fn finish_water(
     if let Some(old) = streamer.live.replace(entity) {
         commands.entity(old).despawn();
     }
+});
 }
 
 fn update_params(
@@ -269,6 +273,7 @@ fn update_params(
     handle: Res<WaterMaterialHandle>,
     mut materials: ResMut<Assets<WaterMaterial>>,
 ) {
+    crate::frame_clock::timed(7, || {
     let (Ok((transform, camera)), Some(material)) = (camera.single(), materials.get(&handle.0)) else { return };
     let current = material.params;
     let sun_forward = sun.single().map_or(-current.sun_dir, |sun| sun.forward().as_vec3());
@@ -284,6 +289,7 @@ fn update_params(
             material.params = params;
         }
     }
+});
 }
 
 fn add_screen_space_transmission(mut commands: Commands, cameras: Query<Entity, (With<Camera3d>, Without<ScreenSpaceTransmission>)>) {

@@ -18,6 +18,7 @@ pub enum Pose {
     High,
     Low,
     Ground,
+    #[allow(dead_code)]
     Shoreline,
 }
 

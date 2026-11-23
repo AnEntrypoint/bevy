@@ -121,6 +121,7 @@ fn plan_leaves(
     mut selected: ResMut<SelectedLeaves>,
     mut stats: ResMut<PlanetLodStats>,
 ) {
+    crate::frame_clock::timed(0, || {
     let Ok(transform) = camera.single() else { return };
     let position = origin.to_world(transform.translation) - source.centre;
     if streamer.camera == Some(position) {
@@ -144,6 +145,7 @@ fn plan_leaves(
     streamer.nearest_last = missing.into_iter().map(|(_, key)| key).collect();
     streamer.bookkeeping_due = true;
     *selected = SelectedLeaves { keys, camera: position, generation: selected.generation + 1 };
+});
 }
 
 fn poll_climate(mut bake: ResMut<ClimateBake>) {
@@ -155,6 +157,7 @@ fn poll_climate(mut bake: ResMut<ClimateBake>) {
 }
 
 fn start_tasks(source: Res<Source>, climate: Res<ClimateBake>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+    crate::frame_clock::timed(1, || {
     let Some(baked) = climate.ready().cloned() else {
         stats.waiting_on_climate = streamer.nearest_last.len();
         return;
@@ -167,6 +170,7 @@ fn start_tasks(source: Res<Source>, climate: Res<ClimateBake>, mut streamer: Res
         let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &baked, &config, key) });
         streamer.pending.insert(key, task);
     }
+});
 }
 
 fn finish_tasks(
@@ -179,6 +183,7 @@ fn finish_tasks(
     mut streamer: ResMut<Streamer>,
     mut stats: ResMut<PlanetLodStats>,
 ) {
+    crate::frame_clock::timed(2, || {
     let mut finished = Vec::new();
     for (key, task) in streamer.pending.iter_mut() {
         if finished.len() == PATCH_SPAWNS_PER_FRAME {
@@ -203,9 +208,11 @@ fn finish_tasks(
             .id();
         streamer.live.insert(key, LivePatch { entity, mesh: mesh_id, vertices, triangles, min_elevation, max_elevation });
     }
+});
 }
 
 fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, uploaded: Res<UploadedMeshes>, mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+    crate::frame_clock::timed(3, || {
     if !streamer.bookkeeping_due {
         return;
     }
@@ -225,9 +232,11 @@ fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, uploade
             commands.entity(patch.entity).despawn();
         }
     }
+});
 }
 
 fn publish_stats(mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStats>) {
+    crate::frame_clock::timed(4, || {
     stats.tasks_in_flight = streamer.pending.len();
     if !std::mem::take(&mut streamer.bookkeeping_due) {
         return;
@@ -239,6 +248,7 @@ fn publish_stats(mut streamer: ResMut<Streamer>, mut stats: ResMut<PlanetLodStat
     stats.highest_level = streamer.live.keys().map(|key| key.level).max().unwrap_or(0);
     stats.min_elevation = streamer.live.values().map(|patch| patch.min_elevation).reduce(f32::min).unwrap_or(0.0);
     stats.max_elevation = streamer.live.values().map(|patch| patch.max_elevation).fold(0.0, f32::max);
+});
 }
 
 pub struct PlanetLodPlugin {

@@ -96,6 +96,7 @@ mod css_anim;
 mod bench;
 mod bench_host;
 mod bench_planet;
+mod frame_clock;
 mod client;
 mod protocol;
 mod render_stats;

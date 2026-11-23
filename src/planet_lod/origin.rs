@@ -30,11 +30,13 @@ impl FloatingOrigin {
 }
 
 pub fn rebase_system(mut origin: ResMut<FloatingOrigin>, mut movers: Query<(&mut Transform, Has<Camera3d>), With<OriginRelative>>) {
+    crate::frame_clock::timed(11, || {
     let camera = movers.iter().find_map(|(transform, is_camera)| is_camera.then_some(transform.translation));
     let Some(shift) = camera.and_then(|local| origin.rebase(local)) else { return };
     for (mut transform, _) in &mut movers {
         transform.translation -= shift;
     }
+});
 }
 
 #[cfg(test)]

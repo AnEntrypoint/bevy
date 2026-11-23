@@ -1,4 +1,5 @@
 use crate::bench::percentile;
+use crate::frame_clock;
 use crate::bench_host::{self, Watch};
 use crate::globe::{self, GlobeWorld};
 use crate::height::Planet;
@@ -85,6 +86,20 @@ fn flight_pose(radius: f64, ground: impl Fn(DVec3) -> f64, frame: usize) -> Fram
     Frame::above(CENSUS_ANCHOR.normalize(), radius, mix(from.ln(), to.ln(), t).exp(), pitch)
 }
 
+fn section_map(sections: &[f64]) -> Value {
+    Value::Object(frame_clock::NAMES.iter().zip(sections).map(|(name, ms)| (name.to_string(), json!(ms))).collect())
+}
+
+fn mean_sections<'a>(frames: impl Iterator<Item = &'a FrameTimes>) -> [f64; frame_clock::SECTIONS] {
+    let (sum, count) = frames.fold(([0.0; frame_clock::SECTIONS], 0usize), |(mut sum, count), frame| {
+        for (total, ms) in sum.iter_mut().zip(frame.sections) {
+            *total += ms;
+        }
+        (sum, count + 1)
+    });
+    sum.map(|total| total / count.max(1) as f64)
+}
+
 fn budget_ms(idle_p99_ms: f64) -> f64 {
     (idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms).max(BUDGET_FLOOR_MS)
 }
@@ -155,6 +170,7 @@ struct FrameTimes {
     tasks_in_flight: usize,
     veg_tasks_in_flight: usize,
     veg_queued: usize,
+    sections: [f64; frame_clock::SECTIONS],
 }
 
 struct PathRun {
@@ -182,7 +198,7 @@ impl PathRun {
     fn over_budget_frames(&self) -> Vec<Value> {
         let budget = self.budget_ms();
         let over = self.frames.iter().enumerate().filter(|(_, frame)| frame.main_ms > budget);
-        over.map(|(index, frame)| json!({ "frame": index, "mainMs": frame.main_ms, "simMs": frame.sim_ms, "extractMs": frame.extract_ms, "spawnedPatches": frame.spawned_patches, "tasksInFlight": frame.tasks_in_flight, "vegTasksInFlight": frame.veg_tasks_in_flight, "vegQueued": frame.veg_queued })).collect()
+        over.map(|(index, frame)| json!({ "frame": index, "mainMs": frame.main_ms, "simMs": frame.sim_ms, "extractMs": frame.extract_ms, "spawnedPatches": frame.spawned_patches, "tasksInFlight": frame.tasks_in_flight, "vegTasksInFlight": frame.veg_tasks_in_flight, "vegQueued": frame.veg_queued, "sections": section_map(&frame.sections) })).collect()
     }
 
     fn passes(&self) -> bool {
@@ -196,7 +212,8 @@ impl PathRun {
             "frames": self.frames.len(), "settleFrames": self.settle_frames,
             "p50Ms": main.p50, "p99Ms": main.p99, "maxMs": main.max, "renderP99Ms": spread(&render).p99,
             "idle": { "frames": self.idle_ms.len(), "settleFrames": self.idle_settle_frames, "p50Ms": idle.p50, "p99Ms": idle.p99, "maxMs": idle.max },
-            "budgetMs": self.budget_ms(), "overBudget": self.over_budget(), "overBudgetFrames": self.over_budget_frames(), "pass": self.passes()
+            "budgetMs": self.budget_ms(), "overBudget": self.over_budget(), "overBudgetFrames": self.over_budget_frames(), "pass": self.passes(),
+            "sectionMeanMs": section_map(&mean_sections(self.frames.iter())), "overBudgetSectionMeanMs": section_map(&mean_sections(self.frames.iter().filter(|frame| frame.main_ms > self.budget_ms())))
         })
     }
 }
@@ -270,6 +287,7 @@ struct Bench {
     body: Entity,
     planet: Arc<Planet>,
     radius: f64,
+    #[cfg(test)]
     target: Handle<Image>,
 }
 
@@ -293,7 +311,7 @@ impl Bench {
         spawn_view(&mut app, &target, Color::BLACK, &start, 1.0);
         let camera = app.world_mut().query_filtered::<Entity, With<Camera3d>>().single(app.world()).expect("one bench camera");
         let body = app.world_mut().spawn((NearBody, Transform::default())).id();
-        Self { app, camera, body, planet, radius, target }
+        Self { app, camera, body, planet, radius, #[cfg(test)] target }
     }
 
     fn pose(&self, path: ScriptedPath, frame: usize) -> Frame {
@@ -305,13 +323,16 @@ impl Bench {
         let world = self.app.world_mut();
         *world.get_mut::<Transform>(self.camera).expect("the bench camera") = Transform::from_translation(translation).looking_to(pose.forward.as_vec3(), pose.up.as_vec3());
         *world.get_mut::<Transform>(self.body).expect("the near body") = Transform::from_translation(translation);
+        let before = frame_clock::totals_ms();
         pump(&mut self.app);
+        let after = frame_clock::totals_ms();
+        let sections = std::array::from_fn(|index| after[index] - before[index]);
         let stats = self.app.world().resource::<SharedFrameStats>().snapshot();
         let span = |ms: Option<f64>| ms.expect("the render stats time every frame");
         let lod = self.app.world().resource::<PlanetLodStats>();
         let veg = self.app.world().resource::<VegStreamStats>();
         let (sim_ms, extract_ms) = (span(stats.sim_ms), span(stats.extract_ms));
-        FrameTimes { main_ms: sim_ms + extract_ms, sim_ms, extract_ms, render_ms: span(stats.render_ms), spawned_patches: lod.spawned_this_frame, tasks_in_flight: lod.tasks_in_flight, veg_tasks_in_flight: veg.tasks_in_flight, veg_queued: veg.queued_chunks.iter().sum() }
+        FrameTimes { main_ms: sim_ms + extract_ms, sim_ms, extract_ms, render_ms: span(stats.render_ms), spawned_patches: lod.spawned_this_frame, tasks_in_flight: lod.tasks_in_flight, veg_tasks_in_flight: veg.tasks_in_flight, veg_queued: veg.queued_chunks.iter().sum(), sections }
     }
 
     fn settle(&mut self, pose: &Frame, limit: usize) -> Option<usize> {
@@ -483,7 +504,7 @@ mod tests {
     }
 
     fn path_run(main_ms: &[f64], settled: bool) -> PathRun {
-        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, sim_ms: main_ms, extract_ms: 0.0, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0, veg_tasks_in_flight: 0, veg_queued: 0 }).collect();
+        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, sim_ms: main_ms, extract_ms: 0.0, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0, veg_tasks_in_flight: 0, veg_queued: 0, sections: [0.0; frame_clock::SECTIONS] }).collect();
         PathRun { path: ScriptedPath::Flight, settle_frames: settled.then_some(1), frames, idle_settle_frames: Some(1), idle_ms: vec![2.0; 10], budget_ms: 3.0 }
     }
 

@@ -301,6 +301,7 @@ fn stream_vegetation(
     origin: Res<FloatingOrigin>,
     camera: Query<&Transform, With<VegCamera>>,
 ) {
+    crate::frame_clock::timed(8, || {
     let Ok(camera) = camera.single() else { return };
     let eye_world = origin.to_world(camera.translation);
     if let Some(look) = look.as_mut() {
@@ -310,6 +311,7 @@ fn stream_vegetation(
     let eye = eye_world - stream.centre;
     let ring_work = stream.advance(eye, &mut store);
     stats.set_if_neq(stream.stats(ring_work));
+});
 }
 
 pub struct VegStreamPlugin {

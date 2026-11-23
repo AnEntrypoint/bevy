@@ -131,6 +131,7 @@ fn start_builds(
     mut stats: ResMut<ColliderStats>,
     bodies: Query<(Entity, &Transform, Option<&GroundField>), (With<NearBody>, Without<PendingBuild>)>,
 ) {
+    crate::frame_clock::timed(9, || {
     let outside_keep_radius = |(_, transform, field): &(Entity, &Transform, Option<&GroundField>)| {
         let body = transform.translation;
         field.is_none_or(|f| chebyshev(chart_xz(&f.pose, body), f.centre) > lattice.0.keep_radius())
@@ -141,9 +142,11 @@ fn start_builds(
         commands.entity(entity).insert(PendingBuild(task));
         stats.builds_started += 1;
     }
+});
 }
 
 fn finish_builds(mut commands: Commands, mut pending: Query<(Entity, &mut PendingBuild, Option<&GroundField>)>) {
+    crate::frame_clock::timed(10, || {
     let ready = pending.iter_mut().filter_map(|(entity, mut build, field)| check_ready(&mut build.0).map(|built| (entity, built, field)));
     for (entity, built, field) in ready.take(COLLIDER_BUILDS_PER_FRAME) {
         let transform = built.pose * Transform::from_xyz(built.centre[0] as f32, 0.0, built.centre[1] as f32);
@@ -156,6 +159,7 @@ fn finish_builds(mut commands: Commands, mut pending: Query<(Entity, &mut Pendin
         };
         commands.entity(entity).remove::<PendingBuild>().insert(GroundField { centre: built.centre, pose: built.pose, collider_entity });
     }
+});
 }
 
 fn drop_orphans(mut commands: Commands, fields: Query<(Entity, &GroundFieldOf)>, bodies: Query<(), With<NearBody>>) {
