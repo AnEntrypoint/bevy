@@ -14,6 +14,7 @@ use crate::planet_veg::gpu::store::VegFrame;
 use crate::planet_veg::stream::VegStreamStats;
 use crate::planet_veg::trees_render::TreesWitness;
 use crate::render_stats::{RenderStatsPlugin, SharedFrameStats};
+use bevy::camera::visibility::VisibilitySystems;
 use bevy::ecs::schedule::SingleThreadedExecutor;
 use bevy::math::DVec3;
 use bevy::prelude::*;
@@ -285,6 +286,8 @@ fn add_schedule_marks(app: &mut App) {
     app.add_systems(First, || frame_clock::restart())
         .add_systems(RunFixedMainLoop, (|| frame_clock::mark(12)).in_set(RunFixedMainLoopSystems::AfterFixedMainLoop))
         .add_systems(PostUpdate, (|| frame_clock::mark(13)).before(TransformSystems::Propagate))
+        .add_systems(PostUpdate, (|| frame_clock::mark(15)).after(TransformSystems::Propagate))
+        .add_systems(PostUpdate, (|| frame_clock::mark(16)).after(VisibilitySystems::CheckVisibility))
         .add_systems(Last, || frame_clock::mark(14));
 }
 
