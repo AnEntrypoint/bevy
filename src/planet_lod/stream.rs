@@ -211,11 +211,12 @@ fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, uploade
     }
     stats.bookkeeping_passes += 1;
     let streamer = &mut *streamer;
+    let unready: Vec<NodeKey> = selected.keys.iter().filter(|leaf| !streamer.live.get(*leaf).is_some_and(|child| uploaded.is_uploaded(child.mesh))).copied().collect();
     let replaced: Vec<NodeKey> = streamer
         .live
         .keys()
         .filter(|key| !selected.keys.contains(key))
-        .filter(|key| selected.keys.iter().filter(|leaf| overlaps(**leaf, **key)).all(|leaf| streamer.live.get(leaf).is_some_and(|child| uploaded.is_uploaded(child.mesh))))
+        .filter(|key| !unready.iter().any(|leaf| overlaps(*leaf, **key)))
         .copied()
         .collect();
     for key in replaced {
