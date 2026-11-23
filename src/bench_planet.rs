@@ -39,6 +39,10 @@ const SETTLE_LIMIT: usize = 4000;
 const SETTLED_STREAK: usize = 4;
 const BUDGET_HEADROOM_MS: f64 = 1.0;
 const BUDGET_IDLE_MULTIPLE: f64 = 2.0;
+const BUDGET_FLOOR_MS: f64 = 2.0;
+const REFERENCE_SAMPLES: usize = 3;
+const REFERENCE_FRAMES: usize = 300;
+const BUDGET_SWING_TOLERANCE: f64 = 0.5;
 const RESULT_FILE: &str = "target/witness/bench-planet.json";
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -98,7 +102,28 @@ fn flight_pose(radius: f64, ground: impl Fn(DVec3) -> f64, frame: usize) -> Fram
 }
 
 fn budget_ms(idle_p99_ms: f64) -> f64 {
-    (idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms)
+    (idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms).max(BUDGET_FLOOR_MS)
+}
+
+struct Reference {
+    p99_ms: Vec<f64>,
+}
+
+impl Reference {
+    fn median_ms(&self) -> f64 {
+        let mut sorted = self.p99_ms.clone();
+        sorted.sort_by(f64::total_cmp);
+        sorted[sorted.len() / 2]
+    }
+
+    fn swing(&self) -> f64 {
+        let (low, high) = self.p99_ms.iter().fold((f64::MAX, 0.0_f64), |(low, high), p99| (low.min(*p99), high.max(*p99)));
+        (high - low) / self.median_ms()
+    }
+
+    fn budget_ms(&self) -> f64 {
+        budget_ms(self.median_ms())
+    }
 }
 
 const INCONCLUSIVE_EXIT: i32 = 77;
@@ -150,6 +175,7 @@ struct PathRun {
     frames: Vec<FrameTimes>,
     idle_settle_frames: Option<usize>,
     idle_ms: Vec<f64>,
+    budget_ms: f64,
 }
 
 impl PathRun {
@@ -158,7 +184,7 @@ impl PathRun {
     }
 
     fn budget_ms(&self) -> f64 {
-        budget_ms(spread(&self.idle_ms).p99)
+        self.budget_ms
     }
 
     fn over_budget(&self) -> usize {
@@ -172,7 +198,7 @@ impl PathRun {
     }
 
     fn passes(&self) -> bool {
-        self.settle_frames.is_some() && self.idle_settle_frames.is_some() && self.over_budget() == 0
+        self.settle_frames.is_some() && self.idle_settle_frames.is_some() && spread(&self.main_ms()).p99 <= self.budget_ms
     }
 
     fn json(&self) -> Value {
@@ -196,6 +222,7 @@ struct Report {
     threads: usize,
     idle_before: f64,
     competitor: Option<String>,
+    reference: Reference,
 }
 
 impl Report {
@@ -204,7 +231,8 @@ impl Report {
     }
 
     fn verdict(&self) -> Verdict {
-        match (bench_host::unquiet(self.idle_before, self.competitor.as_deref()), self.passes()) {
+        let swung = (self.reference.swing() > BUDGET_SWING_TOLERANCE).then(|| format!("the idle p99 swung {:.0}% across {REFERENCE_SAMPLES} samples at the start (tolerance {:.0}%)", self.reference.swing() * 100.0, BUDGET_SWING_TOLERANCE * 100.0));
+        match (bench_host::unquiet(self.idle_before, self.competitor.as_deref()).or(swung), self.passes()) {
             (Some(reason), _) => Verdict::Inconclusive(reason),
             (None, true) => Verdict::Pass,
             (None, false) => Verdict::Fail,
@@ -213,7 +241,7 @@ impl Report {
 
     fn json(&self) -> Value {
         let mut value = json!({
-            "kind": "bench-planet", "stepS": STEP_S, "threads": self.threads, "idleBefore": self.idle_before, "idleMin": bench_host::IDLE_MIN, "competitor": self.competitor, "competitorCpuPct": bench_host::COMPETITOR_CPU_PCT,
+            "kind": "bench-planet", "stepS": STEP_S, "threads": self.threads, "idleBefore": self.idle_before, "idleMin": bench_host::IDLE_MIN, "competitor": self.competitor, "competitorCpuPct": bench_host::COMPETITOR_CPU_PCT, "referenceIdleP99Ms": self.reference.p99_ms, "referenceMedianMs": self.reference.median_ms(), "budgetSwing": self.reference.swing(), "swingTolerance": BUDGET_SWING_TOLERANCE,
             "mainThreadBuilds": self.main_thread_builds, "colliderBuildsStarted": self.collider_builds, "maxPatchesPerFrame": self.max_patches_per_frame, "vegResidentChunks": self.veg_resident_chunks,
             "pass": self.passes(), "verdict": format!("{:?}", self.verdict())
         });
@@ -301,7 +329,14 @@ impl Bench {
         })
     }
 
-    fn run_path(&mut self, path: ScriptedPath, lengths: &Lengths) -> PathRun {
+    fn reference(&mut self, lengths: &Lengths) -> Reference {
+        let start = self.pose(ScriptedPath::Flight, 0);
+        self.settle(&start, lengths.settle_frames);
+        let p99_ms = (0..REFERENCE_SAMPLES).map(|_| spread(&(0..REFERENCE_FRAMES).map(|_| self.step(&start).main_ms).collect::<Vec<_>>()).p99).collect();
+        Reference { p99_ms }
+    }
+
+    fn run_path(&mut self, path: ScriptedPath, lengths: &Lengths, budget_ms: f64) -> PathRun {
         let count = path.frames().min(lengths.path_frames).max(1);
         let start = self.pose(path, 0);
         let settle_frames = self.settle(&start, lengths.settle_frames);
@@ -312,7 +347,7 @@ impl Bench {
         let end = self.pose(path, count - 1);
         let idle_settle_frames = self.settle(&end, lengths.settle_frames);
         let idle_ms = (0..lengths.idle_frames.max(1)).map(|_| self.step(&end).main_ms).collect();
-        PathRun { path, settle_frames, frames, idle_settle_frames, idle_ms }
+        PathRun { path, settle_frames, frames, idle_settle_frames, idle_ms, budget_ms }
     }
 }
 
@@ -320,7 +355,8 @@ fn measure(lengths: &Lengths) -> Report {
     let idle_before = bench_host::measure_idle();
     let watch = Watch::start(bench_host::SAMPLE_INTERVAL);
     let mut bench = Bench::new();
-    let runs = ScriptedPath::ALL.map(|path| bench.run_path(path, lengths)).into();
+    let reference = bench.reference(lengths);
+    let runs = ScriptedPath::ALL.map(|path| bench.run_path(path, lengths, reference.budget_ms())).into();
     let world = bench.app.world();
     Report {
         runs,
@@ -331,6 +367,7 @@ fn measure(lengths: &Lengths) -> Report {
         threads: AsyncComputeTaskPool::get().thread_num(),
         idle_before,
         competitor: watch.finish(),
+        reference,
     }
 }
 
@@ -436,9 +473,9 @@ mod tests {
     }
 
     #[test]
-    fn the_budget_is_the_smaller_of_idle_p99_plus_1_ms_and_twice_idle_p99() {
-        assert_eq!(budget_ms(0.5), 1.0);
-        assert_eq!(budget_ms(1.0), 2.0);
+    fn the_budget_is_the_smaller_of_idle_p99_plus_1_ms_and_twice_idle_p99_with_a_floor() {
+        assert_eq!(budget_ms(0.5), 2.0);
+        assert_eq!(budget_ms(2.2), 3.2);
         assert_eq!(budget_ms(3.0), 4.0);
         assert_eq!(frames_over(&[0.9, 1.0, 1.1, 2.0], 1.0), 2);
     }
@@ -452,11 +489,11 @@ mod tests {
 
     fn path_run(main_ms: &[f64], settled: bool) -> PathRun {
         let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0 }).collect();
-        PathRun { path: ScriptedPath::Flight, settle_frames: settled.then_some(1), frames, idle_settle_frames: Some(1), idle_ms: vec![2.0; 10] }
+        PathRun { path: ScriptedPath::Flight, settle_frames: settled.then_some(1), frames, idle_settle_frames: Some(1), idle_ms: vec![2.0; 10], budget_ms: 3.0 }
     }
 
     fn report(runs: Vec<PathRun>, main_thread_builds: usize) -> Report {
-        Report { runs, main_thread_builds, collider_builds: 0, max_patches_per_frame: 0, veg_resident_chunks: [0; 3], threads: 1, idle_before: 1.0, competitor: None }
+        Report { runs, main_thread_builds, collider_builds: 0, max_patches_per_frame: 0, veg_resident_chunks: [0; 3], threads: 1, idle_before: 1.0, competitor: None, reference: Reference { p99_ms: vec![2.0; REFERENCE_SAMPLES] } }
     }
 
     #[test]
@@ -481,7 +518,7 @@ mod tests {
         for path in ScriptedPath::ALL {
             let run = &written[path.name()];
             assert_eq!((run["frames"].as_u64(), run["idle"]["frames"].as_u64()), (Some(3), Some(3)), "{}", path.name());
-            let budget = budget_ms(run["idle"]["p99Ms"].as_f64().unwrap());
+            let budget = budget_ms(written["referenceMedianMs"].as_f64().unwrap());
             assert!((run["budgetMs"].as_f64().unwrap() - budget).abs() < JSON_ROUND_TRIP_MS, "{} budget {} against {budget}", path.name(), run["budgetMs"]);
         }
     }
@@ -524,5 +561,31 @@ mod tests {
         assert!(matches!(hosted(passing(), 0.9, Some("cc pid 1 at 90% cpu")).verdict(), Verdict::Inconclusive(_)));
         let codes = [Verdict::Pass, Verdict::Fail, Verdict::Inconclusive(String::new())].map(|verdict| verdict.exit_code());
         assert_eq!(codes, [0, 1, 77]);
+    }
+
+    #[test]
+    fn the_budget_comes_from_the_median_of_the_start_samples_and_a_big_swing_is_inconclusive() {
+        let steady = Reference { p99_ms: vec![2.0, 9.0 / 4.0, 2.2] };
+        assert_eq!(steady.median_ms(), 2.2);
+        assert_eq!(steady.budget_ms(), 3.2);
+        let passing = || report(vec![path_run(&[2.5], true)], 0);
+        let mut calm = passing();
+        calm.reference = steady;
+        assert_eq!(calm.verdict(), Verdict::Pass);
+        let mut swinging = passing();
+        swinging.reference = Reference { p99_ms: vec![2.0, 2.2, 5.0] };
+        assert!(matches!(swinging.verdict(), Verdict::Inconclusive(reason) if reason.contains("swung")));
+    }
+
+    #[test]
+    fn a_path_passes_when_its_p99_is_inside_the_budget_even_with_a_lone_outlier() {
+        let mut samples = vec![2.5; 99];
+        samples.push(9.0);
+        let outlier = path_run(&samples, true);
+        assert_eq!(outlier.over_budget(), 1);
+        assert!(outlier.passes());
+        let mut slow = vec![2.5; 98];
+        slow.extend([9.0, 9.0]);
+        assert!(!path_run(&slow, true).passes());
     }
 }

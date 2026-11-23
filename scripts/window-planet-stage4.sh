@@ -29,7 +29,7 @@ case "$part" in
     ONLY="$names" bash scripts/phase-b.sh || overall=1
     ;;
   timing)
-    run bench-planet cargo run --bin bevy-jayzee -- bench-planet
+    run bench-planet bash scripts/timing-run.sh
     ;;
   *) echo "unknown part $part"; exit 2 ;;
 esac
