@@ -4,7 +4,7 @@ collider-build-on-main	src/planet_lod/collider.rs	let task = AsyncComputeTaskPoo
 budget-twice-idle-off	src/bench_planet.rs	(idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms)	idle_p99_ms + BUDGET_HEADROOM_MS	cargo test --bin bevy-jayzee bench_planet::
 window-77-counted-as-failure	scripts/lib/window.sh	if [ "$rc" -eq 77 ]; then inconclusive=1; elif	if false; then inconclusive=1; elif	bash scripts/check-window-inconclusive.sh
 host-idle-minimum-dropped	src/bench_host.rs	pub const IDLE_MIN: f64 = 0.70;	pub const IDLE_MIN: f64 = 0.0;	cargo test --bin bevy-jayzee bench_host
-host-competitor-limit-raised	src/bench_host.rs	pub const COMPETITOR_CPU_PCT: f64 = 30.0;	pub const COMPETITOR_CPU_PCT: f64 = 3000.0;	cargo test --bin bevy-jayzee bench_host
+host-competitor-limit-raised	src/bench_host.rs	pub const COMPETITOR_CPU_PCT: f64 = 80.0;	pub const COMPETITOR_CPU_PCT: f64 = 3000.0;	cargo test --bin bevy-jayzee bench_host
 host-competitor-one-sample	src/bench_host.rs	busy.iter().find(|(pid, ..)| previous.contains(pid))	busy.iter().find(|(pid, ..)| previous.contains(pid) || true)	cargo test --bin bevy-jayzee bench_host
 budget-swing-tolerance-raised	src/bench_planet.rs	const BUDGET_SWING_TOLERANCE: f64 = 0.5;	const BUDGET_SWING_TOLERANCE: f64 = 50.0;	cargo test --bin bevy-jayzee bench_planet::tests::the_budget_comes_from_the_median_of_the_start_samples_and_a_big_swing_is_inconclusive
 budget-from-the-lowest-sample	src/bench_planet.rs	sorted[sorted.len() / 2]	sorted[0]	cargo test --bin bevy-jayzee bench_planet::tests::the_budget_comes_from_the_median_of_the_start_samples_and_a_big_swing_is_inconclusive

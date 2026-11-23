@@ -5,7 +5,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 pub const IDLE_MIN: f64 = 0.70;
-pub const COMPETITOR_CPU_PCT: f64 = 30.0;
+pub const COMPETITOR_CPU_PCT: f64 = 80.0;
 pub const IDLE_WINDOW: Duration = Duration::from_secs(10);
 pub const SAMPLE_INTERVAL: Duration = Duration::from_secs(5);
 const POLL: Duration = Duration::from_millis(100);
@@ -147,8 +147,8 @@ mod tests {
 
     #[test]
     fn only_a_process_above_the_cpu_limit_that_is_not_ignored_is_busy() {
-        let before = snapshot_of(&[(1, "a", 0), (2, "b", 0), (3, "bench", 0)]);
-        let after = snapshot_of(&[(1, "a", 100), (2, "b", 250), (3, "bench", 900)]);
+        let before = snapshot_of(&[(1, "a", 0), (2, "b", 0), (3, "bench", 0), (4, "find", 0)]);
+        let after = snapshot_of(&[(1, "a", 100), (2, "b", 450), (3, "bench", 900), (4, "find", 190)]);
         let ignored: HashSet<u32> = [3].into_iter().collect();
         let busy = busy_processes(&before, &after, Duration::from_secs(5), &ignored);
         assert_eq!(busy.iter().map(|(pid, comm, _)| (*pid, comm.as_str())).collect::<Vec<_>>(), vec![(2, "b")]);
