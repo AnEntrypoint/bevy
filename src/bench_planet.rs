@@ -281,6 +281,13 @@ fn settled(world: &World) -> bool {
         && layers
 }
 
+fn add_schedule_marks(app: &mut App) {
+    app.add_systems(First, || frame_clock::restart())
+        .add_systems(RunFixedMainLoop, (|| frame_clock::mark(12)).in_set(RunFixedMainLoopSystems::AfterFixedMainLoop))
+        .add_systems(PostUpdate, (|| frame_clock::mark(13)).before(TransformSystems::Propagate))
+        .add_systems(Last, || frame_clock::mark(14));
+}
+
 struct Bench {
     app: App,
     camera: Entity,
@@ -301,6 +308,7 @@ impl Bench {
         let mut app = headless_app();
         app.add_plugins(RenderStatsPlugin).insert_resource(globe).insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(STEP_S)));
         globe::register(&mut app);
+        add_schedule_marks(&mut app);
         app.edit_schedule(Update, |update| {
             update.set_executor(SingleThreadedExecutor::new());
         });
