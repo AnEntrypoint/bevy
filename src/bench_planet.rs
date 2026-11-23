@@ -266,11 +266,15 @@ struct Bench {
     body: Entity,
     planet: Arc<Planet>,
     radius: f64,
+    target: Handle<Image>,
 }
 
 impl Bench {
     fn new() -> Self {
-        let globe = GlobeWorld { bodies: Vec::new(), ..default() };
+        Self::with_globe(GlobeWorld { bodies: Vec::new(), ..default() })
+    }
+
+    fn with_globe(globe: GlobeWorld) -> Self {
         let (planet, radius) = (globe.planet.clone(), f64::from(globe.radius));
         let mut app = headless_app();
         app.add_plugins(RenderStatsPlugin).insert_resource(globe).insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(STEP_S)));
@@ -285,7 +289,7 @@ impl Bench {
         spawn_view(&mut app, &target, Color::BLACK, &start, 1.0);
         let camera = app.world_mut().query_filtered::<Entity, With<Camera3d>>().single(app.world()).expect("one bench camera");
         let body = app.world_mut().spawn((NearBody, Transform::default())).id();
-        Self { app, camera, body, planet, radius }
+        Self { app, camera, body, planet, radius, target }
     }
 
     fn pose(&self, path: ScriptedPath, frame: usize) -> Frame {
@@ -572,5 +576,46 @@ mod tests {
         let mut slow = vec![2.5; 98];
         slow.extend([9.0, 9.0]);
         assert!(!path_run(&slow, true).passes());
+    }
+
+    const LUMA_STD_MIN: f64 = 0.01;
+    const DISTINCT_COLOURS_MIN: usize = 32;
+
+    fn launched_globe() -> GlobeWorld {
+        let launch = crate::default_launch();
+        let tree = crate::tree::WorldTree::load(Path::new(&launch[1])).expect("the default world");
+        let place = tree.places.get(&launch[2]).expect("the default place");
+        GlobeWorld { bodies: Vec::new(), ..GlobeWorld::from_value(place.config.extra.get("globe")) }
+    }
+
+    #[test]
+    fn the_default_launch_passes_the_pose_captures() {
+        use crate::offscreen::{image_stats, write_png};
+        let _render = render_lock();
+        let mut bench = Bench::with_globe(launched_globe());
+        let (planet, radius) = (bench.planet.clone(), bench.radius);
+        let ground = |dir: DVec3| planet.height(dir.to_array(), radius);
+        let mut lines = Vec::new();
+        let mut levels = Vec::new();
+        for (name, pose) in [("orbit", Pose::Orbit), ("high", Pose::High), ("low", Pose::Low), ("ground", Pose::Ground), ("shoreline", Pose::Shoreline)] {
+            let frame = pose.frame(radius, &ground);
+            let settle_frames = bench.settle(&frame, SETTLE_LIMIT);
+            assert!(settle_frames.is_some(), "{name}: the planet never settled");
+            let image = crate::offscreen::capture(&mut bench.app, bench.target.clone(), name);
+            let stats = image_stats(&image);
+            assert!(stats.luma_std >= LUMA_STD_MIN, "{name}: the capture is flat, luma std {}", stats.luma_std);
+            assert!(stats.distinct_colours >= DISTINCT_COLOURS_MIN, "{name}: {} colours", stats.distinct_colours);
+            write_png(&image, &format!("pose-native-{name}"));
+            let world = bench.app.world();
+            let (lod, veg) = (world.resource::<PlanetLodStats>(), world.resource::<VegStreamStats>());
+            levels.push(lod.highest_level);
+            lines.push(json!({ "pose": name, "settleFrames": settle_frames, "livePatches": lod.live_patches, "highestLevel": lod.highest_level, "vegResidentChunks": veg.resident_chunks, "lumaStd": stats.luma_std, "distinctColours": stats.distinct_colours }));
+            if pose == Pose::Ground {
+                assert!(veg.resident_chunks.iter().sum::<usize>() > 0, "ground: no vegetation streamed in");
+            }
+        }
+        assert!(levels[0] < levels[1] && levels[1] <= levels[2], "the level of detail must deepen from orbit to high to low: {levels:?}");
+        let file = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/witness/pose-native.json");
+        std::fs::write(file, Value::Array(lines).to_string()).unwrap();
     }
 }
