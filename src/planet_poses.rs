@@ -67,6 +67,6 @@ mod tests {
         let frame = Pose::Ground.frame(RADIUS_M, |_| 0.0);
         assert!((frame.position - CENSUS_ANCHOR).length() < TOLERANCE_M);
         let down = -frame.position.normalize();
-        assert!((frame.forward.dot(down) - CENSUS_PITCH_DOWN_DEG.to_radians().sin()).abs() < 1e-9);
+        assert!((frame.forward.dot(down) - 6.0_f64.to_radians().sin()).abs() < 1e-9);
     }
 }
