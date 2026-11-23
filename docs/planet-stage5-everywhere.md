@@ -167,3 +167,26 @@ The bench (bench-planet) reruns because globe::register moves into planet_scene;
 - Q6. Can the browser fallback adapter in playwriter run the vegetation compute and indirect path at all? Headless Chromium here failed with a Vulkan surface error (STATUS.md:73-75); the adapter=software path passed for glTF models (check-neon-wasm-models.cjs:9-16) but has never run a compute pass. If it cannot, the wasm row is recorded open with the failure, as the peer rules say.
 - Q7. The tree cull uses all 8 storage buffers allowed by the WebGPU default limit (cull.rs:267-277, limits.rs:434). Should Phase A merge two buffers to leave headroom, or request a higher limit from the adapter?
 - Q8. The wasm artifact is 31 MB today without the planet; the planet assets add 17 MB fetched at start. Is a size budget wanted?
+
+## 7. Next part: the planet_scene seam (written witness, 2026-11-23, design only)
+
+Status at c394fb9: src/planet_scene.rs does not exist. globe::register (src/globe.rs:412) still wires the planet inline with add_vegetation (:395) and the census systems (:498), so the native window, the pose capture and the future wasm viewer have no single planet wiring yet. This part moves that wiring, unchanged, into src/planet_scene.rs.
+
+Change: src/planet_scene.rs holds add_planet(app, globe), the render wiring that globe::register calls. globe::register keeps the window-only systems (camera, lights, focus, census). No behaviour changes: every resource, plugin and system is added in the same order.
+
+Witnesses:
+
+- W1, unchanged: default_launch_tests::the_default_launch_passes_the_pose_captures still passes (bench_planet tests). This is the proof the rendering did not move.
+- W2, new: default_launch_tests::the_default_launch_registers_every_planet_plugin builds the render app from default_launch()'s globe, calls planet_scene::add_planet, and asserts the resources bench_planet::settled reads are present afterwards (PlanetLodStats, TerrainMaterialHandle, VegStreamStats, VegFrame, TreesWitness, and AtmosphereLuts after the bake). It fails if any plugin is dropped from the seam.
+- W3, existing: the bench reruns (bench-planet) because the wiring moved; it is a timing witness, so it runs with GATE_EXCLUSIVE=1 and is judged by the CPU guard (INCONCLUSIVE is not a failure).
+
+Red checks (scripts/mutants/planet-s5-seam.tsv; the stage 5 row s5-no-vegetation is re-pointed from src/globe.rs to src/planet_scene.rs, because the call it breaks moves there):
+
+- s5-seam-no-vegetation: add_planet drops add_vegetation; W2 must fail (the veg resources are missing).
+- s5-seam-no-water: add_planet drops the water plugin; W2 must fail (the water mesh resource is missing).
+- s5-seam-order: add_planet adds the terrain material before the LOD plugin; W1 must fail or W2 must report the order.
+
+Phase B for this part: the legacy census part and the stage 4 red parts that name globe.rs (red-veg, legacy-census) and the bench, one heavy window at a time, then one push.
+
+Not in this part: the wasm crate (section 2), the wasm pose captures (section 3.3), and the default-launch change already committed (73a8500, c394fb9).
+
