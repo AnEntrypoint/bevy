@@ -36,9 +36,7 @@ const GROUND_FRAMES: usize = 4800;
 pub const IDLE_FRAMES: usize = 600;
 const SETTLE_LIMIT: usize = 4000;
 const SETTLED_STREAK: usize = 4;
-const BUDGET_HEADROOM_MS: f64 = 1.0;
-const BUDGET_IDLE_MULTIPLE: f64 = 2.0;
-const BUDGET_FLOOR_MS: f64 = 2.0;
+const FRAME_BUDGET_MS: f64 = 2.6;
 const REFERENCE_SAMPLES: usize = 3;
 const REFERENCE_FRAMES: usize = 300;
 const BUDGET_SWING_TOLERANCE: f64 = 0.5;
@@ -101,10 +99,6 @@ fn mean_sections<'a>(frames: impl Iterator<Item = &'a FrameTimes>) -> [f64; fram
     sum.map(|total| total / count.max(1) as f64)
 }
 
-fn budget_ms(idle_p99_ms: f64) -> f64 {
-    (idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms).max(BUDGET_FLOOR_MS)
-}
-
 struct Reference {
     p99_ms: Vec<f64>,
 }
@@ -119,10 +113,6 @@ impl Reference {
     fn swing(&self) -> f64 {
         let (low, high) = self.p99_ms.iter().fold((f64::MAX, 0.0_f64), |(low, high), p99| (low.min(*p99), high.max(*p99)));
         (high - low) / self.median_ms()
-    }
-
-    fn budget_ms(&self) -> f64 {
-        budget_ms(self.median_ms())
     }
 }
 
@@ -382,7 +372,7 @@ fn measure(lengths: &Lengths) -> Report {
     let watch = Watch::start(bench_host::SAMPLE_INTERVAL);
     let mut bench = Bench::new();
     let reference = bench.reference(lengths);
-    let runs = ScriptedPath::ALL.map(|path| bench.run_path(path, lengths, reference.budget_ms())).into();
+    let runs = ScriptedPath::ALL.map(|path| bench.run_path(path, lengths, FRAME_BUDGET_MS)).into();
     let world = bench.app.world();
     Report {
         runs,
@@ -500,10 +490,8 @@ mod tests {
     }
 
     #[test]
-    fn the_budget_is_the_smaller_of_idle_p99_plus_1_ms_and_twice_idle_p99_with_a_floor() {
-        assert_eq!(budget_ms(0.5), 2.0);
-        assert_eq!(budget_ms(2.2), 3.2);
-        assert_eq!(budget_ms(3.0), 4.0);
+    fn the_frame_budget_is_one_fixed_constant() {
+        assert_eq!(FRAME_BUDGET_MS, 2.6);
         assert_eq!(frames_over(&[0.9, 1.0, 1.1, 2.0], 1.0), 2);
     }
 
@@ -545,8 +533,7 @@ mod tests {
         for path in ScriptedPath::ALL {
             let run = &written[path.name()];
             assert_eq!((run["frames"].as_u64(), run["idle"]["frames"].as_u64()), (Some(3), Some(3)), "{}", path.name());
-            let budget = budget_ms(written["referenceMedianMs"].as_f64().unwrap());
-            assert!((run["budgetMs"].as_f64().unwrap() - budget).abs() < JSON_ROUND_TRIP_MS, "{} budget {} against {budget}", path.name(), run["budgetMs"]);
+            assert!((run["budgetMs"].as_f64().unwrap() - FRAME_BUDGET_MS).abs() < JSON_ROUND_TRIP_MS, "{} budget {} against {FRAME_BUDGET_MS}", path.name(), run["budgetMs"]);
         }
     }
 
@@ -591,10 +578,9 @@ mod tests {
     }
 
     #[test]
-    fn the_budget_comes_from_the_median_of_the_start_samples_and_a_big_swing_is_inconclusive() {
+    fn the_start_samples_median_and_a_big_swing_is_inconclusive() {
         let steady = Reference { p99_ms: vec![2.0, 9.0 / 4.0, 2.2] };
         assert_eq!(steady.median_ms(), 2.2);
-        assert_eq!(steady.budget_ms(), 3.2);
         let passing = || report(vec![path_run(&[2.5], true)], 0);
         let mut calm = passing();
         calm.reference = steady;
