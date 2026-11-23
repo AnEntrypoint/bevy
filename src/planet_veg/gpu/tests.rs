@@ -1,7 +1,8 @@
 use super::buffers::{EncodedRecords, GrassRecord, RockRecord, TreeRecord, VegGpuConfig, VegKind, tint_rgb8};
 use super::cull::{CullView, TreeCullSettings};
 use super::twin::{cull_trees, keep_probability, sphere_in_frustum, TwinTree};
-use super::store::{CHUNK_TABLE_BYTES, ChunkTable, RangeAllocator, UploadError, UploadQueue, UploadWrite, VegStore};
+use super::store::{CHUNK_TABLE_BYTES, ChunkTable, RangeAllocator, UploadError, UploadQueue, UploadWrite, VegFrame, VegStore, publish_frame};
+use bevy::prelude::{App, Update};
 use crate::planet_lod::origin::FloatingOrigin;
 use bevy::camera::CameraProjection;
 use bevy::math::{DVec3, Mat4, Quat, Vec3};
@@ -373,4 +374,17 @@ fn an_idle_store_publishes_nothing_until_a_chunk_an_upload_or_the_origin_changes
     let moved = FloatingOrigin { position: DVec3::new(1.0, 0.0, 0.0) };
     assert!(store.publish(&moved).is_some(), "a moved origin re-encodes the table");
     assert!(store.publish(&moved).is_none());
+}
+
+#[test]
+fn the_main_world_frame_drops_its_writes_once_they_are_published() {
+    let mut store = VegStore::new(&VegGpuConfig::default());
+    let chunk = store.add_chunk(DVec3::ZERO, Quat::IDENTITY).unwrap();
+    store.upload(chunk, 1.0, trees(3, 0)).unwrap();
+    let mut app = App::new();
+    app.insert_resource(store).init_resource::<VegFrame>().insert_resource(FloatingOrigin::default()).add_systems(Update, publish_frame);
+    app.update();
+    assert!(!app.world().resource::<VegFrame>().writes[0].is_empty(), "the upload is published");
+    app.update();
+    assert!(app.world().resource::<VegFrame>().writes.iter().all(Vec::is_empty), "an idle frame carries no writes, so the bench settles");
 }

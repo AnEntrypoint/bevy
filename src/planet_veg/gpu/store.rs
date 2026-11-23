@@ -327,7 +327,8 @@ impl VegStore {
 }
 
 pub fn publish_frame(mut store: ResMut<VegStore>, origin: Res<FloatingOrigin>, mut frame: ResMut<VegFrame>) {
-    if let Some(published) = store.publish(&origin) {
-        *frame = published;
+    match store.publish(&origin) {
+        Some(published) => *frame = published,
+        None => frame.bypass_change_detection().writes = Default::default(),
     }
 }
