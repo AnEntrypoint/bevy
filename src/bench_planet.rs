@@ -1,4 +1,5 @@
 use crate::bench::percentile;
+use crate::bench_host::{self, Watch};
 use crate::globe::{self, GlobeWorld};
 use crate::height::Planet;
 use crate::offscreen::{Frame, add_target, headless_app, pump, spawn_view};
@@ -100,28 +101,23 @@ fn budget_ms(idle_p99_ms: f64) -> f64 {
     (idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms)
 }
 
-pub const LOAD_LIMIT: f64 = 4.0;
 const INCONCLUSIVE_EXIT: i32 = 77;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Verdict {
     Pass,
     Fail,
-    Inconclusive(f64),
+    Inconclusive(String),
 }
 
 impl Verdict {
-    pub fn exit_code(self) -> i32 {
+    pub fn exit_code(&self) -> i32 {
         match self {
             Verdict::Pass => 0,
             Verdict::Fail => 1,
             Verdict::Inconclusive(_) => INCONCLUSIVE_EXIT,
         }
     }
-}
-
-fn one_minute_load(loadavg: &str) -> f64 {
-    loadavg.split_whitespace().next().and_then(|load| load.parse().ok()).unwrap_or(0.0)
 }
 
 fn frames_over(samples_ms: &[f64], budget: f64) -> usize {
@@ -198,8 +194,8 @@ struct Report {
     max_patches_per_frame: usize,
     veg_resident_chunks: [usize; 3],
     threads: usize,
-    load_before: String,
-    load_after: String,
+    idle_before: f64,
+    competitor: Option<String>,
 }
 
 impl Report {
@@ -208,19 +204,18 @@ impl Report {
     }
 
     fn verdict(&self) -> Verdict {
-        let load = one_minute_load(&self.load_before).max(one_minute_load(&self.load_after));
-        match (load > LOAD_LIMIT, self.passes()) {
-            (true, _) => Verdict::Inconclusive(load),
-            (false, true) => Verdict::Pass,
-            (false, false) => Verdict::Fail,
+        match (bench_host::unquiet(self.idle_before, self.competitor.as_deref()), self.passes()) {
+            (Some(reason), _) => Verdict::Inconclusive(reason),
+            (None, true) => Verdict::Pass,
+            (None, false) => Verdict::Fail,
         }
     }
 
     fn json(&self) -> Value {
         let mut value = json!({
-            "kind": "bench-planet", "stepS": STEP_S, "threads": self.threads, "loadBefore": self.load_before, "loadAfter": self.load_after,
+            "kind": "bench-planet", "stepS": STEP_S, "threads": self.threads, "idleBefore": self.idle_before, "idleMin": bench_host::IDLE_MIN, "competitor": self.competitor, "competitorCpuPct": bench_host::COMPETITOR_CPU_PCT,
             "mainThreadBuilds": self.main_thread_builds, "colliderBuildsStarted": self.collider_builds, "maxPatchesPerFrame": self.max_patches_per_frame, "vegResidentChunks": self.veg_resident_chunks,
-            "pass": self.passes(), "loadLimit": LOAD_LIMIT, "verdict": format!("{:?}", self.verdict())
+            "pass": self.passes(), "verdict": format!("{:?}", self.verdict())
         });
         for run in &self.runs {
             value[run.path.name()] = run.json();
@@ -321,12 +316,9 @@ impl Bench {
     }
 }
 
-fn load_average() -> String {
-    std::fs::read_to_string("/proc/loadavg").map(|text| text.trim().to_string()).unwrap_or_default()
-}
-
 fn measure(lengths: &Lengths) -> Report {
-    let load_before = load_average();
+    let idle_before = bench_host::measure_idle();
+    let watch = Watch::start(bench_host::SAMPLE_INTERVAL);
     let mut bench = Bench::new();
     let runs = ScriptedPath::ALL.map(|path| bench.run_path(path, lengths)).into();
     let world = bench.app.world();
@@ -337,8 +329,8 @@ fn measure(lengths: &Lengths) -> Report {
         max_patches_per_frame: world.resource::<PlanetLodStats>().max_spawned_in_frame,
         veg_resident_chunks: world.resource::<VegStreamStats>().resident_chunks,
         threads: AsyncComputeTaskPool::get().thread_num(),
-        load_before,
-        load_after: load_average(),
+        idle_before,
+        competitor: watch.finish(),
     }
 }
 
@@ -359,8 +351,8 @@ pub fn run(path_frames: usize, idle_frames: usize) -> Verdict {
                 eprintln!("bench-planet FAILED: {over} frames over budget, {} main-thread builds, see {}", report.main_thread_builds, file.display());
             }
             let verdict = report.verdict();
-            if let Verdict::Inconclusive(load) = verdict {
-                eprintln!("bench-planet INCONCLUSIVE load={load}");
+            if let Verdict::Inconclusive(reason) = &verdict {
+                eprintln!("bench-planet INCONCLUSIVE {reason}");
             }
             verdict
         }
@@ -464,7 +456,7 @@ mod tests {
     }
 
     fn report(runs: Vec<PathRun>, main_thread_builds: usize) -> Report {
-        Report { runs, main_thread_builds, collider_builds: 0, max_patches_per_frame: 0, veg_resident_chunks: [0; 3], threads: 1, load_before: String::new(), load_after: String::new() }
+        Report { runs, main_thread_builds, collider_builds: 0, max_patches_per_frame: 0, veg_resident_chunks: [0; 3], threads: 1, idle_before: 1.0, competitor: None }
     }
 
     #[test]
@@ -516,23 +508,21 @@ mod tests {
         assert!(bench.app.world().resource::<PlanetLodStats>().live_patches > 0, "no patch streamed in");
     }
 
-    fn loaded(mut report: Report, before: &str, after: &str) -> Report {
-        report.load_before = before.to_string();
-        report.load_after = after.to_string();
+    fn hosted(mut report: Report, idle_before: f64, competitor: Option<&str>) -> Report {
+        report.idle_before = idle_before;
+        report.competitor = competitor.map(str::to_string);
         report
     }
 
     #[test]
-    fn a_load_above_the_limit_before_or_after_the_run_is_inconclusive_not_a_failure() {
-        let calm = "0.50 1.00 1.00 1/100 1";
-        let busy = "9.25 1.00 1.00 1/100 1";
+    fn an_unquiet_host_before_or_during_the_run_is_inconclusive_not_a_failure() {
         let failing = || report(vec![path_run(&[2.5, 3.01], true)], 0);
         let passing = || report(vec![path_run(&[2.5], true)], 0);
-        assert_eq!(loaded(failing(), calm, calm).verdict(), Verdict::Fail);
-        assert_eq!(loaded(passing(), calm, calm).verdict(), Verdict::Pass);
-        assert_eq!(loaded(failing(), busy, calm).verdict(), Verdict::Inconclusive(9.25));
-        assert_eq!(loaded(passing(), calm, busy).verdict(), Verdict::Inconclusive(9.25));
-        assert_eq!(loaded(failing(), "4.00 1 1 1/1 1", "4.00 1 1 1/1 1").verdict(), Verdict::Fail, "the limit itself is quiet enough");
-        assert_eq!((Verdict::Pass.exit_code(), Verdict::Fail.exit_code(), Verdict::Inconclusive(9.0).exit_code()), (0, 1, 77));
+        assert_eq!(hosted(failing(), 0.9, None).verdict(), Verdict::Fail);
+        assert_eq!(hosted(passing(), 0.9, None).verdict(), Verdict::Pass);
+        assert!(matches!(hosted(failing(), 0.5, None).verdict(), Verdict::Inconclusive(_)));
+        assert!(matches!(hosted(passing(), 0.9, Some("cc pid 1 at 90% cpu")).verdict(), Verdict::Inconclusive(_)));
+        let codes = [Verdict::Pass, Verdict::Fail, Verdict::Inconclusive(String::new())].map(|verdict| verdict.exit_code());
+        assert_eq!(codes, [0, 1, 77]);
     }
 }

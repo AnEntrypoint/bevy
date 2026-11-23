@@ -3,6 +3,7 @@ patch-build-on-main	src/planet_lod/stream.rs	let task = AsyncComputeTaskPool::ge
 collider-build-on-main	src/planet_lod/collider.rs	let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, (ground.0)(body)) });	let built = build_collider(&lattice, (ground.0)(body)); let task = AsyncComputeTaskPool::get().spawn(async move { built });	cargo run --bin bevy-jayzee -- bench-planet 600 60
 budget-check-off	src/bench_planet.rs	self.over_budget() == 0	self.over_budget() < usize::MAX	cargo test --bin bevy-jayzee bench_planet::
 budget-twice-idle-off	src/bench_planet.rs	(idle_p99_ms + BUDGET_HEADROOM_MS).min(BUDGET_IDLE_MULTIPLE * idle_p99_ms)	idle_p99_ms + BUDGET_HEADROOM_MS	cargo test --bin bevy-jayzee bench_planet::
-bench-load-limit-raised	src/bench_planet.rs	pub const LOAD_LIMIT: f64 = 4.0;	pub const LOAD_LIMIT: f64 = 400.0;	cargo test --bin bevy-jayzee bench_planet::tests::a_load_above_the_limit_before_or_after_the_run_is_inconclusive_not_a_failure
-bench-load-after-ignored	src/bench_planet.rs	.max(one_minute_load(&self.load_after))	.max(0.0)	cargo test --bin bevy-jayzee bench_planet::tests::a_load_above_the_limit_before_or_after_the_run_is_inconclusive_not_a_failure
 window-77-counted-as-failure	scripts/lib/window.sh	if [ "$rc" -eq 77 ]; then inconclusive=1; elif	if false; then inconclusive=1; elif	bash scripts/check-window-inconclusive.sh
+host-idle-minimum-dropped	src/bench_host.rs	pub const IDLE_MIN: f64 = 0.70;	pub const IDLE_MIN: f64 = 0.0;	cargo test --bin bevy-jayzee bench_host
+host-competitor-limit-raised	src/bench_host.rs	pub const COMPETITOR_CPU_PCT: f64 = 30.0;	pub const COMPETITOR_CPU_PCT: f64 = 3000.0;	cargo test --bin bevy-jayzee bench_host
+host-competitor-one-sample	src/bench_host.rs	busy.iter().find(|(pid, ..)| previous.contains(pid))	busy.iter().find(|(pid, ..)| previous.contains(pid) || true)	cargo test --bin bevy-jayzee bench_host
