@@ -15,7 +15,7 @@ use bevy::tasks::{AsyncComputeTaskPool, Task, futures::check_ready};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-pub const PATCH_SPAWNS_PER_FRAME: usize = 8;
+pub const PATCH_SPAWNS_PER_FRAME: usize = 4;
 pub const MAX_TASKS_IN_FLIGHT: usize = 64;
 const CLIMATE_BAKE_RES: usize = 128;
 const CLIMATE_BAKE_MAX_LEVEL: u32 = 7;
