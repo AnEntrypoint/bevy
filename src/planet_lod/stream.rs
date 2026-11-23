@@ -91,11 +91,13 @@ struct Streamer {
     bookkeeping_due: bool,
 }
 
-fn overlaps(a: NodeKey, b: NodeKey) -> bool {
-    let (coarse, fine) = if a.level <= b.level { (a, b) } else { (b, a) };
-    let shift = fine.level - coarse.level;
-    a.face == b.face && fine.x >> shift == coarse.x && fine.y >> shift == coarse.y
+fn ancestry(key: NodeKey) -> impl Iterator<Item = NodeKey> {
+    (0..=key.level).rev().map(move |level| {
+        let shift = key.level - level;
+        NodeKey { face: key.face, level, x: key.x >> shift, y: key.y >> shift }
+    })
 }
+
 
 fn patch_mesh(patch: PatchMesh) -> Mesh {
     let heights: Vec<[f32; 2]> = patch.height.iter().map(|&height| [height, 0.0]).collect();
@@ -218,13 +220,14 @@ fn retire_patches(mut commands: Commands, selected: Res<SelectedLeaves>, uploade
     }
     stats.bookkeeping_passes += 1;
     let streamer = &mut *streamer;
-    let unready: Vec<NodeKey> = selected.keys.iter().filter(|leaf| !streamer.live.get(*leaf).is_some_and(|child| uploaded.is_uploaded(child.mesh))).copied().collect();
+    let unready: HashSet<NodeKey> = selected.keys.iter().filter(|leaf| !streamer.live.get(*leaf).is_some_and(|child| uploaded.is_uploaded(child.mesh))).copied().collect();
+    let blocked: HashSet<NodeKey> = unready.iter().flat_map(|leaf| ancestry(*leaf)).collect();
     let replaced: Vec<NodeKey> = streamer
         .live
         .keys()
-        .filter(|key| !selected.keys.contains(key))
-        .filter(|key| !unready.iter().any(|leaf| overlaps(*leaf, **key)))
         .copied()
+        .filter(|key| !selected.keys.contains(key))
+        .filter(|key| !blocked.contains(key) && !ancestry(*key).any(|ancestor| unready.contains(&ancestor)))
         .collect();
     for key in replaced {
         if let Some(patch) = streamer.live.remove(&key) {
@@ -277,6 +280,23 @@ impl Plugin for PlanetLodPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn overlaps(a: NodeKey, b: NodeKey) -> bool {
+        let (coarse, fine) = if a.level <= b.level { (a, b) } else { (b, a) };
+        let shift = fine.level - coarse.level;
+        a.face == b.face && fine.x >> shift == coarse.x && fine.y >> shift == coarse.y
+    }
+
+    #[test]
+    fn the_ancestor_walk_finds_the_same_overlaps_as_the_pairwise_test() {
+        let keys: Vec<NodeKey> = (0..=3u8).flat_map(|level| (0..1u32 << level).flat_map(move |x| (0..1u32 << level).map(move |y| NodeKey { face: 0, level, x, y }))).collect();
+        for a in &keys {
+            for b in &keys {
+                let by_walk = ancestry(*b).any(|key| key == *a) || ancestry(*a).any(|key| key == *b);
+                assert_eq!(by_walk, overlaps(*a, *b), "{a:?} against {b:?}");
+            }
+        }
+    }
     use crate::height::{HashVersion, PlanetConfig};
     use crate::planet_lod::guard::builds_on_main_thread;
     use crate::planet_lod::origin::REBASE_DISTANCE_M;
