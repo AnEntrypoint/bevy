@@ -148,9 +148,13 @@ fn spread(samples_ms: &[f64]) -> Spread {
 #[derive(Clone, Copy)]
 struct FrameTimes {
     main_ms: f64,
+    sim_ms: f64,
+    extract_ms: f64,
     render_ms: f64,
     spawned_patches: usize,
     tasks_in_flight: usize,
+    veg_tasks_in_flight: usize,
+    veg_queued: usize,
 }
 
 struct PathRun {
@@ -178,7 +182,7 @@ impl PathRun {
     fn over_budget_frames(&self) -> Vec<Value> {
         let budget = self.budget_ms();
         let over = self.frames.iter().enumerate().filter(|(_, frame)| frame.main_ms > budget);
-        over.map(|(index, frame)| json!({ "frame": index, "mainMs": frame.main_ms, "spawnedPatches": frame.spawned_patches, "tasksInFlight": frame.tasks_in_flight })).collect()
+        over.map(|(index, frame)| json!({ "frame": index, "mainMs": frame.main_ms, "simMs": frame.sim_ms, "extractMs": frame.extract_ms, "spawnedPatches": frame.spawned_patches, "tasksInFlight": frame.tasks_in_flight, "vegTasksInFlight": frame.veg_tasks_in_flight, "vegQueued": frame.veg_queued })).collect()
     }
 
     fn passes(&self) -> bool {
@@ -305,7 +309,9 @@ impl Bench {
         let stats = self.app.world().resource::<SharedFrameStats>().snapshot();
         let span = |ms: Option<f64>| ms.expect("the render stats time every frame");
         let lod = self.app.world().resource::<PlanetLodStats>();
-        FrameTimes { main_ms: span(stats.sim_ms) + span(stats.extract_ms), render_ms: span(stats.render_ms), spawned_patches: lod.spawned_this_frame, tasks_in_flight: lod.tasks_in_flight }
+        let veg = self.app.world().resource::<VegStreamStats>();
+        let (sim_ms, extract_ms) = (span(stats.sim_ms), span(stats.extract_ms));
+        FrameTimes { main_ms: sim_ms + extract_ms, sim_ms, extract_ms, render_ms: span(stats.render_ms), spawned_patches: lod.spawned_this_frame, tasks_in_flight: lod.tasks_in_flight, veg_tasks_in_flight: veg.tasks_in_flight, veg_queued: veg.queued_chunks.iter().sum() }
     }
 
     fn settle(&mut self, pose: &Frame, limit: usize) -> Option<usize> {
@@ -477,7 +483,7 @@ mod tests {
     }
 
     fn path_run(main_ms: &[f64], settled: bool) -> PathRun {
-        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0 }).collect();
+        let frames = main_ms.iter().map(|&main_ms| FrameTimes { main_ms, sim_ms: main_ms, extract_ms: 0.0, render_ms: 0.0, spawned_patches: 0, tasks_in_flight: 0, veg_tasks_in_flight: 0, veg_queued: 0 }).collect();
         PathRun { path: ScriptedPath::Flight, settle_frames: settled.then_some(1), frames, idle_settle_frames: Some(1), idle_ms: vec![2.0; 10], budget_ms: 3.0 }
     }
 
@@ -617,5 +623,17 @@ mod tests {
         assert!(levels[0] < levels[1] && levels[1] <= levels[2], "the level of detail must deepen from orbit to high to low: {levels:?}");
         let file = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/witness/pose-native.json");
         std::fs::write(file, Value::Array(lines).to_string()).unwrap();
+    }
+
+    #[test]
+    fn an_over_budget_frame_names_its_simulation_extraction_and_vegetation_load() {
+        let mut run = path_run(&[2.5, 9.0], true);
+        run.frames[1].sim_ms = 6.0;
+        run.frames[1].extract_ms = 3.0;
+        run.frames[1].main_ms = 9.0;
+        run.frames[1].veg_queued = 7;
+        let over = run.over_budget_frames();
+        assert_eq!(over.len(), 1);
+        assert_eq!((over[0]["simMs"].as_f64(), over[0]["extractMs"].as_f64(), over[0]["vegQueued"].as_u64()), (Some(6.0), Some(3.0), Some(7)));
     }
 }
