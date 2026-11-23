@@ -405,6 +405,10 @@ fn warn_missing_textures() {
 
 const RENDER_ASSET_BYTES_PER_FRAME: usize = 4 << 20;
 
+fn cap_render_asset_uploads(mut commands: Commands) {
+    commands.insert_resource(RenderAssetBytesPerFrame::new(RENDER_ASSET_BYTES_PER_FRAME));
+}
+
 pub fn register(app: &mut App) {
     let globe = app.world().get_resource::<GlobeWorld>().cloned().unwrap_or_default();
     let focus = GlobeFocus(globe.surface_position(0.0, 0.0, globe.body_altitude));
@@ -420,9 +424,9 @@ pub fn register(app: &mut App) {
         ))
         .insert_resource(globe.terrain_frame())
         .insert_resource(SkyPlanet { centre: globe.center, radius: globe.radius })
-        .insert_resource(RenderAssetBytesPerFrame::new(RENDER_ASSET_BYTES_PER_FRAME))
         .add_systems(Startup, warn_missing_textures)
         .add_systems(Update, equip_camera)
+        .add_systems(Update, cap_render_asset_uploads.run_if(luts_ready).run_if(not(resource_exists::<RenderAssetBytesPerFrame>)))
         .add_systems(PostUpdate, align_lights_with_focus.before(TransformSystems::Propagate));
         add_vegetation(app, &globe);
     } else {
@@ -672,6 +676,7 @@ mod tests {
     const BAKED_HEIGHT_TOLERANCE_M: f64 = 1e-9;
 
     use super::*;
+    use crate::planet_sky::lut::AtmosphereLuts;
 
     fn globe() -> GlobeWorld {
         GlobeWorld::default()
@@ -1025,8 +1030,12 @@ mod tests {
     }
 
     #[test]
-    fn the_viewer_caps_the_render_asset_bytes_uploaded_per_frame() {
-        let app = viewer_app(globe());
+    fn the_viewer_caps_the_render_asset_bytes_uploaded_per_frame_once_the_sky_luts_are_up() {
+        let mut app = viewer_app(globe());
+        app.update();
+        assert!(!app.world().contains_resource::<RenderAssetBytesPerFrame>(), "the cap held back the first uploads");
+        app.insert_resource(AtmosphereLuts { transmittance: Handle::default(), scattering: Handle::default() });
+        app.update();
         assert_eq!(app.world().resource::<RenderAssetBytesPerFrame>().max_bytes, Some(RENDER_ASSET_BYTES_PER_FRAME));
     }
 
