@@ -21,6 +21,7 @@ mkdir -p "$out"
 cp "$root/web/wasm-index.html" "$out/index.html"
 cp "$root/web/wasm-boot.js" "$out/wasm-boot.js"
 cp "$root/web/favicon.svg" "$out/favicon.svg"
+rm -rf "$out/assets" && cp -r "$root/assets" "$out/assets"
 cp "$root/web/inspector.js" "$out/inspector.js"
 cp "$root/web/status.json" "$out/status.json" 2>/dev/null || true
 printf '{"kind":"wasm-build","profile":"%s","cli":"%s","output":"%s"}\n' "$profile" "$("$cli" --version)" "$out"

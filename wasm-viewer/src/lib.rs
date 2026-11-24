@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use bevy::asset::{AssetMetaCheck, AssetPlugin, LoadState};
 use bevy::image::{CompressedImageFormatSupport, CompressedImageFormats};
 use bevy::render::renderer::RenderAdapterInfo;
@@ -11,9 +13,37 @@ use bevy::diagnostic::{
 use bevy::window::{PrimaryWindow, WindowResolution};
 use bevy::world_serialization::{WorldAsset, WorldAssetRoot};
 use wasm_bindgen::prelude::*;
+use crate::globe::GlobeWorld;
+use crate::offscreen::Frame;
+use crate::planet_lod::collider::NearBody;
+use crate::planet_lod::stream::PlanetLodStats;
+use crate::planet_poses::Pose;
+use crate::planet_scene::{SETTLED_STREAK, unsettled};
+use crate::planet_veg::stream::VegStreamStats;
+use crate::planet_veg::trees_render::TreesWitness;
 
 #[path = "../../src/render_stats.rs"]
 mod render_stats;
+mod planet_lod;
+mod planet_veg;
+mod planet_water;
+mod planet_sky;
+mod planet_material;
+mod height;
+mod globe;
+mod planet_scene;
+mod planet_poses;
+mod frame_clock;
+mod vec3;
+mod js_math;
+mod refusal;
+mod offscreen;
+mod spec;
+mod rock_shapes;
+mod cave_sdf;
+mod rock_tri_table;
+mod planet_assets;
+mod script;
 use render_stats::{is_gpu_pass, RenderStatsPlugin, SharedFrameStats};
 use bevy::render::diagnostic::RenderDiagnosticsPlugin;
 
@@ -59,6 +89,8 @@ pub fn start() {
     .and_then(|value| value.as_bool())
     .unwrap_or(false);
     let model = model_request();
+    let planet = model.is_none();
+    let pose = if planet { pose_request() } else { None };
     let asset_root = if model.is_some() { "/" } else { "assets" };
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(AssetPlugin { file_path: asset_root.to_string(), meta_check: AssetMetaCheck::Never, ..default() }).set(WindowPlugin {
@@ -88,9 +120,88 @@ pub fn start() {
     .insert_resource(ModelReported(false))
     .insert_resource(Still(query_value("still").as_deref() == Some("1")))
     .insert_resource(InspectorState { enabled: inspector_enabled, last_update: 0.0 })
-    .add_systems(Startup, setup)
     .add_systems(Update, (spawn_model, orbit, spin, mark_ready, report_model, publish_diagnostics));
+    if planet {
+        add_planet(&mut app, pose);
+    } else {
+        app.add_systems(Startup, setup);
+    }
     app.run();
+}
+
+fn add_planet(app: &mut App, pose: Option<Pose>) {
+    app.add_plugins(avian3d::prelude::PhysicsPlugins::default())
+        .insert_resource(Time::<Fixed>::from_hz(60.0))
+        .insert_resource(GlobeWorld::default())
+        .add_systems(Startup, spawn_planet_camera);
+    match pose {
+        Some(pose) => {
+            app.insert_resource(PoseDriver { pose, frame: None, streak: 0 }).add_systems(Update, drive_pose);
+        }
+        None => {
+            app.add_systems(Update, globe::frame_globe_camera);
+        }
+    }
+    globe::register(app);
+}
+
+fn pose_request() -> Option<Pose> {
+    match query_value("pose")?.as_str() {
+        "orbit" => Some(Pose::Orbit),
+        "high" => Some(Pose::High),
+        "low" => Some(Pose::Low),
+        "ground" => Some(Pose::Ground),
+        "shoreline" => Some(Pose::Shoreline),
+        _ => None,
+    }
+}
+
+#[derive(Resource)]
+struct PoseDriver {
+    pose: Pose,
+    frame: Option<Frame>,
+    streak: usize,
+}
+
+fn drive_pose(world: &mut World) {
+    let frame = match world.resource::<PoseDriver>().frame.clone() {
+        Some(frame) => frame,
+        None => {
+            let pose = world.resource::<PoseDriver>().pose;
+            let globe = world.resource::<GlobeWorld>();
+            let radius = f64::from(globe.radius);
+            let frame = pose.frame(radius, |dir| globe.planet.height(dir.to_array(), radius));
+            world.resource_mut::<PoseDriver>().frame = Some(frame.clone());
+            frame
+        }
+    };
+    let translation = frame.position.as_vec3();
+    let mut cameras = world.query_filtered::<&mut Transform, With<Camera3d>>();
+    for mut transform in cameras.iter_mut(world) {
+        *transform = Transform::from_translation(translation).looking_to(frame.forward.as_vec3(), frame.up.as_vec3());
+    }
+    let mut bodies = world.query_filtered::<&mut Transform, With<NearBody>>();
+    for mut transform in bodies.iter_mut(world) {
+        *transform = Transform::from_translation(translation);
+    }
+    let reasons = unsettled(world);
+    publish_status_attribute("data-unsettled", &reasons.join(","));
+    if let Some(refusal) = world.resource::<TreesWitness>().refusal.lock().unwrap().as_ref() {
+        publish_status_attribute("data-tree-refusal", &format!("{}: {}", refusal.name, refusal.message));
+    }
+    let streak = if reasons.is_empty() { world.resource::<PoseDriver>().streak + 1 } else { 0 };
+    world.resource_mut::<PoseDriver>().streak = streak;
+    if streak == SETTLED_STREAK {
+        let lod = world.resource::<PlanetLodStats>();
+        publish_status_attribute("data-highest-level", &lod.highest_level.to_string());
+        publish_status_attribute("data-live-patches", &lod.live_patches.to_string());
+        publish_status_attribute("data-veg-chunks", &world.resource::<VegStreamStats>().resident_chunks.iter().sum::<usize>().to_string());
+        publish_status_attribute("data-pose-settled", "true");
+    }
+}
+
+fn spawn_planet_camera(mut commands: Commands) {
+    commands.spawn((Camera3d::default(), Transform::default(), Name::new("planet-camera")));
 }
 
 fn setup(

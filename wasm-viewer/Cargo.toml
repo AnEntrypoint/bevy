@@ -25,6 +25,7 @@ bevy = { version = "0.20.1", default-features = false, features = [
     "bevy_gizmos_render",
     "default_font",
     "png",
+    "jpeg",
     "std",
     "async_executor",
     "web",
@@ -37,6 +38,9 @@ bevy = { version = "0.20.1", default-features = false, features = [
     "reflect_auto_register",
 ] }
 wasm-bindgen = "=0.2.129"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+avian3d = { version = "0.8", default-features = false, features = ["3d", "parry-f32", "enhanced-determinism", "serialize", "bevy_diagnostic"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.106"
