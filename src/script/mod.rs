@@ -4120,4 +4120,47 @@ mod tests {
             assert!(exports.contains(&name), "builtin/tsl does not export {name}");
         }
     }
+
+    fn path_guard_root(case: &str) -> PathBuf {
+        let case_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/path-guard").join(case);
+        let _ = std::fs::remove_dir_all(&case_dir);
+        let root = case_dir.join("world");
+        std::fs::create_dir_all(root.join("scripts")).unwrap();
+        std::fs::write(root.join("scripts/a.js"), "export const value = 7;").unwrap();
+        std::fs::write(case_dir.join("outside.js"), "export const value = 99;").unwrap();
+        root
+    }
+
+    #[test]
+    fn scripted_primitive_does_not_read_a_traversal_outside_the_root() {
+        let root = path_guard_root("scripted-traversal");
+        let mut engine = ScriptEngine::new(&root).unwrap();
+        let loaded = engine.context.with(|ctx| engine.module(&ctx, "../outside.js").is_some());
+        engine.shutdown();
+        assert!(!loaded, "a ../ script read a file outside the world root");
+    }
+
+    #[test]
+    fn loader_does_not_read_an_absolute_name_outside_the_root() {
+        let root = path_guard_root("absolute-import");
+        let outside = root.parent().unwrap().join("outside.js").to_string_lossy().into_owned();
+        let runtime = Runtime::new().unwrap();
+        let context = Context::full(&runtime).unwrap();
+        let loaded = context.with(|ctx| WorldLoader { root: root.clone() }.load(&ctx, &outside, None).is_ok());
+        assert!(!loaded, "an absolute import read a file outside the world root");
+    }
+
+    #[test]
+    fn in_root_paths_still_read_the_same_file() {
+        let root = path_guard_root("in-root");
+        let mut engine = ScriptEngine::new(&root).unwrap();
+        let (value, loaded) = engine.context.with(|ctx| {
+            let value = engine.module(&ctx, "scripts/a.js").and_then(|namespace| namespace.get::<_, i32>("value").ok());
+            let loaded = WorldLoader { root: root.clone() }.load(&ctx, "./scripts/a.js", None).is_ok();
+            (value, loaded)
+        });
+        engine.shutdown();
+        assert_eq!(value, Some(7));
+        assert!(loaded);
+    }
 }
