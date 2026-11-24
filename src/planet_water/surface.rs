@@ -1,4 +1,4 @@
-use super::leaves::water_instances;
+use super::leaves::{LandCache, water_instances_sliced};
 use super::mesh::{WaterMesh, build_water_mesh};
 use super::waves::{DEFAULT_AMPLITUDE, DEFAULT_CHOPPINESS, DEFAULT_FOAM, sea_height_mean, wave_tile_offset};
 use crate::height::Planet;
@@ -194,6 +194,10 @@ pub fn water_mesh_asset(mesh: WaterMesh) -> Mesh {
         .with_inserted_indices(Indices::U32(mesh.indices))
 }
 
+#[cfg(test)]
+use super::leaves::water_instances;
+
+#[cfg(test)]
 pub fn build_water<'a>(planet: &Planet, radius: f64, leaves: impl IntoIterator<Item = &'a NodeKey>, origin: DVec3) -> WaterMesh {
     note_build();
     let instances = water_instances(leaves, |dir| planet.height(dir.to_array(), radius));
@@ -210,7 +214,8 @@ struct Source {
 struct WaterStreamer {
     generation: u64,
     live: Option<Entity>,
-    pending: Option<Task<(DVec3, Mesh)>>,
+    heights: LandCache,
+    pending: Option<Task<(DVec3, Mesh, LandCache)>>,
 }
 
 #[derive(Resource)]
@@ -237,8 +242,14 @@ fn start_water(source: Res<Source>, mean: Res<SeaMean>, selection: Res<SelectedL
         return;
     }
     let (planet, radius, keys, position) = (source.planet.clone(), source.radius, selection.keys.clone(), selection.camera);
+    let mut heights = std::mem::take(&mut streamer.heights);
     streamer.generation = selection.generation;
-    streamer.pending = Some(AsyncComputeTaskPool::get().spawn(async move { (position, water_mesh_asset(build_water(&planet, radius, &keys, position))) }));
+    streamer.pending = Some(AsyncComputeTaskPool::get().spawn(async move {
+        note_build();
+        let leaves: Vec<NodeKey> = keys.into_iter().collect();
+        let instances = water_instances_sliced(&leaves, &mut heights, |dir| planet.height(dir.to_array(), radius)).await;
+        (position, water_mesh_asset(build_water_mesh(&instances, radius, position)), heights)
+    }));
 });
 }
 
@@ -251,8 +262,9 @@ fn finish_water(
 ) {
     crate::frame_clock::timed(6, || {
     let Some(task) = streamer.pending.as_mut() else { return };
-    let Some((origin, mesh)) = check_ready(task) else { return };
+    let Some((origin, mesh, heights)) = check_ready(task) else { return };
     streamer.pending = None;
+    streamer.heights = heights;
     surface.origin = origin;
     let entity = commands.spawn((Mesh3d(meshes.add(mesh)), MeshMaterial3d(handle.0.clone()), Transform::IDENTITY, NoFrustumCulling)).id();
     if let Some(old) = streamer.live.replace(entity) {

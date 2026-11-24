@@ -1,6 +1,7 @@
 use crate::planet_lod::quadtree::NodeKey;
+use crate::planet_lod::yield_slice::yield_slice;
 use bevy::math::DVec3;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub const WATER_GRID: usize = 4;
 pub const WATER_MAX_LEVEL: u8 = 11;
@@ -33,16 +34,37 @@ fn land_heights(key: NodeKey, land_height: &impl Fn(DVec3) -> f64) -> [f64; LATT
     std::array::from_fn(|point| land_height(lattice_dir(key, point)))
 }
 
+fn instance(key: NodeKey, land: &[f64; LATTICE_POINTS]) -> Option<WaterInstance> {
+    let dry = land.iter().all(|&height| height > LAND_ABOVE_SEA_DISCARD_M);
+    (!dry).then(|| WaterInstance { key, land: land.map(|height| height as f32) })
+}
+
+pub type LandCache = HashMap<NodeKey, [f64; LATTICE_POINTS]>;
+
 pub fn water_instances<'a>(leaves: impl IntoIterator<Item = &'a NodeKey>, land_height: impl Fn(DVec3) -> f64) -> Vec<WaterInstance> {
     let mut seen = HashSet::new();
     leaves
         .into_iter()
         .map(|&leaf| clamp_level(leaf))
         .filter(|key| seen.insert(*key))
-        .filter_map(|key| {
-            let land = land_heights(key, &land_height);
-            let dry = land.iter().all(|&height| height > LAND_ABOVE_SEA_DISCARD_M);
-            (!dry).then(|| WaterInstance { key, land: land.map(|height| height as f32) })
-        })
+        .filter_map(|key| instance(key, &land_heights(key, &land_height)))
         .collect()
+}
+
+pub async fn water_instances_sliced(leaves: &[NodeKey], heights: &mut LandCache, land_height: impl Fn(DVec3) -> f64) -> Vec<WaterInstance> {
+    let mut seen = HashSet::new();
+    let mut instances = Vec::new();
+    for &leaf in leaves {
+        let key = clamp_level(leaf);
+        if !seen.insert(key) {
+            continue;
+        }
+        if !heights.contains_key(&key) {
+            heights.insert(key, land_heights(key, &land_height));
+            yield_slice().await;
+        }
+        instances.extend(instance(key, &heights[&key]));
+    }
+    heights.retain(|key, _| seen.contains(key));
+    instances
 }
