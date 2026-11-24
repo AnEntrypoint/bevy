@@ -3,12 +3,17 @@ use bevy::camera::{ClearColorConfig, RenderTarget};
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::math::DVec3;
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::render::RenderPlugin;
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::render::pipelined_rendering::PipelinedRenderingPlugin;
 use bevy::render::render_resource::{PollType, TextureFormat};
 use bevy::render::renderer::RenderDevice;
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::render::settings::{Backends, RenderCreation, WgpuSettings};
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::window::ExitCondition;
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::winit::WinitPlugin;
 use std::sync::Once;
 
@@ -22,6 +27,7 @@ pub(crate) const WIDTH: u32 = 320;
 pub(crate) const HEIGHT: u32 = 180;
 pub(crate) const FOV_Y: f64 = std::f64::consts::FRAC_PI_4;
 
+#[derive(Clone, Copy)]
 pub(crate) struct Frame {
     pub(crate) position: DVec3,
     pub(crate) forward: DVec3,
@@ -51,6 +57,7 @@ fn use_lavapipe() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn headless_app() -> App {
     use_lavapipe();
     let window = WindowPlugin { primary_window: None, exit_condition: ExitCondition::DontExit, close_when_requested: false, ..default() };

@@ -343,6 +343,12 @@ fn first_with_textures(roots: impl IntoIterator<Item = PathBuf>) -> Option<PathB
     roots.into_iter().map(|root| root.join(TEXTURES_SUBDIR)).find(|dir| dir.is_dir())
 }
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn texture_dir() -> Option<PathBuf> {
+    Some(PathBuf::from(TEXTURES_SUBDIR))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn texture_dir() -> Option<PathBuf> {
     let executable = std::env::current_exe().ok();
     let beside_build_tree = executable.iter().flat_map(|path| path.ancestors().skip(2).take(2).map(PathBuf::from));

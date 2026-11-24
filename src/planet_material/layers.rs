@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use crate::planet_assets;
 use bevy::asset::RenderAssetUsages;
 use bevy::image::{
     CompressedImageFormats, Image, ImageAddressMode, ImageFilterMode, ImageSampler,
@@ -58,7 +59,7 @@ fn delin8(linear: f64) -> u8 {
 }
 
 fn decode_rgba(path: &Path) -> Result<Vec<u8>, Refusal> {
-    let bytes = std::fs::read(path).map_err(|e| refuse(path, e))?;
+    let bytes = planet_assets::read(path).map_err(|e| refuse(path, e))?;
     let image = Image::from_buffer(
         &bytes,
         ImageType::Extension("jpg"),

@@ -1,4 +1,5 @@
 use super::budget::{TextureBudget, halved_to_budget, mip_chain, mip_levels};
+use crate::planet_assets;
 use crate::planet_veg::species::{PartGeometry, SpeciesGeometry, TierGeometry, TIER_COUNT, load_species};
 use crate::refusal::Refusal;
 use bevy::asset::RenderAssetUsages;
@@ -88,7 +89,7 @@ fn hex_to_linear(hex: u32) -> [f32; 3] {
 }
 
 fn decode_rgba(path: &Path) -> Result<(Vec<u8>, u32), Refusal> {
-    let bytes = std::fs::read(path).map_err(|error| refuse("tree-texture-unreadable", format!("{}: {error}", path.display())))?;
+    let bytes = planet_assets::read(path).map_err(|error| refuse("tree-texture-unreadable", format!("{}: {error}", path.display())))?;
     let extension = path.extension().and_then(|extension| extension.to_str()).unwrap_or_default().to_owned();
     let image = Image::from_buffer(&bytes, ImageType::Extension(&extension), CompressedImageFormats::NONE, true, ImageSampler::Default, RenderAssetUsages::default())
         .map_err(|error| refuse("tree-texture-undecodable", format!("{}: {error}", path.display())))?;

@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use crate::planet_assets;
 use serde::Deserialize;
 
 use crate::planet_lod::guard::note_build;
@@ -225,12 +226,12 @@ fn decode_species(name: &'static str, target_h: f32, bytes: &[u8]) -> Result<Spe
 
 fn require_texture(dir: &Path, relative: &Path) -> Result<(), Refusal> {
     let path = dir.join(relative);
-    path.is_file().then_some(()).ok_or_else(|| refuse("veg-texture-missing", path.display().to_string()))
+    planet_assets::exists(&path).then_some(()).ok_or_else(|| refuse("veg-texture-missing", path.display().to_string()))
 }
 
 fn load_one(dir: &Path, name: &'static str, target_h: f32) -> Result<SpeciesGeometry, Refusal> {
     let path = dir.join(file_stem(name) + ".veg");
-    let bytes = std::fs::read(&path).map_err(|error| refuse("veg-species-file-missing", format!("{}: {error}", path.display())))?;
+    let bytes = planet_assets::read(&path).map_err(|error| refuse("veg-species-file-missing", format!("{}: {error}", path.display())))?;
     let species = decode_species(name, target_h, &bytes)?;
     let maps = &species.bark.maps;
     [&maps.color, &maps.normal, &maps.ao, &maps.roughness, &species.leaf.map]

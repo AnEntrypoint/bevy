@@ -111,6 +111,7 @@ mod viewer;
 mod viewer_world;
 mod planet_lod;
 mod planet_poses;
+mod planet_assets;
 mod planet_scene;
 mod refusal;
 mod planet_material;

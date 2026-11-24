@@ -7,12 +7,9 @@ use crate::offscreen::{Frame, add_target, headless_app, pump, spawn_view};
 use crate::planet_lod::collider::{ColliderStats, NearBody};
 use crate::planet_lod::guard;
 use crate::planet_lod::stream::PlanetLodStats;
+use crate::planet_scene::{SETTLED_STREAK, settled};
 use crate::planet_poses::{CENSUS_ANCHOR, CENSUS_PITCH_DOWN_DEG, Pose, STRAIGHT_DOWN_DEG, mix, on_ground};
-use crate::planet_material::terrain::{TerrainMaterial, TerrainMaterialHandle};
-use crate::planet_sky::lut::AtmosphereLuts;
-use crate::planet_veg::gpu::store::VegFrame;
 use crate::planet_veg::stream::VegStreamStats;
-use crate::planet_veg::trees_render::TreesWitness;
 use crate::render_stats::{RenderStatsPlugin, SharedFrameStats};
 use bevy::camera::visibility::VisibilitySystems;
 use bevy::ecs::schedule::SingleThreadedExecutor;
@@ -24,7 +21,6 @@ use bevy::time::TimeUpdateStrategy;
 use serde_json::{Value, json};
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 const STEP_S: f64 = 1.0 / 60.0;
@@ -35,7 +31,6 @@ const GROUND_SPEED_M_S: f64 = 10.0;
 const GROUND_FRAMES: usize = 4800;
 pub const IDLE_FRAMES: usize = 600;
 const SETTLE_LIMIT: usize = 4000;
-const SETTLED_STREAK: usize = 4;
 const FRAME_BUDGET_MS: f64 = 2.6;
 const REFERENCE_SAMPLES: usize = 3;
 const REFERENCE_FRAMES: usize = 300;
@@ -254,24 +249,6 @@ struct Lengths {
     settle_frames: usize,
 }
 
-fn settled(world: &World) -> bool {
-    let lod = world.resource::<PlanetLodStats>();
-    let veg = world.resource::<VegStreamStats>();
-    let uploads = world.resource::<VegFrame>();
-    let trees = world.resource::<TreesWitness>();
-    let layers = world.resource::<Assets<TerrainMaterial>>().get(&world.resource::<TerrainMaterialHandle>().0).is_some_and(|material| material.extension.params.surf_ready == 1.0);
-    lod.live_patches > 0
-        && lod.tasks_in_flight == 0
-        && lod.waiting_on_climate == 0
-        && veg.tasks_in_flight == 0
-        && veg.queued_chunks == [0; 3]
-        && uploads.writes.iter().all(Vec::is_empty)
-        && world.contains_resource::<AtmosphereLuts>()
-        && trees.loaded.load(Ordering::SeqCst)
-        && trees.baked.load(Ordering::SeqCst)
-        && layers
-}
-
 fn add_schedule_marks(app: &mut App) {
     app.add_systems(First, || frame_clock::restart())
         .add_systems(RunFixedMainLoop, (|| frame_clock::mark(12)).in_set(RunFixedMainLoopSystems::AfterFixedMainLoop))
@@ -420,7 +397,10 @@ pub fn run(path_frames: usize, idle_frames: usize) -> Verdict {
 mod tests {
     use super::*;
     use crate::offscreen::render_lock;
+    use crate::planet_material::terrain::TerrainMaterialHandle;
     use crate::planet_poses::TELEPORT_CLEARANCE_M;
+    use crate::planet_veg::gpu::store::VegFrame;
+    use crate::planet_veg::trees_render::TreesWitness;
     use crate::testkit::parse;
 
     const RADIUS_M: f64 = 63_600.0;
