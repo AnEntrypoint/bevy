@@ -7,10 +7,11 @@ CREATE_PREFIXES = ("DeviceBase::APICreate", "ShaderModuleVk::GetHandleAndSpirv",
 
 
 def windows(marks):
-    cold_end = marks.get("warmDone") or marks.get("flightDone")
+    end = marks.get("flightDone") or marks.get("settled")
+    cold_end = marks.get("warmDone") or end
     spans = [("cold", marks["appReady"], cold_end)]
     if marks.get("warmDone"):
-        spans.append(("measured", marks["warmDone"], marks["flightDone"]))
+        spans.append(("measured", marks["warmDone"], end))
     return spans
 
 
