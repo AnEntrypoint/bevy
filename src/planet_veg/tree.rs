@@ -7,8 +7,10 @@ use super::context::{
 use crate::height::ops_jsgen::V3;
 use crate::js_math::round_half_up;
 use crate::planet_lod::guard;
+use crate::planet_lod::yield_slice::yield_slice;
 use crate::planet_material::splat::SplatWeights;
 
+const CELLS_PER_SLICE: usize = 4;
 pub const CHUNK_M: f64 = 32.0;
 pub const CELL_M: f64 = 4.0;
 pub const GRID: f64 = 8.0;
@@ -312,11 +314,23 @@ impl Classifier<'_, '_> {
 
 const LAYOUT: ChunkLayout = ChunkLayout { chunk_m: CHUNK_M, cell_m: CELL_M, grid: GRID, jitter_m: JITTER_M, seed_salt: SEED_SALT, k_x: K_JIT_X, k_z: K_JIT_Z };
 
+#[cfg(test)]
 pub fn place_tree_chunk(ctx: &PlacementContext, key: u64) -> Vec<TreeInstance> {
+    bevy::tasks::block_on(place_tree_chunk_sliced(ctx, key))
+}
+
+pub async fn place_tree_chunk_sliced(ctx: &PlacementContext<'_>, key: u64) -> Vec<TreeInstance> {
     guard::note_build();
     let (frame, cells) = ctx.chunk_cells(&LAYOUT, key);
     let mut classifier = Classifier { ctx, frame: &frame, climate: ctx.sector_climate(), density_ceiling: base_density(1.0, 1.0, 0.0) };
-    cells.iter().filter_map(|cell| classifier.classify(cell)).collect()
+    let mut placed = Vec::new();
+    for (index, cell) in cells.iter().enumerate() {
+        placed.extend(classifier.classify(cell));
+        if (index + 1) % CELLS_PER_SLICE == 0 {
+            yield_slice().await;
+        }
+    }
+    placed
 }
 
 #[cfg(test)]

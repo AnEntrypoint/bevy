@@ -2,10 +2,10 @@ use super::context::PlacementContext;
 use super::gpu::buffers::{EncodedRecords, GrassRecord, RockRecord, TreeRecord, VegKind, tint_rgb8};
 use super::gpu::draw::VegCamera;
 use super::gpu::store::{ChunkRef, VegStore};
-use super::grass::{GrassBlade, grass_rank, place_grass_chunk};
+use super::grass::{GrassBlade, grass_rank, place_grass_chunk_sliced};
 use super::grass_render::GrassLook;
-use super::rock::{RockInstance, place_rock_chunk};
-use super::tree::{self, TreeInstance, place_tree_chunk};
+use super::rock::{RockInstance, place_rock_chunk_sliced};
+use super::tree::{self, TreeInstance, place_tree_chunk_sliced};
 use crate::height::placement::PlacementLattice;
 use crate::height::planet_frame::anchor_basis;
 use crate::height::{HashVersion, Planet};
@@ -94,12 +94,12 @@ fn encode<I, R: super::gpu::buffers::GpuRecord>(instances: Vec<I>, record: fn(&I
     EncodedRecords::new(&instances.iter().map(record).collect::<Vec<_>>())
 }
 
-pub fn place_chunk(source: &VegSource, kind: VegKind, key: u64) -> PlacedChunk {
+pub async fn place_chunk(source: &VegSource, kind: VegKind, key: u64) -> PlacedChunk {
     let ctx = PlacementContext::new(&source.planet, source.seed, source.radius, source.hash);
     let records = match kind {
-        VegKind::Tree => encode(place_tree_chunk(&ctx, key), tree_record),
-        VegKind::Rock => encode(place_rock_chunk(&ctx, key), rock_record),
-        VegKind::Grass => encode(place_grass_chunk(&ctx, key), grass_record),
+        VegKind::Tree => encode(place_tree_chunk_sliced(&ctx, key).await, tree_record),
+        VegKind::Rock => encode(place_rock_chunk_sliced(&ctx, key).await, rock_record),
+        VegKind::Grass => encode(place_grass_chunk_sliced(&ctx, key).await, grass_record),
     };
     let frame = ctx.chunk_frame(&ctx.lattice(CHUNK_M, tree::GRID), key);
     let axes = [frame.basis.east, frame.basis.up, frame.basis.north].map(DVec3::from);
@@ -276,7 +276,7 @@ impl VegStream {
                     continue;
                 }
                 let source = self.source.clone();
-                stream.building.insert(key, pool.spawn(async move { place_chunk(&source, kind, key) }));
+                stream.building.insert(key, pool.spawn(async move { place_chunk(&source, kind, key).await }));
                 room -= 1;
             }
         }

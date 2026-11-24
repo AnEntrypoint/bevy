@@ -6,6 +6,7 @@ use super::context::{
 };
 use crate::height::ops_jsgen::V3;
 use crate::planet_lod::guard;
+use crate::planet_lod::yield_slice::yield_slice;
 use crate::planet_material::splat::SplatWeights;
 use crate::vec3::{dot, length, normalise};
 
@@ -226,7 +227,12 @@ impl Classifier<'_> {
 
 const LAYOUT: ChunkLayout = ChunkLayout { chunk_m: CHUNK_M, cell_m: CELL_M, grid: GRID, jitter_m: JITTER_M, seed_salt: SEED_SALT, k_x: K_JIT_X, k_z: K_JIT_Z };
 
+#[cfg(test)]
 pub fn place_grass_chunk(ctx: &PlacementContext, key: u64) -> Vec<GrassBlade> {
+    bevy::tasks::block_on(place_grass_chunk_sliced(ctx, key))
+}
+
+pub async fn place_grass_chunk_sliced(ctx: &PlacementContext<'_>, key: u64) -> Vec<GrassBlade> {
     guard::note_build();
     let (frame, cells) = ctx.chunk_cells(&LAYOUT, key);
     let mut classifier = Classifier { ctx, frame: &frame, climate: ctx.sector_climate() };
@@ -235,6 +241,7 @@ pub fn place_grass_chunk(ctx: &PlacementContext, key: u64) -> Vec<GrassBlade> {
         if let Some(site) = classifier.classify(cell) {
             blades.extend((0..BLADES_PER_CELL).filter_map(|b| classifier.blade(&site, b)));
         }
+        yield_slice().await;
     }
     blades
 }
