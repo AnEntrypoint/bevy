@@ -459,6 +459,7 @@ mod tests {
             };
             assert_eq!(got.vertex_count() as u64, mesh["vc"].as_u64().unwrap(), "{name}: vertex count");
             assert_eq!(got.indices.len() as u64, mesh["ic"].as_u64().unwrap(), "{name}: index count");
+            assert_eq!(got.indices.len() as u64 / 3, mesh["triangles"].as_u64().unwrap(), "{name}: triangle count");
             let checksum: i64 = got.positions.iter().map(|p| (*p as f64 * 1000.0 + 0.5).floor() as i64).sum();
             assert_eq!(checksum, mesh["checksum"].as_i64().unwrap(), "{name}: checksum");
             let want_positions = mesh["positions"].as_array().unwrap();
