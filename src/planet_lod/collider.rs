@@ -1,4 +1,6 @@
 use super::guard::note_build;
+#[cfg(target_arch = "wasm32")]
+use super::yield_slice::yield_slice;
 use crate::js_math::round_half_up;
 use avian3d::prelude::{Collider, RigidBody};
 use bevy::prelude::*;
@@ -11,6 +13,7 @@ pub const KEEP_FRACTION: f64 = 0.4;
 const NON_FINITE_HEIGHT_M: f64 = -1000.0;
 const HEIGHT_SNAP_PER_M: f64 = 1000.0;
 pub const COLLIDER_BUILDS_PER_FRAME: usize = 8;
+const SAMPLES_PER_SLICE: usize = 64;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Lattice {
@@ -60,11 +63,13 @@ fn snapped(height: f64) -> f32 {
     (round_half_up(finite * HEIGHT_SNAP_PER_M) / HEIGHT_SNAP_PER_M + 0.0) as f32
 }
 
+fn sample_point(lattice: &Lattice, origin: [f64; 2], height: &dyn Fn(f64, f64) -> f64, k: usize) -> f32 {
+    snapped(height(origin[0] + (k % lattice.n) as f64 * lattice.spacing, origin[1] + (k / lattice.n) as f64 * lattice.spacing))
+}
+
 pub fn sample_field(lattice: &Lattice, body: [f64; 2], height: &dyn Fn(f64, f64) -> f64) -> Field {
     let origin = body.map(|c| lattice.corner(c));
-    let heights = (0..lattice.n * lattice.n)
-        .map(|k| snapped(height(origin[0] + (k % lattice.n) as f64 * lattice.spacing, origin[1] + (k / lattice.n) as f64 * lattice.spacing)))
-        .collect();
+    let heights = (0..lattice.n * lattice.n).map(|k| sample_point(lattice, origin, height, k)).collect();
     Field { n: lattice.n, spacing: lattice.spacing, origin, heights }
 }
 
@@ -83,9 +88,27 @@ pub struct BuiltField {
 pub fn build_collider(lattice: &Lattice, chart: Chart) -> BuiltField {
     note_build();
     let field = sample_field(lattice, chart.body, chart.height.as_ref());
+    finish_collider(lattice, field, chart.pose)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub async fn build_collider_sliced(lattice: &Lattice, chart: Chart) -> BuiltField {
+    note_build();
+    let origin = chart.body.map(|c| lattice.corner(c));
+    let mut heights = Vec::with_capacity(lattice.n * lattice.n);
+    for k in 0..lattice.n * lattice.n {
+        heights.push(sample_point(lattice, origin, chart.height.as_ref(), k));
+        if (k + 1) % SAMPLES_PER_SLICE == 0 {
+            yield_slice().await;
+        }
+    }
+    finish_collider(lattice, Field { n: lattice.n, spacing: lattice.spacing, origin, heights }, chart.pose)
+}
+
+fn finish_collider(lattice: &Lattice, field: Field, pose: Transform) -> BuiltField {
     let columns_along_x: Vec<Vec<f32>> = (0..field.n).map(|x| (0..field.n).map(|z| field.heights[z * field.n + x]).collect()).collect();
     let collider = Collider::heightfield(columns_along_x, Vec3::new(lattice.extent as f32, 1.0, lattice.extent as f32));
-    BuiltField { collider, centre: field.centre(lattice), pose: chart.pose }
+    BuiltField { collider, centre: field.centre(lattice), pose }
 }
 
 #[derive(Component)]
@@ -138,6 +161,9 @@ fn start_builds(
     };
     for (entity, transform, _) in bodies.iter().filter(outside_keep_radius).take(COLLIDER_BUILDS_PER_FRAME) {
         let (lattice, ground, body) = (lattice.0, ground.clone(), transform.translation);
+        #[cfg(target_arch = "wasm32")]
+        let task = AsyncComputeTaskPool::get().spawn(async move { build_collider_sliced(&lattice, (ground.0)(body)).await });
+        #[cfg(not(target_arch = "wasm32"))]
         let task = AsyncComputeTaskPool::get().spawn(async move { build_collider(&lattice, (ground.0)(body)) });
         commands.entity(entity).insert(PendingBuild(task));
         stats.builds_started += 1;
