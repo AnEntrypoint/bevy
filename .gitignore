@@ -6,3 +6,4 @@
 /web/status-test.json
 .playwriter/
 /web/status-*.json
+wasm-viewer/target/
