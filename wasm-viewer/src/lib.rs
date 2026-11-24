@@ -17,7 +17,7 @@ use crate::globe::GlobeWorld;
 use crate::offscreen::Frame;
 use crate::planet_lod::collider::NearBody;
 use crate::planet_lod::stream::PlanetLodStats;
-use crate::planet_poses::Pose;
+use crate::planet_poses::{CENSUS_ANCHOR, Pose, STRAIGHT_DOWN_DEG, TELEPORT_CLEARANCE_M};
 use crate::planet_scene::{SETTLED_STREAK, unsettled};
 use crate::planet_veg::stream::VegStreamStats;
 use crate::planet_veg::trees_render::TreesWitness;
@@ -136,7 +136,7 @@ fn add_planet(app: &mut App, pose: Option<Pose>) {
         .add_systems(Startup, spawn_planet_camera);
     match pose {
         Some(pose) => {
-            app.insert_resource(PoseDriver { pose, frame: None, streak: 0 }).add_systems(Update, drive_pose);
+            app.insert_resource(PoseDriver { pose, frame: None, streak: 0, flight: (query_value("pose").as_deref() == Some("flight")).then_some(0) }).add_systems(Update, drive_pose);
         }
         None => {
             app.add_systems(Update, globe::frame_globe_camera);
@@ -152,6 +152,7 @@ fn pose_request() -> Option<Pose> {
         "low" => Some(Pose::Low),
         "ground" => Some(Pose::Ground),
         "shoreline" => Some(Pose::Shoreline),
+        "flight" => Some(Pose::Ground),
         _ => None,
     }
 }
@@ -161,20 +162,43 @@ struct PoseDriver {
     pose: Pose,
     frame: Option<Frame>,
     streak: usize,
+    flight: Option<u32>,
+}
+
+const FLIGHT_FRAMES: u32 = 1800;
+const FLIGHT_TOP_M: f64 = 100_000.0;
+
+fn flight_frame(radius: f64, landing_m: f64, step: u32) -> Frame {
+    let t = f64::from(step) / f64::from(FLIGHT_FRAMES);
+    let altitude = FLIGHT_TOP_M * (landing_m / FLIGHT_TOP_M).powf(t);
+    Frame::above(CENSUS_ANCHOR.normalize(), radius, altitude, STRAIGHT_DOWN_DEG)
 }
 
 fn drive_pose(world: &mut World) {
-    let frame = match world.resource::<PoseDriver>().frame.clone() {
-        Some(frame) => frame,
-        None => {
-            let pose = world.resource::<PoseDriver>().pose;
-            let globe = world.resource::<GlobeWorld>();
-            let radius = f64::from(globe.radius);
-            let frame = pose.frame(radius, |dir| globe.planet.height(dir.to_array(), radius));
-            world.resource_mut::<PoseDriver>().frame = Some(frame.clone());
-            frame
+    let radius = f64::from(world.resource::<GlobeWorld>().radius);
+    let flight = world.resource::<PoseDriver>().flight;
+    let frame = match flight.filter(|&step| step < FLIGHT_FRAMES) {
+        Some(step) => {
+            let landing_m = world.resource::<GlobeWorld>().planet.height(CENSUS_ANCHOR.normalize().to_array(), radius) + TELEPORT_CLEARANCE_M;
+            flight_frame(radius, landing_m, step)
         }
+        None => match world.resource::<PoseDriver>().frame.clone() {
+            Some(frame) => frame,
+            None => {
+                let pose = world.resource::<PoseDriver>().pose;
+                let globe = world.resource::<GlobeWorld>();
+                let frame = pose.frame(radius, |dir| globe.planet.height(dir.to_array(), radius));
+                world.resource_mut::<PoseDriver>().frame = Some(frame.clone());
+                frame
+            }
+        },
     };
+    if let Some(step) = flight {
+        if step == FLIGHT_FRAMES {
+            publish_status_attribute("data-flight-done", "true");
+        }
+        world.resource_mut::<PoseDriver>().flight = Some(step + 1);
+    }
     let translation = frame.position.as_vec3();
     let mut cameras = world.query_filtered::<&mut Transform, With<Camera3d>>();
     for mut transform in cameras.iter_mut(world) {
