@@ -1,4 +1,5 @@
 use super::guard::note_build;
+use super::yield_slice::yield_slice;
 use super::quadtree::{NodeKey, QuadtreeConfig};
 use crate::height::Planet;
 use crate::height::climate::HpfFaces;
@@ -11,6 +12,9 @@ const SKIRT_PATCH_FRAC: f64 = 0.06;
 const SKIRT_MIN_M: f64 = 30.0;
 const HASH_MULTIPLIER: u32 = 0x45d9f3b;
 const FLIP_BIT: u32 = 17;
+const CORNER_COUNT: usize = CORNERS * CORNERS;
+const PROBES: usize = CORNER_COUNT + 2 * CORNERS;
+const PROBES_PER_SLICE: usize = 8;
 
 #[derive(Clone, Debug)]
 pub struct PatchMesh {
@@ -29,6 +33,12 @@ struct Corner {
     height: f64,
     normal: DVec3,
     climate: [f32; 2],
+}
+
+#[derive(Clone, Copy)]
+struct Probe {
+    dir: DVec3,
+    height: f64,
 }
 
 fn skirt_drop(size_m: f64, relief: f64) -> f64 {
@@ -74,33 +84,62 @@ fn climate_at(source: &HpfFaces, dir: DVec3) -> [f32; 2] {
     [temperature as f32, humidity as f32]
 }
 
-fn corner(planet: &Planet, source: &HpfFaces, radius: f64, key: NodeKey, u: f64, v: f64) -> Corner {
-    let step = 1.0 / GRID_CELLS as f64;
-    let at = |u: f64, v: f64| {
-        let dir = key.dir(u, v);
-        let height = height_at(planet, radius, dir);
-        (dir, height, dir * (radius + height))
-    };
-    let (dir, height, here) = at(u, v);
-    let (_, _, along_u) = at(u + step, v);
-    let (_, _, along_v) = at(u, v + step);
-    let facing = (along_u - here).cross(along_v - here).normalize();
-    let normal = if facing.dot(dir) < 0.0 { -facing } else { facing };
-    Corner { dir, height, normal, climate: climate_at(source, dir) }
+fn probe_coordinates(index: usize) -> (f64, f64) {
+    let beyond = grid_coordinate(CORNERS) + 1.0 / GRID_CELLS as f64;
+    if index < CORNER_COUNT {
+        (grid_coordinate(index % CORNERS + 1), grid_coordinate(index / CORNERS + 1))
+    } else if index < CORNER_COUNT + CORNERS {
+        (beyond, grid_coordinate(index - CORNER_COUNT + 1))
+    } else {
+        (grid_coordinate(index - CORNER_COUNT - CORNERS + 1), beyond)
+    }
+}
+
+fn probe(planet: &Planet, radius: f64, key: NodeKey, index: usize) -> Probe {
+    let (u, v) = probe_coordinates(index);
+    let dir = key.dir(u, v);
+    Probe { dir, height: height_at(planet, radius, dir) }
+}
+
+fn corner(source: &HpfFaces, radius: f64, probes: &[Probe], x: usize, y: usize) -> Corner {
+    let n = y * CORNERS + x;
+    let here = probes[n];
+    let along_u = if x + 1 < CORNERS { probes[n + 1] } else { probes[CORNER_COUNT + y] };
+    let along_v = if y + 1 < CORNERS { probes[n + CORNERS] } else { probes[CORNER_COUNT + CORNERS + x] };
+    let position = |sample: Probe| sample.dir * (radius + sample.height);
+    let facing = (position(along_u) - position(here)).cross(position(along_v) - position(here)).normalize();
+    let normal = if facing.dot(here.dir) < 0.0 { -facing } else { facing };
+    Corner { dir: here.dir, height: here.height, normal, climate: climate_at(source, here.dir) }
 }
 
 fn to_f32(v: DVec3) -> [f32; 3] {
     [v.x as f32, v.y as f32, v.z as f32]
 }
 
+#[cfg(test)]
 pub fn build_patch(planet: &Planet, source: &HpfFaces, config: &QuadtreeConfig, key: NodeKey) -> PatchMesh {
     note_build();
+    let probes: Vec<Probe> = (0..PROBES).map(|index| probe(planet, config.radius, key, index)).collect();
+    assemble(planet, source, config, key, &probes)
+}
+
+pub async fn build_patch_sliced(planet: &Planet, source: &HpfFaces, config: &QuadtreeConfig, key: NodeKey) -> PatchMesh {
+    note_build();
+    let mut probes = Vec::with_capacity(PROBES);
+    for index in 0..PROBES {
+        probes.push(probe(planet, config.radius, key, index));
+        if (index + 1) % PROBES_PER_SLICE == 0 {
+            yield_slice().await;
+        }
+    }
+    assemble(planet, source, config, key, &probes)
+}
+
+fn assemble(planet: &Planet, source: &HpfFaces, config: &QuadtreeConfig, key: NodeKey, probes: &[Probe]) -> PatchMesh {
     let radius = config.radius;
     let origin = key.centre_dir() * radius;
     let drop = skirt_drop(key.size_m(radius), planet.relief(radius));
-    let corners: Vec<Corner> = (0..CORNERS * CORNERS)
-        .map(|n| corner(planet, source, radius, key, grid_coordinate(n % CORNERS + 1), grid_coordinate(n / CORNERS + 1)))
-        .collect();
+    let corners: Vec<Corner> = (0..CORNER_COUNT).map(|n| corner(source, radius, probes, n % CORNERS, n / CORNERS)).collect();
     let mut positions = Vec::with_capacity(SIDE * SIDE);
     let mut normals = Vec::with_capacity(SIDE * SIDE);
     let mut climate = Vec::with_capacity(SIDE * SIDE);

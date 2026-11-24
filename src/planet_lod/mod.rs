@@ -6,3 +6,4 @@ pub mod patch;
 pub mod quadtree;
 pub mod stream;
 pub mod uploaded;
+pub mod yield_slice;

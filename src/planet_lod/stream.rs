@@ -1,7 +1,7 @@
 use super::collider::ColliderStreamPlugin;
 use super::guard::{mark_main_thread, note_build};
 use super::origin::{FloatingOrigin, OriginRelative, rebase_system};
-use super::patch::{PatchMesh, build_patch};
+use super::patch::{PatchMesh, build_patch_sliced};
 use super::quadtree::{NodeKey, QuadtreeConfig, select_leaves};
 use super::uploaded::{UploadedMeshes, UploadedMeshesPlugin};
 use crate::height::Planet;
@@ -167,7 +167,7 @@ fn start_tasks(source: Res<Source>, climate: Res<ClimateBake>, mut streamer: Res
     let first_started = streamer.nearest_last.len().saturating_sub(room);
     for key in streamer.nearest_last.split_off(first_started) {
         let (planet, config, baked) = (source.planet.clone(), source.config.clone(), baked.clone());
-        let task = AsyncComputeTaskPool::get().spawn(async move { build_patch(&planet, &baked, &config, key) });
+        let task = AsyncComputeTaskPool::get().spawn(async move { build_patch_sliced(&planet, &baked, &config, key).await });
         streamer.pending.insert(key, task);
     }
 });

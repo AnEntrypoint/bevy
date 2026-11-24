@@ -44,7 +44,7 @@ avian3d = { version = "0.8", default-features = false, features = ["3d", "parry-
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.106"
-web-sys = { version = "=0.3.106", features = ["Document", "Element", "HtmlCanvasElement", "HtmlElement", "Location", "UrlSearchParams", "Window", "console"] }
+web-sys = { version = "=0.3.106", features = ["Document", "Element", "HtmlCanvasElement", "HtmlElement", "Location", "MessageChannel", "MessagePort", "UrlSearchParams", "Window", "console"] }
 getrandom = { version = "0.3", features = ["wasm_js"] }
 
 [profile.release]
