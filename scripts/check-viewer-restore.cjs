@@ -118,7 +118,19 @@ async function main() {
     console.log('window chosen ' + window + ' title ' + JSON.stringify(title));
     execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]);
   }
-  if (mode === 'window-width') {
+  if (mode === 'wm-size') {
+    const { targetInfo } = await cdpSession.send('Target.getTargetInfo');
+    const title = await page.title();
+    const ids = execFileSync('bash', ['-c', `DISPLAY=${display} xdotool search --class chromium`]).toString().trim().split('\n').filter(Boolean);
+    const named = ids.map((id) => ({ id, name: execFileSync('bash', ['-c', `DISPLAY=${display} xdotool getwindowname ${id} 2>/dev/null || true`]).toString().trim() }));
+    const target = (named.find((w) => title && w.name.includes(title)) || named.find((w) => /bevy/.test(w.name)) || { id: named[0] && named[0].id }).id;
+    console.log('wm window ' + target + ' target ' + targetInfo.targetId);
+    for (const [label, size] of [['held-817x325', [817, 325]], ['held-1600x900', [1600, 900]]]) {
+      execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowsize ${target} ${size[0]} ${size[1]}`]);
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 8; k++) await shot(label, k, 15000).catch((error) => samples.push({ phase: label, index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else if (mode === 'window-width') {
     const { targetInfo } = await cdpSession.send('Target.getTargetInfo');
     const windowInfo = await bcdp.send('Browser.getWindowForTarget', { targetId: targetInfo.targetId });
     const original = windowInfo.bounds;
