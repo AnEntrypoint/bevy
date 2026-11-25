@@ -37,6 +37,11 @@ const recorder = () => {
   };
   observeCanvas();
   document.addEventListener('visibilitychange', () => log({ ev: 'visibility', state: document.visibilityState }));
+  const configure = GPUCanvasContext.prototype.configure;
+  GPUCanvasContext.prototype.configure = function (config) {
+    log({ ev: 'configure', w: config.width ?? this.canvas.width, h: config.height ?? this.canvas.height, format: config.format, dpr: window.devicePixelRatio });
+    return configure.call(this, config);
+  };
   window.__raf = [];
   const tick = (t) => {
     window.__raf.push(Math.round(t));
@@ -86,10 +91,10 @@ async function main() {
     const meta = await page.evaluate(() => {
       const c = document.querySelector('canvas');
       const r = c.getBoundingClientRect();
-      return { vis: document.visibilityState, backing: [c.width, c.height], clip: { x: r.left, y: r.top, width: r.width, height: r.height } };
+      return { vis: document.visibilityState, dpr: window.devicePixelRatio, backing: [c.width, c.height], clip: { x: r.left, y: r.top, width: r.width, height: r.height } };
     });
     const png = await page.screenshot({ type: 'png', clip: meta.clip, timeout: timeoutMs });
-    samples.push({ phase, index, t: Date.now(), vis: meta.vis, canvas: meta.backing, css: [meta.clip.width, meta.clip.height], ...sampleOf(png) });
+    samples.push({ phase, index, t: Date.now(), vis: meta.vis, dpr: meta.dpr, canvas: meta.backing, css: [meta.clip.width, meta.clip.height], ...sampleOf(png) });
   };
   for (let i = 0; i < before; i++) { await shot('before', i); await page.waitForTimeout(1000); }
   const cdpSession = await page.context().newCDPSession(page);
@@ -113,7 +118,60 @@ async function main() {
     console.log('window chosen ' + window + ' title ' + JSON.stringify(title));
     execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]);
   }
-  if (mode === 'deviceloss') {
+  if (mode === 'window-width') {
+    const { targetInfo } = await cdpSession.send('Target.getTargetInfo');
+    const windowInfo = await bcdp.send('Browser.getWindowForTarget', { targetId: targetInfo.targetId });
+    const original = windowInfo.bounds;
+    console.log('window ' + windowInfo.windowId + ' original bounds ' + JSON.stringify(original));
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await bcdp.send('Browser.setWindowBounds', { windowId: windowInfo.windowId, bounds: { width: 817, height: 600 } });
+      for (let k = 0; k < 8; k++) await shot('width-narrow', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'width-narrow', index: k, error: String(error.message).slice(0, 120) }));
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 2; k++) await shot('width-narrow-steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'width-narrow-steady', index: k, error: String(error.message).slice(0, 120) }));
+      await bcdp.send('Browser.setWindowBounds', { windowId: windowInfo.windowId, bounds: { width: original.width, height: original.height } });
+      for (let k = 0; k < 8; k++) await shot('width-restore', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'width-restore', index: k, error: String(error.message).slice(0, 120) }));
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 2; k++) await shot('width-restore-steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'width-restore-steady', index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else if (mode === 'viewport-transient') {
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      for (let k = 0; k < 8; k++) await shot('vp-small', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'vp-small', index: k, error: String(error.message).slice(0, 120) }));
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 2; k++) await shot('vp-small-steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'vp-small-steady', index: k, error: String(error.message).slice(0, 120) }));
+      await page.setViewportSize({ width: 1600, height: 900 });
+      for (let k = 0; k < 8; k++) await shot('vp-big', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'vp-big', index: k, error: String(error.message).slice(0, 120) }));
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 2; k++) await shot('vp-big-steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'vp-big-steady', index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else if (mode === 'transient') {
+    for (let cycle = 0; cycle < 3; cycle++) {
+      await cdpSession.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 2, mobile: false });
+      await page.waitForTimeout(2000);
+      for (let k = 0; k < 2; k++) await shot('dpr2', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'dpr2', index: k, error: String(error.message).slice(0, 120) }));
+      console.log('cycle ' + cycle + ' clear override ' + Date.now());
+      await cdpSession.send('Emulation.clearDeviceMetricsOverride');
+      for (let k = 0; k < 10; k++) await shot('transient', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'transient', index: k, error: String(error.message).slice(0, 120) }));
+      await page.waitForTimeout(3000);
+      for (let k = 0; k < 2; k++) await shot('steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'steady', index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else if (mode === 'swapchain') {
+    const steps = [
+      ['resize-small', () => page.setViewportSize({ width: 1280, height: 720 })],
+      ['resize-back', () => page.setViewportSize({ width: 1600, height: 900 })],
+      ['dpr-2', () => cdpSession.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 2, mobile: false })],
+      ['dpr-back', () => cdpSession.send('Emulation.clearDeviceMetricsOverride')],
+    ];
+    for (const [phase, change] of steps) {
+      await change();
+      console.log('step ' + phase);
+      await page.waitForTimeout(2000);
+      for (let k = 0; k < 3; k++) {
+        await shot(phase, k, 15000).catch((error) => samples.push({ phase, index: k, error: String(error.message).slice(0, 120) }));
+        await page.waitForTimeout(1000);
+      }
+    }
+  } else if (mode === 'deviceloss') {
     const contexts = await page.evaluate(() => {
       const c = document.querySelector('canvas');
       return { webgl2: Boolean(c.getContext('webgl2')), webgl: Boolean(c.getContext('webgl')), webgpu: Boolean(c.getContext('webgpu')), devicesRecorded: (window.__devices || []).length };
