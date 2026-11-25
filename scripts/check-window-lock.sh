@@ -36,12 +36,21 @@ TURN_LOG="$dir/turn-b.log" bash "$dir/turn.sh" > /dev/null 2>&1 &
 wait
 [ "$(cut -d" " -f1 "$ORDER" | tr "\n" " ")" = "start end start end " ]; report two-runs-take-turns $?
 rm -f "$dir/nested.result"
-CHILD_PREFIX="env -u TREE_LOCK_HELD" setsid bash "$dir/parent.sh" > /dev/null 2>&1 &
-pid=$!
-sleep 6
-if kill -0 $pid 2>/dev/null; then red=0; else red=1; fi
-kill -- -$pid 2>/dev/null
-report old-nesting-deadlocks $red
+CHILD_PREFIX="env -u TREE_LOCK_HELD" timeout 20 bash "$dir/parent.sh" > /dev/null 2>&1
+report nesting-without-flag-finishes $?
+[ "$(cat "$dir/nested.result" 2>/dev/null)" = 0 ]; report nesting-without-flag-child-ran $?
+cat > "$dir/old-window.sh" <<'EOF'
+exec 9>"$TREE_LOCK"
+flock 9
+EOF
+cat > "$dir/old-parent.sh" <<'EOF'
+log=/dev/null
+. /workspace/bevy/scripts/lib/window.sh
+env -u TREE_LOCK_HELD timeout 6 bash "$DIR/old-window.sh"
+echo $? > "$DIR/old.result"
+EOF
+DIR="$dir" TREE_LOCK="$TREE_LOCK" bash "$dir/old-parent.sh" > /dev/null 2>&1
+[ "$(cat "$dir/old.result" 2>/dev/null)" = 124 ]; report old-nesting-still-deadlocks-red-check $?
 rm -rf "$dir"
 echo "WITNESS-SET overall=$overall"
 exit $overall

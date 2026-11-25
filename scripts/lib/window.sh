@@ -1,6 +1,7 @@
 cd /workspace/bevy || exit 2
-if [ -z "$TREE_LOCK_HELD" ]; then
-  exec 9>"${TREE_LOCK:-/workspace/tmp/bevy/tree.lock}"
+lock=${TREE_LOCK:-/workspace/tmp/bevy/tree.lock}
+if [ -z "$TREE_LOCK_HELD" ] && [ "$(readlink /proc/$$/fd/9 2>/dev/null)" != "$lock" ]; then
+  exec 9>"$lock"
   flock 9
   export TREE_LOCK_HELD=1
 fi
