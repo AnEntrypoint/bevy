@@ -51,3 +51,7 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 opt-level = 3
 debug = 0
+
+[patch.crates-io]
+bevy_render = { path = "vendor/bevy_render" }
+bevy_core_pipeline = { path = "vendor/bevy_core_pipeline" }

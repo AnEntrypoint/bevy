@@ -63,7 +63,6 @@ pub(crate) fn headless_app() -> App {
     let window = WindowPlugin { primary_window: None, exit_condition: ExitCondition::DontExit, close_when_requested: false, ..default() };
     let render = RenderPlugin {
         render_creation: RenderCreation::Automatic(Box::new(WgpuSettings { backends: Some(Backends::VULKAN), ..default() })),
-        synchronous_pipeline_compilation: true,
         ..default()
     };
     let mut app = App::new();
