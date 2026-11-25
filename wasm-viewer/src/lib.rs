@@ -22,6 +22,8 @@ use crate::planet_scene::{SETTLED_STREAK, unsettled};
 use crate::planet_veg::stream::VegStreamStats;
 use crate::planet_veg::trees_render::TreesWitness;
 
+#[path = "../../src/pipeline_budget.rs"]
+mod pipeline_budget;
 #[path = "../../src/render_stats.rs"]
 mod render_stats;
 mod planet_lod;
@@ -116,6 +118,7 @@ pub fn start() {
     ))
     .insert_resource(ClearColor(Color::srgb(0.025, 0.04, 0.07)))
     .insert_resource(ReadySent(false))
+    .add_plugins(pipeline_budget::PipelineBudgetPlugin)
     .insert_resource(ModelRequest(model))
     .insert_resource(ModelReported(false))
     .insert_resource(Still(query_value("still").as_deref() == Some("1")))
@@ -463,6 +466,7 @@ fn spin(time: Res<Time>, still: Res<Still>, mut meshes: Query<&mut Transform, Wi
 fn mark_ready(
     time: Res<Time>,
     mut sent: ResMut<ReadySent>,
+    mut ready: ResMut<pipeline_budget::AppReady>,
     cameras: Query<Entity, With<Camera3d>>,
     windows: Query<Entity, With<PrimaryWindow>>,
 ) {
@@ -470,6 +474,7 @@ fn mark_ready(
         return;
     }
     sent.0 = true;
+    ready.0 = true;
     let window = web_sys::window().expect("window");
     let document = window.document().expect("document");
     if let Some(element) = document.get_element_by_id("app-status") {
