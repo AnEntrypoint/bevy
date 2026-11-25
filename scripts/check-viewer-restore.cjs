@@ -23,6 +23,7 @@ const recorder = () => {
     return requestDevice.apply(this, args).then((device) => {
       device.lost.then((info) => log({ ev: 'device-lost', reason: info.reason, message: String(info.message).slice(0, 160) }));
       device.addEventListener('uncapturederror', (e) => log({ ev: 'uncaptured', message: String(e.error && e.error.message).slice(0, 160) }));
+      (window.__devices ||= []).push(device);
       log({ ev: 'device-created' });
       return device;
     });
@@ -49,7 +50,8 @@ function sampleOf(buffer) {
   const runs = detect(image.width, image.height, image.rgb, 1, step);
   const longest = runs.reduce((max, run) => Math.max(max, run.len), 0);
   const over = runs.filter((run) => run.len >= minRun).length;
-  return { w: image.width, h: image.height, longest, over40: over };
+  const top = runs.reduce((best, run) => (run.len > best.len ? run : best), { x: -1, y0: -1, len: 0 });
+  return { w: image.width, h: image.height, longest, over40: over, top: [top.x, top.y0, top.len] };
 }
 
 async function attachPage(context, targetId) {
@@ -111,7 +113,24 @@ async function main() {
     console.log('window chosen ' + window + ' title ' + JSON.stringify(title));
     execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]);
   }
-  if (mode === 'activate') {
+  if (mode === 'deviceloss') {
+    const contexts = await page.evaluate(() => {
+      const c = document.querySelector('canvas');
+      return { webgl2: Boolean(c.getContext('webgl2')), webgl: Boolean(c.getContext('webgl')), webgpu: Boolean(c.getContext('webgpu')), devicesRecorded: (window.__devices || []).length };
+    });
+    console.log('contexts ' + JSON.stringify(contexts));
+    const destroyed = await page.evaluate(() => {
+      const device = window.__devices && window.__devices[0];
+      if (!device) return 'no device recorded';
+      device.destroy();
+      return 'device destroyed';
+    });
+    console.log(destroyed);
+    for (let k = 0; k < Math.floor(hideS / 3); k++) {
+      await page.waitForTimeout(3000);
+      await shot('lost', k, 15000).catch((error) => samples.push({ phase: 'lost', index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else if (mode === 'activate') {
     other = await bcdp.send('Target.createTarget', { url: 'about:blank', background: true, newWindow: false });
     const viewerWindow = await bcdp.send('Browser.getWindowForTarget', { targetId: created.targetId });
     const otherWindow = await bcdp.send('Browser.getWindowForTarget', { targetId: other.targetId });
