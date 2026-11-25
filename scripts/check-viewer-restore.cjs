@@ -117,6 +117,8 @@ async function main() {
     const otherWindow = await bcdp.send('Browser.getWindowForTarget', { targetId: other.targetId });
     console.log(`activate viewer window ${viewerWindow.windowId} other window ${otherWindow.windowId}`);
     await bcdp.send('Target.activateTarget', { targetId: other.targetId });
+    const otherPage = await attachPage(context, other.targetId);
+    console.log('other target visibility ' + (await otherPage.evaluate(() => document.visibilityState)) + ' viewer visibility ' + (await page.evaluate(() => document.visibilityState)));
     for (let k = 0; k < Math.floor(hideS / 3); k++) {
       await page.waitForTimeout(3000);
       await shot('hidden', k, 15000).catch((error) => samples.push({ phase: 'hidden', index: k, error: String(error.message).slice(0, 120) }));
