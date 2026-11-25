@@ -52,11 +52,26 @@ function sampleOf(buffer) {
   return { w: image.width, h: image.height, longest, over40: over };
 }
 
+async function attachPage(context, targetId) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    for (const candidate of context.pages()) {
+      const session = await candidate.context().newCDPSession(candidate);
+      const { targetInfo } = await session.send('Target.getTargetInfo');
+      if (targetInfo.targetId === targetId) return candidate;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  throw new Error('the viewer target was not found');
+}
+
 async function main() {
   fs.mkdirSync(out, { recursive: true });
   const browser = await chromium.connectOverCDP(cdp);
   const context = browser.contexts()[0];
-  const page = await context.newPage();
+  const bcdp = await browser.newBrowserCDPSession();
+  const created = mode === 'activate' ? await bcdp.send('Target.createTarget', { url: 'about:blank', newWindow: false }) : null;
+  const page = created ? await attachPage(context, created.targetId) : await context.newPage();
+  let other = null;
   const consoleErrors = [];
   page.on('console', (msg) => { if (msg.type() === 'error' || msg.type() === 'warning') consoleErrors.push(msg.type() + ': ' + msg.text().slice(0, 160)); });
   page.on('pageerror', (err) => consoleErrors.push('pageerror: ' + String(err.message).slice(0, 160)));
@@ -65,13 +80,13 @@ async function main() {
   await page.goto(url, { waitUntil: 'load', timeout: 120000 });
   await page.waitForFunction(() => document.getElementById('app-status')?.dataset.appReady === 'true', null, { timeout: 240000, polling: 200 });
   const samples = [];
-  const shot = async (phase, index) => {
+  const shot = async (phase, index, timeoutMs = 30000) => {
     const meta = await page.evaluate(() => {
       const c = document.querySelector('canvas');
       const r = c.getBoundingClientRect();
       return { vis: document.visibilityState, backing: [c.width, c.height], clip: { x: r.left, y: r.top, width: r.width, height: r.height } };
     });
-    const png = await page.screenshot({ type: 'png', clip: meta.clip });
+    const png = await page.screenshot({ type: 'png', clip: meta.clip, timeout: timeoutMs });
     samples.push({ phase, index, t: Date.now(), vis: meta.vis, canvas: meta.backing, css: [meta.clip.width, meta.clip.height], ...sampleOf(png) });
   };
   for (let i = 0; i < before; i++) { await shot('before', i); await page.waitForTimeout(1000); }
@@ -96,7 +111,19 @@ async function main() {
     console.log('window chosen ' + window + ' title ' + JSON.stringify(title));
     execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]);
   }
-  await page.waitForTimeout(hideS * 1000);
+  if (mode === 'activate') {
+    other = await bcdp.send('Target.createTarget', { url: 'about:blank', background: true, newWindow: false });
+    const viewerWindow = await bcdp.send('Browser.getWindowForTarget', { targetId: created.targetId });
+    const otherWindow = await bcdp.send('Browser.getWindowForTarget', { targetId: other.targetId });
+    console.log(`activate viewer window ${viewerWindow.windowId} other window ${otherWindow.windowId}`);
+    await bcdp.send('Target.activateTarget', { targetId: other.targetId });
+    for (let k = 0; k < Math.floor(hideS / 3); k++) {
+      await page.waitForTimeout(3000);
+      await shot('hidden', k, 15000).catch((error) => samples.push({ phase: 'hidden', index: k, error: String(error.message).slice(0, 120) }));
+    }
+  } else {
+    await page.waitForTimeout(hideS * 1000);
+  }
   const hiddenState = await page.evaluate(() => document.visibilityState).catch((error) => 'unreachable: ' + String(error.message).slice(0, 80));
   samples.push({ phase: 'hidden', index: 0, t: Date.now(), vis: hiddenState, canvas: null, css: null, w: 0, h: 0, longest: 0, over40: 0 });
   console.log('hidden state ' + hiddenState);
@@ -104,7 +131,9 @@ async function main() {
   if (mode === 'tab') { await page.bringToFront(); }
   if (mode === 'window') execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowmap ${window}`]);
   if (mode === 'minimize') await minimize.browserSession.send('Browser.setWindowBounds', { windowId: minimize.windowId, bounds: { windowState: 'normal' } });
+  if (mode === 'activate') await bcdp.send('Target.activateTarget', { targetId: created.targetId });
   for (let i = 0; i < after; i++) { await shot('after', i); await page.waitForTimeout(500); }
+  if (other) await bcdp.send('Target.closeTarget', { targetId: other.targetId }).catch(() => {});
   const events = await page.evaluate(() => window.__events);
   const raf = await page.evaluate(() => window.__raf);
   const gaps = raf.slice(1).map((t, i) => t - raf[i]);
