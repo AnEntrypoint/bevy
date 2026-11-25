@@ -36,6 +36,12 @@ const recorder = () => {
   };
   observeCanvas();
   document.addEventListener('visibilitychange', () => log({ ev: 'visibility', state: document.visibilityState }));
+  window.__raf = [];
+  const tick = (t) => {
+    window.__raf.push(Math.round(t));
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 };
 
 function sampleOf(buffer) {
@@ -71,16 +77,41 @@ async function main() {
   for (let i = 0; i < before; i++) { await shot('before', i); await page.waitForTimeout(1000); }
   const cdpSession = await page.context().newCDPSession(page);
   let window = null;
+  let minimize = null;
+  if (mode === 'minimize') {
+    const { targetInfo } = await cdpSession.send('Target.getTargetInfo');
+    const browserSession = await browser.newBrowserCDPSession();
+    const { windowId } = await browserSession.send('Browser.getWindowForTarget', { targetId: targetInfo.targetId });
+    minimize = { browserSession, windowId };
+  }
   if (mode === 'lifecycle') await cdpSession.send('Page.setWebLifecycleState', { state: 'frozen' });
   if (mode === 'tab') { const other = await context.newPage(); await other.bringToFront(); }
-  if (mode === 'window') { window = execFileSync('bash', ['-c', `DISPLAY=${display} xdotool search --name 'Chrome|Chromium|bevy-jayzee' | head -1`]).toString().trim(); execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]); }
+  if (mode === 'minimize') await minimize.browserSession.send('Browser.setWindowBounds', { windowId: minimize.windowId, bounds: { windowState: 'minimized' } });
+  if (mode === 'window') {
+    const title = await page.title();
+    const ids = execFileSync('bash', ['-c', `DISPLAY=${display} xdotool search --class chromium`]).toString().trim().split('\n').filter(Boolean);
+    const named = ids.map((id) => ({ id, name: execFileSync('bash', ['-c', `DISPLAY=${display} xdotool getwindowname ${id} 2>/dev/null || true`]).toString().trim() }));
+    for (const w of named) console.log('window candidate ' + w.id + ' ' + JSON.stringify(w.name));
+    window = (named.find((w) => w.name.includes(title) && title) || named.find((w) => /127\.0\.0\.1|bevy/.test(w.name)) || { id: named[0] && named[0].id }).id;
+    console.log('window chosen ' + window + ' title ' + JSON.stringify(title));
+    execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowunmap ${window}`]);
+  }
   await page.waitForTimeout(hideS * 1000);
+  const hiddenState = await page.evaluate(() => document.visibilityState).catch((error) => 'unreachable: ' + String(error.message).slice(0, 80));
+  samples.push({ phase: 'hidden', index: 0, t: Date.now(), vis: hiddenState, canvas: null, css: null, w: 0, h: 0, longest: 0, over40: 0 });
+  console.log('hidden state ' + hiddenState);
   if (mode === 'lifecycle') await cdpSession.send('Page.setWebLifecycleState', { state: 'active' });
   if (mode === 'tab') { await page.bringToFront(); }
   if (mode === 'window') execFileSync('bash', ['-c', `DISPLAY=${display} xdotool windowmap ${window}`]);
+  if (mode === 'minimize') await minimize.browserSession.send('Browser.setWindowBounds', { windowId: minimize.windowId, bounds: { windowState: 'normal' } });
   for (let i = 0; i < after; i++) { await shot('after', i); await page.waitForTimeout(500); }
   const events = await page.evaluate(() => window.__events);
-  fs.writeFileSync(`${out}/series.json`, JSON.stringify({ mode, hideS, samples, events, consoleErrors }, null, 1));
+  const raf = await page.evaluate(() => window.__raf);
+  const gaps = raf.slice(1).map((t, i) => t - raf[i]);
+  const maxGap = Math.max(0, ...gaps);
+  const at = gaps.indexOf(maxGap);
+  console.log(`raf frames=${raf.length} maxGapMs=${maxGap} atFrame=${at} gapStartMs=${raf[at]} gapEndMs=${raf[at + 1]}`);
+  fs.writeFileSync(`${out}/series.json`, JSON.stringify({ mode, hideS, samples, events, consoleErrors, raf: { frames: raf.length, maxGapMs: maxGap, atFrame: at } }, null, 1));
   for (const s of samples) console.log(`${s.phase} ${s.index} vis=${s.vis} backing=${JSON.stringify(s.canvas)} css=${JSON.stringify(s.css)} ${s.w}x${s.h} longest=${s.longest} over40=${s.over40}`);
   for (const e of events) console.log('event ' + JSON.stringify(e));
   console.log('console ' + consoleErrors.length + ' ' + consoleErrors.slice(0, 5).join(' | '));
