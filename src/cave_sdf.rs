@@ -375,6 +375,39 @@ pub fn load_cave_carve_layer(json: &Value) -> CaveCarveLayer {
 }
 
 #[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct OutsideCaveDomain;
+
+#[cfg(test)]
+pub fn create_cave_volume(world_x: f64, world_y: f64, world_z: f64, world_radius: f64, spec: &Value) -> Result<CaveVolume, OutsideCaveDomain> {
+    let shape = parse_shape(spec, world_radius).ok_or(OutsideCaveDomain)?;
+    Ok(CaveVolume { world_x, world_y, world_z, world_radius, shape })
+}
+
+#[cfg(test)]
+impl CaveVolume {
+    fn local_sdf(&self) -> Box<dyn Fn(f64, f64, f64) -> f64> {
+        match self.shape {
+            CaveShape::Sphere => Box::new(make_sphere_cave_sdf(0.0, 0.0, 0.0, 1.0)),
+            CaveShape::Cylinder { half_height, axis } => Box::new(make_cylinder_cave_sdf(0.0, 0.0, 0.0, 1.0, half_height, axis)),
+            CaveShape::Tunnel { length, axis, seed, warp_amp, warp_freq } => Box::new(make_tunnel_cave_sdf(seed as i32, 1.0, length, axis, warp_amp, warp_freq)),
+        }
+    }
+
+    fn local_to_world(&self, p: [f32; 3]) -> [f32; 3] {
+        let world = |origin: f64, local: f32| (origin + local as f64 * self.world_radius) as f32;
+        [world(self.world_x, p[0]), world(self.world_y, p[1]), world(self.world_z, p[2])]
+    }
+}
+
+#[cfg(test)]
+pub fn polygonize_cave_volume(vol: &CaveVolume, res: usize) -> CaveMesh {
+    let local = polygonize_cave_sdf(vol.local_sdf(), res);
+    let positions = local.positions.chunks_exact(3).flat_map(|p| vol.local_to_world([p[0], p[1], p[2]])).collect();
+    CaveMesh { positions, indices: local.indices }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -470,6 +503,32 @@ mod tests {
             let got_indices: Vec<u64> = got.indices.iter().map(|i| *i as u64).collect();
             let want_indices: Vec<u64> = mesh["indices"].as_array().unwrap().iter().map(|i| i.as_u64().unwrap()).collect();
             assert_eq!(got_indices, want_indices, "{name}: indices");
+        }
+    }
+
+    #[test]
+    fn world_placed_polygonize_matches_spoint_polygonize_cave_volume() {
+        let fixture = fixture();
+        for case in fixture["worldMeshes"].as_array().unwrap() {
+            let name = case["name"].as_str().unwrap();
+            let anchor = &case["anchor"];
+            let vol = create_cave_volume(num(anchor, "worldX"), num(anchor, "worldY"), num(anchor, "worldZ"), num(anchor, "worldRadius"), &case["spec"]).unwrap();
+            let got = polygonize_cave_volume(&vol, case["res"].as_u64().unwrap() as usize);
+            assert_eq!(got.vertex_count() as u64, case["vc"].as_u64().unwrap(), "{name}: vertex count");
+            assert_eq!(got.indices.len() as u64, case["ic"].as_u64().unwrap(), "{name}: index count");
+            assert_eq!(got.indices.len() as u64 / 3, case["triangles"].as_u64().unwrap(), "{name}: triangle count");
+            let want_positions = case["positions"].as_array().unwrap();
+            assert_eq!(got.positions.len(), want_positions.len(), "{name}: position count");
+            for (g, w) in got.positions.iter().zip(want_positions) {
+                assert!((*g as f64 - w.as_f64().unwrap()).abs() <= MESH_TOLERANCE, "{name}: world position {g} against spoint {w}");
+            }
+            let got_indices: Vec<u64> = got.indices.iter().map(|i| *i as u64).collect();
+            let want_indices: Vec<u64> = case["indices"].as_array().unwrap().iter().map(|i| i.as_u64().unwrap()).collect();
+            assert_eq!(got_indices, want_indices, "{name}: indices");
+        }
+        for case in fixture["worldOutside"].as_array().unwrap() {
+            let result = create_cave_volume(0.0, 0.0, 0.0, num(case, "worldRadius"), &case["spec"]);
+            assert_eq!(result.is_err(), case["threw"].as_bool().unwrap(), "outside {}", case["spec"]);
         }
     }
 
