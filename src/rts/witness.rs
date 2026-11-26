@@ -9,6 +9,8 @@ const HASHES_PATH: &str = "testdata/rts/duel-routes.hashes";
 const ORDERS: &str = include_str!("../../testdata/rts/duel-routes.orders");
 const HASHES: &str = include_str!("../../testdata/rts/duel-routes.hashes");
 const REFERENCE_TICKS: usize = 3200;
+const OSCRAFT_ORDERS: &str = include_str!("../../testdata/rts/oscraft-duel-routes.orders");
+const OSCRAFT_HASHES: &str = include_str!("../../testdata/rts/oscraft-duel-routes.hashes");
 
 fn expected() -> Vec<(u32, u64)> {
     HASHES
@@ -74,4 +76,23 @@ fn write_fixture() {
     std::fs::write(ORDERS_PATH, orders_text).expect("write orders");
     let text: String = hashes.iter().map(|(tick, hash)| format!("{tick} {hash:016x}\n")).collect();
     std::fs::write(HASHES_PATH, text).expect("write reference");
+}
+
+#[test]
+fn bevy_fixed_update_matches_oscraft_native_hashes() {
+    let orders = script::parse(OSCRAFT_ORDERS).expect("oscraft orders");
+    let reference: Vec<(u32, u64)> = OSCRAFT_HASHES
+        .lines()
+        .map(|line| {
+            let (tick, hash) = line.split_once(' ').expect("tick and hash");
+            (tick.parse().expect("tick"), u64::from_str_radix(hash, 16).expect("hash"))
+        })
+        .filter(|(tick, _)| *tick >= 1)
+        .collect();
+    let got = bevy_hashes(orders, reference.len());
+    for ((tick, hash), (want_tick, want)) in got.iter().zip(reference.iter()) {
+        assert_eq!(tick, want_tick);
+        assert_eq!(hash, want, "Bevy FixedUpdate hash differs from oscraft at tick {tick}");
+    }
+    assert_eq!(got.len(), 1280);
 }
