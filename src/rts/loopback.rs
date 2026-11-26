@@ -110,6 +110,10 @@ fn two_loopback_clients_match_the_server_hash_every_tick() {
     let mut server = server();
     let mut first = client(5101);
     let mut second = client(5102);
+    for app in [&mut server, &mut first, &mut second] {
+        app.finish();
+        app.cleanup();
+    }
     pump(&mut [&mut server, &mut first, &mut second], TICKS + 64);
     let server_hashes = server.world().resource::<RtsHashes>().0.clone();
     assert_eq!(server_hashes.len(), TICKS + 64);
