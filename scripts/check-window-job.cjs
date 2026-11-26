@@ -31,20 +31,22 @@ function runJob(index, options) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'window-job-' + index + '-'));
   try {
     const log = path.join(dir, 'window-job.log');
-    const loadFile = path.join(dir, 'loadavg');
+    const statFile = path.join(dir, 'stat');
     const runs = path.join(dir, 'runs.txt');
-    fs.writeFileSync(loadFile, (options.load || '2.00') + ' 1.00 1.00 1/100 1');
+    fs.writeFileSync(statFile, 'cpu 100 0 0 900 0 0 0 0 0 0\n');
     const witness = options.witness || ['sh', '-c', 'echo ran >> ' + runs];
     const env = Object.assign({}, process.env, {
       WINDOW_S: String(options.windowS || 3),
       INTERVAL_S: String(options.intervalS || 1),
       GATE_KB: '1000',
-      LOAD_MAX: '4',
+      CPU_IDLE_MIN: String(options.cpuMin || 0),
+      CPU_SAMPLE_S: '0',
+      CPU_STAT_FILE: statFile,
+      NOISE_GUARD: '0',
       MIN_REMAINING_S: String(options.minRemainingS || 0),
       WINDOW_LOG: log,
       VMSTAT_CMD: sequenceStub(dir, 'vmstat', options.vmstat, vmstatPrint),
       HEAVY_CMD: sequenceStub(dir, 'heavy', options.heavy, heavyPrint),
-      LOADAVG_FILE: loadFile,
     });
     const result = spawnSync('bash', [job, '--'].concat(witness), { env, encoding: 'utf8', timeout: 60000 });
     const text = fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '';
@@ -62,7 +64,7 @@ const cases = [
   { name: 'a swap-in spike closes the gate, and the next clear sample starts the witness', options: { vmstat: ['1500 10', '10 10'], heavy: ['clear'] }, ok: startsOnSecondSample },
   { name: 'a swap-out spike alone closes the gate', options: { vmstat: ['10 1500', '10 10'], heavy: ['clear'] }, ok: startsOnSecondSample },
   { name: 'a busy heavy reading holds the start until the next clear reading', options: { vmstat: ['10 10'], heavy: ['busy', 'clear'] }, ok: (r) => r.status === 0 && r.runCount === 1 && r.readings.length === 2 && /heavy=busy/.test(r.readings[0]) && /heavy=clear/.test(r.readings[1]) },
-  { name: 'a load above 4 closes the gate, and the window ends without a start', options: { vmstat: ['10 10'], heavy: ['clear'], load: '5.00', windowS: 3 }, ok: (r) => r.status === 3 && r.runCount === 0 && r.readings.length >= 2 && r.readings.every((line) => /gate=closed/.test(line)) },
+  { name: 'a host with no idle CPU closes the gate, and the window ends without a start', options: { vmstat: ['10 10'], heavy: ['clear'], cpuMin: 70, windowS: 3 }, ok: (r) => r.status === 3 && r.runCount === 0 && /gate=closed/.test(r.text) },
   { name: 'a heavy rule that never clears ends the window without a start', options: { vmstat: ['10 10'], heavy: ['busy'], windowS: 3 }, ok: (r) => r.status === 3 && r.runCount === 0 && r.text.includes('WINDOW-ENDED-WITHOUT-CLEAR') },
   { name: 'a failing witness sets the job exit status', options: { vmstat: ['10 10'], heavy: ['clear'], witness: ['false'] }, ok: (r) => r.status === 1 && r.text.includes('overall=1') },
   { name: 'readings come at the interval (two or more in a 3 s window at 1 s)', options: { vmstat: ['10 10'], heavy: ['busy'], windowS: 3, intervalS: 1 }, ok: (r) => r.readings.length >= 2 },

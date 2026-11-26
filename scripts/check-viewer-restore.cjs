@@ -42,6 +42,12 @@ const recorder = () => {
     log({ ev: 'configure', w: config.width ?? this.canvas.width, h: config.height ?? this.canvas.height, format: config.format, dpr: window.devicePixelRatio });
     return configure.call(this, config);
   };
+  const getCurrentTexture = GPUCanvasContext.prototype.getCurrentTexture;
+  GPUCanvasContext.prototype.getCurrentTexture = function () {
+    const texture = getCurrentTexture.call(this);
+    log({ ev: 'acquire', w: texture.width, h: texture.height, canvasW: this.canvas.width, canvasH: this.canvas.height, cssW: this.canvas.clientWidth, cssH: this.canvas.clientHeight, dpr: window.devicePixelRatio });
+    return texture;
+  };
   window.__raf = [];
   const tick = (t) => {
     window.__raf.push(Math.round(t));
@@ -80,6 +86,8 @@ async function main() {
   const page = created ? await attachPage(context, created.targetId) : await context.newPage();
   let other = null;
   const consoleErrors = [];
+  const probeFrames = [];
+  page.on('console', (msg) => { if (msg.text().includes('PROBE_')) probeFrames.push(msg.text().slice(0, 4000)); });
   page.on('console', (msg) => { if (msg.type() === 'error' || msg.type() === 'warning') consoleErrors.push(msg.type() + ': ' + msg.text().slice(0, 160)); });
   page.on('pageerror', (err) => consoleErrors.push('pageerror: ' + String(err.message).slice(0, 160)));
   await page.addInitScript(recorder);
@@ -91,10 +99,11 @@ async function main() {
     const meta = await page.evaluate(() => {
       const c = document.querySelector('canvas');
       const r = c.getBoundingClientRect();
-      return { vis: document.visibilityState, dpr: window.devicePixelRatio, backing: [c.width, c.height], clip: { x: r.left, y: r.top, width: r.width, height: r.height } };
+      return { pt: Math.round(performance.now()), vis: document.visibilityState, dpr: window.devicePixelRatio, backing: [c.width, c.height], clip: { x: r.left, y: r.top, width: r.width, height: r.height } };
     });
     const png = await page.screenshot({ type: 'png', clip: meta.clip, timeout: timeoutMs });
-    samples.push({ phase, index, t: Date.now(), vis: meta.vis, dpr: meta.dpr, canvas: meta.backing, css: [meta.clip.width, meta.clip.height], ...sampleOf(png) });
+    if (process.env.SAVE_PNG) require('node:fs').writeFileSync(require('node:path').join(process.env.OUT, `${phase}-${index}.png`), png);
+    samples.push({ phase, index, t: Date.now(), pt: meta.pt, vis: meta.vis, dpr: meta.dpr, canvas: meta.backing, css: [meta.clip.width, meta.clip.height], ...sampleOf(png) });
   };
   for (let i = 0; i < before; i++) { await shot('before', i); await page.waitForTimeout(1000); }
   const cdpSession = await page.context().newCDPSession(page);
@@ -156,12 +165,23 @@ async function main() {
       await page.waitForTimeout(3000);
       for (let k = 0; k < 2; k++) await shot('vp-big-steady', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'vp-big-steady', index: k, error: String(error.message).slice(0, 120) }));
     }
-  } else if (mode === 'transient') {
+  } else if (mode === 'transient' || mode === 'transient-pin' || mode === 'transient-nodom') {
     for (let cycle = 0; cycle < 3; cycle++) {
       await cdpSession.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 2, mobile: false });
       await page.waitForTimeout(2000);
       for (let k = 0; k < 2; k++) await shot('dpr2', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'dpr2', index: k, error: String(error.message).slice(0, 120) }));
       console.log('cycle ' + cycle + ' clear override ' + Date.now());
+      if (mode === 'transient-nodom') {
+        await page.addStyleTag({ content: 'body *:not(canvas) { visibility: hidden !important; } canvas { visibility: visible !important; }' });
+      }
+      if (mode === 'transient-pin') {
+        await page.evaluate(() => {
+          const c = document.querySelector('canvas');
+          const r = c.getBoundingClientRect();
+          c.style.width = r.width + 'px';
+          c.style.height = r.height + 'px';
+        });
+      }
       await cdpSession.send('Emulation.clearDeviceMetricsOverride');
       for (let k = 0; k < 10; k++) await shot('transient', cycle * 100 + k, 15000).catch((error) => samples.push({ phase: 'transient', index: k, error: String(error.message).slice(0, 120) }));
       await page.waitForTimeout(3000);
@@ -231,7 +251,7 @@ async function main() {
   const maxGap = Math.max(0, ...gaps);
   const at = gaps.indexOf(maxGap);
   console.log(`raf frames=${raf.length} maxGapMs=${maxGap} atFrame=${at} gapStartMs=${raf[at]} gapEndMs=${raf[at + 1]}`);
-  fs.writeFileSync(`${out}/series.json`, JSON.stringify({ mode, hideS, samples, events, consoleErrors, raf: { frames: raf.length, maxGapMs: maxGap, atFrame: at } }, null, 1));
+  fs.writeFileSync(`${out}/series.json`, JSON.stringify({ mode, hideS, samples, events, consoleErrors, probeFrames, raf: { frames: raf.length, maxGapMs: maxGap, atFrame: at } }, null, 1));
   for (const s of samples) console.log(`${s.phase} ${s.index} vis=${s.vis} backing=${JSON.stringify(s.canvas)} css=${JSON.stringify(s.css)} ${s.w}x${s.h} longest=${s.longest} over40=${s.over40}`);
   for (const e of events) console.log('event ' + JSON.stringify(e));
   console.log('console ' + consoleErrors.length + ' ' + consoleErrors.slice(0, 5).join(' | '));
