@@ -6938,3 +6938,13 @@ Each witness compares bevy with spoint at the same commit (spoint is read-only; 
 - Red check (Phase B): flip one order in the recording and the hash for the first later tick must differ.
 - Blocked for Phase B: no duel-routes recording exists in either repo (scenarios/duel-routes has the image duel-routes.osdt and no replay file). It has to be recorded with oscraft's Recording API from the duel-routes image with a fixed order list, and the native hashes taken from the same run. Until it exists, S1 cannot pass.
 - Open risk: sim::Sim must be Send + Sync to be a Bevy Resource; Phase B's compile decides this.
+
+## Round 142 Phase A: S1 code and tests (duel-routes replay-hash witness), not built
+
+- src/rts/mod.rs: RtsSimPlugin ticks oscraft's sim (sim crate) in FixedUpdate at 16 Hz. Each tick applies every order whose tick is at or before the current tick (replay::Command::apply, the same call oscraft's replay makes), ticks the sim, and records (ticks, state_hash). native_hashes (test-only) runs the same loop without Bevy.
+- src/rts/script.rs: order file format, one order per line: `<tick> order <unit> <x> <y>` or `<tick> order_all <player> <x> <y>`. Tests: parses both kinds, names the bad line.
+- src/rts/witness.rs (test-only): fixed_update_hash_matches_native_every_tick (Bevy FixedUpdate hashes equal the native loop and the stored reference, every tick); red_one_flipped_order_changes_the_hash (first order's x moved by one must change the hashes); write_native_reference (ignored, writes testdata/rts/duel-routes.hashes from the native loop).
+- main.rs: `#[cfg(test)] mod rts;`, so the native binary is unchanged.
+- testdata/rts/duel-routes.orders and duel-routes.hashes are empty. Phase B fills them: the orders need unit indices and map coordinates that exist in /workspace/oscraft/scenarios/duel-routes/duel-routes.osdt (not yet read), and the hashes come from the ignored write test. Until then the witness fails on the empty-reference assert, by design.
+- Caveat: the native reference is the sim crate run without Bevy, not oscraft's own host binary. It proves the FixedUpdate schedule does not change the hash; it does not prove agreement with oscraft's browser or native host.
+- Phase B commands (one window): `cargo test rts::` on the final tree, after `cargo test -- --ignored write_native_reference` in the same window.
