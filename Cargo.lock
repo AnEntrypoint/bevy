@@ -7271,6 +7271,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 [[package]]
 name = "sim"
 version = "0.1.0"
+source = "git+https://github.com/lanmower/oscraft?rev=801d65f73d3b230c82196baa3a46f241138da4dc#801d65f73d3b230c82196baa3a46f241138da4dc"
 
 [[package]]
 name = "simba"
