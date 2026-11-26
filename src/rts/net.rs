@@ -52,6 +52,19 @@ fn changed(previous: &[UnitState], now: &[UnitState]) -> Vec<UnitState> {
     now.iter().enumerate().filter(|(i, state)| previous.get(*i) != Some(state)).map(|(_, state)| *state).collect()
 }
 
+pub fn next_message(sim: &Sim, previous: &mut Vec<UnitState>) -> RtsMessage {
+    let tick = sim.ticks();
+    let hash = sim.state_hash();
+    let now = units(sim);
+    let message = if tick % SNAPSHOT_EVERY == 0 {
+        RtsMessage::Snapshot { tick, hash, units: now.clone() }
+    } else {
+        RtsMessage::Delta { tick, hash, changed: changed(previous, &now) }
+    };
+    *previous = now;
+    message
+}
+
 pub fn server_stream(mut sim: Sim, orders: &[(u32, OrderWire)], ticks: u32) -> Vec<RtsMessage> {
     let mut previous: Vec<UnitState> = Vec::new();
     let mut next = 0;
@@ -68,15 +81,7 @@ pub fn server_stream(mut sim: Sim, orders: &[(u32, OrderWire)], ticks: u32) -> V
             messages.push(RtsMessage::Orders { tick, orders: due });
         }
         sim.tick();
-        let tick = sim.ticks();
-        let hash = sim.state_hash();
-        let now = units(&sim);
-        if tick % SNAPSHOT_EVERY == 0 {
-            messages.push(RtsMessage::Snapshot { tick, hash, units: now.clone() });
-        } else {
-            messages.push(RtsMessage::Delta { tick, hash, changed: changed(&previous, &now) });
-        }
-        previous = now;
+        messages.push(next_message(&sim, &mut previous));
     }
     messages
 }

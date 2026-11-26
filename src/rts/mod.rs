@@ -1,4 +1,7 @@
 pub mod net;
+pub mod wire;
+#[cfg(test)]
+mod loopback;
 pub mod script;
 #[cfg(test)]
 mod witness;
@@ -61,7 +64,7 @@ pub fn load_image(image: &Path) -> Sim {
     sim::load_file(image, RTS_MAX_UNITS).unwrap_or_else(|error| panic!("rts image {}: {error:?}", image.display()))
 }
 
-fn step_rts_sim(mut rts: ResMut<RtsSim>, mut orders: ResMut<RtsOrders>, mut hashes: ResMut<RtsHashes>) {
+pub(crate) fn step_rts_sim(mut rts: ResMut<RtsSim>, mut orders: ResMut<RtsOrders>, mut hashes: ResMut<RtsHashes>) {
     let tick = rts.0.ticks();
     let orders = &mut *orders;
     while let Some((at, order)) = orders.list.get(orders.next) {
