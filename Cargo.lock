@@ -707,11 +707,13 @@ dependencies = [
  "meshopt",
  "noise",
  "png",
+ "replay",
  "rquickjs",
  "ruzstd",
  "serde",
  "serde_json",
  "serde_yaml",
+ "sim",
 ]
 
 [[package]]
@@ -6838,6 +6840,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
+name = "replay"
+version = "0.1.0"
+dependencies = [
+ "sim",
+]
+
+[[package]]
 name = "ring"
 version = "0.17.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7266,6 +7275,10 @@ name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
+name = "sim"
+version = "0.1.0"
 
 [[package]]
 name = "simba"
