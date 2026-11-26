@@ -168,3 +168,35 @@ mod tests {
         assert_eq!(error, StreamError::Gap { expected: 101, got: 102 });
     }
 }
+
+#[cfg(test)]
+mod bytes {
+    use super::{server_stream, OrderWire, RtsMessage};
+    use crate::rts::{load_image, script, Order};
+    use std::path::Path;
+
+    const IMAGE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/rts/duel-routes.osdt");
+    const ORDERS: &str = include_str!("../../testdata/rts/oscraft-duel-routes.orders");
+    const TICKS: u32 = 1280;
+    const TICKS_PER_SECOND: f64 = 16.0;
+
+    #[test]
+    fn duel_routes_stream_bytes_per_second() {
+        let orders: Vec<(u32, OrderWire)> = script::parse(ORDERS)
+            .expect("orders")
+            .into_iter()
+            .map(|(tick, order)| {
+                let wire = match order {
+                    Order::Order { unit, x, y } => OrderWire::Order { unit: unit as u32, x, y },
+                    Order::OrderAll { player, x, y } => OrderWire::OrderAll { player, x, y },
+                };
+                (tick, wire)
+            })
+            .collect();
+        let messages: Vec<RtsMessage> = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS);
+        let bytes: usize = messages.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
+        let seconds = f64::from(TICKS) / TICKS_PER_SECOND;
+        eprintln!("S5_BYTES_PER_SECOND {:.0} over {} messages ({} bytes in {} s)", bytes as f64 / seconds, messages.len(), bytes, seconds);
+        assert!(bytes > 0);
+    }
+}
