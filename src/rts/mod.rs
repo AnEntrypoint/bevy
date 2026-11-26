@@ -2,6 +2,8 @@ pub mod net;
 pub mod wire;
 #[cfg(test)]
 mod loopback;
+#[cfg(test)]
+pub mod client;
 pub mod script;
 #[cfg(test)]
 mod witness;
