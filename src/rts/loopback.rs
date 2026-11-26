@@ -29,7 +29,7 @@ fn orders() -> Vec<(u32, Order)> {
 
 fn base(orders: Vec<(u32, Order)>) -> App {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin))
+    app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin, ServerPlugins { tick_duration: TICK }))
         .add_plugins((RtsWirePlugin, RtsSimPlugin { image: PathBuf::from(IMAGE) }))
         .insert_resource(RtsOrders::new(orders))
         .insert_resource(TimeUpdateStrategy::ManualDuration(TICK));
@@ -38,7 +38,6 @@ fn base(orders: Vec<(u32, Order)>) -> App {
 
 fn server() -> App {
     let mut app = base(orders());
-    app.add_plugins(ServerPlugins { tick_duration: TICK });
     app.add_systems(Startup, start_server)
         .add_systems(FixedUpdate, broadcast.after(super::step_rts_sim));
     app
