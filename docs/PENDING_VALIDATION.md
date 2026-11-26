@@ -6929,3 +6929,12 @@ Each witness compares bevy with spoint at the same commit (spoint is read-only; 
 - Witness: window bevy-cave-sdf, cargo test cave_sdf::, test.out: 4 passed, 0 failed, 457 filtered out, CAVE_DONE 0, including cave_sdf::tests::world_placed_polygonize_matches_spoint_polygonize_cave_volume.
 - docs/parity-matrix.tsv row 227: candidate-only to present. docs/PARITY_MATRIX.md regenerated with scripts/gen-parity-matrix.mjs (check: parity docs match the TSV). Counts now: present 88, candidate-only 4, open 716.
 - extra's docs/bevy-gaps/row227-outcome-witness.cjs is red by design now: the function-name checks and the transform check fire (bevy defines create_cave_volume and polygonize_cave_volume). extra needs to update its witness to present.
+
+## Round 141 Phase A: S1 RTS sim host (oscraft's sim inside FixedUpdate)
+
+- src/rts/mod.rs: RtsSimPlugin loads an oscraft image with sim::load_file and ticks it in FixedUpdate at 16 Hz (RTS_TICKS_PER_SECOND, its own Time<Fixed> resource in RTS mode only). RtsHashes records (ticks, state_hash) after every tick. The module is not yet wired into src/lib.rs, so native builds are unchanged.
+- Cargo.toml: sim as a path dependency on /workspace/oscraft/rust/crates/sim (spec: path during development). Cargo.lock is not updated in Phase A; the first Phase B build updates it.
+- Witness (Phase B): replay the duel-routes recording through RtsSimPlugin and compare each (tick, hash) with oscraft's native hashes from sim::replay; cargo test rts:: plus the replay comparison.
+- Red check (Phase B): flip one order in the recording and the hash for the first later tick must differ.
+- Blocked for Phase B: no duel-routes recording exists in either repo (scenarios/duel-routes has the image duel-routes.osdt and no replay file). It has to be recorded with oscraft's Recording API from the duel-routes image with a fixed order list, and the native hashes taken from the same run. Until it exists, S1 cannot pass.
+- Open risk: sim::Sim must be Send + Sync to be a Bevy Resource; Phase B's compile decides this.
