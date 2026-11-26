@@ -56,7 +56,7 @@ fn broadcast(
     mut sender: ServerMultiMessageSender,
     servers: Query<&Endpoint, With<Server>>,
 ) {
-    let message = next_message(&rts.0, &mut previous);
+    let message = next_message(&rts.0, &mut previous, None);
     for endpoint in &servers {
         sender
             .send::<RtsMessage, RtsChannel>(&message, endpoint, &NetworkTarget::All)

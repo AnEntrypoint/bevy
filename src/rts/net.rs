@@ -39,8 +39,9 @@ pub enum StreamError {
     Gap { expected: u32, got: u32 },
 }
 
-fn units(sim: &Sim) -> Vec<UnitState> {
+fn units(sim: &Sim, viewer: Option<u8>) -> Vec<UnitState> {
     (0..sim.count())
+        .filter(|&i| viewer.is_none_or(|player| sim.visible(player, i)))
         .map(|i| {
             let (x, y) = sim.position_fixed(i);
             UnitState { unit: i as u32, x, y, alive: sim.alive(i) }
@@ -52,10 +53,10 @@ fn changed(previous: &[UnitState], now: &[UnitState]) -> Vec<UnitState> {
     now.iter().enumerate().filter(|(i, state)| previous.get(*i) != Some(state)).map(|(_, state)| *state).collect()
 }
 
-pub fn next_message(sim: &Sim, previous: &mut Vec<UnitState>) -> RtsMessage {
+pub fn next_message(sim: &Sim, previous: &mut Vec<UnitState>, viewer: Option<u8>) -> RtsMessage {
     let tick = sim.ticks();
     let hash = sim.state_hash();
-    let now = units(sim);
+    let now = units(sim, viewer);
     let message = if tick % SNAPSHOT_EVERY == 0 {
         RtsMessage::Snapshot { tick, hash, units: now.clone() }
     } else {
@@ -65,7 +66,7 @@ pub fn next_message(sim: &Sim, previous: &mut Vec<UnitState>) -> RtsMessage {
     message
 }
 
-pub fn server_stream(mut sim: Sim, orders: &[(u32, OrderWire)], ticks: u32) -> Vec<RtsMessage> {
+pub fn server_stream(mut sim: Sim, orders: &[(u32, OrderWire)], ticks: u32, viewer: Option<u8>) -> Vec<RtsMessage> {
     let mut previous: Vec<UnitState> = Vec::new();
     let mut next = 0;
     let mut messages = Vec::new();
@@ -81,7 +82,7 @@ pub fn server_stream(mut sim: Sim, orders: &[(u32, OrderWire)], ticks: u32) -> V
             messages.push(RtsMessage::Orders { tick, orders: due });
         }
         sim.tick();
-        messages.push(next_message(&sim, &mut previous));
+        messages.push(next_message(&sim, &mut previous, viewer));
     }
     messages
 }
@@ -140,7 +141,7 @@ mod tests {
     fn stream(ticks: u32) -> Vec<RtsMessage> {
         let sim = load_image(Path::new(IMAGE));
         let orders = centre_orders(&sim);
-        server_stream(sim, &orders, ticks)
+        server_stream(sim, &orders, ticks, None)
     }
 
     #[test]
@@ -193,10 +194,14 @@ mod bytes {
                 (tick, wire)
             })
             .collect();
-        let messages: Vec<RtsMessage> = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS);
-        let bytes: usize = messages.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
         let seconds = f64::from(TICKS) / TICKS_PER_SECOND;
-        eprintln!("S5_BYTES_PER_SECOND {:.0} over {} messages ({} bytes in {} s)", bytes as f64 / seconds, messages.len(), bytes, seconds);
-        assert!(bytes > 0);
+        let all = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, None);
+        let all_bytes: usize = all.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
+        let viewer = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, Some(0));
+        let viewer_bytes: usize = viewer.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
+        eprintln!("S5_BYTES_PER_SECOND all units {:.0} (player 0 view {:.0}) over {} messages", all_bytes as f64 / seconds, viewer_bytes as f64 / seconds, all.len());
+        assert!(all_bytes > 0);
+        assert!(viewer_bytes < all_bytes, "interest filtering did not reduce the stream");
+        assert!(load_image(Path::new(IMAGE)).fog_on(), "duel-routes has no fog, so the filter cannot reduce it");
     }
 }
