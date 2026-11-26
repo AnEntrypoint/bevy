@@ -1,9 +1,12 @@
 use super::{load_image, native_hashes, script, RtsHashes, RtsOrders, RtsSimPlugin};
 use bevy::prelude::*;
 use replay::Command;
+use sim::fixed::{from_int, ONE};
 use std::path::{Path, PathBuf};
 
 const IMAGE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/rts/duel-routes.osdt");
+const ORDERS_PATH: &str = "testdata/rts/duel-routes.orders";
+const HASHES_PATH: &str = "testdata/rts/duel-routes.hashes";
 const ORDERS: &str = include_str!("../../testdata/rts/duel-routes.orders");
 const HASHES: &str = include_str!("../../testdata/rts/duel-routes.hashes");
 const REFERENCE_TICKS: usize = 3200;
@@ -33,9 +36,16 @@ fn flip_first_order(text: &str) -> String {
     let first = lines.iter_mut().find(|line| !line.trim().is_empty()).expect("an order");
     let mut fields: Vec<String> = first.split_whitespace().map(str::to_string).collect();
     let x: i32 = fields[3].parse().expect("x");
-    fields[3] = (x + 1).to_string();
+    fields[3] = (x + ONE).to_string();
     *first = fields.join(" ");
     lines.join("\n")
+}
+
+fn grid_centre_orders() -> String {
+    let sim = load_image(Path::new(IMAGE));
+    let grid = sim.grid();
+    let (x, y) = (from_int((grid.w / 2) as i32), from_int((grid.h / 2) as i32));
+    format!("0 order_all 0 {x} {y}\n0 order_all 1 {x} {y}\n640 order_all 1 {x} {y}\n")
 }
 
 #[test]
@@ -58,9 +68,11 @@ fn red_one_flipped_order_changes_the_hash() {
 
 #[test]
 #[ignore]
-fn write_native_reference() {
-    let orders = script::parse(ORDERS).expect("orders");
+fn write_fixture() {
+    let orders_text = grid_centre_orders();
+    let orders = script::parse(&orders_text).expect("generated orders");
     let hashes = native_hashes(load_image(Path::new(IMAGE)), &orders, REFERENCE_TICKS);
+    std::fs::write(ORDERS_PATH, orders_text).expect("write orders");
     let text: String = hashes.iter().map(|(tick, hash)| format!("{tick} {hash:016x}\n")).collect();
-    std::fs::write("testdata/rts/duel-routes.hashes", text).expect("write reference");
+    std::fs::write(HASHES_PATH, text).expect("write reference");
 }
