@@ -30,6 +30,7 @@ bevy = { version = "0.20.1", default-features = false, features = [
     "async_executor",
     "web",
     "webgpu",
+    "webgl2",
     "tonemapping_luts",
     "zstd_rust",
     "bevy_gltf",
