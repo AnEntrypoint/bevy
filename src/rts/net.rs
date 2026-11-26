@@ -1,4 +1,4 @@
-use replay::Command;
+use super::Order;
 use serde::{Deserialize, Serialize};
 use sim::Sim;
 
@@ -19,10 +19,10 @@ pub enum OrderWire {
 }
 
 impl OrderWire {
-    pub fn command(self) -> Command {
+    pub fn command(self) -> Order {
         match self {
-            OrderWire::Order { unit, x, y } => Command::Order { unit: unit as usize, x, y },
-            OrderWire::OrderAll { player, x, y } => Command::OrderAll { player, x, y },
+            OrderWire::Order { unit, x, y } => Order::Order { unit: unit as usize, x, y },
+            OrderWire::OrderAll { player, x, y } => Order::OrderAll { player, x, y },
         }
     }
 }

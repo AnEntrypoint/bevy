@@ -1,6 +1,6 @@
-use replay::Command;
+use super::Order;
 
-pub fn parse(text: &str) -> Result<Vec<(u32, Command)>, String> {
+pub fn parse(text: &str) -> Result<Vec<(u32, Order)>, String> {
     text.lines()
         .enumerate()
         .filter(|(_, line)| !line.trim().is_empty())
@@ -8,17 +8,17 @@ pub fn parse(text: &str) -> Result<Vec<(u32, Command)>, String> {
         .collect()
 }
 
-fn parse_line(line: &str) -> Option<(u32, Command)> {
+fn parse_line(line: &str) -> Option<(u32, Order)> {
     let fields: Vec<&str> = line.split_whitespace().collect();
     let tick = fields.first()?.parse().ok()?;
     let x = fields.get(3)?.parse().ok()?;
     let y = fields.get(4)?.parse().ok()?;
-    let command = match *fields.get(1)? {
-        "order" => Command::Order { unit: fields.get(2)?.parse().ok()?, x, y },
-        "order_all" => Command::OrderAll { player: fields.get(2)?.parse().ok()?, x, y },
+    let order = match *fields.get(1)? {
+        "order" => Order::Order { unit: fields.get(2)?.parse().ok()?, x, y },
+        "order_all" => Order::OrderAll { player: fields.get(2)?.parse().ok()?, x, y },
         _ => return None,
     };
-    Some((tick, command))
+    Some((tick, order))
 }
 
 #[cfg(test)]
@@ -31,8 +31,8 @@ mod tests {
         assert_eq!(parsed.len(), 2);
         assert_eq!(parsed[0].0, 0);
         assert_eq!(parsed[1].0, 16);
-        assert!(matches!(parsed[0].1, Command::Order { unit: 3, x: 100, y: -200 }));
-        assert!(matches!(parsed[1].1, Command::OrderAll { player: 1, x: 5, y: 6 }));
+        assert_eq!(parsed[0].1, Order::Order { unit: 3, x: 100, y: -200 });
+        assert_eq!(parsed[1].1, Order::OrderAll { player: 1, x: 5, y: 6 });
     }
 
     #[test]

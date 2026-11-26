@@ -4,12 +4,26 @@ pub mod script;
 mod witness;
 
 use bevy::prelude::*;
-use replay::Command;
 use sim::Sim;
 use std::path::{Path, PathBuf};
 
 pub const RTS_TICKS_PER_SECOND: f64 = 16.0;
 pub const RTS_MAX_UNITS: usize = 4096;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Order {
+    Order { unit: usize, x: i32, y: i32 },
+    OrderAll { player: u8, x: i32, y: i32 },
+}
+
+impl Order {
+    pub fn apply(&self, sim: &mut Sim) {
+        match *self {
+            Order::Order { unit, x, y } => sim.order(unit, x, y),
+            Order::OrderAll { player, x, y } => sim.order_all(player, x, y),
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct RtsSim(pub Sim);
@@ -17,11 +31,11 @@ pub struct RtsSim(pub Sim);
 #[derive(Resource, Default)]
 pub struct RtsOrders {
     next: usize,
-    list: Vec<(u32, Command)>,
+    list: Vec<(u32, Order)>,
 }
 
 impl RtsOrders {
-    pub fn new(list: Vec<(u32, Command)>) -> RtsOrders {
+    pub fn new(list: Vec<(u32, Order)>) -> RtsOrders {
         RtsOrders { next: 0, list }
     }
 }
@@ -50,11 +64,11 @@ pub fn load_image(image: &Path) -> Sim {
 fn step_rts_sim(mut rts: ResMut<RtsSim>, mut orders: ResMut<RtsOrders>, mut hashes: ResMut<RtsHashes>) {
     let tick = rts.0.ticks();
     let orders = &mut *orders;
-    while let Some((at, command)) = orders.list.get(orders.next) {
+    while let Some((at, order)) = orders.list.get(orders.next) {
         if *at > tick {
             break;
         }
-        command.apply(&mut rts.0);
+        order.apply(&mut rts.0);
         orders.next += 1;
     }
     rts.0.tick();
@@ -62,7 +76,7 @@ fn step_rts_sim(mut rts: ResMut<RtsSim>, mut orders: ResMut<RtsOrders>, mut hash
 }
 
 #[cfg(test)]
-pub fn native_hashes(mut sim: Sim, orders: &[(u32, Command)], ticks: usize) -> Vec<(u32, u64)> {
+pub fn native_hashes(mut sim: Sim, orders: &[(u32, Order)], ticks: usize) -> Vec<(u32, u64)> {
     let mut next = 0;
     let mut hashes = Vec::with_capacity(ticks);
     for _ in 0..ticks {

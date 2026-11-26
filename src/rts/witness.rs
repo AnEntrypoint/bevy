@@ -1,6 +1,5 @@
-use super::{load_image, native_hashes, script, RtsHashes, RtsOrders, RtsSimPlugin};
+use super::{load_image, native_hashes, script, Order, RtsHashes, RtsOrders, RtsSimPlugin};
 use bevy::prelude::*;
-use replay::Command;
 use sim::fixed::{from_int, ONE};
 use std::path::{Path, PathBuf};
 
@@ -21,7 +20,7 @@ fn expected() -> Vec<(u32, u64)> {
         .collect()
 }
 
-fn bevy_hashes(orders: Vec<(u32, Command)>, ticks: usize) -> Vec<(u32, u64)> {
+fn bevy_hashes(orders: Vec<(u32, Order)>, ticks: usize) -> Vec<(u32, u64)> {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, RtsSimPlugin { image: PathBuf::from(IMAGE) }))
         .insert_resource(RtsOrders::new(orders));

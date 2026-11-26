@@ -24,7 +24,6 @@ rquickjs = { version = "0.14", features = ["loader", "macro"] }
 ruzstd = "0.9"
 bcdec_rs = "0.2.1"
 sim = { git = "https://github.com/lanmower/oscraft", rev = "801d65f73d3b230c82196baa3a46f241138da4dc", package = "sim" }
-replay = { path = "/workspace/oscraft/rust/crates/replay" }
 
 [build-dependencies]
 cc = "1.11"
