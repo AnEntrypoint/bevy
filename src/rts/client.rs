@@ -40,6 +40,10 @@ fn units(sim: &Sim) -> Vec<Vec3> {
         .collect()
 }
 
+pub fn hud(sim: &Sim) -> String {
+    format!("tick {} units {}", sim.ticks(), units(sim).len())
+}
+
 pub fn render(sim: &Sim, view: &View) -> Image {
     let _serial = render_lock();
     let mut app = headless_app();
@@ -59,6 +63,7 @@ pub fn render(sim: &Sim, view: &View) -> Image {
     for position in positions {
         world.spawn((Mesh3d(mesh_unit.clone()), MeshMaterial3d(mat_unit.clone()), Transform::from_translation(position)));
     }
+    world.spawn((Text::new(hud(sim)), Node { position_type: PositionType::Absolute, left: Val::Px(8.0), top: Val::Px(8.0), ..default() }));
     world.spawn((DirectionalLight { illuminance: 8000.0, ..default() }, Transform::from_xyz(4.0, 8.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y)));
     let eye = centre + Vec3::new(view.yaw.sin(), 1.0, view.yaw.cos()) * 40.0;
     world.spawn((
@@ -77,6 +82,12 @@ mod tests {
 
     fn changed_pixels(a: &Image, b: &Image) -> usize {
         a.data.as_ref().unwrap().chunks_exact(4).zip(b.data.as_ref().unwrap().chunks_exact(4)).filter(|(x, y)| x.iter().zip(y.iter()).take(3).any(|(p, q)| p.abs_diff(*q) > 8)).count()
+    }
+
+    #[test]
+    fn hud_names_the_tick_and_the_units_drawn() {
+        let sim = stepped(64);
+        assert_eq!(hud(&sim), format!("tick 64 units {}", units(&sim).len()));
     }
 
     #[test]
