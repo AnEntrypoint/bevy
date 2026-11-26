@@ -14,7 +14,7 @@ use std::time::Duration;
 const IMAGE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/rts/duel-routes.osdt");
 const ORDERS: &str = include_str!("../../testdata/rts/duel-routes.orders");
 const TICK: Duration = Duration::from_nanos(62_500_000);
-const TICKS: usize = 16 * 60 * 10;
+const TICKS: usize = 16 * 8;
 
 fn address(port: u16) -> SocketAddr {
     SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port)
@@ -69,6 +69,7 @@ fn client(port: u16) -> App {
     app.add_plugins(ClientPlugins { tick_duration: TICK })
         .insert_resource(PredictionManager::default())
         .init_resource::<Received>()
+        .add_observer(|trigger: On<RemoteEvent<SenderMetadata>>| eprintln!("SENDER_METADATA {:?}", trigger.trigger))
         .add_systems(Startup, move |mut commands: Commands| {
             let client = commands
                 .spawn((
