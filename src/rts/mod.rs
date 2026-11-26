@@ -1,3 +1,4 @@
+pub mod net;
 pub mod script;
 #[cfg(test)]
 mod witness;
