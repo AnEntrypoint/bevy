@@ -180,6 +180,30 @@ mod bytes {
     const ORDERS: &str = include_str!("../../testdata/rts/oscraft-duel-routes.orders");
     const TICKS: u32 = 1280;
     const TICKS_PER_SECOND: f64 = 16.0;
+    const VIEW_CAP_BYTES_PER_SECOND: f64 = 1500.0;
+    const TICK_BUDGET_MS: f64 = 14.0;
+
+    #[test]
+    fn duel_routes_server_tick_time() {
+        let orders: Vec<(u32, OrderWire)> = script::parse(ORDERS)
+            .expect("orders")
+            .into_iter()
+            .map(|(tick, order)| {
+                let wire = match order {
+                    Order::Order { unit, x, y } => OrderWire::Order { unit: unit as u32, x, y },
+                    Order::OrderAll { player, x, y } => OrderWire::OrderAll { player, x, y },
+                };
+                (tick, wire)
+            })
+            .collect();
+        let started = std::time::Instant::now();
+        let messages = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, Some(0));
+        let elapsed = started.elapsed().as_secs_f64() * 1000.0;
+        let per_tick = elapsed / f64::from(TICKS);
+        eprintln!("S5_TICK_MS {:.4} per tick over {} ticks, {} messages (player 0 view, sim plus encoding)", per_tick, TICKS, messages.len());
+        assert!(messages.len() >= TICKS as usize);
+        assert!(per_tick < TICK_BUDGET_MS, "server tick {per_tick:.2} ms is over the {TICK_BUDGET_MS} ms budget");
+    }
 
     #[test]
     fn duel_routes_stream_bytes_per_second() {
@@ -202,6 +226,7 @@ mod bytes {
         eprintln!("S5_BYTES_PER_SECOND all units {:.0} (player 0 view {:.0}) over {} messages", all_bytes as f64 / seconds, viewer_bytes as f64 / seconds, all.len());
         assert!(all_bytes > 0);
         assert!(viewer_bytes < all_bytes, "interest filtering did not reduce the stream");
+        assert!(viewer_bytes as f64 / seconds <= VIEW_CAP_BYTES_PER_SECOND, "player 0 stream is over the cap");
         assert!(load_image(Path::new(IMAGE)).fog_on(), "duel-routes has no fog, so the filter cannot reduce it");
     }
 }
