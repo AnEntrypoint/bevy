@@ -56,3 +56,5 @@ debug = 0
 [patch.crates-io]
 bevy_render = { path = "vendor/bevy_render" }
 bevy_core_pipeline = { path = "vendor/bevy_core_pipeline" }
+lightyear_messages = { path = "third_party/lightyear_messages" }
+lightyear_replication = { path = "third_party/lightyear_replication" }

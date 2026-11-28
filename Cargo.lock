@@ -4693,8 +4693,6 @@ dependencies = [
 [[package]]
 name = "lightyear_messages"
 version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "405c978e7c1de6e6b9fa63e614e6712cc6b86483bf2ebc2df289d6eb6f28cd2f"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -4834,8 +4832,6 @@ dependencies = [
 [[package]]
 name = "lightyear_replication"
 version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54d58fd466d5ed46171261ce06a0d9f41da95cebd00504a552d2a0637cc6f886"
 dependencies = [
  "avian2d",
  "avian3d",
