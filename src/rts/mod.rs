@@ -50,20 +50,27 @@ pub struct RtsHashes(pub Vec<(u32, u64)>);
 
 pub struct RtsSimPlugin {
     pub image: PathBuf,
+    pub rules: PathBuf,
 }
 
 impl Plugin for RtsSimPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Time::<Fixed>::from_hz(RTS_TICKS_PER_SECOND))
-            .insert_resource(RtsSim(load_image(&self.image)))
+            .insert_resource(RtsSim(load_image(&self.image, &self.rules)))
             .init_resource::<RtsOrders>()
             .init_resource::<RtsHashes>()
             .add_systems(FixedUpdate, step_rts_sim);
     }
 }
 
-pub fn load_image(image: &Path) -> Sim {
-    sim::load_file(image, RTS_MAX_UNITS).unwrap_or_else(|error| panic!("rts image {}: {error:?}", image.display()))
+#[cfg(test)]
+pub(crate) const RULES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/rts/attr_rules.txt");
+
+pub fn load_image(image: &Path, rules: &Path) -> Sim {
+    let mut sim = sim::load_file(image, RTS_MAX_UNITS).unwrap_or_else(|error| panic!("rts image {}: {error:?}", image.display()));
+    let text = std::fs::read_to_string(rules).unwrap_or_else(|error| panic!("rts rules {}: {error}", rules.display()));
+    assert!(sim.set_attr_rules_text(&text), "rts rules {} refused", rules.display());
+    sim
 }
 
 pub(crate) fn step_rts_sim(mut rts: ResMut<RtsSim>, mut orders: ResMut<RtsOrders>, mut hashes: ResMut<RtsHashes>) {

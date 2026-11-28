@@ -1,0 +1,14 @@
+aggro_priority=0
+channel_damage_interrupt=1
+aggro_hold_s=3
+move_speed_max=550
+move_speed_min=100
+hex_speed_milli=137
+armour_per_point_q16=3932
+reduced_response_pct=50
+waypoint_reach_milli=3000
+speed_point_q16=64
+melee_range_q16=32768
+day_s=300
+night_s=300
+night_sight_divisor=2

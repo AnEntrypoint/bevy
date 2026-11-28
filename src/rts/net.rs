@@ -139,7 +139,7 @@ mod tests {
     }
 
     fn stream(ticks: u32) -> Vec<RtsMessage> {
-        let sim = load_image(Path::new(IMAGE));
+        let sim = load_image(Path::new(IMAGE), Path::new(crate::rts::RULES));
         let orders = centre_orders(&sim);
         server_stream(sim, &orders, ticks, None)
     }
@@ -197,7 +197,7 @@ mod bytes {
             })
             .collect();
         let started = std::time::Instant::now();
-        let messages = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, Some(0));
+        let messages = server_stream(load_image(Path::new(IMAGE), Path::new(crate::rts::RULES)), &orders, TICKS, Some(0));
         let elapsed = started.elapsed().as_secs_f64() * 1000.0;
         let per_tick = elapsed / f64::from(TICKS);
         eprintln!("S5_TICK_MS {:.4} per tick over {} ticks, {} messages (player 0 view, sim plus encoding)", per_tick, TICKS, messages.len());
@@ -219,14 +219,14 @@ mod bytes {
             })
             .collect();
         let seconds = f64::from(TICKS) / TICKS_PER_SECOND;
-        let all = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, None);
+        let all = server_stream(load_image(Path::new(IMAGE), Path::new(crate::rts::RULES)), &orders, TICKS, None);
         let all_bytes: usize = all.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
-        let viewer = server_stream(load_image(Path::new(IMAGE)), &orders, TICKS, Some(0));
+        let viewer = server_stream(load_image(Path::new(IMAGE), Path::new(crate::rts::RULES)), &orders, TICKS, Some(0));
         let viewer_bytes: usize = viewer.iter().map(|message| serde_json::to_vec(message).expect("encode").len()).sum();
         eprintln!("S5_BYTES_PER_SECOND all units {:.0} (player 0 view {:.0}) over {} messages", all_bytes as f64 / seconds, viewer_bytes as f64 / seconds, all.len());
         assert!(all_bytes > 0);
         assert!(viewer_bytes < all_bytes, "interest filtering did not reduce the stream");
         assert!(viewer_bytes as f64 / seconds <= VIEW_CAP_BYTES_PER_SECOND, "player 0 stream is over the cap");
-        assert!(load_image(Path::new(IMAGE)).fog_on(), "duel-routes has no fog, so the filter cannot reduce it");
+        assert!(load_image(Path::new(IMAGE), Path::new(crate::rts::RULES)).fog_on(), "duel-routes has no fog, so the filter cannot reduce it");
     }
 }

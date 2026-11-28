@@ -30,7 +30,7 @@ fn orders() -> Vec<(u32, Order)> {
 fn base(orders: Vec<(u32, Order)>) -> App {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin, ServerPlugins { tick_duration: TICK }))
-        .add_plugins((RtsWirePlugin, RtsSimPlugin { image: PathBuf::from(IMAGE) }))
+        .add_plugins((RtsWirePlugin, RtsSimPlugin { image: PathBuf::from(IMAGE), rules: PathBuf::from(crate::rts::RULES) }))
         .insert_resource(RtsOrders::new(orders))
         .insert_resource(TimeUpdateStrategy::ManualDuration(TICK));
     app
@@ -106,7 +106,6 @@ fn pump(apps: &mut [&mut App], updates: usize) {
 }
 
 #[test]
-#[ignore = "lightyear 0.31.0 replication metadata: TickDelta::to_duration panics on a negative send interval (specs/queue/bevy.md)"]
 fn two_loopback_clients_match_the_server_hash_every_tick() {
     let mut server = server();
     let mut first = client(5101);
@@ -117,7 +116,7 @@ fn two_loopback_clients_match_the_server_hash_every_tick() {
     }
     pump(&mut [&mut server, &mut first, &mut second], TICKS + 64);
     let server_hashes = server.world().resource::<RtsHashes>().0.clone();
-    assert_eq!(server_hashes.len(), TICKS + 64);
+    assert_eq!(server_hashes.len(), TICKS + 63, "the first update only starts the fixed clock");
     for client in [&first, &second] {
         let local = &client.world().resource::<RtsHashes>().0;
         assert_eq!(local.as_slice(), server_hashes.as_slice(), "local sim differs from the server");

@@ -16,7 +16,7 @@ pub struct View {
 }
 
 pub fn stepped(ticks: u32) -> Sim {
-    let mut sim = load_image(Path::new(IMAGE));
+    let mut sim = load_image(Path::new(IMAGE), Path::new(crate::rts::RULES));
     let orders = script::parse(ORDERS).expect("orders");
     let mut next = 0;
     for _ in 0..ticks {
