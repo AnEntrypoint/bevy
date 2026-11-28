@@ -13,7 +13,7 @@ use sim::Sim;
 use std::path::{Path, PathBuf};
 
 pub const RTS_TICKS_PER_SECOND: f64 = 16.0;
-pub const RTS_MAX_UNITS: usize = 4096;
+pub const RTS_MAX_UNITS: usize = 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Order {
