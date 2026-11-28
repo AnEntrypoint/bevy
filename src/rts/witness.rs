@@ -11,6 +11,7 @@ const HASHES: &str = include_str!("../../testdata/rts/duel-routes.hashes");
 const REFERENCE_TICKS: usize = 3200;
 const OSCRAFT_ORDERS: &str = include_str!("../../testdata/rts/oscraft-duel-routes.orders");
 const OSCRAFT_HASHES: &str = include_str!("../../testdata/rts/oscraft-duel-routes.hashes");
+const FRAME_STATE: &str = include_str!("../../testdata/rts/oscraft-duel-frames-state.jsonl");
 
 fn expected() -> Vec<(u32, u64)> {
     HASHES
@@ -95,4 +96,41 @@ fn bevy_fixed_update_matches_oscraft_native_hashes() {
         assert_eq!(hash, want, "Bevy FixedUpdate hash differs from oscraft at tick {tick}");
     }
     assert_eq!(got.len(), 1280);
+}
+
+
+#[test]
+fn duel_frame_state_matches_oscraft_frames() {
+    let orders = script::parse(OSCRAFT_ORDERS).expect("oscraft orders");
+    let mut sim = load_image(Path::new(IMAGE), Path::new(crate::rts::RULES));
+    let frames: Vec<serde_json::Value> = FRAME_STATE.lines().map(|line| serde_json::from_str(line).expect("frame line")).collect();
+    let mut next = 0;
+    let mut checked = 0;
+    for tick in 0..=1280u32 {
+        if tick % 64 == 0 {
+            let frame = frames.iter().find(|frame| frame["tick"] == tick).unwrap_or_else(|| panic!("no frame at tick {tick}"));
+            let state = &frame["state"];
+            assert_eq!(state["simUnits"].as_u64(), Some(sim.count() as u64), "simUnits at tick {tick}");
+            let shown = (0..sim.count()).filter(|&i| sim.alive(i) && sim.visible(0, i)).count();
+            assert_eq!(state["shownUnits"].as_u64(), Some(shown as u64), "shownUnits at tick {tick}");
+            for sample in state["samplePositions"].as_array().expect("sample positions") {
+                let index = sample[0].as_u64().expect("unit index") as usize;
+                let (x, y) = sim.position_fixed(index);
+                let (x, y) = (x as f64 / ONE as f64, y as f64 / ONE as f64);
+                assert_eq!(sample[2].as_f64().unwrap(), x, "unit {index} x at tick {tick}");
+                assert_eq!(sample[3].as_f64().unwrap(), y, "unit {index} y at tick {tick}");
+                assert_eq!(sample[4].as_u64() == Some(1), sim.visible(1, index), "unit {index} visibility at tick {tick}");
+            }
+            checked += 1;
+        }
+        if tick == 1280 {
+            break;
+        }
+        while next < orders.len() && orders[next].0 <= sim.ticks() {
+            orders[next].1.apply(&mut sim);
+            next += 1;
+        }
+        sim.tick();
+    }
+    assert_eq!(checked, 21);
 }
